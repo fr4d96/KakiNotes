@@ -40,6 +40,7 @@ export function TagEditor({
   onChange: (next: RevisionTagSelection[]) => void;
 }) {
   const t = useTranslations("editor.tags");
+  const tCommon = useTranslations("common");
   const [draft, setDraft] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [browseOpen, setBrowseOpen] = useState(false);
@@ -126,7 +127,7 @@ export function TagEditor({
             Enforced on the preview page's submit gate, not here. */}
         <span className="text-destructive">
           <span aria-hidden="true"> *</span>
-          <span className="sr-only"> required</span>
+          <span className="sr-only">{tCommon("requiredSuffix")}</span>
         </span>
       </legend>
       <p className="mt-1 text-xs text-muted-foreground">

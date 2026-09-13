@@ -797,7 +797,9 @@ export function ImageUploadManager({
                           {!item.decorative && (
                             <span className="text-destructive">
                               <span aria-hidden="true"> *</span>
-                              <span className="sr-only"> required</span>
+                              <span className="sr-only">
+                                {tCommon("requiredSuffix")}
+                              </span>
                             </span>
                           )}
                         </label>

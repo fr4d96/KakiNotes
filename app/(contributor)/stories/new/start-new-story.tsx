@@ -38,6 +38,7 @@ const MAX_TITLE_LENGTH = 200;
  */
 export function StartNewStory() {
   const t = useTranslations("newStory");
+  const tCommon = useTranslations("common");
   const [state, formAction, pending] = useActionState(
     createDraftAction,
     initialState,
@@ -63,7 +64,7 @@ export function StartNewStory() {
             {t("titleLabel")}
             <span className="text-destructive">
               <span aria-hidden="true"> *</span>
-              <span className="sr-only"> required</span>
+              <span className="sr-only">{tCommon("requiredSuffix")}</span>
             </span>
           </label>
           <input

@@ -37,7 +37,8 @@
     "mustBeSignedIn": "You must be signed in.",
     "confirm": "Confirm",
     "cancel": "Cancel",
-    "working": "Working…"
+    "working": "Working…",
+    "requiredSuffix": " required"
   },
   "nav": {
     "primary": "Primary",
@@ -640,7 +641,6 @@
     "editStory": "Edit Story",
     "preview": "Preview",
     "reviewAndSubmit": "Review & submit →",
-    "required": " required",
     "save": {
       "saving": "Saving…",
       "savedAt": "Saved {when}",

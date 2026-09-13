@@ -37,7 +37,8 @@
     "mustBeSignedIn": "你需要先登录。",
     "confirm": "确认",
     "cancel": "取消",
-    "working": "处理中…"
+    "working": "处理中…",
+    "requiredSuffix": "（必填）"
   },
   "nav": {
     "primary": "主导航",
@@ -640,7 +641,6 @@
     "editStory": "编辑故事",
     "preview": "预览",
     "reviewAndSubmit": "检查并提交 →",
-    "required": "必填",
     "save": {
       "saving": "正在保存…",
       "savedAt": "已于{when}保存",

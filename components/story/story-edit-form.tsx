@@ -200,11 +200,15 @@ function formatCamelCaseLabel(value: string): string {
  * `aria-hidden` on the glyph plus a visually-hidden "required" is the usual
  * pattern -- a screen reader shouldn't read a bare "asterisk".
  */
+/** Sentinel for "the save failed and the error said nothing useful". */
+const SAVE_FAILED = "__save_failed__";
+
 function RequiredMark() {
+  const t = useTranslations("common");
   return (
     <span className="text-destructive">
       <span aria-hidden="true"> *</span>
-      <span className="sr-only"> required</span>
+      <span className="sr-only">{t("requiredSuffix")}</span>
     </span>
   );
 }
@@ -317,12 +321,6 @@ export function StoryEditForm({
 }: StoryEditFormProps) {
   const t = useTranslations("editor");
   const tValidation = useTranslations("validation");
-  // The mutation queue below is created ONCE and must stay that way --
-  // rebuilding it would drop whatever is in flight. Its error callback
-  // still has to speak the current language, so it reads the translator
-  // through a ref rather than closing over the render's own `t`.
-  const tRef = useRef(t);
-  tRef.current = t;
   const versionRef = useRef(initialVersion);
   const [conflict, setConflict] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -342,8 +340,15 @@ export function StoryEditForm({
   const queue = useMemo(() => {
     const q = new MutationQueue({
       onVersionConflict: () => setConflict(true),
+      // Stores the raw message, or SAVE_FAILED when the error carries none
+      // -- translated at render below. Deliberately NOT translated here:
+      // this callback is built inside the useMemo factory, which React
+      // treats as render phase, and reading a translator (or a ref holding
+      // one) there is exactly the violation the comment above describes.
+      // A sentinel rather than "" because the banner is rendered behind a
+      // truthiness check, and an empty string would silently show nothing.
       onError: (_slot, error) =>
-        setSaveError(getErrorMessage(error, tRef.current("save.failed"))),
+        setSaveError(getErrorMessage(error, "") || SAVE_FAILED),
       // `saving` must stay true whenever ANY mutation is queued or running
       // across ANY slot -- not merely "the mutation that just settled did."
       // Reading queue.hasPending() at the moment of settling (rather than
@@ -1173,7 +1178,7 @@ export function StoryEditForm({
         )}
         {saveError && !conflict && (
           <p role="alert" className="mt-4 text-sm text-destructive">
-            {saveError}
+            {saveError === SAVE_FAILED ? t("save.failed") : saveError}
           </p>
         )}
 
@@ -1715,7 +1720,7 @@ export function StoryEditForm({
               href="/my-stories"
               className="rounded-md border border-border-subtle px-4 py-2 text-sm font-medium"
             >
-              ← My Stories
+              {t("nav.backToMyStories")}
             </Link>
           )}
 
