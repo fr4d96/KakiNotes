@@ -148,6 +148,27 @@
       "bioTooLong": "Bio must be {max} characters or fewer.",
       "countryCode": "Use a 2-letter country code, e.g. MY.",
       "avatarEmoji": "Choose one of the provided avatars."
+    },
+    "story": {
+      "tripDateOrder": "Trip start date must be on or before the end date.",
+      "contentRequired": "Your story needs at least some content.",
+      "contentTooLong": "Story content is too long (max {max} characters).",
+      "headingLevel": "Use ## or smaller for headings inside your story — the title is your only # heading.",
+      "imageAsLink": "Images can't be pasted as links — use the image button to insert one.",
+      "linkScheme": "Links must be http(s) or a root-relative path.",
+      "singleBlock": "A story has a single content block.",
+      "titleRequired": "Title is required.",
+      "locationEitherOr": "Provide either a selection or a custom label, not both.",
+      "tooManyTags": "You can add up to {max} tags to a story.",
+      "expenseNeedsCategory": "An expense row needs a category or a name.",
+      "consentRequired": "You must confirm you have permission to publish this story.",
+      "termsVersionMissing": "Missing terms version.",
+      "selectPage": "Select at least one page."
+    },
+    "pdf": {
+      "empty": "The PDF file is empty.",
+      "tooLarge": "The PDF file is too large.",
+      "notAPdf": "The file is not a PDF (magic bytes did not match)."
     }
   },
   "vocab": {
@@ -608,5 +629,352 @@
     "published": "Published",
     "rejected": "Not approved",
     "archived": "Archived"
+  },
+  "editor": {
+    "newStory": "New Story",
+    "editStory": "Edit Story",
+    "preview": "Preview",
+    "reviewAndSubmit": "Review & submit →",
+    "required": " required",
+    "save": {
+      "saving": "Saving…",
+      "savedAt": "Saved {when}",
+      "notSavedYet": "Not saved yet",
+      "justNow": "just now",
+      "minutesAgo": "{count}m ago",
+      "hoursAgo": "{count}h ago",
+      "failed": "Save failed.",
+      "invalidContent": "Invalid content."
+    },
+    "steps": {
+      "title": "Title",
+      "story": "Your story",
+      "photos": "Photos",
+      "trip": "Trip",
+      "expenses": "Expenses",
+      "places": "Places",
+      "review": "Review",
+      "progressLabel": "Story progress",
+      "lockedHint": "Finish the steps before it, then use “Review & submit”."
+    },
+    "fields": {
+      "title": "Title",
+      "subtitle": "Sub-Title",
+      "subtitleHint": "Optional. One or two lines that say what the story is about.",
+      "story": "Story",
+      "storyContent": "Story content",
+      "travelStyle": "Travel style",
+      "travelStyleUnset": "Not specified",
+      "travelStyleOther": "Other (type your own)",
+      "travelStylePlaceholder": "Describe your travel style",
+      "travelStyleOwnLabel": "Other travel style (type your own)",
+      "totalExpenses": "Total expenses (NZD)",
+      "locations": "Locations",
+      "region": "Region",
+      "chooseRegion": "Choose a region…",
+      "townOrPlace": "Town or place (optional)",
+      "remove": "Remove",
+      "noteToEditors": "Note to editors",
+      "addLocationManually": "Add a location manually",
+      "unmatchedPlace": "We could not match that place to a New Zealand region — use \"Add a location manually\" below.",
+      "photosHint": "Add photos here. “Add to story” drops one into your text and takes you back to it.",
+      "unmatchedPlaceNamed": "We could not match \"{label}\" to a New Zealand region — use \"Add a location manually\" below.",
+      "noteToEditorsHint": "(optional, private, never published)"
+    },
+    "tripDates": {
+      "heading": "When did you travel?",
+      "precision": "How precisely do you remember your travel dates?",
+      "specific": "Specific dates",
+      "yearOnly": "Just the year",
+      "yearOnlyHint": "Use this if you remember the year but not the exact dates.",
+      "from": "From",
+      "to": "To",
+      "year": "Year",
+      "days": "{count, plural, one {# day} other {# days}}",
+      "startHidden": "trip start date",
+      "endHidden": "trip end date",
+      "yearHidden": "trip year"
+    },
+    "tags": {
+      "heading": "Choose tags",
+      "add": "Add a tag",
+      "placeholder": "Add a tag…",
+      "limitReached": "Tag limit reached",
+      "none": "No suggested tags left to add",
+      "chooseSuggested": "Choose from suggested tags",
+      "suggested": "Suggested tags"
+    },
+    "place": {
+      "heading": "Search for a place",
+      "placeholder": "Type a full place name, e.g. Queenstown",
+      "search": "Search",
+      "searching": "Searching…",
+      "unavailable": "Place search is unavailable right now — pick the region below instead.",
+      "tooShort": "Type at least {min} characters, then search again.",
+      "noMatches": "No places matched “{term}”. The map needs a complete name — try “Queenstown” rather than “Queens” — or just pick the region below.",
+      "attributionBefore": "Results by",
+      "attributionAfter": "contributors"
+    },
+    "expenses": {
+      "heading": "Break it down by category",
+      "optional": "Optional",
+      "addCategory": "Add a category",
+      "chooseCategory": "Choose a category…",
+      "orNameYourOwn": "Or name your own",
+      "categoryName": "Category name",
+      "spentOn": "What did you spend on?",
+      "noteLabel": "A short note about this cost",
+      "notePlaceholder": "Add a short note (optional)",
+      "subtotal": "Breakdown so far: {amount}",
+      "intro": "Only add what you actually recorded. Leaving something out is fine — it doesn't have to add up to your total. Up to {max}.",
+      "atCap": "That's {max} categories — the most a breakdown holds. Remove one to add something else.",
+      "customPlaceholder": "e.g. Phone plan",
+      "exceedsTotal": "That's more than the total above. Both are saved as you typed them; check whichever one is wrong."
+    },
+    "images": {
+      "loading": "Loading image"
+    },
+    "stepHints": {
+      "title": "What it's called",
+      "story": "The writing itself",
+      "photos": "Optional",
+      "trip": "Optional",
+      "expenses": "Optional",
+      "places": "Where and what",
+      "review": "Check it, then send"
+    },
+    "stepLabels": {
+      "title": "Title",
+      "story": "Your story",
+      "photos": "Photos",
+      "trip": "Trip",
+      "expenses": "Expenses",
+      "places": "Places & tags",
+      "review": "Review & submit"
+    },
+    "requirements": {
+      "title": "a title",
+      "content": "your story",
+      "location": "at least one location",
+      "tag": "at least one tag"
+    },
+    "progress": {
+      "navLabel": "Story progress",
+      "stepOf": "Step {index} of {total}",
+      "stepOfNamed": "Step {index} of {total}: {label}",
+      "stepOfNamedWithState": "Step {index} of {total}: {label} ({state})",
+      "state": {
+        "current": "current step",
+        "done": "done",
+        "stillNeeded": "still needed",
+        "notAvailable": "not available yet"
+      },
+      "stateSeparator": ", "
+    },
+    "railLabels": {
+      "title": "Title",
+      "story": "Your story",
+      "photos": "Photos",
+      "trip": "Trip",
+      "expenses": "Expenses",
+      "places": "Places",
+      "review": "Review"
+    },
+    "missing": {
+      "beforeSubmit": "Add {list} before you can submit.",
+      "beforeSave": "Add {list} before you can save this story.",
+      "addOne": "Add {what}",
+      "listSeparator": ", "
+    },
+    "nav": {
+      "back": "← {label}",
+      "next": "Next: {label} →",
+      "backToMyStories": "← My Stories"
+    },
+    "photos": {
+      "dropzone": "Drag and drop images here, or click to browse",
+      "count": "{count, plural, one {# photo} other {# photos}}",
+      "placedCount": "{count} in your story",
+      "needsDescriptionCount": "{count, plural, one {# photo still needs a description} other {# photos still need a description}}",
+      "badges": {
+        "cover": "Cover",
+        "inStory": "In story",
+        "needsDescription": "Needs description",
+        "duplicate": "Duplicate"
+      },
+      "state": {
+        "uploading": "Uploading…",
+        "preparing": "Preparing…",
+        "processing": "Processing…",
+        "ready": "Ready",
+        "failed": "Failed to process — try a different file"
+      },
+      "describeThisPhoto": "Describe this photo",
+      "describeHint": "For readers who can't see it. One plain sentence about what is in the photo.",
+      "altPlaceholder": "Vines in rows under a grey sky",
+      "decorative": "It's decorative — no description needed",
+      "caption": "Caption",
+      "captionHint": "(optional, shown under the photo)",
+      "setAsCover": "Set as cover",
+      "deletePhoto": "Delete photo",
+      "done": "Done",
+      "addToStory": "Add to story",
+      "moveEarlier": "↑ Earlier",
+      "moveLater": "↓ Later",
+      "moveEarlierLabel": "Move {name} earlier",
+      "moveLaterLabel": "Move {name} later",
+      "describe": "Describe",
+      "details": "Details",
+      "describeLabel": "Describe {name}",
+      "detailsLabel": "Details {name}",
+      "itemName": "photo {index}",
+      "errors": {
+        "tooLarge": "That photo is too large to upload.",
+        "unsupportedType": "Use JPEG, PNG, WebP, or HEIC.",
+        "uploadFailed": "Upload failed.",
+        "uploadFailedStatus": "Upload failed (error {status}).",
+        "uploadedToast": "{fileName} uploaded."
+      }
+    },
+    "toolbar": {
+      "commandsLabel": "Story formatting commands",
+      "syntaxGuide": "Markdown syntax guide (opens in a new tab)",
+      "heading": "Heading",
+      "bold": "Bold (Ctrl/Cmd+B)",
+      "italic": "Italic (Ctrl/Cmd+I)",
+      "strikethrough": "Strikethrough (~~text~~)",
+      "quote": "Quote",
+      "bulletedList": "Bulleted list",
+      "numberedList": "Numbered list",
+      "checklist": "Checklist",
+      "link": "Link (Ctrl/Cmd+K)",
+      "table": "Table",
+      "photo": "Add a photo (opens the Images panel)",
+      "placeholder": "Tell your story… or type / for headings, lists and quotes",
+      "wordCount": "{count, plural, one {# word} other {# words}}",
+      "readingTime": "{minutes} min read",
+      "aimForWords": "aim for 150+ words",
+      "statSeparator": " · "
+    },
+    "slash": {
+      "heading": "Heading",
+      "headingDetail": "A section title",
+      "subheading": "Smaller heading",
+      "subheadingDetail": "A sub-section title",
+      "list": "Bulleted list",
+      "listDetail": "A list of points",
+      "numbered": "Numbered list",
+      "numberedDetail": "A list of steps, in order",
+      "quote": "Quote",
+      "quoteDetail": "Set a passage apart",
+      "link": "Link",
+      "linkDetail": "Link some words to a page",
+      "table": "Table",
+      "tableDetail": "A small grid of rows and columns",
+      "photo": "Photo",
+      "photoDetail": "Go to the Images panel to upload and place a photo",
+      "todo": "Checklist",
+      "todoDetail": "Tick-box items"
+    }
+  },
+  "publish": {
+    "heading": "Who is this story for?",
+    "goToStep": "Go to that step",
+    "everyone": "Everyone",
+    "everyoneHint": "A moderator reads it first. Once they approve it, anyone can find and read it.",
+    "justMe": "Just me",
+    "justMeHint": "Nobody reviews it and nobody else can see it. You can still edit it, or share it publicly later.",
+    "keepingPrivate": "Keeping this one to yourself",
+    "saving": "Saving…",
+    "saveChanges": "Save changes",
+    "saveAsPrivate": "Save as private",
+    "privateBody1": "No moderator reads it, and it never shows up in search, on the public site, or on your public profile. Your photos stay private too.",
+    "privateBody2": "You can keep editing it whenever you like. If you change your mind later, come back here and choose “Everyone” — that is when it goes to a moderator."
+  },
+  "consent": {
+    "heading": "Publication permission",
+    "imageRights": "I confirm I have the right to share every attached image publicly.",
+    "peopleQuestion": "Do any photos show identifiable people?",
+    "noPeople": "No identifiable people",
+    "havePermission": "Yes — I have their permission",
+    "submitting": "Submitting…",
+    "publishRights": "I confirm I have the right to publish this story and give permission for it to be published on Kakinotes."
+  },
+  "review": {
+    "editorPrepared": "An editor prepared this story for you",
+    "approveAndSubmit": "Approve & submit for moderation",
+    "approve": "Approve",
+    "requestChanges": "Request changes",
+    "whatChanged": "What would you like changed?",
+    "sending": "Sending…",
+    "sendRequest": "Send request",
+    "decline": "Decline",
+    "declineHint": "Optional: let the editor know why.",
+    "declining": "Declining…",
+    "confirmDecline": "Confirm decline",
+    "intro": "Review it above, then approve it for moderation, ask for changes, or decline publication entirely."
+  },
+  "whatsPublic": {
+    "heading": "What will be public",
+    "nameShowsAs": "Your name will show as:",
+    "copyrightRemoval": "Copyright & Removal",
+    "nameLine": "Your name will show as: <name>{value}</name> ({attribution})",
+    "titleAndBody": "The full story title and body text",
+    "titleExcerptAndBody": "The full story title and excerpt and body text",
+    "tripDetails": "Trip details you set: region, destination, tags, trip date/year, travel style, and reported cost (if you added one)",
+    "images": "{count, plural, one {# image} other {# images}}, with alt text and metadata already stripped",
+    "imagesWithCaptions": "{count, plural, one {# image} other {# images}} ({captioned} with a visible caption), with alt text and metadata already stripped",
+    "notesNeverShown": "Internal editor and moderator notes are never shown publicly. You can request removal or correction at any time — see",
+    "attribution": {
+      "real_name": "your real name",
+      "display_name": "your chosen display name",
+      "pseudonym": "a pseudonym",
+      "anonymous": "anonymous (no name shown)"
+    }
+  },
+  "startRevision": {
+    "edit": "Edit this story",
+    "publishedTitle": "Make changes to this story?",
+    "draftTitle": "Start editing again?",
+    "confirm": "Yes, edit it",
+    "editTitle": "Edit {title}",
+    "publishedBody": "\"{title}\" is published. Your changes go to a moderator first — the version people can read now stays up, unchanged, until the new one is approved.",
+    "draftBody": "You'll pick up \"{title}\" where you left off, and send it back for review when you're done."
+  },
+  "preview": {
+    "metaTitle": "Preview",
+    "downloadCopy": "Download a copy",
+    "contentUnavailable": "This draft's content couldn't be rendered.",
+    "submitForReview": "Submit for review",
+    "submitCorrection": "Submit correction for review"
+  },
+  "import": {
+    "heading": "Import content",
+    "intro": "Paste plain text or rich HTML from the contributor's original submission. Preview the conversion before using it — this replaces the story body below.",
+    "plainText": "Plain text",
+    "html": "HTML",
+    "placeholderPlain": "Pasted plain text…",
+    "placeholderHtml": "<p>Pasted HTML…</p>",
+    "converting": "Converting…",
+    "previewConversion": "Preview conversion",
+    "applying": "Applying…",
+    "useThisContent": "Use this content",
+    "blocksProduced": "{count} block(s) produced.",
+    "tablesConverted": "{count} table(s) converted to plain text.",
+    "codeBlocksConverted": "{count} code block(s) converted to plain text.",
+    "removedAsUnsafe": "Removed as unsafe: {list}",
+    "notConvertible": "Not convertible (skipped): {list}",
+    "unsafeLinks": "{count} unsafe link(s) had their link removed (text kept).",
+    "errors": {
+      "input_too_large": "That's too much text to import at once — try a smaller section.",
+      "too_many_nodes": "This HTML is too complex to import — try a smaller/simpler section.",
+      "too_deeply_nested": "This HTML is nested too deeply to import — try a smaller/simpler section.",
+      "empty_content": "No usable content was found in that text.",
+      "invalid_content": "The converted content didn't pass validation — try a smaller/simpler section.",
+      "unauthorized": "You're not authorized to import content.",
+      "invalid_input": "Invalid input.",
+      "convertFailed": "Could not convert this content.",
+      "requestTooLarge": "That request couldn't be sent — try pasting a smaller amount of text."
+    }
   }
 }

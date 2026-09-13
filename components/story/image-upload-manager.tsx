@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { RevisionMediaItem } from "@/lib/story/contributor-queries";
 import type { MutationQueue } from "@/lib/story/mutation-queue";
 import {
@@ -64,6 +65,9 @@ async function uploadDirectlyToStorage(
   file: File,
   contentType: string,
   accessToken: string,
+  // Passed in rather than resolved here: this is a module-scope helper, so
+  // it cannot call a translation hook of its own.
+  messages: { tooLarge: string; failedWithStatus: (status: number) => string },
 ): Promise<void> {
   const encodedPath = reservedPath
     .split("/")
@@ -95,9 +99,9 @@ async function uploadDirectlyToStorage(
   }
   if (message) throw new Error(message);
   if (response.status === 413) {
-    throw new Error("That photo is too large to upload.");
+    throw new Error(messages.tooLarge);
   }
-  throw new Error(`Upload failed (error ${response.status}).`);
+  throw new Error(messages.failedWithStatus(response.status));
 }
 
 type UploadingItem = {
@@ -153,14 +157,14 @@ export type ImageUploadManagerProps = {
   onInsertIntoEditor?: (mediaId: string, width: number) => void;
 };
 
-const PROCESSING_LABELS: Record<string, string> = {
-  pending_upload: "Uploading…",
-  uploaded: "Preparing…",
-  processing: "Processing…",
-  processed: "Ready",
-  failed: "Failed to process — try a different file",
-  promotion_pending: "Ready",
-  promoted: "Ready",
+const PROCESSING_LABEL_KEYS: Record<string, string> = {
+  pending_upload: "uploading",
+  uploaded: "preparing",
+  processing: "processing",
+  processed: "ready",
+  failed: "failed",
+  promotion_pending: "ready",
+  promoted: "ready",
 };
 
 type MediaTextPatch = Partial<
@@ -172,9 +176,15 @@ type MediaTextPatch = Partial<
  * reader hears "Details, photo 3" or "Describe, vines at dusk" rather than
  * a dozen identical "Details" buttons.
  */
-function itemName(item: RevisionMediaItem, index: number): string {
+function itemName(
+  item: RevisionMediaItem,
+  index: number,
+  fallback: (index: number) => string,
+): string {
   const described = item.altText?.trim() || item.caption?.trim();
-  return described ? `“${described}”` : `photo ${index + 1}`;
+  // The contributor's own words when they have written any -- never
+  // translated -- and our numbered fallback otherwise.
+  return described ? `“${described}”` : fallback(index + 1);
 }
 
 /** Status pip on a tile -- "Cover", "In story", "Needs description". */
@@ -243,6 +253,8 @@ export function ImageUploadManager({
   onMediaDetached,
   onInsertIntoEditor,
 }: ImageUploadManagerProps) {
+  const t = useTranslations("editor.photos");
+  const tCommon = useTranslations("common");
   const [media, setMedia] = useState<RevisionMediaItem[]>(
     [...initialMedia].sort((a, b) => a.sortOrder - b.sortOrder),
   );
@@ -380,7 +392,7 @@ export function ImageUploadManager({
             key,
             fileName: file.name,
             progress: "error",
-            error: "Use JPEG, PNG, WebP, or HEIC.",
+            error: t("errors.unsupportedType"),
             previewUrl,
           },
         ]);
@@ -427,13 +439,18 @@ export function ImageUploadManager({
         const {
           data: { session },
         } = await createBrowserSupabaseClient().auth.getSession();
-        if (!session) throw new Error("You must be signed in.");
+        if (!session) throw new Error(tCommon("mustBeSignedIn"));
 
         await uploadDirectlyToStorage(
           reservedPath,
           file,
           sourceMimeType,
           session.access_token,
+          {
+            tooLarge: t("errors.tooLarge"),
+            failedWithStatus: (status) =>
+              t("errors.uploadFailedStatus", { status }),
+          },
         );
 
         if (isHeic) {
@@ -457,9 +474,9 @@ export function ImageUploadManager({
         }
         setUploading((prev) => prev.filter((u) => u.key !== key));
         await refresh();
-        showToast(`${file.name} uploaded.`);
+        showToast(t("errors.uploadedToast", { fileName: file.name }));
       } catch (error) {
-        const message = getErrorMessage(error, "Upload failed.");
+        const message = getErrorMessage(error, t("errors.uploadFailed"));
         setUploading((prev) =>
           prev.map((u) =>
             u.key === key
@@ -594,9 +611,7 @@ export function ImageUploadManager({
               : "border-border-subtle hover:bg-surface-muted"
           }`}
         >
-          <span className="text-sm font-medium">
-            Drag and drop images here, or click to browse
-          </span>
+          <span className="text-sm font-medium">{t("dropzone")}</span>
           <span className="text-sm text-muted-foreground">
             Up to {MAX_IMAGES_PER_REVISION} images, JPEG/PNG/WebP/HEIC (iPhone
             photos), 15 MB each.
@@ -655,8 +670,8 @@ export function ImageUploadManager({
                 {u.progress === "error"
                   ? u.error
                   : u.progress === "uploading"
-                    ? "Uploading…"
-                    : "Processing…"}
+                    ? t("state.uploading")
+                    : t("state.processing")}
               </p>
             </li>
           ))}
@@ -667,19 +682,17 @@ export function ImageUploadManager({
         <div>
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <p className="text-sm font-medium">
-              {media.length === 1 ? "1 photo" : `${media.length} photos`}
+              {t("count", { count: media.length })}
               {placedMedia.length > 0 && (
                 <span className="font-normal text-muted-foreground">
                   {" "}
-                  · {placedMedia.length} in your story
+                  · {t("placedCount", { count: placedMedia.length })}
                 </span>
               )}
             </p>
             {needsAltTextCount > 0 && (
               <p className="text-xs text-amber-700 dark:text-amber-400">
-                {needsAltTextCount === 1
-                  ? "1 photo still needs a description"
-                  : `${needsAltTextCount} photos still need a description`}
+                {t("needsDescriptionCount", { count: needsAltTextCount })}
               </p>
             )}
           </div>
@@ -694,6 +707,15 @@ export function ImageUploadManager({
                 : 1;
               const isDuplicate = duplicateCount > 1;
               const isPlaced = inlineMediaIds.has(item.mediaId);
+              // Resolved once per tile: it appears in four accessible names
+              // below, and itemName() needs the numbered fallback message.
+              const name = itemName(item, index, (position) =>
+                t("itemName", { index: position }),
+              );
+              const processingLabel = (state: string) =>
+                PROCESSING_LABEL_KEYS[state]
+                  ? t(`state.${PROCESSING_LABEL_KEYS[state]}` as never)
+                  : state;
               const isOpen = openMediaId === item.mediaId;
               const needsAltText = !item.decorative && !item.altText?.trim();
               const detailsId = `media-details-${item.mediaId}`;
@@ -710,15 +732,12 @@ export function ImageUploadManager({
                     />
                   ) : item.processingState === "failed" ? (
                     <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
-                      {PROCESSING_LABELS[item.processingState]}
+                      {processingLabel(item.processingState)}
                     </div>
                   ) : (
                     <div
                       className="flex h-full w-full items-center justify-center text-muted-foreground"
-                      aria-label={
-                        PROCESSING_LABELS[item.processingState] ??
-                        item.processingState
-                      }
+                      aria-label={processingLabel(item.processingState)}
                     >
                       <Spinner className="h-6 w-6" />
                     </div>
@@ -728,13 +747,17 @@ export function ImageUploadManager({
                       library does it -- no field, no sentence, just the
                       three facts that change what you would do next. */}
                   <div className="pointer-events-none absolute inset-x-1 top-1 flex flex-wrap gap-1">
-                    {item.isCover && <TileBadge>Cover</TileBadge>}
-                    {isPlaced && <TileBadge>In story</TileBadge>}
+                    {item.isCover && <TileBadge>{t("badges.cover")}</TileBadge>}
+                    {isPlaced && <TileBadge>{t("badges.inStory")}</TileBadge>}
                     {needsAltText && (
-                      <TileBadge tone="warning">Needs description</TileBadge>
+                      <TileBadge tone="warning">
+                        {t("badges.needsDescription")}
+                      </TileBadge>
                     )}
                     {isDuplicate && (
-                      <TileBadge tone="warning">Duplicate</TileBadge>
+                      <TileBadge tone="warning">
+                        {t("badges.duplicate")}
+                      </TileBadge>
                     )}
                   </div>
                 </div>
@@ -770,7 +793,7 @@ export function ImageUploadManager({
                           htmlFor={`alt-${item.mediaId}`}
                           className="block text-xs font-medium"
                         >
-                          Describe this photo
+                          {t("describeThisPhoto")}
                           {!item.decorative && (
                             <span className="text-destructive">
                               <span aria-hidden="true"> *</span>
@@ -779,8 +802,7 @@ export function ImageUploadManager({
                           )}
                         </label>
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                          For readers who can&rsquo;t see it. One plain sentence
-                          about what is in the photo.
+                          {t("describeHint")}
                         </p>
                         <input
                           id={`alt-${item.mediaId}`}
@@ -792,7 +814,7 @@ export function ImageUploadManager({
                               altText: e.target.value,
                             })
                           }
-                          placeholder="Vines in rows under a grey sky"
+                          placeholder={t("altPlaceholder")}
                           className="mt-1.5 w-full rounded-md border border-border-subtle px-2 py-1.5 text-sm disabled:opacity-50 dark:bg-transparent"
                         />
                         <label className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -805,7 +827,7 @@ export function ImageUploadManager({
                               })
                             }
                           />
-                          It&rsquo;s decorative — no description needed
+                          {t("decorative")}
                         </label>
                       </div>
 
@@ -814,9 +836,9 @@ export function ImageUploadManager({
                           htmlFor={`caption-${item.mediaId}`}
                           className="block text-xs font-medium"
                         >
-                          Caption{" "}
+                          {t("caption")}{" "}
                           <span className="font-normal text-muted-foreground">
-                            (optional, shown under the photo)
+                            {t("captionHint")}
                           </span>
                         </label>
                         <input
@@ -835,7 +857,7 @@ export function ImageUploadManager({
                       <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-3">
                         {!item.isCover && (
                           <TileAction onClick={() => setCover(item.mediaId)}>
-                            Set as cover
+                            {t("setAsCover")}
                           </TileAction>
                         )}
                         {index > 0 && (
@@ -843,9 +865,9 @@ export function ImageUploadManager({
                             onClick={() =>
                               reorder(item.mediaId, media[index - 1].mediaId)
                             }
-                            label={`Move ${itemName(item, index)} earlier`}
+                            label={t("moveEarlierLabel", { name })}
                           >
-                            ↑ Earlier
+                            {t("moveEarlier")}
                           </TileAction>
                         )}
                         {index < media.length - 1 && (
@@ -853,23 +875,23 @@ export function ImageUploadManager({
                             onClick={() =>
                               reorder(item.mediaId, media[index + 1].mediaId)
                             }
-                            label={`Move ${itemName(item, index)} later`}
+                            label={t("moveLaterLabel", { name })}
                           >
-                            ↓ Later
+                            {t("moveLater")}
                           </TileAction>
                         )}
                         <TileAction
                           tone="destructive"
                           onClick={() => detach(item.mediaId)}
                         >
-                          Delete photo
+                          {t("deletePhoto")}
                         </TileAction>
                         <button
                           type="button"
                           onClick={() => setOpenMediaId(null)}
                           className="ml-auto rounded-md border border-border-subtle px-3 py-1.5 text-xs font-medium"
                         >
-                          Done
+                          {t("done")}
                         </button>
                       </div>
                     </div>
@@ -895,7 +917,7 @@ export function ImageUploadManager({
                           }}
                           className="min-w-0 flex-1 truncate rounded-md bg-accent px-2 py-1.5 text-xs font-semibold text-accent-foreground"
                         >
-                          Add to story
+                          {t("addToStory")}
                         </button>
                       )}
                       {/* No "already placed" text: the tile's own "In story"
@@ -914,7 +936,11 @@ export function ImageUploadManager({
                         // "Describephoto 1". Confirmed against
                         // dom-accessibility-api, which is what both this
                         // project's tests and real screen readers implement.
-                        aria-label={`${needsAltText ? "Describe" : "Details"} ${itemName(item, index)}`}
+                        aria-label={
+                          needsAltText
+                            ? t("describeLabel", { name })
+                            : t("detailsLabel", { name })
+                        }
                         className={`shrink-0 rounded-md border px-2 py-1.5 text-xs font-medium ${
                           isPlaced ? "w-full" : ""
                         } ${
@@ -923,7 +949,7 @@ export function ImageUploadManager({
                             : "border-border-subtle"
                         }`}
                       >
-                        {needsAltText ? "Describe" : "Details"}
+                        {needsAltText ? t("describe") : t("details")}
                       </button>
                     </div>
                   )}

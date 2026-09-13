@@ -108,21 +108,19 @@ export const storyContentBlockSchema = z.discriminatedUnion("type", [
     text: z
       .string()
       .trim()
-      .min(1, "Your story needs at least some content.")
+      .min(1, "story.contentRequired")
       .max(MAX_DOCUMENT_CHARACTERS, {
-        message: `Story content is too long (max ${MAX_DOCUMENT_CHARACTERS} characters).`,
+        message: "story.contentTooLong",
       })
       .refine((text) => !hasH1Heading(text), {
-        message:
-          "Use ## or smaller for headings inside your story — the title is your only # heading.",
+        message: "story.headingLevel",
       })
       .refine((text) => !MARKDOWN_IMAGE_REGEX.test(text), {
-        message:
-          "Images can't be pasted as links — use the image button to insert one.",
+        message: "story.imageAsLink",
       })
       .refine(
         (text) => markdownLinkHrefs(text).every((href) => isSafeHref(href)),
-        { message: "Links must be http(s) or a root-relative path." },
+        { message: "story.linkScheme" },
       ),
   }),
 ]);
@@ -154,7 +152,7 @@ export function imageBlockMediaIds(blocks: StoryContentBlock[]): string[] {
 // New Story -- confirmed live before writing this fix, not assumed.
 export const storyContentSchema = z
   .array(storyContentBlockSchema)
-  .length(1, "Your story needs at least some content.");
+  .length(1, "story.contentRequired");
 
 /**
  * The same content rules, minus "there has to be some" -- for SAVING a
@@ -205,9 +203,7 @@ export const draftContentSchema = z.preprocess(
         ),
     );
   },
-  z
-    .array(storyContentBlockSchema)
-    .max(1, "A story has a single content block."),
+  z.array(storyContentBlockSchema).max(1, "story.singleBlock"),
 );
 
 // Mirrors supabase/migrations/20260803090200_story_revisions.sql's CHECK
@@ -225,18 +221,18 @@ export const travelStyles = ["budget", "midRange", "comfort"] as const;
 const TRAVEL_STYLE_MAX_LENGTH = 50;
 
 /**
- * The one wording for "your end date is before your start date", exported so
- * the authoring form's trip-date control can echo it inline next to the two
- * fields instead of only in the save-error banner at the top of a long form.
- * The refine() below stays the enforcer -- nothing saves while the range is
- * inverted -- so this is a single shared string, not a second rule.
+ * The one wording for "your end date is before your start date" now lives in
+ * messages/<locale>.json at `validation.story.tripDateOrder`, so the
+ * authoring form's trip-date control can echo it inline next to the two
+ * fields (and in the visitor's language) instead of only in the save-error
+ * banner at the top of a long form. The refine() below stays the enforcer --
+ * nothing saves while the range is inverted -- so that message is a single
+ * shared string, not a second rule.
  */
-export const TRIP_DATE_ORDER_MESSAGE =
-  "Trip start date must be on or before the end date.";
 
 export const revisionInputSchema = z
   .object({
-    title: z.string().trim().min(1, "Title is required.").max(200),
+    title: z.string().trim().min(1, "story.titleRequired").max(200),
     excerpt: z.string().trim().max(500).optional().or(z.literal("")),
     // draftContentSchema, NOT storyContentSchema -- see its comment above.
     // This schema is the DRAFT-SAVE boundary (the editor's autosave and
@@ -261,7 +257,7 @@ export const revisionInputSchema = z
       !data.tripEndDate ||
       data.tripStartDate <= data.tripEndDate,
     {
-      message: TRIP_DATE_ORDER_MESSAGE,
+      message: "story.tripDateOrder",
       path: ["tripEndDate"],
     },
   );
@@ -274,7 +270,7 @@ export type RevisionInput = z.infer<typeof revisionInputSchema>;
 // shell revision should be blocked on creating. create_self_service_draft
 // itself defaults content_json to '[]'::jsonb server-side.
 export const createDraftSchema = z.object({
-  title: z.string().trim().min(1, "Title is required.").max(200),
+  title: z.string().trim().min(1, "story.titleRequired").max(200),
 });
 
 export type CreateDraftInput = z.infer<typeof createDraftSchema>;
@@ -327,7 +323,7 @@ export const revisionTagSchema = z
     customLabel: z.string().trim().min(1).max(TAG_MAX_LENGTH).optional(),
   })
   .refine((v) => Boolean(v.id) !== Boolean(v.customLabel), {
-    message: "Provide either a selection or a custom label, not both.",
+    message: "story.locationEitherOr",
   });
 
 // A contributor may add as many tags as they like, up to a generous cap.
@@ -338,7 +334,7 @@ export const revisionTagSchema = z
 export const revisionTagsSchema = z
   .array(revisionTagSchema)
   .max(MAX_TAGS_PER_REVISION, {
-    message: `You can add up to ${MAX_TAGS_PER_REVISION} tags to a story.`,
+    message: "story.tooManyTags",
   });
 
 /**
@@ -403,7 +399,7 @@ export const revisionExpenseSchema = z
     note: z.string().trim().max(EXPENSE_NOTE_MAX_LENGTH).nullable().optional(),
   })
   .refine((row) => Boolean(row.categoryId) || Boolean(row.customLabel), {
-    message: "An expense row needs a category or a name.",
+    message: "story.expenseNeedsCategory",
     path: ["categoryId"],
   });
 
@@ -435,14 +431,14 @@ export const submitRevisionSchema = z.object({
   expectedVersion: z.number().int().positive(),
   confirmationMethod: z.enum(confirmationMethods),
   publicationConfirmed: z.literal(true, {
-    error: "You must confirm you have permission to publish this story.",
+    error: "story.consentRequired",
   }),
   // Required (non-defaulted) as of Prompt 4 Sub-phase 4: the caller fetches
   // current_terms_version() immediately before submitting and passes it
   // here, so submit_revision_with_consent() can detect (and reject, via a
   // stable WHV01 error code) a terms-of-service change that happened
   // between the caller loading the form and actually submitting.
-  expectedTermsVersion: z.string().trim().min(1, "Missing terms version."),
+  expectedTermsVersion: z.string().trim().min(1, "story.termsVersionMissing"),
   imageRightsConfirmed: z.boolean().default(false),
   identifiablePeopleState: z.enum(identifiablePeopleStates).default("pending"),
   editorialAssistanceConfirmed: z.boolean().default(false),

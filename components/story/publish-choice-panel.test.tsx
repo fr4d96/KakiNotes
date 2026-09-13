@@ -108,8 +108,8 @@ describe("PublishChoicePanel", () => {
     const user = userEvent.setup();
     renderPanel({
       missingForPublic: [
-        { label: "at least one location", step: "places" },
-        { label: "at least one tag", step: "places" },
+        { labelKey: "location", step: "places" },
+        { labelKey: "tag", step: "places" },
       ],
       missingForPrivate: [],
     });
@@ -127,8 +127,8 @@ describe("PublishChoicePanel", () => {
   it("still blocks a private story that has no title or content", async () => {
     const user = userEvent.setup();
     renderPanel({
-      missingForPublic: [{ label: "your story", step: "story" }],
-      missingForPrivate: [{ label: "your story", step: "story" }],
+      missingForPublic: [{ labelKey: "content", step: "story" }],
+      missingForPrivate: [{ labelKey: "content", step: "story" }],
     });
     await user.click(screen.getByRole("radio", { name: /Just me/ }));
 

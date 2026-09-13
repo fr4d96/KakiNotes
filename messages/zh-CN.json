@@ -148,6 +148,27 @@
       "bioTooLong": "简介不能超过 {max} 个字符。",
       "countryCode": "请使用两位字母的国家代码，例如 MY。",
       "avatarEmoji": "请从提供的头像中选择一个。"
+    },
+    "story": {
+      "tripDateOrder": "出发日期必须早于或等于结束日期。",
+      "contentRequired": "你的故事至少需要一些内容。",
+      "contentTooLong": "故事内容太长（最多 {max} 个字符）。",
+      "headingLevel": "故事内部的小标题请使用 ## 或更小的级别 — # 只用于故事标题。",
+      "imageAsLink": "图片不能以链接方式粘贴 — 请使用图片按钮插入。",
+      "linkScheme": "链接必须是 http(s) 或以根目录开头的相对路径。",
+      "singleBlock": "一篇故事只有一个内容块。",
+      "titleRequired": "请填写标题。",
+      "locationEitherOr": "请选择一个已有地点或自己填写名称，不能同时填写。",
+      "tooManyTags": "一篇故事最多可以添加 {max} 个标签。",
+      "expenseNeedsCategory": "花费条目需要一个类别或名称。",
+      "consentRequired": "你必须确认自己有权发布这篇故事。",
+      "termsVersionMissing": "缺少条款版本。",
+      "selectPage": "请至少选择一页。"
+    },
+    "pdf": {
+      "empty": "PDF 文件是空的。",
+      "tooLarge": "PDF 文件太大。",
+      "notAPdf": "这个文件不是 PDF（文件头不匹配）。"
     }
   },
   "vocab": {
@@ -608,5 +629,352 @@
     "published": "已发布",
     "rejected": "未通过",
     "archived": "已归档"
+  },
+  "editor": {
+    "newStory": "新故事",
+    "editStory": "编辑故事",
+    "preview": "预览",
+    "reviewAndSubmit": "检查并提交 →",
+    "required": "必填",
+    "save": {
+      "saving": "正在保存…",
+      "savedAt": "已于{when}保存",
+      "notSavedYet": "尚未保存",
+      "justNow": "刚刚",
+      "minutesAgo": "{count} 分钟前",
+      "hoursAgo": "{count} 小时前",
+      "failed": "保存失败。",
+      "invalidContent": "内容无效。"
+    },
+    "steps": {
+      "title": "标题",
+      "story": "你的故事",
+      "photos": "照片",
+      "trip": "行程",
+      "expenses": "花费",
+      "places": "地点",
+      "review": "检查",
+      "progressLabel": "故事进度",
+      "lockedHint": "先完成前面的步骤，然后使用「检查并提交」。"
+    },
+    "fields": {
+      "title": "标题",
+      "subtitle": "副标题",
+      "subtitleHint": "可选。用一两句话说明这篇故事讲的是什么。",
+      "story": "正文",
+      "storyContent": "故事内容",
+      "travelStyle": "旅行方式",
+      "travelStyleUnset": "未填写",
+      "travelStyleOther": "其他（自己填写）",
+      "travelStylePlaceholder": "描述你的旅行方式",
+      "travelStyleOwnLabel": "其他旅行方式（自己填写）",
+      "totalExpenses": "总花费（新西兰元）",
+      "locations": "地点",
+      "region": "地区",
+      "chooseRegion": "选择一个地区…",
+      "townOrPlace": "城镇或地点（可选）",
+      "remove": "移除",
+      "noteToEditors": "给编辑的备注",
+      "addLocationManually": "手动添加地点",
+      "unmatchedPlace": "无法把这个地点匹配到新西兰的某个地区 — 请使用下方的「手动添加地点」。",
+      "photosHint": "在这里添加照片。「加入故事」会把照片插入正文，并带你回到正文。",
+      "unmatchedPlaceNamed": "无法把「{label}」匹配到新西兰的某个地区 — 请使用下方的「手动添加地点」。",
+      "noteToEditorsHint": "（可选，私密，不会公开）"
+    },
+    "tripDates": {
+      "heading": "你是什么时候去的？",
+      "precision": "你对出行日期记得多精确？",
+      "specific": "具体日期",
+      "yearOnly": "只记得年份",
+      "yearOnlyHint": "如果你只记得年份、不记得具体日期，就选这个。",
+      "from": "从",
+      "to": "到",
+      "year": "年份",
+      "days": "{count} 天",
+      "startHidden": "出发日期",
+      "endHidden": "结束日期",
+      "yearHidden": "出行年份"
+    },
+    "tags": {
+      "heading": "选择标签",
+      "add": "添加标签",
+      "placeholder": "添加标签…",
+      "limitReached": "已达标签上限",
+      "none": "没有更多推荐标签了",
+      "chooseSuggested": "从推荐标签中选择",
+      "suggested": "推荐标签"
+    },
+    "place": {
+      "heading": "搜索地点",
+      "placeholder": "输入完整地名，例如 Queenstown",
+      "search": "搜索",
+      "searching": "搜索中…",
+      "unavailable": "地点搜索暂时不可用 — 请改为在下方选择地区。",
+      "tooShort": "请至少输入 {min} 个字符，然后重新搜索。",
+      "noMatches": "没有找到与「{term}」匹配的地点。地图需要完整的地名 — 试试「Queenstown」而不是「Queens」 — 或者直接在下方选择地区。",
+      "attributionBefore": "搜索结果来自",
+      "attributionAfter": "贡献者"
+    },
+    "expenses": {
+      "heading": "按类别分项",
+      "optional": "可选",
+      "addCategory": "添加类别",
+      "chooseCategory": "选择一个类别…",
+      "orNameYourOwn": "或自己命名",
+      "categoryName": "类别名称",
+      "spentOn": "这笔钱花在什么上？",
+      "noteLabel": "关于这笔花费的简短说明",
+      "notePlaceholder": "添加简短说明（可选）",
+      "subtotal": "已分项合计：{amount}",
+      "intro": "只填你真正记录过的部分。有遗漏也没关系 — 它不必和你的总数对上。最多 {max} 项。",
+      "atCap": "已经有 {max} 个类别了，这是分项的上限。想再加的话，先移除一个。",
+      "customPlaceholder": "例如：手机套餐",
+      "exceedsTotal": "这比上面的总数还多。两个数字都会按你填的保存，请检查哪一个填错了。"
+    },
+    "images": {
+      "loading": "图片加载中"
+    },
+    "stepHints": {
+      "title": "故事叫什么",
+      "story": "正文本身",
+      "photos": "可选",
+      "trip": "可选",
+      "expenses": "可选",
+      "places": "在哪里、写了什么",
+      "review": "检查后提交"
+    },
+    "stepLabels": {
+      "title": "标题",
+      "story": "你的故事",
+      "photos": "照片",
+      "trip": "行程",
+      "expenses": "花费",
+      "places": "地点与标签",
+      "review": "检查并提交"
+    },
+    "requirements": {
+      "title": "标题",
+      "content": "正文",
+      "location": "至少一个地点",
+      "tag": "至少一个标签"
+    },
+    "progress": {
+      "navLabel": "故事进度",
+      "stepOf": "第 {index} 步，共 {total} 步",
+      "stepOfNamed": "第 {index} 步，共 {total} 步：{label}",
+      "stepOfNamedWithState": "第 {index} 步，共 {total} 步：{label}（{state}）",
+      "state": {
+        "current": "当前步骤",
+        "done": "已完成",
+        "stillNeeded": "还需填写",
+        "notAvailable": "尚不可用"
+      },
+      "stateSeparator": "、"
+    },
+    "railLabels": {
+      "title": "标题",
+      "story": "你的故事",
+      "photos": "照片",
+      "trip": "行程",
+      "expenses": "花费",
+      "places": "地点",
+      "review": "检查"
+    },
+    "missing": {
+      "beforeSubmit": "提交前请先补上{list}。",
+      "beforeSave": "保存这篇故事前请先补上{list}。",
+      "addOne": "补上{what}",
+      "listSeparator": "、"
+    },
+    "nav": {
+      "back": "← {label}",
+      "next": "下一步：{label} →",
+      "backToMyStories": "← 我的故事"
+    },
+    "photos": {
+      "dropzone": "把图片拖到这里，或点击浏览文件",
+      "count": "{count} 张照片",
+      "placedCount": "已放入故事 {count} 张",
+      "needsDescriptionCount": "还有 {count} 张照片需要补充描述",
+      "badges": {
+        "cover": "封面",
+        "inStory": "已在故事中",
+        "needsDescription": "需要描述",
+        "duplicate": "重复"
+      },
+      "state": {
+        "uploading": "正在上传…",
+        "preparing": "正在准备…",
+        "processing": "正在处理…",
+        "ready": "已就绪",
+        "failed": "处理失败 — 换一个文件试试"
+      },
+      "describeThisPhoto": "描述这张照片",
+      "describeHint": "写给看不到图片的读者。用一句平实的话说明照片里有什么。",
+      "altPlaceholder": "灰色天空下成排的葡萄藤",
+      "decorative": "这是装饰性图片 — 不需要描述",
+      "caption": "图注",
+      "captionHint": "（可选，显示在照片下方）",
+      "setAsCover": "设为封面",
+      "deletePhoto": "删除照片",
+      "done": "完成",
+      "addToStory": "加入故事",
+      "moveEarlier": "↑ 前移",
+      "moveLater": "↓ 后移",
+      "moveEarlierLabel": "把{name}往前移",
+      "moveLaterLabel": "把{name}往后移",
+      "describe": "描述",
+      "details": "详情",
+      "describeLabel": "描述{name}",
+      "detailsLabel": "{name}的详情",
+      "itemName": "第 {index} 张照片",
+      "errors": {
+        "tooLarge": "这张照片太大，无法上传。",
+        "unsupportedType": "请使用 JPEG、PNG、WebP 或 HEIC 格式。",
+        "uploadFailed": "上传失败。",
+        "uploadFailedStatus": "上传失败（错误 {status}）。",
+        "uploadedToast": "{fileName} 已上传。"
+      }
+    },
+    "toolbar": {
+      "commandsLabel": "故事排版命令",
+      "syntaxGuide": "Markdown 语法指南（在新标签页打开）",
+      "heading": "小标题",
+      "bold": "加粗（Ctrl/Cmd+B）",
+      "italic": "斜体（Ctrl/Cmd+I）",
+      "strikethrough": "删除线（~~文字~~）",
+      "quote": "引用",
+      "bulletedList": "无序列表",
+      "numberedList": "有序列表",
+      "checklist": "任务清单",
+      "link": "链接（Ctrl/Cmd+K）",
+      "table": "表格",
+      "photo": "添加照片（打开图片面板）",
+      "placeholder": "写下你的故事…… 或输入 / 插入小标题、列表和引用",
+      "wordCount": "{count} 个词",
+      "readingTime": "约 {minutes} 分钟读完",
+      "aimForWords": "建议写到 150 词以上",
+      "statSeparator": " · "
+    },
+    "slash": {
+      "heading": "小标题",
+      "headingDetail": "一个段落标题",
+      "subheading": "次级标题",
+      "subheadingDetail": "一个子段落标题",
+      "list": "无序列表",
+      "listDetail": "一组要点",
+      "numbered": "有序列表",
+      "numberedDetail": "按顺序排列的步骤",
+      "quote": "引用",
+      "quoteDetail": "把一段话单独列出",
+      "link": "链接",
+      "linkDetail": "给一段文字加上链接",
+      "table": "表格",
+      "tableDetail": "一个小的行列表格",
+      "photo": "照片",
+      "photoDetail": "前往图片面板上传并放置照片",
+      "todo": "任务清单",
+      "todoDetail": "可勾选的条目"
+    }
+  },
+  "publish": {
+    "heading": "这篇故事写给谁看？",
+    "goToStep": "前往该步骤",
+    "everyone": "所有人",
+    "everyoneHint": "会先由审核人阅读。通过之后，任何人都能找到并阅读它。",
+    "justMe": "只有我自己",
+    "justMeHint": "不会有人审核，其他人也看不到。你之后仍可以编辑，或者再改为公开。",
+    "keepingPrivate": "这篇只留给自己",
+    "saving": "正在保存…",
+    "saveChanges": "保存修改",
+    "saveAsPrivate": "保存为私密",
+    "privateBody1": "不会有审核人阅读它，它也不会出现在搜索结果、公开站点或你的公开主页上。你的照片同样保持私密。",
+    "privateBody2": "你随时可以继续编辑。如果之后改变主意，回到这里选择「所有人」，那时它才会交给审核人。"
+  },
+  "consent": {
+    "heading": "发布授权",
+    "imageRights": "我确认我有权公开分享所附的每一张图片。",
+    "peopleQuestion": "照片中是否有可识别的人物？",
+    "noPeople": "没有可识别的人物",
+    "havePermission": "有 — 我已获得他们的同意",
+    "submitting": "正在提交…",
+    "publishRights": "我确认自己有权发布这篇故事，并同意它在 Kakinotes 上发表。"
+  },
+  "review": {
+    "editorPrepared": "编辑为你准备了这篇故事",
+    "approveAndSubmit": "确认并提交审核",
+    "approve": "确认",
+    "requestChanges": "要求修改",
+    "whatChanged": "你希望修改哪些地方？",
+    "sending": "正在发送…",
+    "sendRequest": "发送请求",
+    "decline": "拒绝",
+    "declineHint": "可选：告诉编辑原因。",
+    "declining": "正在拒绝…",
+    "confirmDecline": "确认拒绝",
+    "intro": "先在上方查看内容，然后确认送审、要求修改，或者直接拒绝发布。"
+  },
+  "whatsPublic": {
+    "heading": "哪些内容会公开",
+    "nameShowsAs": "你的名字将显示为：",
+    "copyrightRemoval": "版权与移除",
+    "nameLine": "你的名字将显示为：<name>{value}</name>（{attribution}）",
+    "titleAndBody": "完整的故事标题和正文",
+    "titleExcerptAndBody": "完整的故事标题、副标题和正文",
+    "tripDetails": "你填写的行程信息：地区、目的地、标签、出行日期／年份、旅行方式，以及记录的花费（如果你填了）",
+    "images": "{count} 张图片，已去除说明文字以外的元数据",
+    "imagesWithCaptions": "{count} 张图片（其中 {captioned} 张带有可见图注），已去除说明文字以外的元数据",
+    "notesNeverShown": "编辑和审核人的内部备注永远不会公开。你随时可以申请移除或更正 — 详见",
+    "attribution": {
+      "real_name": "你的真实姓名",
+      "display_name": "你选择的显示名称",
+      "pseudonym": "笔名",
+      "anonymous": "匿名（不显示名字）"
+    }
+  },
+  "startRevision": {
+    "edit": "编辑这篇故事",
+    "publishedTitle": "要修改这篇故事吗？",
+    "draftTitle": "重新开始编辑？",
+    "confirm": "好，去编辑",
+    "editTitle": "编辑《{title}》",
+    "publishedBody": "《{title}》已经发布。你的修改会先交给审核人 — 在新版本通过之前，大家现在读到的版本会保持不变，继续在线。",
+    "draftBody": "你会从上次停下的地方继续写《{title}》，完成后再提交审核。"
+  },
+  "preview": {
+    "metaTitle": "预览",
+    "downloadCopy": "下载副本",
+    "contentUnavailable": "这份草稿的内容无法显示。",
+    "submitForReview": "提交审核",
+    "submitCorrection": "提交修改以供审核"
+  },
+  "import": {
+    "heading": "导入内容",
+    "intro": "粘贴投稿人原稿的纯文本或富文本 HTML。使用前先预览转换结果 — 这会替换下方的故事正文。",
+    "plainText": "纯文本",
+    "html": "HTML",
+    "placeholderPlain": "粘贴的纯文本…",
+    "placeholderHtml": "<p>粘贴的 HTML…</p>",
+    "converting": "正在转换…",
+    "previewConversion": "预览转换结果",
+    "applying": "正在应用…",
+    "useThisContent": "使用这段内容",
+    "blocksProduced": "生成了 {count} 个内容块。",
+    "tablesConverted": "有 {count} 个表格被转成了纯文本。",
+    "codeBlocksConverted": "有 {count} 个代码块被转成了纯文本。",
+    "removedAsUnsafe": "因不安全而移除：{list}",
+    "notConvertible": "无法转换（已跳过）：{list}",
+    "unsafeLinks": "有 {count} 个不安全的链接被移除了链接（文字保留）。",
+    "errors": {
+      "input_too_large": "一次导入的文本太多了 — 试试分成小一点的段落。",
+      "too_many_nodes": "这段 HTML 太复杂，无法导入 — 试试更小、更简单的段落。",
+      "too_deeply_nested": "这段 HTML 嵌套层级太深，无法导入 — 试试更小、更简单的段落。",
+      "empty_content": "在这段文本中没有找到可用的内容。",
+      "invalid_content": "转换后的内容没有通过校验 — 试试更小、更简单的段落。",
+      "unauthorized": "你没有导入内容的权限。",
+      "invalid_input": "输入无效。",
+      "convertFailed": "无法转换这段内容。",
+      "requestTooLarge": "这个请求发送失败了 — 试试粘贴少一点的文本。"
+    }
   }
 }

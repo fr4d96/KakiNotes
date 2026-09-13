@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { startStoryRevisionAction } from "@/app/(contributor)/stories/[id]/preview/actions";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
@@ -38,6 +39,7 @@ export function StartRevisionButton({
   const router = useRouter();
   const { showToast } = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const t = useTranslations("startRevision");
   const [starting, setStarting] = useState(false);
 
   async function handleConfirm() {
@@ -62,24 +64,24 @@ export function StartRevisionButton({
       <button
         type="button"
         onClick={() => setConfirmOpen(true)}
-        title={`Edit ${storyTitle}`}
-        aria-label={variant === "icon" ? `Edit ${storyTitle}` : undefined}
+        title={t("editTitle", { title: storyTitle })}
+        aria-label={
+          variant === "icon" ? t("editTitle", { title: storyTitle }) : undefined
+        }
         className={className}
       >
         <EditorialPencilIcon className="h-4 w-4" aria-hidden="true" />
-        {variant === "button" && <span>Edit this story</span>}
+        {variant === "button" && <span>{t("edit")}</span>}
       </button>
       <ConfirmDialog
         open={confirmOpen}
-        title={
-          isPublished ? "Make changes to this story?" : "Start editing again?"
-        }
+        title={isPublished ? t("publishedTitle") : t("draftTitle")}
         description={
           isPublished
-            ? `"${storyTitle}" is published. Your changes go to a moderator first — the version people can read now stays up, unchanged, until the new one is approved.`
-            : `You'll pick up "${storyTitle}" where you left off, and send it back for review when you're done.`
+            ? t("publishedBody", { title: storyTitle })
+            : t("draftBody", { title: storyTitle })
         }
-        confirmLabel="Yes, edit it"
+        confirmLabel={t("confirm")}
         pending={starting}
         onConfirm={handleConfirm}
         onCancel={() => setConfirmOpen(false)}

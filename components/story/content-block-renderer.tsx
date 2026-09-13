@@ -1,4 +1,5 @@
 import ReactMarkdown, { type Components } from "react-markdown";
+import { useTranslations } from "next-intl";
 import remarkGfm from "remark-gfm";
 import type { StoryContentBlock } from "@/lib/validation/story";
 import { storyContentText } from "@/lib/validation/story";
@@ -41,6 +42,7 @@ function MediaEmbed({
   width?: number;
   media: ContentBlockMediaMap;
 }) {
+  const t = useTranslations("editor.images");
   const resolved = media[mediaId];
   if (!resolved) return null;
 
@@ -54,7 +56,7 @@ function MediaEmbed({
   if (resolved === "loading") {
     return (
       <span
-        aria-label="Loading image"
+        aria-label={t("loading")}
         style={{ ...dimensionStyle, aspectRatio: width ? undefined : "16 / 9" }}
         className={`${frameClassName} flex items-center justify-center bg-surface-muted text-muted-foreground`}
       >

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import {
   submitOwnConsentAction,
   type ConsentActionState,
@@ -26,6 +27,7 @@ export function SubmitConsentPanel({
   isEditorialImport,
   submitLabel,
 }: SubmitConsentPanelProps) {
+  const t = useTranslations("consent");
   const [state, formAction, pending] = useActionState(
     submitOwnConsentAction,
     initialState,
@@ -40,7 +42,7 @@ export function SubmitConsentPanel({
       <input type="hidden" name="revisionId" value={revisionId} />
       <input type="hidden" name="expectedVersion" value={expectedVersion} />
 
-      <h2 className="text-sm font-semibold">Publication permission</h2>
+      <h2 className="text-sm font-semibold">{t("heading")}</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Personal experience, not advice — your story will be reviewed before it
         appears publicly.
@@ -53,10 +55,7 @@ export function SubmitConsentPanel({
           required
           className="mt-0.5"
         />
-        <span>
-          I confirm I have the right to publish this story and give permission
-          for it to be published on Kakinotes.
-        </span>
+        <span>{t("publishRights")}</span>
       </label>
 
       {hasMedia && (
@@ -68,16 +67,14 @@ export function SubmitConsentPanel({
               required
               className="mt-0.5"
             />
-            <span>
-              I confirm I have the right to share every attached image publicly.
-            </span>
+            <span>{t("imageRights")}</span>
           </label>
           <div className="mt-3">
             <label
               htmlFor="identifiable-people-state"
               className="block text-xs font-medium"
             >
-              Do any photos show identifiable people?
+              {t("peopleQuestion")}
             </label>
             <select
               id="identifiable-people-state"
@@ -85,8 +82,8 @@ export function SubmitConsentPanel({
               required
               className="mt-1 rounded-md border border-border-subtle px-2 py-1 text-sm dark:bg-transparent"
             >
-              <option value="not_applicable">No identifiable people</option>
-              <option value="confirmed">Yes — I have their permission</option>
+              <option value="not_applicable">{t("noPeople")}</option>
+              <option value="confirmed">{t("havePermission")}</option>
             </select>
           </div>
         </>
@@ -112,7 +109,7 @@ export function SubmitConsentPanel({
         disabled={pending}
         className="mt-4 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-60"
       >
-        {pending ? "Submitting…" : submitLabel}
+        {pending ? t("submitting") : submitLabel}
       </button>
 
       {state.error && (

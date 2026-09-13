@@ -73,6 +73,15 @@ describe("messages", () => {
       "footer.copyrightLine",
       // Two numerals and a slash ("3 / 5"); identical in both languages.
       "home.quiz.progress",
+      // Example values for fields the schema restricts to lowercase ASCII
+      // (usernameSchema, publicSlugSchema) -- a Chinese example would be
+      // an example of something the field rejects.
+      "account.username.placeholder",
+      "account.contributor.slugPlaceholder",
+      // An arrow and a placeholder; the label inside it is translated.
+      "editor.nav.back",
+      // A format name, not a word.
+      "import.html",
     ]);
     const identical = [...enFlat]
       .filter(([k, v]) => zhFlat.get(k) === v && !allowed.has(k))
