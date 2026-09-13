@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import {
   getPublishedStoryBySlugCached,
   getPublishedStoryMediaCached,
@@ -109,7 +110,11 @@ export default async function StoryDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: slug } = await params;
-  const story = await getPublishedStoryBySlugCached(slug);
+  const [story, t, tCommon] = await Promise.all([
+    getPublishedStoryBySlugCached(slug),
+    getTranslations("story"),
+    getTranslations("common"),
+  ]);
   if (!story) notFound();
 
   const [media, activeRegions] = await Promise.all([
@@ -183,6 +188,8 @@ export default async function StoryDetailPage({
     headline: story.title,
     description: story.excerpt ?? undefined,
     datePublished: story.published_at,
+    // Untranslated on purpose: JSON-LD is machine-readable metadata for
+    // search engines, not page copy, and "Anonymous" is its stable value.
     author: { "@type": "Person", name: story.attribution_value ?? "Anonymous" },
   };
 
@@ -207,14 +214,16 @@ export default async function StoryDetailPage({
 
       <div className="mt-6 flex flex-wrap items-center gap-6">
         <AttributionChip
-          name={story.attribution_value ?? "Anonymous"}
+          name={story.attribution_value ?? tCommon("anonymous")}
           contributorSlug={story.contributor_slug}
           avatarEmoji={story.contributor_avatar_emoji}
           tripYear={tripLabel ? undefined : story.trip_year}
           destination={regions[0] ?? null}
         />
         {tripLabel ? (
-          <span className="text-sm text-foreground/60">Trip: {tripLabel}</span>
+          <span className="text-sm text-foreground/60">
+            {t("trip", { range: tripLabel })}
+          </span>
         ) : null}
       </div>
 
@@ -237,9 +246,7 @@ export default async function StoryDetailPage({
         {parsedContent ? (
           <ContentBlockRenderer blocks={parsedContent} media={contentMedia} />
         ) : (
-          <p className="text-destructive">
-            This story&apos;s content couldn&apos;t be rendered.
-          </p>
+          <p className="text-destructive">{t("contentUnavailable")}</p>
         )}
       </div>
 
@@ -263,7 +270,7 @@ export default async function StoryDetailPage({
       {relatedStories.length > 0 ? (
         <div className="mt-16">
           <h2 className="text-xl font-semibold tracking-tight">
-            Related stories
+            {t("relatedStories")}
           </h2>
           <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-3">
             {relatedStories.map((s) => (

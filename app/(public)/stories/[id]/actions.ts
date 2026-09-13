@@ -1,7 +1,9 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { createReportSchema } from "@/lib/validation/story";
 import { createStoryReport } from "@/lib/story/mutations";
+import { translateFieldErrors } from "@/lib/validation/issue-messages";
 
 export type ReportActionState =
   | { status: "idle" }
@@ -29,6 +31,10 @@ export async function reportStoryAction(
   _prevState: ReportActionState,
   formData: FormData,
 ): Promise<ReportActionState> {
+  const [t, tv] = await Promise.all([
+    getTranslations("story.report"),
+    getTranslations("validation"),
+  ]);
   const parsed = createReportSchema.safeParse({
     storyId: formData.get("storyId"),
     category: formData.get("category"),
@@ -38,7 +44,7 @@ export async function reportStoryAction(
   if (!parsed.success) {
     return {
       status: "validation-error",
-      fieldErrors: parsed.error.flatten().fieldErrors,
+      fieldErrors: translateFieldErrors(parsed.error, tv),
     };
   }
 
@@ -58,9 +64,6 @@ export async function reportStoryAction(
       // Already has an open report on this story -- neutral, same as success.
       return { status: "success" };
     }
-    return {
-      status: "error",
-      message: "Something went wrong. Please try again.",
-    };
+    return { status: "error", message: t("failed") };
   }
 }

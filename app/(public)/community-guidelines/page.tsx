@@ -1,18 +1,17 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { PlaceholderPage } from "@/components/placeholder-page";
 
-export const metadata: Metadata = {
-  title: "Community Guidelines",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("legal");
+  return { title: t("guidelinesTitle") };
+}
 
-export default function CommunityGuidelinesPage() {
+export default async function CommunityGuidelinesPage() {
+  const t = await getTranslations("legal");
   return (
-    <PlaceholderPage title="Community Guidelines">
-      <p>
-        Our full community guidelines are being finalised. In brief: stories
-        must be genuine personal experiences, published with the
-        contributor&apos;s permission and rights-cleared images.
-      </p>
+    <PlaceholderPage title={t("guidelinesTitle")}>
+      <p>{t("guidelinesBody")}</p>
     </PlaceholderPage>
   );
 }

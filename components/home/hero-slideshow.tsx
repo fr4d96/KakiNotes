@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { usePrefersReducedMotion } from "@/lib/hooks/use-prefers-reduced-motion";
 
 // Four plates: the three inherited landscapes plus Auckland's waterfront, so
@@ -41,6 +42,7 @@ const SLIDE_INTERVAL_MS = 6500;
  * tab is hidden.
  */
 export function HeroSlideshow() {
+  const t = useTranslations("home.slideshow");
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const reduced = usePrefersReducedMotion();
@@ -72,7 +74,7 @@ export function HeroSlideshow() {
     };
   }, [reduced, paused]);
 
-  const label = paused ? "Play hero animation" : "Pause hero animation";
+  const label = paused ? t("playAnimation") : t("pauseAnimation");
 
   return (
     <>
@@ -142,7 +144,7 @@ export function HeroSlideshow() {
             )}
           </svg>
           <span className="hidden sm:inline">
-            {paused ? "Play motion" : "Pause motion"}
+            {paused ? t("playMotion") : t("pauseMotion")}
           </span>
         </button>
       ) : null}

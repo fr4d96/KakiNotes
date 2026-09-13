@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { getPublicImageUrl } from "@/lib/story/public-image-url";
 import {
   firstRegionLabel,
@@ -53,6 +54,7 @@ const PAGE_SIZE = 5;
  * trip per chip). The full, server-filtered catalogue lives at `/stories`.
  */
 export function StoryIndex({ stories }: { stories: StoryCardData[] }) {
+  const t = useTranslations("home.index");
   const axes = useMemo(() => {
     function axis(
       key: string,
@@ -169,6 +171,8 @@ export function StoryIndex({ stories }: { stories: StoryCardData[] }) {
               options={[ALL, ...axis.options]}
               active={active[axis.key] ?? ALL}
               onChange={(value) => changeFilter(axis.key, value)}
+              allLabel={t("all")}
+              groupLabel={t("filterBy", { axis: axis.label.toLowerCase() })}
             />
           ))}
         </div>

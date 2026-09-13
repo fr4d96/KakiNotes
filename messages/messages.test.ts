@@ -68,7 +68,12 @@ describe("messages", () => {
     // Brand names, the "EN" glyph and a few technical tokens are legitimately
     // identical; anything else identical is almost certainly an untranslated
     // string. Keep this list short and honest.
-    const allowed = new Set<string>();
+    const allowed = new Set<string>([
+      // The brand name is the whole message; there is nothing to translate.
+      "footer.copyrightLine",
+      // Two numerals and a slash ("3 / 5"); identical in both languages.
+      "home.quiz.progress",
+    ]);
     const identical = [...enFlat]
       .filter(([k, v]) => zhFlat.get(k) === v && !allowed.has(k))
       // A value with no Latin letters at all (pure punctuation/emoji) is

@@ -19,7 +19,6 @@
     "close": "关闭",
     "menu": "菜单",
     "or": "或",
-    "kakinotes": "Kakinotes",
     "invalidInput": "输入无效。",
     "loadingLabels": {
       "workspace": "正在加载你的工作区",
@@ -32,7 +31,9 @@
     "themeToggle": {
       "switchToLight": "切换到浅色模式",
       "switchToDark": "切换到深色模式"
-    }
+    },
+    "anonymous": "匿名",
+    "personalExperienceLabel": "个人经历，并非建议 — 不构成移民、法律、就业、税务或财务建议"
   },
   "nav": {
     "primary": "主导航",
@@ -147,5 +148,306 @@
       "countryCode": "请使用两位字母的国家代码，例如 MY。",
       "avatarEmoji": "请从提供的头像中选择一个。"
     }
+  },
+  "vocab": {
+    "regions": {
+      "northland": "北地大区",
+      "auckland": "奥克兰",
+      "waikato": "怀卡托",
+      "bay-of-plenty": "丰盛湾",
+      "gisborne": "吉斯伯恩",
+      "hawkes-bay": "霍克斯湾",
+      "taranaki": "塔拉纳基",
+      "manawatu-whanganui": "马纳瓦图-旺加努伊",
+      "wellington": "惠灵顿",
+      "tasman": "塔斯曼",
+      "nelson": "尼尔森",
+      "marlborough": "马尔堡",
+      "west-coast": "西海岸",
+      "canterbury": "坎特伯雷",
+      "otago": "奥塔哥",
+      "southland": "南地大区"
+    },
+    "expenseCategories": {
+      "flights": "机票",
+      "visa-fee": "签证费",
+      "insurance": "保险",
+      "first-month-rent": "第一个月房租",
+      "bond": "押金",
+      "vehicle": "交通工具",
+      "gear": "装备",
+      "food": "饮食",
+      "transport": "交通",
+      "activities": "活动",
+      "other": "其他"
+    }
+  },
+  "stories": {
+    "metaTitle": "故事",
+    "metaDescription": "浏览来自新西兰的真实第一人称打工度假签证（WHV）故事，可按地区、标签、出行年份、旅行方式和记录的花费筛选。",
+    "title": "故事",
+    "intro": "来自亲历者的真实打工度假记录 — 按地区、标签、出行年份、旅行方式或记录的花费筛选，找到与你相似的那一篇。",
+    "loadError": "暂时无法加载故事，请稍后再试。",
+    "noMatches": "还没有符合这些条件的故事，试试放宽筛选条件。",
+    "loadMore": "加载更多故事",
+    "filters": {
+      "search": "搜索",
+      "searchPlaceholder": "找一篇和你相似的故事",
+      "showFilters": "筛选",
+      "hideFilters": "收起筛选",
+      "apply": "应用筛选",
+      "clear": "清除",
+      "region": "地区",
+      "anyRegion": "任意地区",
+      "destination": "目的地",
+      "anyDestination": "任意目的地",
+      "tag": "标签",
+      "anyTag": "任意标签",
+      "tripYear": "出行年份",
+      "anyYear": "任意年份",
+      "travelStyle": "旅行方式",
+      "anyStyle": "任意方式",
+      "reportedCost": "记录的花费",
+      "anyCost": "任意花费",
+      "costAvailability": "是否记录花费",
+      "anyStory": "全部故事",
+      "hasReportedCost": "已记录花费",
+      "noReportedCost": "未记录花费",
+      "costBands": {
+        "under_5k": "低于 5000 新西兰元",
+        "5k_15k": "5000 – 15000 新西兰元",
+        "15k_30k": "15000 – 30000 新西兰元",
+        "30k_plus": "30000 新西兰元以上"
+      }
+    }
+  },
+  "story": {
+    "trip": "行程：{range}",
+    "contentUnavailable": "这篇故事的内容无法显示。",
+    "relatedStories": "相关故事",
+    "expenses": {
+      "heading": "这趟行程花了多少",
+      "reportedForWholeTrip": "为整趟行程记录的花费",
+      "perMonth": "在 {months} 个月里，平均每月约 <amount>{amountValue}</amount>。",
+      "disclaimer": "这是一位旅行者为自己的行程记录的数字。它是个人经历，不是预算也不是估算 — 花费会因地区、季节和旅行方式相差很大。"
+    },
+    "report": {
+      "open": "举报这篇故事",
+      "submitted": "谢谢 — 你的举报已提交审核。",
+      "needsSignInBefore": "请先",
+      "needsSignInLink": "登录",
+      "needsSignInAfter": "后再举报故事。",
+      "reasonLabel": "原因",
+      "reasonPlaceholder": "选择一个原因",
+      "detailsLabel": "补充说明（可选）",
+      "submit": "提交举报",
+      "submitting": "正在提交…",
+      "cancel": "取消",
+      "failed": "出了点问题，请再试一次。",
+      "categories": {
+        "misinformation": "虚假信息",
+        "unsafe_employment_advice": "不安全的就业建议",
+        "harassment": "骚扰",
+        "copyright_privacy": "版权或隐私",
+        "spam_commercial": "垃圾信息或商业内容",
+        "other": "其他"
+      }
+    }
+  },
+  "expenses": {
+    "donut": {
+      "smallerCategories": "其他小项",
+      "brokenDown": "已分项",
+      "empty": "添加一个类别和金额，看看钱花在了哪里。"
+    }
+  },
+  "contributors": {
+    "metaTitle": "投稿人",
+    "metaDescription": "在 Kakinotes 发表过真实打工度假签证（WHV）故事的投稿人。",
+    "title": "投稿人",
+    "intro": "分享了自己打工度假经历的人 — 这里只显示每位投稿人自己选择公开的信息。",
+    "loadError": "暂时无法加载投稿人，请稍后再试。",
+    "empty": "目前还没有公开的投稿人主页。",
+    "loadMore": "加载更多投稿人",
+    "storyCount": "{count} 篇故事",
+    "fromCountry": "来自{country}",
+    "storyCountPublished": "已发表 {count} 篇故事",
+    "workedIn": "工作地区",
+    "years": "年份",
+    "wroteAbout": "写过的主题",
+    "publishedStories": "已发表的故事"
+  },
+  "costs": {
+    "metaTitle": "打工度假到底花了多少",
+    "metaDescription": "投稿人记录的新西兰打工度假真实花费 — 来自已发表故事的数据，不是估算，也不是预算。",
+    "title": "打工度假到底花了多少",
+    "framing": "这些是投稿人为自己真实走过的行程记录下的数字。它们记录的是这些人身上发生过的事，不是估算、预算，也不是对你行程的预测。打工度假的花费会因地区、季节和旅行方式相差极大。",
+    "overallHeading": "整趟行程记录的总花费",
+    "overallUnit": "是中位数",
+    "perMonthHeading": "记录的每月花费",
+    "perMonthNote": "来自同时记录了出发和结束日期、且行程至少一个月的故事 — 只看总数无法区分三个月和一整年。",
+    "perMonthUnit": "每月",
+    "byRegionHeading": "按地区",
+    "byCategoryHeading": "钱花在了哪里",
+    "halfReportedBetween": "这 {count} 篇故事中，有一半记录的金额在 <low>{low}</low> 到 <high>{high}</high> 之间。",
+    "storyCount": "{count} 篇故事",
+    "notEnough": "已发表的故事还不够多，无法如实呈现{what}。当至少有五篇故事涉及同一项时，数字才会出现。",
+    "notEnoughWhat": {
+      "total": "典型的总花费",
+      "perMonth": "每月花费",
+      "regions": "地区之间的差异",
+      "categories": "按类别的明细"
+    },
+    "footerBefore": "这里的每个数字都来自一篇你可以完整读到的故事。",
+    "footerLink": "浏览故事",
+    "footerAfter": "去看看数字背后的行程 — 通常真正重要的是那些来龙去脉。"
+  },
+  "home": {
+    "metaTitle": "来自新西兰各地的真实故事",
+    "heroLead": "来自新西兰各地的",
+    "heroAccent": "真实故事",
+    "heroSub": "第一人称记录：亲历打工度假的旅行者写下的工作、地方与那些瞬间。",
+    "heroCta": "开始读故事",
+    "heroSecondary": "或了解这里是怎么运作的",
+    "featuredHeading": "精选",
+    "featuredDescription": "把卡片拖到一边，或用箭头逐张浏览。",
+    "recordHeading": "全部记录",
+    "recordDescription": "所有已发表的记录，可按发生地点和所描述的工作缩小范围。",
+    "trustHeading": "为什么这里的内容值得一读",
+    "trustDescription": "Kakinotes 是个人经历的记录 — 不是建议，也不是交易平台。",
+    "steps": {
+      "writtenTitle": "由亲历者本人写下",
+      "writtenBody": "每一篇都是第一人称记录，以作者自己选择的真名或笔名投稿。",
+      "checkedTitle": "发布前经过审核",
+      "checkedBody": "每篇故事都会按我们的发布规则审核，图片也会先经过处理和版权核对，之后才会出现在这里。",
+      "recordTitle": "是记录，不是信息流",
+      "recordBody": "故事可以按地点、工作和年份检索 — 没有需要一直往下刷的内容，也不会错过什么。"
+    },
+    "quizHeading": "不知道从哪一篇开始读？",
+    "quizDescription": "回答五个小问题，我们会给你指一个地区，以及去过那里的旅行者写的故事。这只是浏览的起点，不是推荐。",
+    "shareHeading": "你的经历，也许能帮别人迈出第一步",
+    "shareBody": "写下你打工度假最真实的版本 — 顺利的、走过弯路的、实用的经验，还有那些你永远记得的瞬间。",
+    "shareCta": "分享你的故事",
+    "shareSecondary": "查看写作建议",
+    "slideshow": {
+      "playAnimation": "播放首屏动画",
+      "pauseAnimation": "暂停首屏动画",
+      "playMotion": "播放动画",
+      "pauseMotion": "暂停动画"
+    },
+    "index": {
+      "place": "地点",
+      "topic": "主题",
+      "all": "全部",
+      "filterBy": "按{axis}筛选故事",
+      "entries": "{count} 条记录",
+      "showing": "正在显示 {from}–{to}",
+      "clear": "清除",
+      "noMatches": "还没有同时符合这些条件的故事，试试清除一个筛选。",
+      "recordPages": "记录分页",
+      "previousPage": "上一页",
+      "nextPage": "下一页",
+      "prev": "← 上一页",
+      "next": "下一页 →",
+      "pageOf": "第 {page} 页，共 {total} 页",
+      "browseCatalogue": "浏览完整目录"
+    },
+    "featured": {
+      "region": "精选打工度假故事",
+      "previous": "上一批故事",
+      "next": "下一批故事",
+      "goTo": "跳到第 {index} 篇，共 {total} 篇",
+      "readStory": "阅读故事"
+    },
+    "quiz": {
+      "yourMatch": "你的匹配结果",
+      "progress": "{step} / {total}",
+      "back": "← 返回",
+      "resultKicker": "适合你的打工度假地",
+      "bestSeason": "最佳季节",
+      "work": "常见工作",
+      "practicalNote": "实用提醒",
+      "exploreStories": "去看故事",
+      "tryAgain": "重新做一次",
+      "questions": {
+        "home": "哪种地方让你最自在？",
+        "job": "你会想试试哪种工作？",
+        "matters": "对你来说最重要的是什么？",
+        "pace": "选择你理想的节奏。",
+        "season": "你更喜欢哪个季节？"
+      },
+      "answers": {
+        "coastalTown": "悠闲的海边小镇",
+        "mountains": "群山与高山风景",
+        "countryside": "开阔的乡野",
+        "hospitality": "餐饮或咖啡店工作",
+        "fruitPicking": "采摘水果",
+        "farmWork": "农场工作",
+        "skiField": "雪场工作",
+        "vineyard": "葡萄园工作",
+        "savingMoney": "攒钱",
+        "meetingPeople": "认识新朋友",
+        "timeOutdoors": "待在户外",
+        "usefulExperience": "有用的经验",
+        "workTravelBalance": "工作与旅行的平衡",
+        "busySocial": "热闹、社交多",
+        "relaxedScenic": "轻松、风景好",
+        "activePhysical": "活跃、偏体力",
+        "independentFlexible": "独立、灵活",
+        "summer": "夏天",
+        "autumn": "秋天",
+        "winter": "冬天",
+        "spring": "春天",
+        "flexible": "都可以",
+        "livelyCity": "热闹的城市",
+        "seasonalCommunity": "季节性工作的小社区"
+      },
+      "seasons": {
+        "yearRound": "全年",
+        "spring": "春季",
+        "autumn": "秋季",
+        "winter": "冬季"
+      },
+      "info": {
+        "aucklandWork": "餐饮 · 零售",
+        "aucklandNote": "先比较一下房租和通勤成本。",
+        "wellingtonWork": "咖啡店 · 活动",
+        "wellingtonNote": "风大，租房竞争也比较激烈。",
+        "canterburyWork": "农场工作 · 仓储",
+        "canterburyNote": "有交通工具会方便很多。",
+        "bayOfPlentyWork": "采摘水果 · 包装厂",
+        "bayOfPlentyNote": "工时可能受天气影响。",
+        "queenstownWork": "雪场 · 餐饮",
+        "queenstownNote": "住宿要早点安排。",
+        "centralOtagoWork": "葡萄园 · 果园",
+        "centralOtagoNote": "提前安排好下一段季节性工作。"
+      }
+    }
+  },
+  "about": {
+    "metaTitle": "关于",
+    "title": "关于 Kakinotes",
+    "p1": "Kakinotes 收录在新西兰打工度假的旅行者写下的详细第一人称故事，让之后要出发的人能读到与自己计划相关的经历。",
+    "p2": "Kakinotes 是一个独立平台，不是新西兰移民局，也不提供移民、法律、就业、税务或财务建议 — 每一篇故事都是一个人的个人经历。",
+    "p3": "关于这个项目、最早的投稿人，以及故事如何审核，更完整的介绍即将推出。"
+  },
+  "legal": {
+    "privacyTitle": "隐私",
+    "privacyBody": "完整的隐私政策正在拟定中。Kakinotes 不会收集护照扫描件、签证或移民文件、银行凭证、精确实时位置或医疗记录。",
+    "termsTitle": "条款",
+    "termsBody": "完整的使用条款正在拟定中，本页为占位内容。",
+    "guidelinesTitle": "社区准则",
+    "guidelinesBody": "完整的社区准则正在拟定中。简单来说：故事必须是真实的个人经历，并在投稿人许可、图片版权明确的前提下发布。",
+    "copyrightTitle": "版权与移除",
+    "copyrightBody": "如果你认为某篇已发表的故事或图片侵犯了你的权利，或者你是投稿人、希望更正、撤下或删除某篇故事，相关的举报与移除流程即将推出。本页为占位内容。"
+  },
+  "errors": {
+    "somethingWentWrong": "出了点问题",
+    "tryAgainWithReference": "请再试一次。如果一直这样，请联系我们并提供这个编号：{reference}。",
+    "noReference": "无",
+    "tryAgain": "重试",
+    "notFoundTitle": "找不到页面",
+    "notFoundBody": "我们找不到你要访问的页面。",
+    "goHome": "回到首页"
   }
 }

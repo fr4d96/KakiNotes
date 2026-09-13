@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
   listPublishedStories,
   listDistinctPublicTravelStyles,
@@ -10,6 +11,7 @@ import {
 import { parseStorySearchParams } from "@/lib/validation/discovery";
 import { FilterBar } from "@/components/story/filter-bar";
 import { StoryCard } from "@/components/story/story-card";
+import { hasVocabOverlay, localizeVocabName } from "@/lib/i18n/vocab";
 
 // No `export const revalidate` here on purpose. This route awaits
 // `searchParams` (the filter state), which forces dynamic rendering in the App
@@ -22,11 +24,10 @@ import { StoryCard } from "@/components/story/story-card";
 // would mean moving the filtering client-side, which is a separate, larger
 // piece of work.
 
-export const metadata: Metadata = {
-  title: "Stories",
-  description:
-    "Browse real, first-person Working Holiday Visa stories from New Zealand, filterable by region, tag, trip year, travel style, and reported cost.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("stories");
+  return { title: t("metaTitle"), description: t("metaDescription") };
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -37,6 +38,11 @@ export default async function StoriesPage({
 }) {
   const rawParams = await searchParams;
   const filters = parseStorySearchParams(rawParams);
+  const [t, tVocab, locale] = await Promise.all([
+    getTranslations("stories"),
+    getTranslations("vocab"),
+    getLocale(),
+  ]);
 
   const [regions, destinations, tags, travelStyles] = await Promise.all([
     listPublicRegions(),
@@ -82,25 +88,35 @@ export default async function StoriesPage({
   }
   const hasNextPage = stories.length === 20;
 
+  // English is the database's own language, so the overlay is skipped
+  // entirely rather than doing 16 + 34 no-op lookups per request.
+  const localizeName = (
+    kind: "regions" | "destinations",
+    row: { slug: string; name: string },
+  ) =>
+    hasVocabOverlay(locale) ? localizeVocabName(kind, row, tVocab) : row.name;
+
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 sm:py-16">
       <div className="max-w-2xl">
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Stories
+          {t("title")}
         </h1>
-        <p className="mt-3 text-foreground/70">
-          Real Working Holiday accounts from people who&apos;ve done it — filter
-          by region, tag, trip year, travel style, or reported cost to find one
-          like yours.
-        </p>
+        <p className="mt-3 text-foreground/70">{t("intro")}</p>
       </div>
 
       <div className="mt-8">
+        {/* Only the LABEL is localized -- the option's value stays the row's
+            uuid, so the submitted filter is identical in both languages and
+            a shared /stories?region=… link works for everyone. */}
         <FilterBar
-          regions={regions.map((r) => ({ id: r.id, name: r.name }))}
+          regions={regions.map((r) => ({
+            id: r.id,
+            name: localizeName("regions", r),
+          }))}
           destinations={destinations.map((d) => ({
             id: d.id,
-            name: d.name,
+            name: localizeName("destinations", d),
             regionId: d.regionId,
           }))}
           tags={tags}
@@ -112,12 +128,11 @@ export default async function StoriesPage({
       <div className="mt-8" aria-live="polite">
         {loadError ? (
           <p className="rounded-md border border-border-subtle bg-surface-muted p-6 text-sm text-foreground/70">
-            We couldn&apos;t load stories right now. Please try again in a
-            moment.
+            {t("loadError")}
           </p>
         ) : stories.length === 0 ? (
           <p className="rounded-md border border-border-subtle bg-surface-muted p-6 text-sm text-foreground/70">
-            No stories match those filters yet. Try broadening your search.
+            {t("noMatches")}
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -134,7 +149,7 @@ export default async function StoriesPage({
             href={`/stories?${nextPageParams.toString()}`}
             className="rounded-md border border-border-subtle px-4 py-2 text-sm font-medium hover:bg-surface-muted"
           >
-            Load more stories
+            {t("loadMore")}
           </Link>
         </div>
       ) : null}

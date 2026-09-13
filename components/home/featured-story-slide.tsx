@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { getPublicImageUrl } from "@/lib/story/public-image-url";
 import { firstRegionLabel, stringList } from "@/lib/story/card-fields";
 import { AttributionChip } from "@/components/story/attribution-chip";
@@ -26,6 +27,8 @@ export function FeaturedStorySlide({
   story: StoryCardData;
   priority?: boolean;
 }) {
+  const t = useTranslations("home.featured");
+  const tCommon = useTranslations("common");
   const coverUrl = getPublicImageUrl(story.cover_image_path);
   const regionLabel = firstRegionLabel(story.regions);
   const badges = stringList(story.tags).slice(0, 3);
@@ -83,7 +86,7 @@ export function FeaturedStorySlide({
         ) : null}
         <div className="pt-2">
           <AttributionChip
-            name={story.attribution_value ?? "Anonymous"}
+            name={story.attribution_value ?? tCommon("anonymous")}
             avatarEmoji={story.contributor_avatar_emoji}
             tripYear={story.trip_year}
             destination={regionLabel}
@@ -93,7 +96,7 @@ export function FeaturedStorySlide({
           href={`/stories/${story.slug}`}
           className="night-button-primary mt-2 w-fit text-sm"
         >
-          Read story <ArrowRightIcon className="h-4 w-4" />
+          {t("readStory")} <ArrowRightIcon className="h-4 w-4" />
         </Link>
       </div>
     </article>

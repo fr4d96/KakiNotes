@@ -7,6 +7,7 @@ import {
   formatCurrencyNzd,
   formatDate,
   formatDateTime,
+  formatCountryName,
   formatNumber,
   formatRelativeTime,
   type RelativeTimeTranslator,
@@ -115,5 +116,28 @@ describe("formatRelativeTime", () => {
   it("returns null for nothing or garbage", () => {
     expect(formatRelativeTime(null, "en", relativeEn, now)).toBeNull();
     expect(formatRelativeTime("nope", "zh-CN", relativeZh, now)).toBeNull();
+  });
+});
+
+describe("formatCountryName", () => {
+  it("keeps lib/countries.ts's own English wording untouched", () => {
+    // "South Korea", not Intl's "South Korea"/"Korea, Republic of" --
+    // English must not start drifting toward the platform's list.
+    expect(formatCountryName("KR", "en", "South Korea")).toBe("South Korea");
+    expect(formatCountryName("MY", "en", "Malaysia")).toBe("Malaysia");
+  });
+
+  it("uses the platform's translated names for Chinese", () => {
+    expect(formatCountryName("MY", "zh-CN", "Malaysia")).toBe("马来西亚");
+    expect(formatCountryName("NZ", "zh-CN", "New Zealand")).toBe("新西兰");
+  });
+
+  it("falls back to the English name, and passes null through", () => {
+    // "QQ", not "ZZ": ZZ is CLDR's reserved code for "unknown region" and
+    // has a real translated name (未知地区), so it would never exercise the
+    // fallback. QQ is genuinely unassigned.
+    expect(formatCountryName("QQ", "zh-CN", "Nowhere")).toBe("Nowhere");
+    expect(formatCountryName(null, "zh-CN", null)).toBeNull();
+    expect(formatCountryName("MY", "zh-CN", null)).toBeNull();
   });
 });

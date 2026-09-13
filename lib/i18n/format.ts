@@ -137,3 +137,41 @@ export function formatRelativeTime(
     year: then.getFullYear() === now.getFullYear() ? undefined : "numeric",
   });
 }
+
+/**
+ * A country's name in the visitor's language: "Malaysia" / "马来西亚".
+ *
+ * English keeps lib/countries.ts's own curated list, byte for byte -- that
+ * list is what the Account page's dropdown is built from, and its wording
+ * ("South Korea", not "Korea, Republic of") is a deliberate product choice.
+ * Other locales go through `Intl.DisplayNames`, which ships ~250 translated
+ * country names with the runtime; adding 250 hand-written entries to
+ * messages/zh-CN.json would be a large, drifting copy of data the platform
+ * already has right.
+ *
+ * Falls back to the English name if the runtime has no translation, and
+ * returns null for a missing or unknown code, exactly like countryName().
+ */
+export function formatCountryName(
+  code: string | null | undefined,
+  locale: Locale,
+  englishName: string | null,
+): string | null {
+  if (!code || !englishName) return englishName;
+  if (locale === "en") return englishName;
+  try {
+    return (
+      new Intl.DisplayNames([intlLocale(locale)], {
+        type: "region",
+        // Without this, an unrecognised code comes back as the locale's
+        // "Unknown Region" string (zh-CN: 未知地区) rather than as a miss,
+        // and the English fallback below would never run.
+        fallback: "none",
+      }).of(code) ?? englishName
+    );
+  } catch {
+    // A runtime without the region data for this locale, or a code that is
+    // not a well-formed region subtag.
+    return englishName;
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { FeaturedStorySlide } from "@/components/home/featured-story-slide";
 import type { StoryCardData } from "@/components/story/story-card";
 import { usePrefersReducedMotion } from "@/lib/hooks/use-prefers-reduced-motion";
@@ -67,6 +68,7 @@ function mod(n: number, m: number) {
  * scroll-snap carousel this replaces) since nothing here scrolls.
  */
 export function FeaturedStoryStack({ stories }: { stories: StoryCardData[] }) {
+  const t = useTranslations("home.featured");
   const count = stories.length;
   const [slide, setSlide] = useState(0);
   const [throwState, setThrowState] = useState<{
@@ -233,7 +235,7 @@ export function FeaturedStoryStack({ stories }: { stories: StoryCardData[] }) {
     <div
       role="region"
       aria-roledescription="carousel"
-      aria-label="Featured Working Holiday stories"
+      aria-label={t("region")}
       className="relative"
     >
       <div
@@ -287,7 +289,7 @@ export function FeaturedStoryStack({ stories }: { stories: StoryCardData[] }) {
       <div className="mt-16 flex flex-wrap items-center justify-center gap-3">
         <button
           type="button"
-          aria-label="Previous stories"
+          aria-label={t("previous")}
           onClick={() => moveStack(-1)}
           className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle text-foreground transition-transform hover:-translate-y-0.5 hover:bg-surface-muted"
         >
@@ -298,7 +300,7 @@ export function FeaturedStoryStack({ stories }: { stories: StoryCardData[] }) {
             <button
               key={story.story_id}
               type="button"
-              aria-label={`Go to story ${index + 1} of ${count}`}
+              aria-label={t("goTo", { index: index + 1, total: count })}
               aria-current={index === slide ? "true" : undefined}
               onClick={() => goTo(index)}
               className={`h-1.5 rounded-full transition-all hover:scale-125 ${
@@ -309,7 +311,7 @@ export function FeaturedStoryStack({ stories }: { stories: StoryCardData[] }) {
         </div>
         <button
           type="button"
-          aria-label="Next stories"
+          aria-label={t("next")}
           onClick={() => moveStack(1)}
           className="flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle text-foreground transition-transform hover:-translate-y-0.5 hover:bg-surface-muted"
         >

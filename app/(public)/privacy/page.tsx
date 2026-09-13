@@ -1,18 +1,17 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { PlaceholderPage } from "@/components/placeholder-page";
 
-export const metadata: Metadata = {
-  title: "Privacy",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("legal");
+  return { title: t("privacyTitle") };
+}
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const t = await getTranslations("legal");
   return (
-    <PlaceholderPage title="Privacy">
-      <p>
-        Our full privacy policy is being finalised. Kakinotes does not collect
-        passport scans, visa or immigration documents, bank credentials, exact
-        live locations, or medical records.
-      </p>
+    <PlaceholderPage title={t("privacyTitle")}>
+      <p>{t("privacyBody")}</p>
     </PlaceholderPage>
   );
 }

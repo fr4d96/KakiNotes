@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
   getPublicContributorCached,
   listContributorPublishedStoriesCached,
@@ -7,6 +8,7 @@ import {
 import { StoryCard } from "@/components/story/story-card";
 import { ContributorAvatar } from "@/components/contributor/contributor-avatar";
 import { countryName } from "@/lib/countries";
+import { formatCountryName } from "@/lib/i18n/format";
 
 // No `export const revalidate` any more (it was 60). The root layout reads
 // the language cookie, which makes this route render per request, so the
@@ -65,7 +67,11 @@ export default async function ContributorDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const contributor = await getPublicContributorCached(slug);
+  const [contributor, t, locale] = await Promise.all([
+    getPublicContributorCached(slug),
+    getTranslations("contributors"),
+    getLocale(),
+  ]);
   if (!contributor) notFound();
 
   const stories = await listContributorPublishedStoriesCached(
@@ -73,7 +79,11 @@ export default async function ContributorDetailPage({
     { limit: 24 },
   );
 
-  const from = countryName(contributor.home_country_code);
+  const from = formatCountryName(
+    contributor.home_country_code,
+    locale,
+    countryName(contributor.home_country_code),
+  );
   const storyCount = contributor.published_story_count;
 
   return (
@@ -89,8 +99,8 @@ export default async function ContributorDetailPage({
             {contributor.display_name}
           </h1>
           <p className="text-sm text-foreground/60">
-            {storyCount} {storyCount === 1 ? "story" : "stories"} published
-            {from ? ` · from ${from}` : ""}
+            {t("storyCountPublished", { count: storyCount })}
+            {from ? ` · ${t("fromCountry", { country: from })}` : ""}
           </p>
         </div>
       </div>
@@ -100,17 +110,20 @@ export default async function ContributorDetailPage({
       ) : null}
 
       <dl className="mt-6 max-w-2xl space-y-2">
-        <FactRow label="Worked in" values={contributor.regions ?? []} />
+        {/* The VALUES here stay as the database returned them: region
+            names arrive from contributor_public_facts() without slugs (see
+            lib/i18n/vocab.ts), and tags are the contributor's own words. */}
+        <FactRow label={t("workedIn")} values={contributor.regions ?? []} />
         <FactRow
-          label="Years"
+          label={t("years")}
           values={(contributor.trip_years ?? []).map(String)}
         />
-        <FactRow label="Wrote about" values={contributor.tags ?? []} />
+        <FactRow label={t("wroteAbout")} values={contributor.tags ?? []} />
       </dl>
 
       <div className="mt-10">
         <h2 className="text-xl font-semibold tracking-tight">
-          Published stories
+          {t("publishedStories")}
         </h2>
         <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {stories.map((story) => (

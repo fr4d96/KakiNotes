@@ -245,15 +245,24 @@ export const getPublicContributorCached = cache(
 // authoring UI's existing cookie-bound queries are untouched, and these
 // public-page reads stay on the cookie-free client above.
 
-export type PublicRegion = { id: string; name: string };
-export type PublicDestination = { id: string; name: string; regionId: string };
+// `slug` is carried alongside `name` so lib/i18n/vocab.ts can show the
+// closed regions/destinations vocabulary in the visitor's language. Tags
+// keep only their name: a tag is the contributor's own word and is never
+// translated.
+export type PublicRegion = { id: string; name: string; slug: string };
+export type PublicDestination = {
+  id: string;
+  name: string;
+  slug: string;
+  regionId: string;
+};
 export type PublicTag = { id: string; name: string };
 
 export async function listPublicRegions(): Promise<PublicRegion[]> {
   const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("regions")
-    .select("id, name")
+    .select("id, name, slug")
     .eq("active", true)
     .order("name");
   if (error) throw error;
@@ -271,13 +280,14 @@ export async function listPublicDestinations(): Promise<PublicDestination[]> {
   const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("destinations")
-    .select("id, name, region_id")
+    .select("id, name, slug, region_id")
     .eq("active", true)
     .order("name");
   if (error) throw error;
   return (data ?? []).map((d) => ({
     id: d.id,
     name: d.name,
+    slug: d.slug,
     regionId: d.region_id,
   }));
 }

@@ -1,4 +1,6 @@
+import { useLocale, useTranslations } from "next-intl";
 import { formatNzdCents } from "@/lib/story/expense-per-month";
+import { isLocale } from "@/i18n/locales";
 
 /**
  * Where the money went, as a donut beside the inputs that produced it.
@@ -46,7 +48,12 @@ type ResolvedSlice = ExpenseSlice & { color: string; share: number };
  * to agree with. (A cross-story aggregate would need colour pinned to the
  * category instead -- see the note in globals.css.)
  */
-export function resolveSlices(rows: ExpenseSlice[]): {
+export function resolveSlices(
+  rows: ExpenseSlice[],
+  /** Label for the folded tail. Passed in because this is a pure function
+   *  outside the component and cannot call a translation hook itself. */
+  smallerCategoriesLabel = "Smaller categories",
+): {
   slices: ResolvedSlice[];
   totalCents: number;
 } {
@@ -62,7 +69,9 @@ export function resolveSlices(rows: ExpenseSlice[]): {
   const combined: ExpenseSlice[] = [...head];
   if (tail.length > 0) {
     combined.push({
-      label: "Smaller categories",
+      // Passed in rather than read here: resolveSlices is a pure function
+      // outside the component, and a hook cannot be called from it.
+      label: smallerCategoriesLabel,
       cents: tail.reduce((sum, row) => sum + row.cents, 0),
     });
   }
@@ -145,14 +154,17 @@ export function ExpenseDonut({
   rows: ExpenseSlice[];
   layout?: ExpenseDonutLayout;
 }) {
+  const t = useTranslations("expenses.donut");
+  const rawLocale = useLocale();
+  const locale = isLocale(rawLocale) ? rawLocale : "en";
   const beside = layout === "beside";
-  const { slices, totalCents } = resolveSlices(rows);
+  const { slices, totalCents } = resolveSlices(rows, t("smallerCategories"));
 
   if (slices.length === 0) {
     return (
       <div className="flex min-h-48 items-center justify-center rounded-md border border-dashed border-border-subtle p-6">
         <p className="text-center text-sm text-muted-foreground">
-          Add a category and an amount to see where your money went.
+          {t("empty")}
         </p>
       </div>
     );
@@ -211,9 +223,11 @@ export function ExpenseDonut({
         {/* The total, in the hole the donut exists to provide. Ink tokens,
             not a series colour -- text never carries series identity. */}
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xs text-muted-foreground">Broken down</span>
+          <span className="text-xs text-muted-foreground">
+            {t("brokenDown")}
+          </span>
           <span className="text-base font-semibold">
-            {formatNzdCents(totalCents)}
+            {formatNzdCents(totalCents, locale)}
           </span>
         </div>
       </div>
@@ -240,7 +254,7 @@ export function ExpenseDonut({
                 {formatShare(slice.share)}
               </span>
               <span className="shrink-0 tabular-nums">
-                {formatNzdCents(slice.cents)}
+                {formatNzdCents(slice.cents, locale)}
               </span>
             </li>
           ))}

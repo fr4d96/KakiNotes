@@ -19,7 +19,6 @@
     "close": "Close",
     "menu": "Menu",
     "or": "or",
-    "kakinotes": "Kakinotes",
     "invalidInput": "Invalid input.",
     "loadingLabels": {
       "workspace": "Loading your workspace",
@@ -32,7 +31,9 @@
     "themeToggle": {
       "switchToLight": "Switch to light mode",
       "switchToDark": "Switch to dark mode"
-    }
+    },
+    "anonymous": "Anonymous",
+    "personalExperienceLabel": "One person's experience — not immigration, legal, employment, tax, or financial advice"
   },
   "nav": {
     "primary": "Primary",
@@ -147,5 +148,306 @@
       "countryCode": "Use a 2-letter country code, e.g. MY.",
       "avatarEmoji": "Choose one of the provided avatars."
     }
+  },
+  "vocab": {
+    "regions": {
+      "northland": "Northland",
+      "auckland": "Auckland",
+      "waikato": "Waikato",
+      "bay-of-plenty": "Bay of Plenty",
+      "gisborne": "Gisborne",
+      "hawkes-bay": "Hawke's Bay",
+      "taranaki": "Taranaki",
+      "manawatu-whanganui": "Manawatū-Whanganui",
+      "wellington": "Wellington",
+      "tasman": "Tasman",
+      "nelson": "Nelson",
+      "marlborough": "Marlborough",
+      "west-coast": "West Coast",
+      "canterbury": "Canterbury",
+      "otago": "Otago",
+      "southland": "Southland"
+    },
+    "expenseCategories": {
+      "flights": "Flights",
+      "visa-fee": "Visa fee",
+      "insurance": "Insurance",
+      "first-month-rent": "First month rent",
+      "bond": "Bond",
+      "vehicle": "Vehicle",
+      "gear": "Gear",
+      "food": "Food",
+      "transport": "Transport",
+      "activities": "Activities",
+      "other": "Other"
+    }
+  },
+  "stories": {
+    "metaTitle": "Stories",
+    "metaDescription": "Browse real, first-person Working Holiday Visa stories from New Zealand, filterable by region, tag, trip year, travel style, and reported cost.",
+    "title": "Stories",
+    "intro": "Real Working Holiday accounts from people who've done it — filter by region, tag, trip year, travel style, or reported cost to find one like yours.",
+    "loadError": "We couldn't load stories right now. Please try again in a moment.",
+    "noMatches": "No stories match those filters yet. Try broadening your search.",
+    "loadMore": "Load more stories",
+    "filters": {
+      "search": "Search",
+      "searchPlaceholder": "Find a story like yours",
+      "showFilters": "Filters",
+      "hideFilters": "Hide filters",
+      "apply": "Apply filters",
+      "clear": "Clear",
+      "region": "Region",
+      "anyRegion": "Any region",
+      "destination": "Destination",
+      "anyDestination": "Any destination",
+      "tag": "Tag",
+      "anyTag": "Any tag",
+      "tripYear": "Trip year",
+      "anyYear": "Any year",
+      "travelStyle": "Travel style",
+      "anyStyle": "Any style",
+      "reportedCost": "Reported cost",
+      "anyCost": "Any cost",
+      "costAvailability": "Cost availability",
+      "anyStory": "Any story",
+      "hasReportedCost": "Has a reported cost",
+      "noReportedCost": "No reported cost",
+      "costBands": {
+        "under_5k": "Under NZ$5k",
+        "5k_15k": "NZ$5k – 15k",
+        "15k_30k": "NZ$15k – 30k",
+        "30k_plus": "NZ$30k+"
+      }
+    }
+  },
+  "story": {
+    "trip": "Trip: {range}",
+    "contentUnavailable": "This story's content couldn't be rendered.",
+    "relatedStories": "Related stories",
+    "expenses": {
+      "heading": "What this trip cost",
+      "reportedForWholeTrip": "reported for the whole trip",
+      "perMonth": "About <amount>{amountValue}</amount> a month across {months} months.",
+      "disclaimer": "These are the figures one traveller recorded for their own trip. They are a personal account, not a budget or an estimate — costs vary a lot by region, season, and how you travel."
+    },
+    "report": {
+      "open": "Report this story",
+      "submitted": "Thanks — your report has been submitted for review.",
+      "needsSignInBefore": "Please",
+      "needsSignInLink": "sign in",
+      "needsSignInAfter": "to report a story.",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "Choose a reason",
+      "detailsLabel": "Details (optional)",
+      "submit": "Submit report",
+      "submitting": "Submitting…",
+      "cancel": "Cancel",
+      "failed": "Something went wrong. Please try again.",
+      "categories": {
+        "misinformation": "Misinformation",
+        "unsafe_employment_advice": "Unsafe employment advice",
+        "harassment": "Harassment",
+        "copyright_privacy": "Copyright or privacy",
+        "spam_commercial": "Spam or commercial content",
+        "other": "Other"
+      }
+    }
+  },
+  "expenses": {
+    "donut": {
+      "smallerCategories": "Smaller categories",
+      "brokenDown": "Broken down",
+      "empty": "Add a category and an amount to see where your money went."
+    }
+  },
+  "contributors": {
+    "metaTitle": "Contributors",
+    "metaDescription": "Contributors who've published a real Working Holiday Visa story on Kakinotes.",
+    "title": "Contributors",
+    "intro": "People who've shared their own Working Holiday experience — showing only the fields each contributor has chosen to make public.",
+    "loadError": "We couldn't load contributors right now. Please try again in a moment.",
+    "empty": "No public contributor profiles yet.",
+    "loadMore": "Load more contributors",
+    "storyCount": "{count, plural, one {# story} other {# stories}}",
+    "fromCountry": "from {country}",
+    "storyCountPublished": "{count, plural, one {# story} other {# stories}} published",
+    "workedIn": "Worked in",
+    "years": "Years",
+    "wroteAbout": "Wrote about",
+    "publishedStories": "Published stories"
+  },
+  "costs": {
+    "metaTitle": "What a working holiday cost",
+    "metaDescription": "What real contributors recorded spending on their New Zealand working holiday — reported figures from published stories, not an estimate or a budget.",
+    "title": "What a working holiday cost",
+    "framing": "These are the figures contributors recorded about trips they actually took. They are a record of what happened to those people, not an estimate, a budget, or a prediction for your own trip. What a working holiday costs varies enormously by region, season, and how you travel.",
+    "overallHeading": "Reported total for a whole trip",
+    "overallUnit": "is the middle figure",
+    "perMonthHeading": "Reported cost per month",
+    "perMonthNote": "From stories that recorded both trip dates, for trips of at least a month — a total on its own cannot tell a three-month trip from a year.",
+    "perMonthUnit": "a month",
+    "byRegionHeading": "By region",
+    "byCategoryHeading": "Where the money went",
+    "halfReportedBetween": "Half of these {count, plural, one {# story} other {# stories}} reported between <low>{low}</low> and <high>{high}</high>.",
+    "storyCount": "{count, plural, one {# story} other {# stories}}",
+    "notEnough": "Not enough published stories yet to report {what} honestly. Figures appear once at least five stories cover the same thing.",
+    "notEnoughWhat": {
+      "total": "a typical total",
+      "perMonth": "a monthly figure",
+      "regions": "regional differences",
+      "categories": "a breakdown by category"
+    },
+    "footerBefore": "Every figure here comes from a story you can read in full.",
+    "footerLink": "Browse the stories",
+    "footerAfter": "to see the trips behind the numbers — the context is usually the part that matters."
+  },
+  "home": {
+    "metaTitle": "Real stories from across Aotearoa",
+    "heroLead": "Real stories from across",
+    "heroAccent": "Aotearoa",
+    "heroSub": "First-person accounts of the jobs, places, and moments from travellers who have lived the working-holiday experience.",
+    "heroCta": "Read the stories",
+    "heroSecondary": "or see how this works",
+    "featuredHeading": "Featured",
+    "featuredDescription": "Drag a card aside, or step through with the arrows.",
+    "recordHeading": "The record",
+    "recordDescription": "Every published account, narrowed by where it happened and the work it describes.",
+    "trustHeading": "Why you can trust what you read here",
+    "trustDescription": "Kakinotes is a record of personal experience — not advice, and not a marketplace.",
+    "steps": {
+      "writtenTitle": "Written by the person who lived it",
+      "writtenBody": "Every account is first-person, submitted under a name or pseudonym the writer chose themselves.",
+      "checkedTitle": "Checked before it is published",
+      "checkedBody": "Each story is reviewed against our publication rules, and its images are processed and rights-checked, before it appears here.",
+      "recordTitle": "Kept as a record, not a feed",
+      "recordBody": "Stories stay searchable by place, work, and year — there is nothing to scroll past and nothing to miss."
+    },
+    "quizHeading": "Not sure where to start reading?",
+    "quizDescription": "Answer five quick questions and we will point you at a region and the stories from travellers who went there. It is a starting point for browsing, not a recommendation.",
+    "shareHeading": "Your experience could help someone take their first step",
+    "shareBody": "Share the honest version of your working holiday — the wins, mistakes, practical lessons, and moments you will always remember.",
+    "shareCta": "Share your story",
+    "shareSecondary": "See writing tips",
+    "slideshow": {
+      "playAnimation": "Play hero animation",
+      "pauseAnimation": "Pause hero animation",
+      "playMotion": "Play motion",
+      "pauseMotion": "Pause motion"
+    },
+    "index": {
+      "place": "Place",
+      "topic": "Topic",
+      "all": "All",
+      "filterBy": "Filter stories by {axis}",
+      "entries": "{count, plural, one {# ENTRY} other {# ENTRIES}}",
+      "showing": "SHOWING {from}–{to}",
+      "clear": "CLEAR",
+      "noMatches": "No stories carry all of those yet. Try clearing a filter.",
+      "recordPages": "Record pages",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "prev": "← Prev",
+      "next": "Next →",
+      "pageOf": "Page {page} of {total}",
+      "browseCatalogue": "Browse the full catalogue"
+    },
+    "featured": {
+      "region": "Featured Working Holiday stories",
+      "previous": "Previous stories",
+      "next": "Next stories",
+      "goTo": "Go to story {index} of {total}",
+      "readStory": "Read story"
+    },
+    "quiz": {
+      "yourMatch": "Your match",
+      "progress": "{step} / {total}",
+      "back": "← Back",
+      "resultKicker": "Your working holiday match",
+      "bestSeason": "Best season",
+      "work": "Work",
+      "practicalNote": "Practical note",
+      "exploreStories": "Explore stories",
+      "tryAgain": "Try again",
+      "questions": {
+        "home": "Where would you feel most at home?",
+        "job": "What kind of job would you try?",
+        "matters": "What matters most?",
+        "pace": "Choose your ideal pace.",
+        "season": "Which season sounds best?"
+      },
+      "answers": {
+        "coastalTown": "A relaxed coastal town",
+        "mountains": "Mountains and alpine scenery",
+        "countryside": "Open countryside",
+        "hospitality": "Hospitality or café work",
+        "fruitPicking": "Fruit picking",
+        "farmWork": "Farm work",
+        "skiField": "Ski-field work",
+        "vineyard": "Vineyard work",
+        "savingMoney": "Saving money",
+        "meetingPeople": "Meeting people",
+        "timeOutdoors": "Time outdoors",
+        "usefulExperience": "Useful experience",
+        "workTravelBalance": "Work and travel balance",
+        "busySocial": "Busy and social",
+        "relaxedScenic": "Relaxed and scenic",
+        "activePhysical": "Active and physical",
+        "independentFlexible": "Independent and flexible",
+        "summer": "Summer",
+        "autumn": "Autumn",
+        "winter": "Winter",
+        "spring": "Spring",
+        "flexible": "Flexible",
+        "livelyCity": "A lively city",
+        "seasonalCommunity": "A seasonal-work community"
+      },
+      "seasons": {
+        "yearRound": "Year-round",
+        "spring": "Spring",
+        "autumn": "Autumn",
+        "winter": "Winter"
+      },
+      "info": {
+        "aucklandWork": "Hospitality · Retail",
+        "aucklandNote": "Compare rent and commuting costs.",
+        "wellingtonWork": "Cafés · Events",
+        "wellingtonNote": "Expect wind and a competitive rental market.",
+        "canterburyWork": "Farm work · Warehousing",
+        "canterburyNote": "Transport helps for rural roles.",
+        "bayOfPlentyWork": "Fruit picking · Packhouse",
+        "bayOfPlentyNote": "Hours can depend on weather.",
+        "queenstownWork": "Ski fields · Hospitality",
+        "queenstownNote": "Plan accommodation early.",
+        "centralOtagoWork": "Vineyards · Orchards",
+        "centralOtagoNote": "Line up your next seasonal move."
+      }
+    }
+  },
+  "about": {
+    "metaTitle": "About",
+    "title": "About Kakinotes",
+    "p1": "Kakinotes shares detailed, written first-person stories from Working Holiday Visa travellers in New Zealand, so future travellers can find accounts relevant to their own plans.",
+    "p2": "Kakinotes is an independent platform. It is not Immigration New Zealand and does not provide immigration, legal, employment, tax, or financial advice — every story is one person's personal experience.",
+    "p3": "A fuller description of the project, its founding contributors, and how stories are reviewed is coming soon."
+  },
+  "legal": {
+    "privacyTitle": "Privacy",
+    "privacyBody": "Our full privacy policy is being finalised. Kakinotes does not collect passport scans, visa or immigration documents, bank credentials, exact live locations, or medical records.",
+    "termsTitle": "Terms",
+    "termsBody": "Our full terms of use are being finalised. This page is a placeholder.",
+    "guidelinesTitle": "Community Guidelines",
+    "guidelinesBody": "Our full community guidelines are being finalised. In brief: stories must be genuine personal experiences, published with the contributor's permission and rights-cleared images.",
+    "copyrightTitle": "Copyright & Removal",
+    "copyrightBody": "If you believe a published story or image infringes your rights, or you are a contributor who wants a story corrected, withdrawn, or deleted, a reporting and removal process is coming soon. This page is a placeholder."
+  },
+  "errors": {
+    "somethingWentWrong": "Something went wrong",
+    "tryAgainWithReference": "Please try again. If this keeps happening, contact us and mention this reference: {reference}.",
+    "noReference": "n/a",
+    "tryAgain": "Try again",
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "We couldn't find the page you were looking for.",
+    "goHome": "Go home"
   }
 }

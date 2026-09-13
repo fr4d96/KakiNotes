@@ -1,31 +1,23 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { BrandLogo } from "@/components/brand-logo";
 import { PlaceholderPage } from "@/components/placeholder-page";
 
-export const metadata: Metadata = {
-  title: "About",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("about");
+  return { title: t("metaTitle") };
+}
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const t = await getTranslations("about");
   return (
     <PlaceholderPage
-      title="About Kakinotes"
+      title={t("title")}
       icon={<BrandLogo className="h-14 w-14 border border-border-subtle" />}
     >
-      <p>
-        Kakinotes shares detailed, written first-person stories from Working
-        Holiday Visa travellers in New Zealand, so future travellers can find
-        accounts relevant to their own plans.
-      </p>
-      <p>
-        Kakinotes is an independent platform. It is not Immigration New Zealand
-        and does not provide immigration, legal, employment, tax, or financial
-        advice — every story is one person&apos;s personal experience.
-      </p>
-      <p>
-        A fuller description of the project, its founding contributors, and how
-        stories are reviewed is coming soon.
-      </p>
+      <p>{t("p1")}</p>
+      <p>{t("p2")}</p>
+      <p>{t("p3")}</p>
     </PlaceholderPage>
   );
 }
