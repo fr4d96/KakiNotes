@@ -33,7 +33,8 @@
       "switchToDark": "Switch to dark mode"
     },
     "anonymous": "Anonymous",
-    "personalExperienceLabel": "One person's experience — not immigration, legal, employment, tax, or financial advice"
+    "personalExperienceLabel": "One person's experience — not immigration, legal, employment, tax, or financial advice",
+    "mustBeSignedIn": "You must be signed in."
   },
   "nav": {
     "primary": "Primary",
@@ -449,5 +450,163 @@
     "notFoundTitle": "Page not found",
     "notFoundBody": "We couldn't find the page you were looking for.",
     "goHome": "Go home"
+  },
+  "account": {
+    "metaTitle": "Account",
+    "title": "Account",
+    "tablistLabel": "Account settings",
+    "setupPromptTitle": "Set your contributor identity to start",
+    "setupPromptBodyBefore": "It's how your stories are attributed, and you need one before you can publish.",
+    "setupPromptLink": "Open the Contributor identity tab",
+    "tabs": {
+      "profile": "Profile",
+      "profileDescription": "Your account settings. None of this is shown to readers.",
+      "signIn": "Sign-in",
+      "signInDescription": "Optional. Set a username and you can sign in with either it or your email — your email keeps working either way.",
+      "contributorIdentity": "Contributor identity",
+      "contributorIdentityDescription": "How you're attributed on every story, and what readers see on your contributor page. You choose this — it's never inferred from your account."
+    },
+    "profile": {
+      "nameLabel": "Account name",
+      "nameHintBefore": "Just for your account. Readers never see this — the name on your stories is set on the",
+      "nameHintLink": "Contributor identity tab",
+      "submit": "Update profile",
+      "saving": "Saving…",
+      "saved": "Profile updated."
+    },
+    "username": {
+      "label": "Username",
+      "placeholder": "your-username",
+      "hint": "3-30 lowercase letters, numbers, underscores, or hyphens. This is never shown to anyone else — it only gives you a second way to sign in besides your email.",
+      "set": "Set username",
+      "change": "Change username",
+      "saving": "Saving…",
+      "saved": "Username saved. You can now sign in with it."
+    },
+    "contributor": {
+      "intro": "This is your public face. Everything here can appear on your stories and on your contributor page, once you have a published story.",
+      "avatarHint": "Pick an avatar, or leave unset to show the first letter of your name.",
+      "nameLabel": "How your name appears on stories",
+      "attributionLegend": "Attribution type",
+      "attribution": {
+        "real_name": "My real name",
+        "display_name": "A display name",
+        "pseudonym": "A pseudonym",
+        "anonymous": "Anonymous"
+      },
+      "bioLabel": "About you",
+      "bioHint": "A short introduction shown on your contributor page. Optional.",
+      "countryLabel": "Where you are from",
+      "countryHint": "Shown on your contributor page so readers can find someone who started where they did. Leave it unset to keep it off your page.",
+      "countryUnset": "Prefer not to say",
+      "listMe": "List me in the Contributors directory",
+      "slugLabel": "Contributor page web address",
+      "slugHintBefore": "Your page will be at this address on",
+      "slugHintAfter": ". You also need at least one published story, and “Anonymous” attribution can't be listed.",
+      "slugPlaceholder": "your-name",
+      "slugHint2": "Required to list you in the directory. Lowercase letters, numbers, and hyphens only.",
+      "create": "Set up contributor identity",
+      "update": "Update contributor identity",
+      "saving": "Saving…",
+      "created": "Contributor identity created.",
+      "updated": "Contributor identity updated."
+    },
+    "avatar": {
+      "label": "Avatar",
+      "use": "Use {emoji} as your avatar",
+      "tapToRemove": "Tap your chosen avatar again to remove it.",
+      "defaultHint": "Pick an avatar, or leave unset for the default."
+    },
+    "errors": {
+      "slugRequiredForPublic": "Choose a public contributor URL before making your profile public.",
+      "anonymousCannotBePublic": "An anonymous attribution can't have a public profile.",
+      "profileUpdateFailed": "Could not update your profile. Please try again.",
+      "usernameTaken": "That username is already taken.",
+      "usernameSaveFailed": "Could not save your username. Please try again.",
+      "slugTaken": "That contributor URL is already taken.",
+      "alreadyHaveIdentity": "You already have a contributor identity.",
+      "identityCreateFailed": "Could not set up your contributor identity. Please try again.",
+      "identityUpdateFailed": "Could not update your contributor identity. Please try again."
+    }
+  },
+  "myStories": {
+    "metaTitle": "My Stories",
+    "title": "My Stories",
+    "untitled": "Untitled story",
+    "import": "Import",
+    "newStory": "New Story",
+    "emptyBefore": "You haven't started a story yet.",
+    "emptyStartLink": "Start your first one",
+    "emptyOr": "or",
+    "emptyImportLink": "import a PDF",
+    "viewLabel": "View",
+    "gridView": "Grid view",
+    "listView": "List view",
+    "storyCount": "{count, plural, one {# STORY} other {# STORIES}}",
+    "clear": "CLEAR",
+    "noMatchesBefore": "No stories match those filters.",
+    "clearFilters": "Clear filters",
+    "filters": {
+      "region": "Region",
+      "destination": "Destination",
+      "tag": "Tags",
+      "all": "All",
+      "filterBy": "Filter stories by {axis}"
+    },
+    "sections": {
+      "drafts": "Drafts",
+      "draftsHint": "Yours to finish",
+      "review": "In review",
+      "reviewHint": "Waiting on a moderator",
+      "published": "Published",
+      "publishedHint": "Readers can see these",
+      "private": "Private",
+      "privateHint": "Only you can see these",
+      "closed": "Not published",
+      "closedHint": "Archived or not approved"
+    },
+    "updateInReview": "Update in review",
+    "updateInProgress": "Update in progress",
+    "actions": {
+      "edit": "Edit {title}",
+      "review": "Review {title}",
+      "preview": "Preview {title}",
+      "delete": "Delete {title}",
+      "takeDown": "Take down {title}",
+      "cancelTakedown": "Cancel the takedown request for {title}",
+      "takedownPending": "Takedown requested for {title} — awaiting review. Choose to cancel the request."
+    },
+    "deleteDialog": {
+      "title": "Delete this story?",
+      "description": "\"{title}\" will be permanently deleted. This can't be undone.",
+      "confirm": "Delete story",
+      "toast": "\"{title}\" deleted."
+    },
+    "takedownDialog": {
+      "title": "Ask for this story to be taken down?",
+      "description": "The Kakinotes team reviews the request, and \"{title}\" stays public until they do. Nothing is deleted either way — your writing and photos stay in your account. If you only want to change something, use Edit instead: your story stays up while the change is reviewed.",
+      "confirm": "Ask for takedown",
+      "toast": "Asked for \"{title}\" to be taken down. It stays public until the team reviews it."
+    },
+    "cancelTakedownDialog": {
+      "title": "Keep this story up?",
+      "description": "You asked for \"{title}\" to be taken down and nobody has reviewed it yet. Cancelling leaves the story published, exactly as it is now. You can ask again at any time.",
+      "confirm": "Cancel the request",
+      "toast": "\"{title}\" stays up — request withdrawn."
+    },
+    "toasts": {
+      "submitted": "Submitted for review.",
+      "keptPrivate": "Saved privately. Only you can see it."
+    }
+  },
+  "storyStatus": {
+    "draft": "Draft",
+    "private": "Private",
+    "awaiting_contributor_approval": "Awaiting your approval",
+    "pending_review": "In review",
+    "changes_requested": "Changes requested",
+    "published": "Published",
+    "rejected": "Not approved",
+    "archived": "Archived"
   }
 }

@@ -33,7 +33,8 @@
       "switchToDark": "切换到深色模式"
     },
     "anonymous": "匿名",
-    "personalExperienceLabel": "个人经历，并非建议 — 不构成移民、法律、就业、税务或财务建议"
+    "personalExperienceLabel": "个人经历，并非建议 — 不构成移民、法律、就业、税务或财务建议",
+    "mustBeSignedIn": "你需要先登录。"
   },
   "nav": {
     "primary": "主导航",
@@ -449,5 +450,163 @@
     "notFoundTitle": "找不到页面",
     "notFoundBody": "我们找不到你要访问的页面。",
     "goHome": "回到首页"
+  },
+  "account": {
+    "metaTitle": "账户",
+    "title": "账户",
+    "tablistLabel": "账户设置",
+    "setupPromptTitle": "先设置你的投稿人身份",
+    "setupPromptBodyBefore": "它决定你的故事如何署名，发布前必须先设置。",
+    "setupPromptLink": "打开「投稿人身份」标签",
+    "tabs": {
+      "profile": "个人资料",
+      "profileDescription": "你的账户设置，这些内容不会展示给读者。",
+      "signIn": "登录方式",
+      "signInDescription": "可选。设置用户名后，你可以用用户名或邮箱登录 — 邮箱始终可用。",
+      "contributorIdentity": "投稿人身份",
+      "contributorIdentityDescription": "你在每篇故事上的署名方式，以及读者在你的投稿人主页看到的内容。这由你自己选择 — 我们不会从账户信息推断。"
+    },
+    "profile": {
+      "nameLabel": "账户名称",
+      "nameHintBefore": "仅用于你的账户。读者看不到它 — 故事上的署名在",
+      "nameHintLink": "「投稿人身份」标签",
+      "submit": "更新个人资料",
+      "saving": "正在保存…",
+      "saved": "个人资料已更新。"
+    },
+    "username": {
+      "label": "用户名",
+      "placeholder": "your-username",
+      "hint": "3-30 个小写字母、数字、下划线或连字符。它不会展示给其他人 — 只是让你除了邮箱之外多一种登录方式。",
+      "set": "设置用户名",
+      "change": "修改用户名",
+      "saving": "正在保存…",
+      "saved": "用户名已保存，现在可以用它登录了。"
+    },
+    "contributor": {
+      "intro": "这是你面向读者的一面。这里的内容会出现在你的故事上，以及你发表第一篇故事后的投稿人主页上。",
+      "avatarHint": "选一个头像，或者不选，显示你名字的首字母。",
+      "nameLabel": "你的名字在故事上如何显示",
+      "attributionLegend": "署名方式",
+      "attribution": {
+        "real_name": "我的真实姓名",
+        "display_name": "一个显示名称",
+        "pseudonym": "一个笔名",
+        "anonymous": "匿名"
+      },
+      "bioLabel": "关于你",
+      "bioHint": "显示在你投稿人主页上的简短介绍，可选。",
+      "countryLabel": "你来自哪里",
+      "countryHint": "显示在你的投稿人主页上，让读者能找到和自己起点相同的人。不设置就不会出现在页面上。",
+      "countryUnset": "不想透露",
+      "listMe": "把我列入投稿人目录",
+      "slugLabel": "投稿人主页网址",
+      "slugHintBefore": "你的主页会位于",
+      "slugHintAfter": "下的这个地址。你还需要至少一篇已发表的故事，另外「匿名」署名无法被列入目录。",
+      "slugPlaceholder": "your-name",
+      "slugHint2": "列入目录时必填。只能使用小写字母、数字和连字符。",
+      "create": "设置投稿人身份",
+      "update": "更新投稿人身份",
+      "saving": "正在保存…",
+      "created": "投稿人身份已创建。",
+      "updated": "投稿人身份已更新。"
+    },
+    "avatar": {
+      "label": "头像",
+      "use": "使用 {emoji} 作为头像",
+      "tapToRemove": "再次点击已选头像即可取消。",
+      "defaultHint": "选一个头像，或者不选，使用默认样式。"
+    },
+    "errors": {
+      "slugRequiredForPublic": "把主页设为公开之前，请先选择一个投稿人网址。",
+      "anonymousCannotBePublic": "匿名署名无法拥有公开主页。",
+      "profileUpdateFailed": "无法更新你的个人资料，请再试一次。",
+      "usernameTaken": "该用户名已被使用。",
+      "usernameSaveFailed": "无法保存你的用户名，请再试一次。",
+      "slugTaken": "该投稿人网址已被使用。",
+      "alreadyHaveIdentity": "你已经有投稿人身份了。",
+      "identityCreateFailed": "无法设置你的投稿人身份，请再试一次。",
+      "identityUpdateFailed": "无法更新你的投稿人身份，请再试一次。"
+    }
+  },
+  "myStories": {
+    "metaTitle": "我的故事",
+    "title": "我的故事",
+    "untitled": "未命名故事",
+    "import": "导入",
+    "newStory": "新故事",
+    "emptyBefore": "你还没有开始写故事。",
+    "emptyStartLink": "开始写第一篇",
+    "emptyOr": "或",
+    "emptyImportLink": "导入 PDF",
+    "viewLabel": "视图",
+    "gridView": "网格视图",
+    "listView": "列表视图",
+    "storyCount": "{count} 篇故事",
+    "clear": "清除",
+    "noMatchesBefore": "没有符合这些筛选条件的故事。",
+    "clearFilters": "清除筛选",
+    "filters": {
+      "region": "地区",
+      "destination": "目的地",
+      "tag": "标签",
+      "all": "全部",
+      "filterBy": "按{axis}筛选故事"
+    },
+    "sections": {
+      "drafts": "草稿",
+      "draftsHint": "等你继续写",
+      "review": "审核中",
+      "reviewHint": "等待审核人处理",
+      "published": "已发布",
+      "publishedHint": "读者可以看到",
+      "private": "私密",
+      "privateHint": "只有你能看到",
+      "closed": "未发布",
+      "closedHint": "已归档或未通过"
+    },
+    "updateInReview": "修改审核中",
+    "updateInProgress": "修改进行中",
+    "actions": {
+      "edit": "编辑《{title}》",
+      "review": "查看《{title}》",
+      "preview": "预览《{title}》",
+      "delete": "删除《{title}》",
+      "takeDown": "申请撤下《{title}》",
+      "cancelTakedown": "取消《{title}》的撤下申请",
+      "takedownPending": "《{title}》的撤下申请正在等待处理。点击可取消申请。"
+    },
+    "deleteDialog": {
+      "title": "确定删除这篇故事？",
+      "description": "《{title}》将被永久删除，此操作无法撤销。",
+      "confirm": "删除故事",
+      "toast": "《{title}》已删除。"
+    },
+    "takedownDialog": {
+      "title": "申请撤下这篇故事？",
+      "description": "Kakinotes 团队会审核这个申请，在此之前《{title}》仍然是公开的。两种情况下都不会删除任何内容 — 你的文字和照片都留在你的账户里。如果你只是想修改内容，请改用「编辑」：审核期间你的故事会一直保持在线。",
+      "confirm": "申请撤下",
+      "toast": "已申请撤下《{title}》。在团队审核之前，它仍然是公开的。"
+    },
+    "cancelTakedownDialog": {
+      "title": "让这篇故事继续公开？",
+      "description": "你申请撤下《{title}》，目前还没有人处理。取消申请后，故事会保持现在的已发布状态。你随时可以再次申请。",
+      "confirm": "取消申请",
+      "toast": "《{title}》继续公开 — 申请已撤回。"
+    },
+    "toasts": {
+      "submitted": "已提交审核。",
+      "keptPrivate": "已保存为私密，只有你能看到。"
+    }
+  },
+  "storyStatus": {
+    "draft": "草稿",
+    "private": "私密",
+    "awaiting_contributor_approval": "等待你确认",
+    "pending_review": "审核中",
+    "changes_requested": "需要修改",
+    "published": "已发布",
+    "rejected": "未通过",
+    "archived": "已归档"
   }
 }

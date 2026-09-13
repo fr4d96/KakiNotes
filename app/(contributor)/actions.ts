@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { invalidateContributorPublicCache } from "@/lib/story/public-cache";
 import { PUBLIC_CONTRIBUTORS_TAG } from "@/lib/story/public-queries";
 import { createClient } from "@/lib/supabase/server";
@@ -11,6 +12,7 @@ import {
   type CreateOwnContributorInput,
 } from "@/lib/validation/profile";
 import { setUsernameSchema } from "@/lib/validation/username";
+import { firstIssueMessage } from "@/lib/validation/issue-messages";
 
 export type AccountFormState = {
   error?: string;
@@ -26,20 +28,23 @@ export type AccountFormState = {
  * contributor gets an immediate, specific error instead of silently saving
  * a "public" record that never actually appears anywhere.
  */
+/**
+ * next-intl's translator over the `account` namespace. Derived from
+ * getTranslations()'s own return type so the helper below keeps full key
+ * checking without repeating next-intl's generics.
+ */
+type AccountTranslator = Awaited<ReturnType<typeof getTranslations<"account">>>;
+
 function checkContributorPublicVisibility(
   data: CreateOwnContributorInput,
+  t: AccountTranslator,
 ): AccountFormState | null {
   if (!data.publicProfileEnabled) return null;
   if (!data.publicSlug) {
-    return {
-      error:
-        "Choose a public contributor URL before making your profile public.",
-    };
+    return { error: t("errors.slugRequiredForPublic") };
   }
   if (data.attributionType === "anonymous") {
-    return {
-      error: "An anonymous attribution can't have a public profile.",
-    };
+    return { error: t("errors.anonymousCannotBePublic") };
   }
   return null;
 }
@@ -56,9 +61,14 @@ export async function updateProfileAction(
   _prevState: AccountFormState,
   formData: FormData,
 ): Promise<AccountFormState> {
+  const [t, tv, tCommon] = await Promise.all([
+    getTranslations("account"),
+    getTranslations("validation"),
+    getTranslations("common"),
+  ]);
   const user = await getCurrentUser();
   if (!user) {
-    return { error: "You must be signed in." };
+    return { error: tCommon("mustBeSignedIn") };
   }
 
   const parsed = profileUpdateSchema.safeParse({
@@ -66,7 +76,9 @@ export async function updateProfileAction(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return {
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
+    };
   }
 
   const supabase = await createClient();
@@ -79,11 +91,11 @@ export async function updateProfileAction(
     .eq("id", user.id);
 
   if (error) {
-    return { error: "Could not update your profile. Please try again." };
+    return { error: t("errors.profileUpdateFailed") };
   }
 
   revalidatePath("/account");
-  return { success: "Profile updated." };
+  return { success: t("profile.saved") };
 }
 
 /**
@@ -104,9 +116,14 @@ export async function setUsernameAction(
   _prevState: AccountFormState,
   formData: FormData,
 ): Promise<AccountFormState> {
+  const [t, tv, tCommon] = await Promise.all([
+    getTranslations("account"),
+    getTranslations("validation"),
+    getTranslations("common"),
+  ]);
   const user = await getCurrentUser();
   if (!user) {
-    return { error: "You must be signed in." };
+    return { error: tCommon("mustBeSignedIn") };
   }
 
   const parsed = setUsernameSchema.safeParse({
@@ -114,7 +131,9 @@ export async function setUsernameAction(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return {
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
+    };
   }
 
   const supabase = await createClient();
@@ -132,13 +151,13 @@ export async function setUsernameAction(
 
   if (error) {
     if (error.code === "23505") {
-      return { error: "That username is already taken." };
+      return { error: t("errors.usernameTaken") };
     }
-    return { error: "Could not save your username. Please try again." };
+    return { error: t("errors.usernameSaveFailed") };
   }
 
   revalidatePath("/account");
-  return { success: "Username saved. You can now sign in with it." };
+  return { success: t("username.saved") };
 }
 
 /**
@@ -165,9 +184,14 @@ export async function createOwnContributorAction(
   _prevState: AccountFormState,
   formData: FormData,
 ): Promise<AccountFormState> {
+  const [t, tv, tCommon] = await Promise.all([
+    getTranslations("account"),
+    getTranslations("validation"),
+    getTranslations("common"),
+  ]);
   const user = await getCurrentUser();
   if (!user) {
-    return { error: "You must be signed in." };
+    return { error: tCommon("mustBeSignedIn") };
   }
 
   const parsed = createOwnContributorSchema.safeParse({
@@ -181,9 +205,11 @@ export async function createOwnContributorAction(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return {
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
+    };
   }
-  const publicCheck = checkContributorPublicVisibility(parsed.data);
+  const publicCheck = checkContributorPublicVisibility(parsed.data, t);
   if (publicCheck) return publicCheck;
 
   const supabase = await createClient();
@@ -206,27 +232,32 @@ export async function createOwnContributorAction(
   if (error) {
     if (error.code === "23505") {
       if (/public_slug/i.test(error.message)) {
-        return { error: "That contributor URL is already taken." };
+        return { error: t("errors.slugTaken") };
       }
-      return { error: "You already have a contributor identity." };
+      return { error: t("errors.alreadyHaveIdentity") };
     }
     return {
-      error: "Could not set up your contributor identity. Please try again.",
+      error: t("errors.identityCreateFailed"),
     };
   }
 
   revalidatePath("/account");
   revalidateContributorPublicPages(parsed.data.publicSlug);
-  return { success: "Contributor identity created." };
+  return { success: t("contributor.created") };
 }
 
 export async function updateOwnContributorAction(
   _prevState: AccountFormState,
   formData: FormData,
 ): Promise<AccountFormState> {
+  const [t, tv, tCommon] = await Promise.all([
+    getTranslations("account"),
+    getTranslations("validation"),
+    getTranslations("common"),
+  ]);
   const user = await getCurrentUser();
   if (!user) {
-    return { error: "You must be signed in." };
+    return { error: tCommon("mustBeSignedIn") };
   }
 
   const parsed = createOwnContributorSchema.safeParse({
@@ -240,9 +271,11 @@ export async function updateOwnContributorAction(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return {
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
+    };
   }
-  const publicCheck = checkContributorPublicVisibility(parsed.data);
+  const publicCheck = checkContributorPublicVisibility(parsed.data, t);
   if (publicCheck) return publicCheck;
 
   const supabase = await createClient();
@@ -263,14 +296,14 @@ export async function updateOwnContributorAction(
 
   if (error) {
     if (error.code === "23505" && /public_slug/i.test(error.message)) {
-      return { error: "That contributor URL is already taken." };
+      return { error: t("errors.slugTaken") };
     }
     return {
-      error: "Could not update your contributor identity. Please try again.",
+      error: t("errors.identityUpdateFailed"),
     };
   }
 
   revalidatePath("/account");
   revalidateContributorPublicPages(parsed.data.publicSlug);
-  return { success: "Contributor identity updated." };
+  return { success: t("contributor.updated") };
 }

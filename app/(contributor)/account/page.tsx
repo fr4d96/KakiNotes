@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { AccountTabs } from "@/app/(contributor)/account/account-tabs";
@@ -7,9 +8,10 @@ import { UsernameForm } from "@/app/(contributor)/account/username-form";
 import { ContributorForm } from "@/app/(contributor)/account/contributor-form";
 import { SignOutButton } from "@/app/(contributor)/account/sign-out-button";
 
-export const metadata: Metadata = {
-  title: "Account",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("account");
+  return { title: t("metaTitle") };
+}
 
 /**
  * Enforced signed-in by the (contributor) layout already — this page only
@@ -17,7 +19,10 @@ export const metadata: Metadata = {
  * every table it touches (never a client-supplied id).
  */
 export default async function AccountPage() {
-  const user = await getCurrentUser();
+  const [user, t] = await Promise.all([
+    getCurrentUser(),
+    getTranslations("account"),
+  ]);
   if (!user) {
     return null;
   }
@@ -53,7 +58,7 @@ export default async function AccountPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="journiq-heading text-[2.4rem]">Account</h1>
+        <h1 className="journiq-heading text-[2.4rem]">{t("title")}</h1>
         <SignOutButton />
       </div>
 
@@ -66,15 +71,14 @@ export default async function AccountPage() {
           opens the tab rather than needing to reach into its state. */}
       {!contributor && (
         <div className="mt-6 rounded-md border border-border-subtle bg-surface-muted p-4 text-sm">
-          <p className="font-medium">Set your contributor identity to start</p>
+          <p className="font-medium">{t("setupPromptTitle")}</p>
           <p className="mt-1 text-foreground/70">
-            It&apos;s how your stories are attributed, and you need one before
-            you can publish.{" "}
+            {t("setupPromptBodyBefore")}{" "}
             <a
               href="#contributor-identity"
               className="underline underline-offset-2"
             >
-              Open the Contributor identity tab
+              {t("setupPromptLink")}
             </a>
             .
           </p>
@@ -82,26 +86,24 @@ export default async function AccountPage() {
       )}
 
       <AccountTabs
+        label={t("tablistLabel")}
         tabs={[
           {
             id: "profile",
-            label: "Profile",
-            description:
-              "Your account settings. None of this is shown to readers.",
+            label: t("tabs.profile"),
+            description: t("tabs.profileDescription"),
             panel: <ProfileForm displayName={profile?.display_name ?? ""} />,
           },
           {
             id: "sign-in",
-            label: "Sign-in",
-            description:
-              "Optional. Set a username and you can sign in with either it or your email — your email keeps working either way.",
+            label: t("tabs.signIn"),
+            description: t("tabs.signInDescription"),
             panel: <UsernameForm username={currentUsername} />,
           },
           {
             id: "contributor-identity",
-            label: "Contributor identity",
-            description:
-              "How you're attributed on every story, and what readers see on your contributor page. You choose this — it's never inferred from your account.",
+            label: t("tabs.contributorIdentity"),
+            description: t("tabs.contributorIdentityDescription"),
             panel: (
               <ContributorForm
                 existing={

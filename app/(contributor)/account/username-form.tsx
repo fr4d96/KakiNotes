@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import {
   setUsernameAction,
   type AccountFormState,
@@ -15,6 +16,7 @@ const initialState: AccountFormState = {};
  * in would mean one submit doing two writes that can fail independently.
  */
 export function UsernameForm({ username }: { username: string }) {
+  const t = useTranslations("account.username");
   const [state, formAction, pending] = useActionState(
     setUsernameAction,
     initialState,
@@ -24,7 +26,7 @@ export function UsernameForm({ username }: { username: string }) {
     <form action={formAction} className="mt-4 space-y-3" noValidate>
       <div>
         <label htmlFor="username" className="block text-sm font-medium">
-          Username
+          {t("label")}
         </label>
         <input
           id="username"
@@ -33,14 +35,10 @@ export function UsernameForm({ username }: { username: string }) {
           maxLength={30}
           autoComplete="username"
           defaultValue={username}
-          placeholder="your-username"
+          placeholder={t("placeholder")}
           className="mt-1 w-full rounded-xl border border-border-subtle bg-surface px-3 py-2 focus:border-accent focus:outline-none"
         />
-        <p className="mt-1 text-xs text-foreground/55">
-          3-30 lowercase letters, numbers, underscores, or hyphens. This is
-          never shown to anyone else — it only gives you a second way to sign in
-          besides your email.
-        </p>
+        <p className="mt-1 text-xs text-foreground/55">{t("hint")}</p>
       </div>
 
       {state.error && (
@@ -59,7 +57,7 @@ export function UsernameForm({ username }: { username: string }) {
         disabled={pending}
         className="journiq-button bg-accent text-sm text-accent-foreground disabled:opacity-60"
       >
-        {pending ? "Saving…" : username ? "Change username" : "Set username"}
+        {pending ? t("saving") : username ? t("change") : t("set")}
       </button>
     </form>
   );
