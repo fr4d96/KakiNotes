@@ -13,6 +13,139 @@
       "minutesAgo": "{count} min ago",
       "hoursAgo": "{count, plural, one {1 hour ago} other {# hours ago}}",
       "daysAgo": "{count, plural, one {1 day ago} other {# days ago}}"
+    },
+    "loading": "Loading",
+    "loadingPage": "Loading page",
+    "close": "Close",
+    "menu": "Menu",
+    "or": "or",
+    "kakinotes": "Kakinotes",
+    "invalidInput": "Invalid input.",
+    "loadingLabels": {
+      "workspace": "Loading your workspace",
+      "contributorProfile": "Loading contributor profile",
+      "costs": "Loading cost figures",
+      "contributors": "Loading contributors",
+      "story": "Loading story",
+      "stories": "Loading stories"
+    },
+    "themeToggle": {
+      "switchToLight": "Switch to light mode",
+      "switchToDark": "Switch to dark mode"
+    }
+  },
+  "nav": {
+    "primary": "Primary",
+    "contributor": "Contributor",
+    "stories": "Stories",
+    "contributors": "Contributors",
+    "destinations": "Destinations",
+    "about": "About",
+    "signIn": "Sign in",
+    "shareYourStory": "Share your story",
+    "createYourAccount": "Create your account",
+    "myStories": "My Stories",
+    "newStory": "New Story",
+    "account": "Account",
+    "signOut": "Sign out",
+    "accountMenu": "Account menu",
+    "staff": "Staff"
+  },
+  "footer": {
+    "tagline": "A storytelling community for honest working-holiday experiences across Aotearoa New Zealand.",
+    "disclaimer": "Kakinotes is an independent platform for personal stories and does not provide immigration, legal, employment, tax, or financial advice.",
+    "explore": "Explore",
+    "community": "Community",
+    "support": "Support",
+    "shareAStory": "Share a story",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "guidelines": "Guidelines",
+    "copyrightRemoval": "Copyright & Removal",
+    "copyrightLine": "© {year} Kakinotes",
+    "madeFor": "Made for working-holiday travellers in Aotearoa New Zealand"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Sign in",
+      "invalidLink": "That link is invalid or has expired. Please try again.",
+      "identifierLabel": "Email or username",
+      "identifierHint": "Use your email, or a username if you've set one in your account.",
+      "passwordLabel": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "forgotPassword": "Forgot your password?",
+      "noAccount": "No account?",
+      "signUpLink": "Sign up"
+    },
+    "signUp": {
+      "title": "Create your account",
+      "intro": "Kakinotes publishes real, personal experiences — not advice. You'll choose how your name appears before anything you write is public.",
+      "displayNameLabel": "Display name (optional)",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "submit": "Create account",
+      "submitting": "Creating account…",
+      "haveAccount": "Already have an account?",
+      "signInLink": "Sign in",
+      "success": "Check your email to confirm your account before signing in. If email confirmation is disabled for this project, you can sign in right away.",
+      "metaTitle": "Sign up"
+    },
+    "google": {
+      "continue": "Continue with Google",
+      "redirecting": "Redirecting…"
+    },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "intro": "Enter your email and we'll send a link to reset your password.",
+      "emailLabel": "Email",
+      "submit": "Send reset link",
+      "submitting": "Sending…",
+      "backToSignIn": "Back to sign in",
+      "success": "If an account exists for that email, we've sent a link to reset your password.",
+      "metaTitle": "Forgot password"
+    },
+    "resetPassword": {
+      "title": "Choose a new password",
+      "expiredTitle": "Link expired",
+      "expiredBody": "This password reset link is invalid or has already been used.",
+      "requestNew": "Request a new reset link",
+      "passwordLabel": "New password",
+      "confirmLabel": "Confirm new password",
+      "submit": "Save new password",
+      "submitting": "Saving…",
+      "linkUsed": "Your password reset link has expired or already been used. Request a new one.",
+      "metaTitle": "Reset password"
+    },
+    "errors": {
+      "signInFailed": "Incorrect email/username or password.",
+      "rateLimited": "Too many {kind, select, signUp {sign-up} other {sign-in}} attempts. Try again in about {minutes, plural, one {# minute} other {# minutes}}."
+    }
+  },
+  "validation": {
+    "common": {
+      "invalidInput": "Invalid input.",
+      "displayNameRequired": "Display name is required.",
+      "displayNameTooLong": "Display name must be {max} characters or fewer."
+    },
+    "auth": {
+      "emailRequired": "Email is required.",
+      "emailInvalid": "Enter a valid email address.",
+      "passwordTooShort": "Password must be at least {min} characters.",
+      "passwordTooLong": "Password is too long.",
+      "identifierRequired": "Enter your email or username.",
+      "passwordRequired": "Password is required.",
+      "passwordsMismatch": "Passwords do not match."
+    },
+    "username": {
+      "pattern": "Use 3-30 lowercase letters, numbers, underscores, or hyphens, starting with a letter or number.",
+      "reserved": "That username is reserved. Choose another."
+    },
+    "profile": {
+      "slugPattern": "Use 3-60 lowercase letters, numbers, or hyphens, starting with a letter or number.",
+      "bioTooLong": "Bio must be {max} characters or fewer.",
+      "countryCode": "Use a 2-letter country code, e.g. MY.",
+      "avatarEmoji": "Choose one of the provided avatars."
     }
   }
 }

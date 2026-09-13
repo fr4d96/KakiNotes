@@ -62,13 +62,12 @@ export const usernameSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .regex(
-    USERNAME_PATTERN,
-    "Use 3-30 lowercase letters, numbers, underscores, or hyphens, starting with a letter or number.",
-  )
+  // Messages are keys into messages/<locale>.json's `validation` namespace
+  // (lib/validation/issue-messages.ts translates them at the boundary).
+  .regex(USERNAME_PATTERN, "username.pattern")
   .refine(
     (value) => !(RESERVED_USERNAMES as readonly string[]).includes(value),
-    { message: "That username is reserved. Choose another." },
+    { message: "username.reserved" },
   );
 
 export const setUsernameSchema = z.object({

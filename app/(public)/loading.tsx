@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import {
   Skeleton,
   SkeletonText,
@@ -19,9 +20,10 @@ import {
  * for it.
  */
 export default function PublicLoading() {
+  const t = useTranslations("common");
   return (
     <LoadingScreen
-      label="Loading page"
+      label={t("loadingPage")}
       className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16"
     >
       <Skeleton className="h-9 w-3/4 max-w-md sm:h-11" />

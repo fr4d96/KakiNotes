@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Skeleton, LoadingScreen } from "@/components/ui/skeleton";
 import { StoryCardGridSkeleton } from "@/components/story/story-card-skeleton";
 
@@ -14,9 +15,10 @@ import { StoryCardGridSkeleton } from "@/components/story/story-card-skeleton";
  * many results the filters will actually return.
  */
 export default function StoriesLoading() {
+  const t = useTranslations("common.loadingLabels");
   return (
     <LoadingScreen
-      label="Loading stories"
+      label={t("stories")}
       className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 sm:py-16"
     >
       <div className="max-w-2xl">

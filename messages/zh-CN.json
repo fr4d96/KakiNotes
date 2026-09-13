@@ -13,6 +13,139 @@
       "minutesAgo": "{count}分钟前",
       "hoursAgo": "{count}小时前",
       "daysAgo": "{count}天前"
+    },
+    "loading": "加载中",
+    "loadingPage": "页面加载中",
+    "close": "关闭",
+    "menu": "菜单",
+    "or": "或",
+    "kakinotes": "Kakinotes",
+    "invalidInput": "输入无效。",
+    "loadingLabels": {
+      "workspace": "正在加载你的工作区",
+      "contributorProfile": "正在加载投稿人主页",
+      "costs": "正在加载花费数据",
+      "contributors": "正在加载投稿人",
+      "story": "正在加载故事",
+      "stories": "正在加载故事列表"
+    },
+    "themeToggle": {
+      "switchToLight": "切换到浅色模式",
+      "switchToDark": "切换到深色模式"
+    }
+  },
+  "nav": {
+    "primary": "主导航",
+    "contributor": "投稿人导航",
+    "stories": "故事",
+    "contributors": "投稿人",
+    "destinations": "目的地",
+    "about": "关于",
+    "signIn": "登录",
+    "shareYourStory": "分享你的故事",
+    "createYourAccount": "创建账户",
+    "myStories": "我的故事",
+    "newStory": "新故事",
+    "account": "账户",
+    "signOut": "退出登录",
+    "accountMenu": "账户菜单",
+    "staff": "工作人员"
+  },
+  "footer": {
+    "tagline": "一个分享新西兰打工度假真实经历的故事社区。",
+    "disclaimer": "Kakinotes 是一个独立的个人故事平台，不提供移民、法律、就业、税务或财务建议。",
+    "explore": "探索",
+    "community": "社区",
+    "support": "支持",
+    "shareAStory": "分享故事",
+    "privacy": "隐私",
+    "terms": "条款",
+    "guidelines": "社区准则",
+    "copyrightRemoval": "版权与移除",
+    "copyrightLine": "© {year} Kakinotes",
+    "madeFor": "为在新西兰打工度假的旅行者而建"
+  },
+  "auth": {
+    "signIn": {
+      "title": "登录",
+      "invalidLink": "该链接无效或已过期，请重试。",
+      "identifierLabel": "邮箱或用户名",
+      "identifierHint": "使用你的邮箱，或者在账户中设置的用户名。",
+      "passwordLabel": "密码",
+      "submit": "登录",
+      "submitting": "正在登录…",
+      "forgotPassword": "忘记密码？",
+      "noAccount": "还没有账户？",
+      "signUpLink": "注册"
+    },
+    "signUp": {
+      "title": "创建账户",
+      "intro": "Kakinotes 发布的是真实的个人经历，并非建议。在你写的内容公开之前，你可以选择你的名字如何显示。",
+      "displayNameLabel": "显示名称（可选）",
+      "emailLabel": "邮箱",
+      "passwordLabel": "密码",
+      "submit": "创建账户",
+      "submitting": "正在创建账户…",
+      "haveAccount": "已有账户？",
+      "signInLink": "登录",
+      "success": "请先查收邮件并确认账户，然后再登录。如果本项目未开启邮箱确认，你可以直接登录。",
+      "metaTitle": "注册"
+    },
+    "google": {
+      "continue": "使用 Google 继续",
+      "redirecting": "正在跳转…"
+    },
+    "forgotPassword": {
+      "title": "重置密码",
+      "intro": "输入你的邮箱，我们会发送一个重置密码的链接。",
+      "emailLabel": "邮箱",
+      "submit": "发送重置链接",
+      "submitting": "正在发送…",
+      "backToSignIn": "返回登录",
+      "success": "如果该邮箱对应的账户存在，我们已发送重置密码的链接。",
+      "metaTitle": "忘记密码"
+    },
+    "resetPassword": {
+      "title": "设置新密码",
+      "expiredTitle": "链接已过期",
+      "expiredBody": "此重置密码链接无效或已被使用。",
+      "requestNew": "重新申请重置链接",
+      "passwordLabel": "新密码",
+      "confirmLabel": "确认新密码",
+      "submit": "保存新密码",
+      "submitting": "正在保存…",
+      "linkUsed": "你的重置密码链接已过期或已被使用，请重新申请。",
+      "metaTitle": "重置密码"
+    },
+    "errors": {
+      "signInFailed": "邮箱/用户名或密码不正确。",
+      "rateLimited": "{kind, select, signUp {注册} other {登录}}尝试次数过多，请在约 {minutes} 分钟后重试。"
+    }
+  },
+  "validation": {
+    "common": {
+      "invalidInput": "输入无效。",
+      "displayNameRequired": "请填写显示名称。",
+      "displayNameTooLong": "显示名称不能超过 {max} 个字符。"
+    },
+    "auth": {
+      "emailRequired": "请填写邮箱。",
+      "emailInvalid": "请输入有效的邮箱地址。",
+      "passwordTooShort": "密码至少需要 {min} 个字符。",
+      "passwordTooLong": "密码太长。",
+      "identifierRequired": "请输入你的邮箱或用户名。",
+      "passwordRequired": "请填写密码。",
+      "passwordsMismatch": "两次输入的密码不一致。"
+    },
+    "username": {
+      "pattern": "请使用 3-30 个小写字母、数字、下划线或连字符，并以字母或数字开头。",
+      "reserved": "该用户名已被保留，请换一个。"
+    },
+    "profile": {
+      "slugPattern": "请使用 3-60 个小写字母、数字或连字符，并以字母或数字开头。",
+      "bioTooLong": "简介不能超过 {max} 个字符。",
+      "countryCode": "请使用两位字母的国家代码，例如 MY。",
+      "avatarEmoji": "请从提供的头像中选择一个。"
     }
   }
 }

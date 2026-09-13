@@ -1,11 +1,13 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { resetPasswordAction, type AuthFormState } from "@/app/(auth)/actions";
 
 const initialState: AuthFormState = {};
 
 export function ResetPasswordForm() {
+  const t = useTranslations("auth.resetPassword");
   const [state, formAction, pending] = useActionState(
     resetPasswordAction,
     initialState,
@@ -15,7 +17,7 @@ export function ResetPasswordForm() {
     <form action={formAction} className="mt-8 space-y-5" noValidate>
       <div>
         <label htmlFor="password" className="block text-sm font-medium">
-          New password
+          {t("passwordLabel")}
         </label>
         <input
           id="password"
@@ -30,7 +32,7 @@ export function ResetPasswordForm() {
 
       <div>
         <label htmlFor="confirmPassword" className="block text-sm font-medium">
-          Confirm new password
+          {t("confirmLabel")}
         </label>
         <input
           id="confirmPassword"
@@ -54,7 +56,7 @@ export function ResetPasswordForm() {
         disabled={pending}
         className="w-full rounded-md bg-accent px-3 py-2 text-accent-foreground hover:opacity-90 disabled:opacity-60"
       >
-        {pending ? "Saving…" : "Save new password"}
+        {pending ? t("submitting") : t("submit")}
       </button>
     </form>
   );

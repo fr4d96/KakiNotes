@@ -230,10 +230,20 @@ export function rateLimitedMessage(
   retryAfterSeconds: number,
   label: "sign-in" | "sign-up" = "sign-in",
 ): string {
-  const minutes = Math.max(1, Math.ceil(retryAfterSeconds / 60));
+  const minutes = rateLimitRetryMinutes(retryAfterSeconds);
   return `Too many ${label} attempts. Try again in about ${minutes} minute${
     minutes === 1 ? "" : "s"
   }.`;
+}
+
+/**
+ * Whole minutes to tell the visitor to wait, never zero. Split out so the
+ * translated Server Actions (app/(auth)/actions.ts) can phrase the sentence
+ * in the visitor's language via messages/<locale>.json's
+ * `auth.errors.rateLimited` while sharing this one rounding rule.
+ */
+export function rateLimitRetryMinutes(retryAfterSeconds: number): number {
+  return Math.max(1, Math.ceil(retryAfterSeconds / 60));
 }
 
 /**

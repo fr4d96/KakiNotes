@@ -4,6 +4,8 @@ import { AVATAR_EMOJI_OPTIONS } from "@/lib/avatar";
 // Mirrors the CHECK constraints in supabase/migrations/*_profiles.sql —
 // duplicated deliberately (Zod for fast/friendly form errors, the DB
 // constraint as the non-bypassable source of truth per Engineering Rule 3).
+// Messages are keys into messages/<locale>.json's `validation` namespace
+// (lib/validation/issue-messages.ts translates them at the boundary).
 const slugPattern = /^[a-z0-9][a-z0-9-]{2,59}$/;
 const countryCodePattern = /^[A-Z]{2}$/;
 
@@ -15,10 +17,7 @@ const publicSlugSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .regex(
-    slugPattern,
-    "Use 3-60 lowercase letters, numbers, or hyphens, starting with a letter or number.",
-  )
+  .regex(slugPattern, "profile.slugPattern")
   .optional()
   .or(z.literal(""));
 
@@ -31,8 +30,8 @@ export const profileUpdateSchema = z.object({
   displayName: z
     .string()
     .trim()
-    .min(1, "Display name is required.")
-    .max(120, "Display name must be 120 characters or fewer."),
+    .min(1, "common.displayNameRequired")
+    .max(120, "common.displayNameTooLong"),
 });
 
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
@@ -48,8 +47,8 @@ export const createOwnContributorSchema = z.object({
   displayName: z
     .string()
     .trim()
-    .min(1, "Display name is required.")
-    .max(120, "Display name must be 120 characters or fewer."),
+    .min(1, "common.displayNameRequired")
+    .max(120, "common.displayNameTooLong"),
   attributionType: z.enum(contributorAttributionTypes),
   // contributors.public_status/public_slug -- controls whether this
   // contributor shows up in the /contributors directory and gets a real
@@ -60,7 +59,7 @@ export const createOwnContributorSchema = z.object({
   bio: z
     .string()
     .trim()
-    .max(2000, "Bio must be 2000 characters or fewer.")
+    .max(2000, "profile.bioTooLong")
     .optional()
     .or(z.literal("")),
   // Optional here, unlike the old profiles field which defaulted to MY. An
@@ -70,12 +69,12 @@ export const createOwnContributorSchema = z.object({
     .string()
     .trim()
     .toUpperCase()
-    .regex(countryCodePattern, "Use a 2-letter country code, e.g. MY.")
+    .regex(countryCodePattern, "profile.countryCode")
     .optional()
     .or(z.literal("")),
   avatarEmoji: z
     .enum(AVATAR_EMOJI_OPTIONS, {
-      message: "Choose one of the provided avatars.",
+      message: "profile.avatarEmoji",
     })
     .optional()
     .or(z.literal("")),

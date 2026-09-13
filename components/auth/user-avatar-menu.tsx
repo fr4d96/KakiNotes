@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { signOutAction } from "@/app/(auth)/actions";
 import { ContributorIcon } from "@/components/icons";
 import { controlToneClasses } from "@/components/ui-tone";
@@ -14,12 +15,13 @@ import { staffMenuItemsForRole } from "@/lib/auth/staff-menu";
  * dropping these keeps their menu to their own role's surfaces plus
  * Account/Sign out -- see `personalMenuItems` below.
  */
+// Labels are keys under `nav`, resolved inside the component.
 const authoringItems = [
-  { href: "/my-stories", label: "My Stories" },
-  { href: "/stories/new", label: "New Story" },
-];
+  { href: "/my-stories", key: "myStories" },
+  { href: "/stories/new", key: "newStory" },
+] as const;
 
-const accountItem = { href: "/account", label: "Account" };
+const accountItem = { href: "/account", key: "account" } as const;
 
 /**
  * Which of the always-on items a role gets. Staff roles get Account only;
@@ -76,6 +78,7 @@ export function UserAvatarMenu({
   extraItems?: { href: string; label: string }[];
   role?: AppRole | null;
 }) {
+  const t = useTranslations("nav");
   const staffItems = staffMenuItemsForRole(role ?? null);
   const menuItems = personalMenuItems(role ?? null);
   const [open, setOpen] = useState(false);
@@ -110,7 +113,7 @@ export function UserAvatarMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
-        aria-label="Account menu"
+        aria-label={t("accountMenu")}
         className={`flex h-10 w-10 items-center justify-center rounded-full border text-lg transition-transform hover:-translate-y-0.5 ${controlToneClasses(inverted)}`}
       >
         {emoji ?? <ContributorIcon className="h-5 w-5" />}
@@ -131,7 +134,7 @@ export function UserAvatarMenu({
                 surfaces" rather than more account actions.
               */}
               <p className="px-3 pt-1.5 pb-1 font-mono text-[0.625rem] tracking-[0.14em] text-muted-foreground uppercase">
-                Staff
+                {t("staff")}
               </p>
               {staffItems.map((item) => (
                 <Link
@@ -171,7 +174,7 @@ export function UserAvatarMenu({
               onClick={() => setOpen(false)}
               className="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-surface-muted"
             >
-              {item.label}
+              {t(item.key)}
             </Link>
           ))}
           <form action={signOutAction}>
@@ -180,7 +183,7 @@ export function UserAvatarMenu({
               role="menuitem"
               className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-surface-muted"
             >
-              Sign out
+              {t("signOut")}
             </button>
           </form>
         </div>

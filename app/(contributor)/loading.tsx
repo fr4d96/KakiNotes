@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Skeleton, LoadingScreen } from "@/components/ui/skeleton";
 
 /**
@@ -17,9 +18,10 @@ import { Skeleton, LoadingScreen } from "@/components/ui/skeleton";
  * editorial-style pages share.
  */
 export default function ContributorLoading() {
+  const t = useTranslations("common.loadingLabels");
   return (
     <LoadingScreen
-      label="Loading your workspace"
+      label={t("workspace")}
       className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16"
     >
       <div className="flex flex-wrap items-center justify-between gap-4">

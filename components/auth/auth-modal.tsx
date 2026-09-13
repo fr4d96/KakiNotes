@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
+import { useTranslations } from "next-intl";
 
 /**
  * Native <dialog>-based modal shell -- showModal() gets us focus trapping,
@@ -22,6 +23,7 @@ export function AuthModal({
   title: string;
   children: React.ReactNode;
 }) {
+  const t = useTranslations("common");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -52,7 +54,7 @@ export function AuthModal({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t("close")}
           className="flex h-8 w-8 items-center justify-center rounded-full text-foreground/60 transition-colors hover:bg-surface-muted hover:text-foreground"
         >
           <span aria-hidden="true">×</span>
