@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import {
   getEditableStoryWithDraft,
@@ -22,13 +23,17 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const draft = await getEditableStoryWithDraft(id);
+  const [draft, t] = await Promise.all([
+    getEditableStoryWithDraft(id),
+    getTranslations("editor"),
+  ]);
   return {
     // revision_number === 1 means this story has never been through a
     // submit/changes-requested/resubmit cycle -- same signal the page
     // component uses below for its "New Story" vs "Edit Story" heading, so
     // the browser tab title always agrees with what's on the page.
-    title: draft && draft.revision_number === 1 ? "New Story" : "Edit Story",
+    title:
+      draft && draft.revision_number === 1 ? t("newStory") : t("editStory"),
     robots: { index: false, follow: false },
   };
 }
@@ -53,7 +58,12 @@ export default async function EditStoryPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ step?: string }>;
 }) {
-  const [{ id }, { step }] = await Promise.all([params, searchParams]);
+  const [{ id }, { step }, t, tStatus] = await Promise.all([
+    params,
+    searchParams,
+    getTranslations("editStory"),
+    getTranslations("storyStatus"),
+  ]);
   const draft = await getEditableStoryWithDraft(id);
   if (!draft) notFound();
 
@@ -61,18 +71,22 @@ export default async function EditStoryPage({
     return (
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Not editable right now
+          {t("notEditableTitle")}
         </h1>
         <p className="mt-2 text-muted-foreground">
-          This story&apos;s current revision is{" "}
-          {draft.revision_status.replace(/_/g, " ")} and can&apos;t be edited
-          from this page.
+          {t("notEditableBody", {
+            // The revision's own status word, shown through the shared
+            // storyStatus messages rather than a de-underscored enum value.
+            status: tStatus.has(draft.revision_status as never)
+              ? tStatus(draft.revision_status as never)
+              : draft.revision_status.replace(/_/g, " "),
+          })}
         </p>
         <Link
           href={`/stories/${id}/preview`}
           className="mt-4 inline-block underline underline-offset-2"
         >
-          View preview
+          {t("viewPreview")}
         </Link>
       </div>
     );

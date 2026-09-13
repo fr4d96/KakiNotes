@@ -976,5 +976,124 @@
       "convertFailed": "无法转换这段内容。",
       "requestTooLarge": "这个请求发送失败了 — 试试粘贴少一点的文本。"
     }
+  },
+  "notifications": {
+    "metaTitle": "通知",
+    "title": "通知",
+    "intro": "关于你故事的最新动态 — 如果你负责审核，这里也会显示等待你处理的内容。",
+    "emptyTitle": "这里还什么都没有",
+    "emptyBody": "当审核人发布了你的故事，或者要求修改时，你会在这里看到。",
+    "goToMyStories": "前往我的故事",
+    "unreadOf": "{total} 条中有 {unread} 条未读",
+    "allRead": "{count} 条通知，全部已读",
+    "markAllAsRead": "全部标为已读",
+    "marking": "正在标记…",
+    "markRead": "标为已读",
+    "unreadSuffix": "（未读）",
+    "bell": {
+      "label": "通知",
+      "markAllRead": "全部已读",
+      "tryAgain": "重试",
+      "loading": "加载中…",
+      "allCaughtUp": "没有新通知。",
+      "seeAll": "查看全部通知",
+      "labelWithCount": "通知，{count} 条未读"
+    },
+    "kinds": {
+      "story_submitted": "有新故事待审核",
+      "story_published": "你的故事已上线",
+      "story_rejected": "你的故事未通过",
+      "story_changes_requested": "你的故事需要修改"
+    },
+    "age": {
+      "justNow": "刚刚",
+      "minutes": "{count} 分钟",
+      "hours": "{count} 小时",
+      "days": "{count} 天"
+    }
+  },
+  "newStory": {
+    "metaTitle": "新故事",
+    "title": "给你的故事起个名字",
+    "intro": "先起一个暂定的标题。写作过程中随时可以修改。",
+    "titleLabel": "标题",
+    "titlePlaceholder": "在蒂普基采猕猴桃的半年",
+    "starting": "正在创建…",
+    "startWriting": "开始写作",
+    "havePdf": "已经有 PDF 了？",
+    "importInstead": "改为导入",
+    "backToMyStories": "返回我的故事",
+    "errors": {
+      "needsContributorIdentity": "开始写故事之前，请先在「账户」页面设置你的投稿人身份。",
+      "createFailed": "无法创建新故事，请再试一次。"
+    }
+  },
+  "pdfImport": {
+    "metaTitle": "从 PDF 导入",
+    "title": "从 PDF 导入",
+    "intro": "上传一个 PDF（包括从设计工具导出的），然后选择要用作照片的页面。故事正文之后在编辑器里添加。",
+    "blankInstead": "改为创建空白故事",
+    "titleLabel": "标题",
+    "fileLabel": "PDF 文件",
+    "selectPages": "选择要附加的页面",
+    "describePage": "描述这一页",
+    "reading": "正在读取 PDF…",
+    "uploadAndPreview": "上传并预览页面",
+    "creating": "正在创建…",
+    "createStory": "创建我的故事",
+    "errors": {
+      "chooseFileFirst": "请先选择一个 PDF 文件。",
+      "chooseFile": "请选择一个 PDF 文件。",
+      "notAPdf": "这个文件看起来不是 PDF。",
+      "couldNotRead": "无法读取这个 PDF。",
+      "uploadFailed": "上传发送失败，请再试一次。",
+      "titleFirst": "请先填写标题。",
+      "selectPage": "请至少选择一页。",
+      "altTextRequired": "请为每个选中的页面添加替代文字。",
+      "createFailed": "无法创建你的故事。",
+      "requestFailed": "请求发送失败，请再试一次。",
+      "fileTooLarge": "PDF 文件太大（最多 {max} MB）。"
+    },
+    "pagesSelected": "已选择 {count} 页",
+    "fileHint": "最大 {max} MB。上传后选择要作为图片添加的页面 — 故事正文之后在编辑器里添加。",
+    "selectedOf": "已选择 {selected} / {max}",
+    "limitReached": " — 已达上限",
+    "pageLabel": "第 {page} 页",
+    "pageLabelSelected": "第 {page} 页，已选择",
+    "pageLabelDisabled": "第 {page} 页，已达 {max} 页上限",
+    "pageNumber": "第 {page} 页",
+    "altTextLabel": "第 {page} 页的替代文字（必填）"
+  },
+  "editStory": {
+    "notEditableTitle": "目前无法编辑",
+    "notEditableBody": "这篇故事当前的版本状态是「{status}」，无法在此页面编辑。",
+    "viewPreview": "查看预览"
+  },
+  "pdf": {
+    "personalExperienceBy": "个人经历，并非建议 — 由 {name} 分享",
+    "trip": "行程",
+    "travelStyle": "旅行方式",
+    "places": "地点",
+    "tags": "标签",
+    "totalCost": "总花费",
+    "whatItCost": "这趟行程花了多少",
+    "total": "合计",
+    "morePhotos": "更多照片",
+    "colophon": "这是你的《{title}》副本（{status}），于 {date} 从 Kakinotes 导出。这是一个人对打工度假签证经历的个人记录，并非建议。{siteUrl}",
+    "subject": "个人经历，并非建议。",
+    "status": {
+      "published": "已发布",
+      "approved": "已通过",
+      "private": "私密",
+      "unpublishedUpdate": "未发布的草稿修改",
+      "draft": "草稿",
+      "updateInReview": "修改审核中",
+      "inReview": "审核中",
+      "changesRequested": "需要修改",
+      "notPublished": "未发布",
+      "withdrawn": "已撤回",
+      "superseded": "已被取代",
+      "unpublished": "未发布"
+    }
   }
 }

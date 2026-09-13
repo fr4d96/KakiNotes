@@ -976,5 +976,124 @@
       "convertFailed": "Could not convert this content.",
       "requestTooLarge": "That request couldn't be sent — try pasting a smaller amount of text."
     }
+  },
+  "notifications": {
+    "metaTitle": "Notifications",
+    "title": "Notifications",
+    "intro": "Updates about your stories, and — if you review stories — what is waiting for you.",
+    "emptyTitle": "Nothing here yet",
+    "emptyBody": "When a moderator publishes one of your stories, or asks for changes, you'll see it here.",
+    "goToMyStories": "Go to My Stories",
+    "unreadOf": "{unread} unread of {total}",
+    "allRead": "{count, plural, one {# notification} other {# notifications}}, all read",
+    "markAllAsRead": "Mark all as read",
+    "marking": "Marking…",
+    "markRead": "Mark read",
+    "unreadSuffix": " (unread)",
+    "bell": {
+      "label": "Notifications",
+      "markAllRead": "Mark all read",
+      "tryAgain": "Try again",
+      "loading": "Loading…",
+      "allCaughtUp": "You're all caught up.",
+      "seeAll": "See all notifications",
+      "labelWithCount": "Notifications, {count} unread"
+    },
+    "kinds": {
+      "story_submitted": "New story to review",
+      "story_published": "Your story is live",
+      "story_rejected": "Your story wasn't approved",
+      "story_changes_requested": "Changes requested on your story"
+    },
+    "age": {
+      "justNow": "just now",
+      "minutes": "{count}m",
+      "hours": "{count}h",
+      "days": "{count}d"
+    }
+  },
+  "newStory": {
+    "metaTitle": "New Story",
+    "title": "Name your story",
+    "intro": "Give it a working title to start. You can change it any time while you write.",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Six months picking kiwifruit in Te Puke",
+    "starting": "Starting…",
+    "startWriting": "Start writing",
+    "havePdf": "Have it as a PDF?",
+    "importInstead": "Import it instead",
+    "backToMyStories": "Back to My Stories",
+    "errors": {
+      "needsContributorIdentity": "Set up your contributor identity on the Account page before starting a story.",
+      "createFailed": "Could not start a new story. Please try again."
+    }
+  },
+  "pdfImport": {
+    "metaTitle": "Import from PDF",
+    "title": "Import from PDF",
+    "intro": "Upload a PDF (including one exported from a design tool) and pick the pages to use as photos. Your story text is added afterwards in the editor.",
+    "blankInstead": "Start a blank story instead",
+    "titleLabel": "Title",
+    "fileLabel": "PDF file",
+    "selectPages": "Select pages to attach",
+    "describePage": "Describe this page",
+    "reading": "Reading PDF…",
+    "uploadAndPreview": "Upload & preview pages",
+    "creating": "Creating…",
+    "createStory": "Create My Story",
+    "errors": {
+      "chooseFileFirst": "Choose a PDF file first.",
+      "chooseFile": "Choose a PDF file.",
+      "notAPdf": "That file doesn't look like a PDF.",
+      "couldNotRead": "Could not read that PDF.",
+      "uploadFailed": "That upload couldn't be sent. Try again.",
+      "titleFirst": "Add a title first.",
+      "selectPage": "Select at least one page.",
+      "altTextRequired": "Add alt text for every selected page.",
+      "createFailed": "Could not create your story.",
+      "requestFailed": "That request couldn't be sent. Try again.",
+      "fileTooLarge": "The PDF file is too large (max {max} MB)."
+    },
+    "pagesSelected": "{count, plural, one {# page selected} other {# pages selected}}",
+    "fileHint": "Up to {max} MB. Select the pages to add as images after uploading — your story text is added afterwards in the editor.",
+    "selectedOf": "{selected} of {max} selected",
+    "limitReached": " — limit reached",
+    "pageLabel": "Page {page}",
+    "pageLabelSelected": "Page {page}, selected",
+    "pageLabelDisabled": "Page {page}, limit of {max} pages reached",
+    "pageNumber": "Page {page}",
+    "altTextLabel": "Alt text for page {page} (required)"
+  },
+  "editStory": {
+    "notEditableTitle": "Not editable right now",
+    "notEditableBody": "This story's current revision is {status} and can't be edited from this page.",
+    "viewPreview": "View preview"
+  },
+  "pdf": {
+    "personalExperienceBy": "Personal experience, not advice — shared by {name}",
+    "trip": "Trip",
+    "travelStyle": "Travel style",
+    "places": "Places",
+    "tags": "Tags",
+    "totalCost": "Total cost",
+    "whatItCost": "What it cost",
+    "total": "Total",
+    "morePhotos": "More photos",
+    "colophon": "Your copy of \"{title}\" ({status}), exported from Kakinotes on {date}. This is one person's personal account of a Working Holiday Visa experience, not advice. {siteUrl}",
+    "subject": "Personal experience, not advice.",
+    "status": {
+      "published": "Published",
+      "approved": "Approved",
+      "private": "Private",
+      "unpublishedUpdate": "Unpublished draft update",
+      "draft": "Draft",
+      "updateInReview": "Update in review",
+      "inReview": "In review",
+      "changesRequested": "Changes requested",
+      "notPublished": "Not published",
+      "withdrawn": "Withdrawn",
+      "superseded": "Superseded",
+      "unpublished": "Unpublished"
+    }
   }
 }

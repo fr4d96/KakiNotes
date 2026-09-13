@@ -2,11 +2,13 @@
 
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import {
   describeNotification,
   type NotificationRow,
 } from "@/lib/notifications/notification-view";
-import { relativeTime } from "@/lib/story/moderation-queue-view";
+import { formatRelativeTime } from "@/lib/i18n/format";
+import { isLocale } from "@/i18n/locales";
 import { NOTIFICATIONS_CHANGED_EVENT } from "@/lib/notifications/notifications-changed";
 import { markNotificationsReadAction } from "./actions";
 
@@ -15,12 +17,12 @@ import { markNotificationsReadAction } from "./actions";
  * read, this owns the rendering, same split every other view component in
  * the app uses (MyStoriesView, the moderation queue).
  *
- * `relativeTime` is borrowed from lib/story/moderation-queue-view.ts rather
- * than reusing the bell's formatNotificationAge(): a dropdown needs "12m"
- * because it has ~40px to spend, a full page can afford "12 min ago", and
- * that helper is already the app's server-rendered phrasing for exactly
- * this. It is deliberately free of `server-only` (see its header), so a
- * Client Component may import it.
+ * `formatRelativeTime` (lib/i18n/format.ts) rather than the bell's
+ * formatNotificationAge(): a dropdown needs "12m" because it has ~40px to
+ * spend, a full page can afford "12 min ago". That helper is the
+ * locale-aware sibling of lib/story/moderation-queue-view.ts's
+ * relativeTime(), which the staff queue still uses and whose English
+ * phrasing it matches exactly.
  *
  * A Client Component only for useActionState's pending/error state. The
  * forms themselves are real <form action={...}> submits, so the page still
@@ -38,6 +40,10 @@ export function NotificationsList({
   /** Injected by the page so the server and client agree on "now" -- see its comment. */
   now?: string;
 }) {
+  const t = useTranslations("notifications");
+  const tRelative = useTranslations("common.relativeTime");
+  const rawLocale = useLocale();
+  const locale = isLocale(rawLocale) ? rawLocale : "en";
   const [state, formAction, pending] = useActionState(
     markNotificationsReadAction,
     {},
@@ -56,16 +62,13 @@ export function NotificationsList({
   if (items.length === 0) {
     return (
       <div className="rounded-xl border border-border-subtle bg-surface p-10 text-center shadow-sm">
-        <p className="text-lg font-bold">Nothing here yet</p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          When a moderator publishes one of your stories, or asks for changes,
-          you&apos;ll see it here.
-        </p>
+        <p className="text-lg font-bold">{t("emptyTitle")}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("emptyBody")}</p>
         <Link
           href="/my-stories"
           className="mt-6 inline-block rounded-full border border-border-subtle px-4 py-2 text-sm font-bold hover:bg-surface-muted"
         >
-          Go to My Stories
+          {t("goToMyStories")}
         </Link>
       </div>
     );
@@ -76,8 +79,8 @@ export function NotificationsList({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
           {unreadCount > 0
-            ? `${unreadCount} unread of ${items.length}`
-            : `${items.length} notification${items.length === 1 ? "" : "s"}, all read`}
+            ? t("unreadOf", { unread: unreadCount, total: items.length })
+            : t("allRead", { count: items.length })}
         </p>
         {unreadCount > 0 && (
           <form action={formAction}>
@@ -88,7 +91,7 @@ export function NotificationsList({
               disabled={pending}
               className="rounded-full border border-border-subtle px-4 py-2 text-sm font-bold hover:bg-surface-muted disabled:opacity-60"
             >
-              {pending ? "Marking…" : "Mark all as read"}
+              {pending ? t("marking") : t("markAllAsRead")}
             </button>
           </form>
         )}
@@ -119,11 +122,18 @@ export function NotificationsList({
                     href={item.href}
                     className={`text-base hover:underline ${item.unread ? "font-black" : "font-bold"}`}
                   >
-                    {item.heading}
-                    {item.unread && <span className="sr-only"> (unread)</span>}
+                    {t(`kinds.${item.headingKey}`)}
+                    {item.unread && (
+                      <span className="sr-only">{t("unreadSuffix")}</span>
+                    )}
                   </Link>
                   <span className="text-xs text-muted-foreground">
-                    {relativeTime(item.createdAt, nowDate)}
+                    {formatRelativeTime(
+                      item.createdAt,
+                      locale,
+                      tRelative,
+                      nowDate,
+                    )}
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -143,7 +153,7 @@ export function NotificationsList({
                     disabled={pending}
                     className="rounded-full border border-border-subtle px-3 py-1.5 text-xs font-bold hover:bg-surface-muted disabled:opacity-60"
                   >
-                    Mark read
+                    {t("markRead")}
                   </button>
                 </form>
               )}

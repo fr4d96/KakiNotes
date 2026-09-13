@@ -28,9 +28,7 @@ describe("canExportStory", () => {
     // exportStatusLabel() has a name for exactly this state, so refusing
     // here would make that name unreachable.
     expect(canExportStory("published", "draft")).toBe(true);
-    expect(exportStatusLabel("published", "draft")).toBe(
-      "Unpublished draft update",
-    );
+    expect(exportStatusLabel("published", "draft")).toBe("unpublishedUpdate");
   });
 
   it("allows a private story, whose revision stays a draft forever", () => {
@@ -39,7 +37,7 @@ describe("canExportStory", () => {
     // unfinished. It is a completed story its author chose to keep, which
     // makes keeping a copy of it the strongest case there is.
     expect(canExportStory("private", "draft")).toBe(true);
-    expect(exportStatusLabel("private", "draft")).toBe("Private");
+    expect(exportStatusLabel("private", "draft")).toBe("private");
   });
 
   it("allows the states a moderator or the contributor closed", () => {
@@ -58,7 +56,7 @@ describe("canExportStory", () => {
 
 describe("exportStatusLabel", () => {
   it("calls an approved revision on a published story Published", () => {
-    expect(exportStatusLabel("published", "approved")).toBe("Published");
+    expect(exportStatusLabel("published", "approved")).toBe("published");
   });
 
   it("never calls a draft update to a published story Published", () => {
@@ -66,12 +64,8 @@ describe("exportStatusLabel", () => {
     // the copy a contributor gets while an edit is in flight. Labelling it
     // "Published" would misrepresent what is actually live — the whole point
     // of Engineering Rule 11.
-    expect(exportStatusLabel("published", "draft")).toBe(
-      "Unpublished draft update",
-    );
-    expect(exportStatusLabel("published", "submitted")).toBe(
-      "Update in review",
-    );
+    expect(exportStatusLabel("published", "draft")).toBe("unpublishedUpdate");
+    expect(exportStatusLabel("published", "submitted")).toBe("updateInReview");
   });
 
   it("calls a private story Private, not Draft", () => {
@@ -80,23 +74,23 @@ describe("exportStatusLabel", () => {
     // Without this case the PDF would say "Draft", which reads as unfinished
     // work waiting to be submitted rather than a deliberate choice, in the
     // one place there is no app around the label to correct it.
-    expect(exportStatusLabel("private", "draft")).toBe("Private");
+    expect(exportStatusLabel("private", "draft")).toBe("private");
   });
 
   it("labels a first-time story by its own revision state", () => {
-    expect(exportStatusLabel("draft", "draft")).toBe("Draft");
-    expect(exportStatusLabel("pending_review", "submitted")).toBe("In review");
+    expect(exportStatusLabel("draft", "draft")).toBe("draft");
+    expect(exportStatusLabel("pending_review", "submitted")).toBe("inReview");
     expect(exportStatusLabel("changes_requested", "changes_requested")).toBe(
-      "Changes requested",
+      "changesRequested",
     );
-    expect(exportStatusLabel("rejected", "rejected")).toBe("Not published");
+    expect(exportStatusLabel("rejected", "rejected")).toBe("notPublished");
   });
 
   it("falls back to Unpublished for a status it does not know", () => {
     // Adding to the story_revision_status enum must not silently produce a
     // PDF claiming to be published.
     expect(exportStatusLabel("published", "some_future_status")).toBe(
-      "Unpublished",
+      "unpublished",
     );
   });
 });

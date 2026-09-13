@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { createDraftAction, type NewStoryFormState } from "./actions";
 
 const initialState: NewStoryFormState = {};
@@ -36,6 +37,7 @@ const MAX_TITLE_LENGTH = 200;
  * the two entry points now behave the same way.
  */
 export function StartNewStory() {
+  const t = useTranslations("newStory");
   const [state, formAction, pending] = useActionState(
     createDraftAction,
     initialState,
@@ -48,12 +50,9 @@ export function StartNewStory() {
   return (
     <div className="mx-auto max-w-md px-4 py-12 sm:px-6 sm:py-16">
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-        Name your story
+        {t("title")}
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Give it a working title to start. You can change it any time while you
-        write.
-      </p>
+      <p className="mt-2 text-sm text-muted-foreground">{t("intro")}</p>
 
       <form action={formAction} className="mt-8 space-y-5" noValidate>
         <div>
@@ -61,7 +60,7 @@ export function StartNewStory() {
             htmlFor="new-story-title"
             className="block text-sm font-medium"
           >
-            Title
+            {t("titleLabel")}
             <span className="text-destructive">
               <span aria-hidden="true"> *</span>
               <span className="sr-only"> required</span>
@@ -76,7 +75,7 @@ export function StartNewStory() {
             maxLength={MAX_TITLE_LENGTH}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Six months picking kiwifruit in Te Puke"
+            placeholder={t("titlePlaceholder")}
             className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2 dark:bg-transparent"
           />
           <p className="mt-1 text-xs text-muted-foreground">
@@ -95,22 +94,22 @@ export function StartNewStory() {
           disabled={!canSubmit}
           className="w-full rounded-md bg-accent px-3 py-2 text-accent-foreground hover:opacity-90 disabled:opacity-60"
         >
-          {pending ? "Starting…" : "Start writing"}
+          {pending ? t("starting") : t("startWriting")}
         </button>
 
         <p className="text-sm text-muted-foreground">
-          Have it as a PDF?{" "}
+          {t("havePdf")}{" "}
           <Link
             href="/stories/new/import"
             className="underline underline-offset-2"
           >
-            Import it instead
+            {t("importInstead")}
           </Link>
           .
         </p>
         <p className="text-sm text-muted-foreground">
           <Link href="/my-stories" className="hover:underline">
-            Back to My Stories
+            {t("backToMyStories")}
           </Link>
         </p>
       </form>

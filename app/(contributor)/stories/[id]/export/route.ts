@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
+import { getLocale, getTranslations } from "next-intl/server";
+import { isLocale } from "@/i18n/locales";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -115,6 +117,13 @@ export async function GET(
   const images = await collectImages(preview.media);
 
   const exportedAt = new Date();
+  // The PDF is read away from the site, so it carries the language the
+  // contributor was reading in when they asked for it.
+  const [t, locale] = await Promise.all([getTranslations("pdf"), getLocale()]);
+  const statusKey = exportStatusLabel(
+    preview.lifecycleStatus,
+    preview.revisionStatus,
+  );
   const pdf = await buildStoryPdf({
     title: preview.title,
     excerpt: preview.excerpt,
@@ -135,11 +144,22 @@ export async function GET(
       note: expense.note,
     })),
     totalExpenseNzdCents: preview.totalExpenseNzdCents,
-    statusLabel: exportStatusLabel(
-      preview.lifecycleStatus,
-      preview.revisionStatus,
-    ),
+    statusLabel: t(`status.${statusKey}`),
     exportedAt,
+    locale: isLocale(locale) ? locale : "en",
+    labels: {
+      personalExperienceBy: (name) => t("personalExperienceBy", { name }),
+      trip: t("trip"),
+      travelStyle: t("travelStyle"),
+      places: t("places"),
+      tags: t("tags"),
+      totalCost: t("totalCost"),
+      whatItCost: t("whatItCost"),
+      total: t("total"),
+      morePhotos: t("morePhotos"),
+      colophon: (values) => t("colophon", values),
+      subject: t("subject"),
+    },
     siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "https://kakinotes.co.nz",
   });
 

@@ -1,4 +1,6 @@
 import type { Database } from "@/types/database";
+import { formatDate } from "@/lib/i18n/format";
+import type { Locale } from "@/i18n/locales";
 
 /**
  * One row of list_my_notifications(). Declared by hand rather than taken
@@ -22,8 +24,13 @@ export type NotificationRow = {
 export type NotificationView = {
   id: string;
   href: string;
-  /** Short lead line, e.g. "Story published". */
-  heading: string;
+  /**
+   * A key into messages/<locale>.json's `notifications.kinds`, not the
+   * sentence: this module is imported by a Server Component and a Client
+   * Component alike, and the heading is the same fact in both. The
+   * rendering component resolves it.
+   */
+  headingKey: NotificationRow["kind"];
   /** The story title, quoted by the renderer -- kept separate so it can be truncated on its own. */
   title: string;
   /** Moderator's reason, shown under the title when present. */
@@ -64,27 +71,18 @@ export function describeNotification(row: NotificationRow): NotificationView {
     case "story_submitted":
       return {
         ...base,
-        heading: "New story to review",
+        headingKey: row.kind,
         href: `/moderation/stories/${row.revision_id}`,
       };
     case "story_published":
       return {
         ...base,
-        heading: "Your story is live",
+        headingKey: row.kind,
         href: `/stories/${row.story_slug}`,
       };
     case "story_rejected":
-      return {
-        ...base,
-        heading: "Your story wasn't approved",
-        href: "/my-stories",
-      };
     case "story_changes_requested":
-      return {
-        ...base,
-        heading: "Changes requested on your story",
-        href: "/my-stories",
-      };
+      return { ...base, headingKey: row.kind, href: "/my-stories" };
   }
 }
 
@@ -94,21 +92,41 @@ export function describeNotification(row: NotificationRow): NotificationView {
  * decided on; an absolute date past that, because "9d" makes the reader
  * do arithmetic to find out which day it was.
  */
-export function formatNotificationAge(iso: string, now = Date.now()): string {
+export type NotificationAgeTranslator = (
+  key: "justNow" | "minutes" | "hours" | "days",
+  values?: { count: number },
+) => string;
+
+export function formatNotificationAge(
+  iso: string,
+  now = Date.now(),
+  t?: NotificationAgeTranslator,
+  locale: Locale = "en",
+): string {
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return "";
+  // English defaults, so a caller with no translator -- and this module's
+  // existing tests -- gets exactly the strings it produced before.
+  const say: NotificationAgeTranslator =
+    t ??
+    ((key, values) =>
+      key === "justNow"
+        ? "just now"
+        : key === "minutes"
+          ? `${values?.count}m`
+          : key === "hours"
+            ? `${values?.count}h`
+            : `${values?.count}d`);
+
   const seconds = Math.max(0, Math.round((now - then) / 1000));
-  if (seconds < 60) return "just now";
+  if (seconds < 60) return say("justNow");
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 60) return say("minutes", { count: minutes });
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h`;
+  if (hours < 24) return say("hours", { count: hours });
   const days = Math.round(hours / 24);
-  if (days < 7) return `${days}d`;
-  return new Date(then).toLocaleDateString("en-NZ", {
-    day: "numeric",
-    month: "short",
-  });
+  if (days < 7) return say("days", { count: days });
+  return formatDate(then, locale, { year: undefined });
 }
 
 /** Badge text: exact up to 9, then "9+" so the pill never grows. */

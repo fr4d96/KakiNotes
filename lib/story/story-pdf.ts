@@ -18,6 +18,7 @@ import type {
 } from "mdast";
 import { MEDIA_EMBED_REGEX } from "@/lib/story/markdown-media";
 import { formatNzdCents } from "@/lib/story/expense-per-month";
+import type { Locale } from "@/i18n/locales";
 import { isSafeHref } from "@/lib/validation/story";
 
 /**
@@ -411,6 +412,54 @@ export type StoryPdfInput = {
   statusLabel: string;
   exportedAt: Date;
   siteUrl: string;
+  /** Drives money formatting; the labels below carry the words. */
+  locale?: Locale;
+  /**
+   * Every fixed word this renderer prints, already in the reader's
+   * language. Passed in rather than looked up here: this module runs inside
+   * a Route Handler's PDF pipeline, not a React tree, so it cannot call a
+   * translation hook -- and the route knows the locale. Optional, defaulting
+   * to English below, so the existing tests construct an input unchanged.
+   */
+  labels?: Partial<StoryPdfLabels>;
+};
+
+export type StoryPdfLabels = {
+  personalExperienceBy: (name: string) => string;
+  trip: string;
+  travelStyle: string;
+  places: string;
+  tags: string;
+  totalCost: string;
+  whatItCost: string;
+  total: string;
+  morePhotos: string;
+  colophon: (values: {
+    title: string;
+    status: string;
+    date: string;
+    siteUrl: string;
+  }) => string;
+  subject: string;
+};
+
+const DEFAULT_PDF_LABELS: StoryPdfLabels = {
+  personalExperienceBy: (name) =>
+    `Personal experience, not advice — shared by ${endWithStop(name)}`,
+  trip: "Trip",
+  travelStyle: "Travel style",
+  places: "Places",
+  tags: "Tags",
+  totalCost: "Total cost",
+  whatItCost: "What it cost",
+  total: "Total",
+  morePhotos: "More photos",
+  colophon: ({ title, status, date, siteUrl }) =>
+    `Your copy of "${title}" (${status}), ` +
+    `exported from Kakinotes on ${date}. This is one person's ` +
+    `personal account of a Working Holiday Visa experience, not advice. ` +
+    `${siteUrl}`,
+  subject: "Personal experience, not advice.",
 };
 
 // --- Inline model -------------------------------------------------------
@@ -571,6 +620,10 @@ class StoryPdfRenderer {
   }
   private readonly doc: Doc;
   private readonly input: StoryPdfInput;
+  /** Every fixed word this renderer prints, English unless the caller passed
+   *  a translated set -- see StoryPdfLabels. */
+  private readonly labels: StoryPdfLabels;
+  private readonly locale: Locale;
   private readonly imagesById: Map<string, StoryPdfImage>;
   /** Ids drawn in the body, so the gallery at the end doesn't repeat them. */
   private readonly placed = new Set<string>();
@@ -579,6 +632,8 @@ class StoryPdfRenderer {
   constructor(doc: Doc, input: StoryPdfInput) {
     this.doc = doc;
     this.input = input;
+    this.labels = { ...DEFAULT_PDF_LABELS, ...input.labels };
+    this.locale = input.locale ?? "en";
     this.imagesById = new Map(
       input.images.map((image) => [image.mediaId, image]),
     );
@@ -1327,9 +1382,7 @@ class StoryPdfRenderer {
     // story. A PDF is the copy most likely to be read away from the site, so
     // it carries the label at the top, not only in the colophon.
     this.drawSegments(
-      `Personal experience, not advice — shared by ${endWithStop(
-        this.input.attributionValue,
-      )}`,
+      this.labels.personalExperienceBy(this.input.attributionValue),
       {
         baseFont: "regular",
         size: 9,
@@ -1346,16 +1399,18 @@ class StoryPdfRenderer {
 
   private renderFacts(column: Column): void {
     const rows: [string, string][] = [];
-    if (this.input.tripLabel) rows.push(["Trip", this.input.tripLabel]);
+    if (this.input.tripLabel)
+      rows.push([this.labels.trip, this.input.tripLabel]);
     if (this.input.travelStyleLabel)
-      rows.push(["Travel style", this.input.travelStyleLabel]);
+      rows.push([this.labels.travelStyle, this.input.travelStyleLabel]);
     if (this.input.locations.length)
-      rows.push(["Places", this.input.locations.join(", ")]);
-    if (this.input.tags.length) rows.push(["Tags", this.input.tags.join(", ")]);
+      rows.push([this.labels.places, this.input.locations.join(", ")]);
+    if (this.input.tags.length)
+      rows.push([this.labels.tags, this.input.tags.join(", ")]);
     if (typeof this.input.totalExpenseNzdCents === "number")
       rows.push([
-        "Total cost",
-        formatNzdCents(this.input.totalExpenseNzdCents),
+        this.labels.totalCost,
+        formatNzdCents(this.input.totalExpenseNzdCents, this.locale),
       ]);
     if (rows.length === 0) return;
 
@@ -1419,7 +1474,9 @@ class StoryPdfRenderer {
       .font(FONT_FILES.bold)
       .fontSize(13)
       .fillColor(INK)
-      .text("What it cost", column.left, this.doc.y, { width: column.width });
+      .text(this.labels.whatItCost, column.left, this.doc.y, {
+        width: column.width,
+      });
     this.doc.moveDown(0.5);
 
     for (const expense of this.input.expenses) {
@@ -1469,7 +1526,9 @@ class StoryPdfRenderer {
         .font(FONT_FILES.bold)
         .fontSize(BODY_SIZE)
         .fillColor(INK)
-        .text("Total", column.left, top, { width: column.width / 2 });
+        .text(this.labels.total, column.left, top, {
+          width: column.width / 2,
+        });
       this.doc.text(
         formatNzdCents(this.input.totalExpenseNzdCents),
         column.left,
@@ -1495,7 +1554,9 @@ class StoryPdfRenderer {
       .font(FONT_FILES.bold)
       .fontSize(13)
       .fillColor(INK)
-      .text("More photos", column.left, this.doc.y, { width: column.width });
+      .text(this.labels.morePhotos, column.left, this.doc.y, {
+        width: column.width,
+      });
     this.doc.moveDown(0.5);
 
     for (const image of remaining) {
@@ -1510,10 +1571,12 @@ class StoryPdfRenderer {
     this.renderRule(column);
     const exported = this.input.exportedAt.toISOString().slice(0, 10);
     this.drawSegments(
-      `Your copy of "${this.input.title}" (${this.input.statusLabel}), ` +
-        `exported from Kakinotes on ${exported}. This is one person's ` +
-        `personal account of a Working Holiday Visa experience, not advice. ` +
-        `${this.input.siteUrl}`,
+      this.labels.colophon({
+        title: this.input.title,
+        status: this.input.statusLabel,
+        date: exported,
+        siteUrl: this.input.siteUrl,
+      }),
       {
         baseFont: "regular",
         size: 8.5,
@@ -1564,7 +1627,7 @@ export async function buildStoryPdf(input: StoryPdfInput): Promise<Buffer> {
       Title: input.title,
       Author: input.attributionValue,
       Creator: "Kakinotes",
-      Subject: "Personal experience, not advice.",
+      Subject: input.labels?.subject ?? DEFAULT_PDF_LABELS.subject,
       CreationDate: input.exportedAt,
     },
   });

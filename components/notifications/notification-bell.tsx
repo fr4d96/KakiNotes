@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { BellIcon } from "@/components/icons";
 import { controlToneClasses } from "@/components/ui-tone";
 import { createClient } from "@/lib/supabase/client";
 import { NOTIFICATIONS_CHANGED_EVENT } from "@/lib/notifications/notifications-changed";
+import { isLocale } from "@/i18n/locales";
 import {
   describeNotification,
   formatNotificationAge,
@@ -45,6 +47,11 @@ const LIST_LIMIT = 20;
  * moment and a spinner nobody would see is not worth the state.
  */
 export function NotificationBell({ inverted = false }: { inverted?: boolean }) {
+  const t = useTranslations("notifications.bell");
+  const tKinds = useTranslations("notifications.kinds");
+  const tAge = useTranslations("notifications.age");
+  const rawLocale = useLocale();
+  const locale = isLocale(rawLocale) ? rawLocale : "en";
   const [unreadCount, setUnreadCount] = useState(0);
   const [items, setItems] = useState<NotificationView[] | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -158,7 +165,7 @@ export function NotificationBell({ inverted = false }: { inverted?: boolean }) {
 
   const badge = formatUnreadBadge(unreadCount);
   const label =
-    unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications";
+    unreadCount > 0 ? t("labelWithCount", { count: unreadCount }) : t("label");
 
   return (
     <div ref={containerRef} className="relative">
@@ -193,12 +200,12 @@ export function NotificationBell({ inverted = false }: { inverted?: boolean }) {
         <div
           id={menuId}
           role="menu"
-          aria-label="Notifications"
+          aria-label={t("label")}
           className="absolute -right-12 top-12 z-50 max-h-[calc(100vh-5rem)] w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-border-subtle bg-surface p-1.5 text-foreground shadow-xl"
         >
           <div className="flex items-center justify-between px-3 pt-1.5 pb-1">
             <p className="font-mono text-[0.625rem] tracking-[0.14em] text-muted-foreground uppercase">
-              Notifications
+              {t("label")}
             </p>
             {unreadCount > 0 && (
               <button
@@ -206,7 +213,7 @@ export function NotificationBell({ inverted = false }: { inverted?: boolean }) {
                 onClick={() => markRead(null)}
                 className="text-xs font-semibold text-muted-foreground hover:text-foreground hover:underline"
               >
-                Mark all read
+                {t("markAllRead")}
               </button>
             )}
           </div>
@@ -219,14 +226,16 @@ export function NotificationBell({ inverted = false }: { inverted?: boolean }) {
                 onClick={() => void loadList()}
                 className="font-semibold underline"
               >
-                Try again
+                {t("tryAgain")}
               </button>
             </p>
           ) : items === null ? (
-            <p className="px-3 py-4 text-sm text-muted-foreground">Loading…</p>
+            <p className="px-3 py-4 text-sm text-muted-foreground">
+              {t("loading")}
+            </p>
           ) : items.length === 0 ? (
             <p className="px-3 py-4 text-sm text-muted-foreground">
-              You&apos;re all caught up.
+              {t("allCaughtUp")}
             </p>
           ) : (
             <ul className="flex flex-col">
@@ -249,7 +258,7 @@ export function NotificationBell({ inverted = false }: { inverted?: boolean }) {
                       <span
                         className={`block text-sm ${item.unread ? "font-bold" : "font-medium"}`}
                       >
-                        {item.heading}
+                        {tKinds(item.headingKey)}
                         {item.unread && (
                           <span className="sr-only"> (unread)</span>
                         )}
@@ -264,7 +273,12 @@ export function NotificationBell({ inverted = false }: { inverted?: boolean }) {
                       )}
                     </span>
                     <span className="shrink-0 pt-0.5 text-xs text-muted-foreground">
-                      {formatNotificationAge(item.createdAt)}
+                      {formatNotificationAge(
+                        item.createdAt,
+                        undefined,
+                        tAge,
+                        locale,
+                      )}
                     </span>
                   </Link>
                 </li>
@@ -284,7 +298,7 @@ export function NotificationBell({ inverted = false }: { inverted?: boolean }) {
               onClick={() => setOpen(false)}
               className="block rounded-lg px-3 py-2 text-center text-sm font-semibold hover:bg-surface-muted"
             >
-              See all notifications
+              {t("seeAll")}
             </Link>
           </div>
         </div>
