@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 // Server Action body-size limit for the editorial content-import Server
 // Action (app/(editor)/editorial/import-actions.ts#importStoryContentAction).
@@ -180,4 +181,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// next-intl (Simplified Chinese, phase 1 -- 2026-09-14). The plugin does one
+// thing: it tells the bundler where the per-request i18n config lives
+// (i18n/request.ts), so `getTranslations()` / `getLocale()` in Server
+// Components, Server Actions and generateMetadata() can find the locale
+// and its messages. Nothing above changes; the plugin only wraps.
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
+
+export default withNextIntl(nextConfig);

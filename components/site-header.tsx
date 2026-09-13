@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
 import { MobileNavToggle } from "@/components/mobile-nav-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LocaleToggle } from "@/components/locale-toggle";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { SignInForm } from "@/components/auth/sign-in-form";
 import { SignUpForm } from "@/components/auth/sign-up-form";
@@ -174,6 +175,7 @@ export function SiteHeader() {
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <LocaleToggle />
             {signedIn ? (
               <>
                 <NotificationBell />
@@ -202,6 +204,7 @@ export function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-2 md:hidden">
           <ThemeToggle />
+          <LocaleToggle />
           {signedIn ? (
             // Replaces the hamburger entirely on mobile once signed in --
             // its dropdown carries the primary nav links too (extraItems),

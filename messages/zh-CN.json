@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "siteDescription": "来自在新西兰完成打工度假的人们的真实、详细的打工度假签证（WHV）故事。"
+  },
+  "common": {
+    "skipToMain": "跳到主要内容",
+    "localeToggle": {
+      "switchToZh": "切换到中文",
+      "switchToEn": "切换到英文"
+    },
+    "relativeTime": {
+      "justNow": "刚刚",
+      "minutesAgo": "{count}分钟前",
+      "hoursAgo": "{count}小时前",
+      "daysAgo": "{count}天前"
+    }
+  }
+}
