@@ -34,7 +34,10 @@
     },
     "anonymous": "匿名",
     "personalExperienceLabel": "个人经历，并非建议 — 不构成移民、法律、就业、税务或财务建议",
-    "mustBeSignedIn": "你需要先登录。"
+    "mustBeSignedIn": "你需要先登录。",
+    "confirm": "确认",
+    "cancel": "取消",
+    "working": "处理中…"
   },
   "nav": {
     "primary": "主导航",
@@ -163,7 +166,8 @@
       "expenseNeedsCategory": "花费条目需要一个类别或名称。",
       "consentRequired": "你必须确认自己有权发布这篇故事。",
       "termsVersionMissing": "缺少条款版本。",
-      "selectPage": "请至少选择一页。"
+      "selectPage": "请至少选择一页。",
+      "changeNoteRequired": "请说明需要修改什么。"
     },
     "pdf": {
       "empty": "PDF 文件是空的。",
@@ -379,7 +383,8 @@
       "previous": "上一批故事",
       "next": "下一批故事",
       "goTo": "跳到第 {index} 篇，共 {total} 篇",
-      "readStory": "阅读故事"
+      "readStory": "阅读故事",
+      "dragHint": "拖动最前面的卡片，或使用箭头。"
     },
     "quiz": {
       "yourMatch": "你的匹配结果",
@@ -1095,5 +1100,44 @@
       "superseded": "已被取代",
       "unpublished": "未发布"
     }
+  },
+  "actionErrors": {
+    "generic": "出了点问题。",
+    "invalidInput": "输入无效。",
+    "invalidStory": "故事无效。",
+    "invalidMedia": "图片无效。",
+    "invalidRevision": "版本无效。",
+    "invalidRequest": "请求无效。",
+    "invalidNote": "备注无效。",
+    "invalidSubmission": "提交内容无效。",
+    "invalidLocations": "地点无效。",
+    "invalidTags": "标签无效。",
+    "invalidExpenses": "花费数据无效。",
+    "invalidCaption": "图注无效。",
+    "invalidMediaOrder": "图片顺序无效。",
+    "invalidExpectedVersion": "版本号无效。",
+    "altTextRequired": "除非标记为装饰性图片，否则必须填写替代文字。",
+    "refreshMediaFailed": "无法刷新图片。",
+    "loadImageFailed": "无法加载图片。",
+    "previewNotAuthorized": "你没有预览这张图片的权限。",
+    "deleteStoryFailed": "无法删除这篇故事。",
+    "loadStoryFailed": "无法加载这篇故事。",
+    "reserveUploadFailed": "无法预留上传位置。",
+    "heicConvertFailed": "无法转换这张 HEIC 照片，请再试一次。",
+    "finalizeUploadFailed": "无法完成上传。",
+    "submitFailed": "无法提交这篇故事送审。",
+    "savePrivateFailed": "无法把这篇故事保存为私密。",
+    "requestChangesFailed": "无法提交修改请求。",
+    "declineFailed": "无法拒绝。"
+  },
+  "takedown": {
+    "alreadyDown": "这篇故事已经被撤下了。",
+    "changedWhileOpen": "这篇故事在你打开页面期间发生了变化。请刷新后重试。",
+    "notYours": "你只能撤下自己的故事。",
+    "alreadyRequested": "你已经申请撤下这篇故事了 — 正在等待团队处理。",
+    "alreadyReviewed": "该申请已经处理过了。",
+    "onlyPublished": "只有已发布的故事才能撤下。",
+    "gone": "这篇故事已经不存在了。",
+    "failed": "无法撤下这篇故事，请再试一次。"
   }
 }

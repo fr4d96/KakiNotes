@@ -213,7 +213,7 @@ export function StoryStepProgress({
                 // accessible name already carries.
                 <span
                   aria-label={labelFor(step.id, index)}
-                  title="Finish the steps before it, then use “Review & submit”."
+                  title={t("steps.lockedHint")}
                   className={`${shared} cursor-not-allowed opacity-45`}
                 >
                   {inner}

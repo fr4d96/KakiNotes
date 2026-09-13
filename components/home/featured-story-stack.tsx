@@ -319,7 +319,7 @@ export function FeaturedStoryStack({ stories }: { stories: StoryCardData[] }) {
         </button>
       </div>
       <p className="mt-3 text-center text-xs text-foreground/50">
-        Drag the front card, or use the arrows.
+        {t("dragHint")}
       </p>
     </div>
   );

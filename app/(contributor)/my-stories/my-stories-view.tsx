@@ -861,8 +861,6 @@ export function MyStoriesView({
   takedownRequests?: TakedownRequestRow[];
 }) {
   const t = useTranslations("myStories");
-  const rawLocale = useLocale();
-  const locale = isLocale(rawLocale) ? rawLocale : "en";
   // Keyed once here rather than scanned per row: the list pages twelve at a
   // time and every row asks this question.
   const takedownByStory = useMemo(

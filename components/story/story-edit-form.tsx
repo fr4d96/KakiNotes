@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import {
   revisionInputSchema,
   travelStyles,
@@ -28,7 +28,6 @@ import {
   type LocationMatch,
 } from "@/components/story/location-search";
 import { MutationQueue } from "@/lib/story/mutation-queue";
-import { isLocale } from "@/i18n/locales";
 import { firstIssueMessage } from "@/lib/validation/issue-messages";
 import { getErrorMessage } from "@/lib/errors";
 import type {
@@ -318,8 +317,12 @@ export function StoryEditForm({
 }: StoryEditFormProps) {
   const t = useTranslations("editor");
   const tValidation = useTranslations("validation");
-  const rawLocale = useLocale();
-  const locale = isLocale(rawLocale) ? rawLocale : "en";
+  // The mutation queue below is created ONCE and must stay that way --
+  // rebuilding it would drop whatever is in flight. Its error callback
+  // still has to speak the current language, so it reads the translator
+  // through a ref rather than closing over the render's own `t`.
+  const tRef = useRef(t);
+  tRef.current = t;
   const versionRef = useRef(initialVersion);
   const [conflict, setConflict] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -340,7 +343,7 @@ export function StoryEditForm({
     const q = new MutationQueue({
       onVersionConflict: () => setConflict(true),
       onError: (_slot, error) =>
-        setSaveError(getErrorMessage(error, t("save.failed"))),
+        setSaveError(getErrorMessage(error, tRef.current("save.failed"))),
       // `saving` must stay true whenever ANY mutation is queued or running
       // across ANY slot -- not merely "the mutation that just settled did."
       // Reading queue.hasPending() at the moment of settling (rather than
@@ -588,7 +591,7 @@ export function StoryEditForm({
         });
       }, FIELDS_SAVE_DEBOUNCE_MS);
     },
-    [queue, revisionId],
+    [queue, revisionId, tValidation],
   );
 
   // Every field-backed value schedules its own save directly from the event

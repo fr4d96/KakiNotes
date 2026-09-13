@@ -80,10 +80,14 @@ export function StoryIndex({ stories }: { stories: StoryCardData[] }) {
       return { key, label, read, options: ranked.map(([v]) => v), partitions };
     }
     return [
-      axis("place", "Place", (s) => regionNames(s.regions)),
-      axis("topic", "Topic", (s) => stringList(s.tags)),
+      // The axis KEY is stable ("place"/"topic"); the label is the message
+      // for it. The OPTION values stay as the data gives them -- region
+      // names arrive from list_published_stories() without slugs, and tags
+      // are the contributor's own words (see lib/i18n/vocab.ts).
+      axis("place", t("place"), (s) => regionNames(s.regions)),
+      axis("topic", t("topic"), (s) => stringList(s.tags)),
     ].filter((a) => a.partitions);
-  }, [stories]);
+  }, [stories, t]);
 
   const [active, setActive] = useState<Record<string, string>>({});
   const [page, setPage] = useState(1);
@@ -182,7 +186,7 @@ export function StoryIndex({ stories }: { stories: StoryCardData[] }) {
         className="mt-5 font-mono text-xs tracking-wider text-foreground/50 tabular-nums"
         aria-live="polite"
       >
-        {filtered.length} {filtered.length === 1 ? "ENTRY" : "ENTRIES"}
+        {t("entries", { count: filtered.length })}
         {/* The showing-range lives inside the same aria-live region as the
             count, so paging announces itself the way filtering already
             did -- otherwise a page change is silent to a screen reader
@@ -191,7 +195,10 @@ export function StoryIndex({ stories }: { stories: StoryCardData[] }) {
           <>
             {" · "}
             <span>
-              SHOWING {firstIndex + 1}–{firstIndex + visible.length}
+              {t("showing", {
+                from: firstIndex + 1,
+                to: firstIndex + visible.length,
+              })}
             </span>
           </>
         ) : null}
@@ -206,7 +213,7 @@ export function StoryIndex({ stories }: { stories: StoryCardData[] }) {
               }}
               className="underline underline-offset-4 hover:text-accent"
             >
-              CLEAR
+              {t("clear")}
             </button>
           </>
         ) : null}
@@ -233,22 +240,20 @@ export function StoryIndex({ stories }: { stories: StoryCardData[] }) {
           ))}
         </ul>
       ) : (
-        <p className="mt-8 text-foreground/60">
-          No stories carry all of those yet. Try clearing a filter.
-        </p>
+        <p className="mt-8 text-foreground/60">{t("noMatches")}</p>
       )}
 
       {pageCount > 1 ? (
         <nav
-          aria-label="Record pages"
+          aria-label={t("recordPages")}
           className="mt-8 flex flex-wrap items-center gap-2 border-t border-border-subtle pt-6"
         >
           <PageButton
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 1}
-            label="Previous page"
+            label={t("previousPage")}
           >
-            ← Prev
+            {t("prev")}
           </PageButton>
 
           {/* Every page number, no ellipsis window: the landing page fetches
@@ -259,7 +264,7 @@ export function StoryIndex({ stories }: { stories: StoryCardData[] }) {
               key={number}
               onClick={() => goToPage(number)}
               current={number === currentPage}
-              label={`Page ${number} of ${pageCount}`}
+              label={t("pageOf", { page: number, total: pageCount })}
             >
               {/* Plain "2", not the zero-padded "02" the entries use. The
                   numerals down the left of the record are its spine, and a
@@ -272,16 +277,16 @@ export function StoryIndex({ stories }: { stories: StoryCardData[] }) {
           <PageButton
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage === pageCount}
-            label="Next page"
+            label={t("nextPage")}
           >
-            Next →
+            {t("next")}
           </PageButton>
         </nav>
       ) : null}
 
       <div className="mt-10">
         <Link href="/stories" className="night-button-primary">
-          Browse the full catalogue <ArrowRightIcon className="h-4 w-4" />
+          {t("browseCatalogue")} <ArrowRightIcon className="h-4 w-4" />
         </Link>
       </div>
     </div>

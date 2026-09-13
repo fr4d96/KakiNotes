@@ -1,5 +1,7 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
+
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import {
@@ -14,6 +16,7 @@ import {
 } from "@/lib/validation/story";
 import { logAppEvent } from "@/lib/log";
 import { getErrorMessage } from "@/lib/errors";
+import { firstIssueMessage } from "@/lib/validation/issue-messages";
 
 export type DeleteDraftStoryResult =
   { ok: true } | { ok: false; error: string };
@@ -30,9 +33,13 @@ export async function deleteDraftStoryAction(
   storyId: string,
   expectedVersion: number,
 ): Promise<DeleteDraftStoryResult> {
+  const [tErr, tCommon] = await Promise.all([
+    getTranslations("actionErrors"),
+    getTranslations("common"),
+  ]);
   const user = await getCurrentUser();
   if (!user) {
-    return { ok: false, error: "You must be signed in." };
+    return { ok: false, error: tCommon("mustBeSignedIn") };
   }
 
   try {
@@ -40,7 +47,7 @@ export async function deleteDraftStoryAction(
   } catch (error) {
     return {
       ok: false,
-      error: getErrorMessage(error, "Could not delete this story."),
+      error: getErrorMessage(error, tErr("deleteStoryFailed")),
     };
   }
 
@@ -60,30 +67,19 @@ export type WithdrawStoryResult = { ok: true } | { ok: false; error: string };
  * this is the weaker of the two mechanisms and is only used because the
  * stronger one does not exist for this function.
  */
-function withdrawalErrorMessage(error: unknown): string {
+async function withdrawalErrorMessage(error: unknown): Promise<string> {
+  const t = await getTranslations("takedown");
   const raw = getErrorMessage(error, "");
-  if (/already been revoked/i.test(raw)) {
-    return "This story has already been taken down.";
-  }
-  if (/stale version/i.test(raw)) {
-    return "This story changed while this page was open. Refresh and try again.";
-  }
-  if (/only the story owner/i.test(raw)) {
-    return "You can only take down your own story.";
-  }
-  if (/already awaiting review/i.test(raw)) {
-    return "You've already asked for this story to come down — it's waiting on the team.";
-  }
-  if (/already been decided/i.test(raw)) {
-    return "That request has already been reviewed.";
-  }
-  if (/only a published story/i.test(raw)) {
-    return "Only a published story can be taken down.";
-  }
-  if (/no such story/i.test(raw)) {
-    return "That story no longer exists.";
-  }
-  return "Could not take this story down. Please try again.";
+  // The PATTERNS stay English: they match the database function's own
+  // raised text, which is not user-facing and never translated.
+  if (/already been revoked/i.test(raw)) return t("alreadyDown");
+  if (/stale version/i.test(raw)) return t("changedWhileOpen");
+  if (/only the story owner/i.test(raw)) return t("notYours");
+  if (/already awaiting review/i.test(raw)) return t("alreadyRequested");
+  if (/already been decided/i.test(raw)) return t("alreadyReviewed");
+  if (/only a published story/i.test(raw)) return t("onlyPublished");
+  if (/no such story/i.test(raw)) return t("gone");
+  return t("failed");
 }
 
 /**
@@ -112,9 +108,15 @@ export async function requestStoryTakedownAction(
   expectedVersion: number,
   note?: string,
 ): Promise<WithdrawStoryResult> {
+  const [tErr, tv, tCommon, tTakedown] = await Promise.all([
+    getTranslations("actionErrors"),
+    getTranslations("validation"),
+    getTranslations("common"),
+    getTranslations("takedown"),
+  ]);
   const user = await getCurrentUser();
   if (!user) {
-    return { ok: false, error: "You must be signed in." };
+    return { ok: false, error: tCommon("mustBeSignedIn") };
   }
 
   const parsed = requestTakedownSchema.safeParse({
@@ -125,7 +127,7 @@ export async function requestStoryTakedownAction(
   if (!parsed.success) {
     return {
       ok: false,
-      error: parsed.error.issues[0]?.message ?? "Invalid request.",
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
     };
   }
 
@@ -136,17 +138,17 @@ export async function requestStoryTakedownAction(
   } catch (error) {
     return {
       ok: false,
-      error: getErrorMessage(error, "Could not load this story."),
+      error: getErrorMessage(error, tErr("loadStoryFailed")),
     };
   }
 
   // Not found means "not yours" as far as this RPC is concerned — the same
   // answer either way, so there is nothing here to probe for.
   if (!story) {
-    return { ok: false, error: "You can only take down your own story." };
+    return { ok: false, error: tTakedown("notYours") };
   }
   if (story.lifecycle_status !== "published") {
-    return { ok: false, error: "Only a published story can be taken down." };
+    return { ok: false, error: tTakedown("onlyPublished") };
   }
 
   try {
@@ -156,7 +158,7 @@ export async function requestStoryTakedownAction(
       parsed.data.note || null,
     );
   } catch (error) {
-    return { ok: false, error: withdrawalErrorMessage(error) };
+    return { ok: false, error: await withdrawalErrorMessage(error) };
   }
 
   // Deliberately NO public-cache invalidation here: nothing about the public
@@ -175,14 +177,18 @@ export async function requestStoryTakedownAction(
 export async function cancelStoryTakedownAction(
   requestId: string,
 ): Promise<WithdrawStoryResult> {
+  const [tErr, tCommon] = await Promise.all([
+    getTranslations("actionErrors"),
+    getTranslations("common"),
+  ]);
   const user = await getCurrentUser();
   if (!user) {
-    return { ok: false, error: "You must be signed in." };
+    return { ok: false, error: tCommon("mustBeSignedIn") };
   }
 
   const parsed = cancelTakedownSchema.safeParse({ requestId });
   if (!parsed.success) {
-    return { ok: false, error: "Invalid request." };
+    return { ok: false, error: tErr("invalidRequest") };
   }
 
   try {
@@ -191,7 +197,7 @@ export async function cancelStoryTakedownAction(
     // database is the only boundary here, which is exactly what it is for.
     await cancelStoryTakedownRequest(parsed.data.requestId);
   } catch (error) {
-    return { ok: false, error: withdrawalErrorMessage(error) };
+    return { ok: false, error: await withdrawalErrorMessage(error) };
   }
 
   revalidatePath("/my-stories");

@@ -34,7 +34,10 @@
     },
     "anonymous": "Anonymous",
     "personalExperienceLabel": "One person's experience — not immigration, legal, employment, tax, or financial advice",
-    "mustBeSignedIn": "You must be signed in."
+    "mustBeSignedIn": "You must be signed in.",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "working": "Working…"
   },
   "nav": {
     "primary": "Primary",
@@ -163,7 +166,8 @@
       "expenseNeedsCategory": "An expense row needs a category or a name.",
       "consentRequired": "You must confirm you have permission to publish this story.",
       "termsVersionMissing": "Missing terms version.",
-      "selectPage": "Select at least one page."
+      "selectPage": "Select at least one page.",
+      "changeNoteRequired": "Describe what needs to change."
     },
     "pdf": {
       "empty": "The PDF file is empty.",
@@ -379,7 +383,8 @@
       "previous": "Previous stories",
       "next": "Next stories",
       "goTo": "Go to story {index} of {total}",
-      "readStory": "Read story"
+      "readStory": "Read story",
+      "dragHint": "Drag the front card, or use the arrows."
     },
     "quiz": {
       "yourMatch": "Your match",
@@ -1095,5 +1100,44 @@
       "superseded": "Superseded",
       "unpublished": "Unpublished"
     }
+  },
+  "actionErrors": {
+    "generic": "Something went wrong.",
+    "invalidInput": "Invalid input.",
+    "invalidStory": "Invalid story.",
+    "invalidMedia": "Invalid media.",
+    "invalidRevision": "Invalid revision.",
+    "invalidRequest": "Invalid request.",
+    "invalidNote": "Invalid note.",
+    "invalidSubmission": "Invalid submission.",
+    "invalidLocations": "Invalid locations.",
+    "invalidTags": "Invalid tags.",
+    "invalidExpenses": "Invalid expenses.",
+    "invalidCaption": "Invalid caption.",
+    "invalidMediaOrder": "Invalid media order.",
+    "invalidExpectedVersion": "Invalid expectedVersion.",
+    "altTextRequired": "Alt text is required unless the image is marked decorative.",
+    "refreshMediaFailed": "Could not refresh media.",
+    "loadImageFailed": "Could not load image.",
+    "previewNotAuthorized": "Not authorized to preview this image.",
+    "deleteStoryFailed": "Could not delete this story.",
+    "loadStoryFailed": "Could not load this story.",
+    "reserveUploadFailed": "Could not reserve an upload slot.",
+    "heicConvertFailed": "Could not convert this HEIC photo. Please try again.",
+    "finalizeUploadFailed": "Could not finalize the upload.",
+    "submitFailed": "Could not submit this story for review.",
+    "savePrivateFailed": "Could not save this story privately.",
+    "requestChangesFailed": "Could not request changes.",
+    "declineFailed": "Could not decline."
+  },
+  "takedown": {
+    "alreadyDown": "This story has already been taken down.",
+    "changedWhileOpen": "This story changed while this page was open. Refresh and try again.",
+    "notYours": "You can only take down your own story.",
+    "alreadyRequested": "You've already asked for this story to come down — it's waiting on the team.",
+    "alreadyReviewed": "That request has already been reviewed.",
+    "onlyPublished": "Only a published story can be taken down.",
+    "gone": "That story no longer exists.",
+    "failed": "Could not take this story down. Please try again."
   }
 }

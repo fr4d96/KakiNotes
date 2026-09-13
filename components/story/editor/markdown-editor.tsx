@@ -400,7 +400,9 @@ export const MarkdownEditor = React.forwardRef<
       slashMenuTheme,
       ...createMarkdownLiveExtensions(),
     ],
-    [],
+    // `t` is stable per locale; listing it means switching language rebuilds
+    // the extensions with the new popup label rather than keeping the old one.
+    [t],
   );
 
   const extensions = React.useMemo(
