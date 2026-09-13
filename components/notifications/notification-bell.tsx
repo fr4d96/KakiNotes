@@ -27,8 +27,9 @@ const LIST_LIMIT = 20;
  * or reviewing.
  *
  * Client-side data, like SiteHeader's own identity reads and for the same
- * reason: public pages never call the session server-side so they stay
- * cacheable, and a badge is exactly the kind of per-person detail that
+ * reason: public pages never call the session server-side so their HTML
+ * carries nothing per-person (and the data behind it can be cached and
+ * shared), and a badge is exactly the kind of per-person detail that
  * must not be baked into a shared page. Every read is the caller's own
  * rows -- the three RPCs key on auth.uid() and nothing here is passed to
  * them but a limit and, when marking read, the ids of rows already shown.

@@ -52,16 +52,20 @@ type AuthModalKind = "sign-in" | "sign-up" | null;
  * underneath.
  *
  * Session awareness: public pages deliberately never call getCurrentUser()
- * server-side (see (contributor)/layout.tsx's own comment) so they stay
- * static/cache-friendly -- this header is the one place that still needs
- * to know if the visitor is signed in, so it checks client-side only, via
- * the browser Supabase client (lib/supabase/client.ts). That keeps every
- * public page's server-rendered HTML untouched; only this already-client
- * component re-renders once the check resolves.
+ * server-side (see (contributor)/layout.tsx's own comment) -- this header
+ * is the one place that still needs to know if the visitor is signed in,
+ * so it checks client-side only, via the browser Supabase client
+ * (lib/supabase/client.ts). That keeps every public page's server-rendered
+ * HTML identical for every visitor; only this already-client component
+ * re-renders once the check resolves. (Public pages have rendered per
+ * request since the language cookie, 2026-09-14, and cache their DATA
+ * instead -- but "the HTML carries nothing per-person" is still the
+ * property that lets that data be shared, and a server-side session read
+ * here would break it.)
  *
  * Once signed in, NotificationBell renders beside the avatar (both
  * breakpoints) and does its own RPC reads the same client-side way, for
- * the same cacheability reason -- see that component.
+ * the same reason -- see that component.
  *
  * Once signed in, the same effect also reads the caller's own
  * profiles.avatar_emoji (RLS already scopes this to auth.uid() -- see

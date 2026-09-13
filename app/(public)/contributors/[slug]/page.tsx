@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
-  getPublicContributor,
-  listContributorPublishedStories,
+  getPublicContributorCached,
+  listContributorPublishedStoriesCached,
 } from "@/lib/story/public-queries";
 import { StoryCard } from "@/components/story/story-card";
 import { ContributorAvatar } from "@/components/contributor/contributor-avatar";
 import { countryName } from "@/lib/countries";
 
-export const revalidate = 60;
+// No `export const revalidate` any more (it was 60). The root layout reads
+// the language cookie, which makes this route render per request, so the
+// page-level window became a no-op; the same 60s window now lives on the
+// data reads (the *Cached readers in lib/story/public-queries.ts).
 
 export async function generateMetadata({
   params,
@@ -16,7 +19,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const contributor = await getPublicContributor(slug);
+  const contributor = await getPublicContributorCached(slug);
   if (!contributor) return {};
   return {
     title: contributor.display_name,
@@ -62,10 +65,10 @@ export default async function ContributorDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const contributor = await getPublicContributor(slug);
+  const contributor = await getPublicContributorCached(slug);
   if (!contributor) notFound();
 
-  const stories = await listContributorPublishedStories(
+  const stories = await listContributorPublishedStoriesCached(
     contributor.contributor_id,
     { limit: 24 },
   );

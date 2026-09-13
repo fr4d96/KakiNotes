@@ -1,33 +1,58 @@
 import "server-only";
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
 import type { CostBand } from "@/lib/validation/discovery";
 
 // Every function here is deliberately cookie-free (lib/supabase/public.ts)
-// rather than the session-bound lib/supabase/server.ts client -- reading
-// next/headers' cookies() unconditionally opts a route out of static
-// rendering/ISR in the App Router, and every RPC this module calls is one
-// of the handful actually granted to `anon` (get_published_story,
-// list_published_stories, get_published_story_media,
+// rather than the session-bound lib/supabase/server.ts client: every RPC
+// this module calls is one of the handful actually granted to `anon`
+// (get_published_story, list_published_stories, get_published_story_media,
 // list_distinct_public_travel_styles, list_public_contributors,
-// get_public_contributor), so no session was ever needed to answer them.
+// get_public_contributor), so no session was ever needed to answer them --
+// and a function that reads no cookies is one unstable_cache() is allowed
+// to wrap.
 //
-// Which callers that cookie-freeness actually buys caching for (checked
-// against the production build's route table, not assumed):
-//   - app/(public)/page.tsx builds `○` static with a 1m revalidate.
-//   - app/(public)/stories/[id] and app/(public)/contributors/[slug] are
-//     ISR-cached per path at runtime with their own `revalidate = 60`.
-//   - app/(public)/stories and app/(public)/contributors are NOT cached and
-//     cannot be: both await searchParams, which forces dynamic rendering
-//     regardless of the Supabase client used. Their `revalidate` exports
-//     were no-ops and have been removed.
-// The cookie-free client is still the right call for those two dynamic
-// pages -- it keeps them off the session path entirely for reads that never
-// needed a session -- it just isn't buying them a cache. Note the cost that
-// leaves in place: /stories issues 5 round trips per visit (regions,
-// destinations, tags, travel styles, stories) plus middleware's
-// get_published_story existence check, on every request. Making it
-// genuinely cacheable would mean moving filtering client-side.
+// What that buys, and what changed on 2026-09-14 (Simplified Chinese):
+//
+//   Before, cookie-freeness let `/` build static and `/stories/[id]` and
+//   `/contributors/[slug]` ISR-cache per path with `revalidate = 60`. The
+//   root layout now reads the language cookie (i18n/request.ts) to choose
+//   <html lang> and the UI language, and a cookie read makes every route
+//   beneath it render per request -- so those `revalidate` exports became
+//   no-ops and were removed. The HTML must be re-rendered per request
+//   (it differs by language); the DATA does not (it is identical in both),
+//   so the *Cached variants below hold the same 60s window at the data
+//   layer via unstable_cache(). The database sees the same load it did
+//   under ISR; only the render moved.
+//
+//   The two index pages, /stories and /contributors, are unchanged: they
+//   await searchParams, were never cacheable, and deliberately keep calling
+//   the UNCACHED functions so a filter result is always fresh. Note the cost
+//   that leaves in place: /stories issues 5 round trips per visit (regions,
+//   destinations, tags, travel styles, stories) plus middleware's
+//   get_published_story existence check, on every request.
+//
+// On-demand invalidation still works. unstable_cache() entries carry
+// implicit "soft" tags for the route path they were filled under
+// (_N_T_/stories/<slug>, _N_T_/, ...), which is exactly what
+// revalidatePath() revalidates -- so lib/story/public-cache.ts's existing
+// helpers keep purging them. The explicit PUBLIC_*_TAG tags below are a
+// second, path-independent handle those helpers also use, so an entry
+// filled under one path (a story card on /) is not left behind when the
+// story is taken down from another.
+//
+// `use cache` / Cache Components is the Next 16 replacement for
+// unstable_cache(), and the docs mark this API as superseded -- but `use
+// cache` only works under the `cacheComponents` flag, which changes the
+// rendering model of the whole app. That is a migration in its own right,
+// not a side effect of adding a language.
+
+export const PUBLIC_STORIES_TAG = "public-stories";
+export const PUBLIC_CONTRIBUTORS_TAG = "public-contributors";
+
+/** The window `/`, `/stories/[id]` and `/contributors/[slug]` used under ISR. */
+const PUBLIC_REVALIDATE_SECONDS = 60;
 
 export type PublishedStoriesFilter = {
   cursorPublishedAt?: string;
@@ -56,11 +81,17 @@ export async function getPublishedStoryBySlug(slug: string) {
 }
 
 /**
- * React-cache-wrapped: generateMetadata() and the page component both need
- * the same story, and this dedupes the RPC call to one per request instead
- * of two.
+ * Two layers, on purpose: unstable_cache() holds the row for 60s ACROSS
+ * requests (the data-layer stand-in for the ISR this page lost -- see the
+ * header), and React's cache() dedupes WITHIN a request, so generateMetadata()
+ * and the page component share one lookup instead of two.
  */
-export const getPublishedStoryBySlugCached = cache(getPublishedStoryBySlug);
+export const getPublishedStoryBySlugCached = cache(
+  unstable_cache(getPublishedStoryBySlug, ["public:get_published_story"], {
+    tags: [PUBLIC_STORIES_TAG],
+    revalidate: PUBLIC_REVALIDATE_SECONDS,
+  }),
+);
 
 export async function getPublishedStoryMedia(storyId: string) {
   const supabase = createPublicClient();
@@ -70,6 +101,13 @@ export async function getPublishedStoryMedia(storyId: string) {
   if (error) throw error;
   return data ?? [];
 }
+
+export const getPublishedStoryMediaCached = cache(
+  unstable_cache(getPublishedStoryMedia, ["public:get_published_story_media"], {
+    tags: [PUBLIC_STORIES_TAG],
+    revalidate: PUBLIC_REVALIDATE_SECONDS,
+  }),
+);
 
 /**
  * A story's cover: the explicitly chosen photo if there is one, otherwise the
@@ -124,6 +162,16 @@ export async function listPublishedStories(
   return data ?? [];
 }
 
+/**
+ * For `/` and `/stories/[id]` (related stories) only -- the /stories index
+ * keeps the uncached listPublishedStories() so a filter is always fresh.
+ */
+export const listPublishedStoriesCached = unstable_cache(
+  listPublishedStories,
+  ["public:list_published_stories"],
+  { tags: [PUBLIC_STORIES_TAG], revalidate: PUBLIC_REVALIDATE_SECONDS },
+);
+
 /** A contributor's published stories — same RPC, contributorId filter. */
 export async function listContributorPublishedStories(
   contributorId: string,
@@ -162,6 +210,18 @@ export async function listPublicContributors(
   return data ?? [];
 }
 
+/** For `/contributors/[slug]` only; the directory stays uncached. */
+export const listContributorPublishedStoriesCached = unstable_cache(
+  listContributorPublishedStories,
+  ["public:list_published_stories:contributor"],
+  // A byline page lists the contributor's stories, so it must go stale
+  // with either: a story taken down, or the contributor's profile changed.
+  {
+    tags: [PUBLIC_STORIES_TAG, PUBLIC_CONTRIBUTORS_TAG],
+    revalidate: PUBLIC_REVALIDATE_SECONDS,
+  },
+);
+
 export async function getPublicContributor(slug: string) {
   const supabase = createPublicClient();
   const { data, error } = await supabase.rpc("get_public_contributor", {
@@ -170,6 +230,13 @@ export async function getPublicContributor(slug: string) {
   if (error) throw error;
   return data?.[0] ?? null;
 }
+
+export const getPublicContributorCached = cache(
+  unstable_cache(getPublicContributor, ["public:get_public_contributor"], {
+    tags: [PUBLIC_CONTRIBUTORS_TAG],
+    revalidate: PUBLIC_REVALIDATE_SECONDS,
+  }),
+);
 
 // --- Lookup tables, cookie-free variant ------------------------------------
 //
@@ -192,6 +259,13 @@ export async function listPublicRegions(): Promise<PublicRegion[]> {
   if (error) throw error;
   return data ?? [];
 }
+
+/** The story page resolves a region id from this; the list barely changes. */
+export const listPublicRegionsCached = unstable_cache(
+  listPublicRegions,
+  ["public:regions"],
+  { tags: [PUBLIC_STORIES_TAG], revalidate: PUBLIC_REVALIDATE_SECONDS },
+);
 
 export async function listPublicDestinations(): Promise<PublicDestination[]> {
   const supabase = createPublicClient();

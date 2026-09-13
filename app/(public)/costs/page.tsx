@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
 import { formatNzdCents } from "@/lib/story/expense-per-month";
 
@@ -13,7 +14,13 @@ export const metadata: Metadata = {
 // edited or withdrawn. Short-TTL ISR rather than force-dynamic: this is
 // expensive to compute, identical for every reader, and nobody is harmed by
 // it being an hour stale.
-export const revalidate = 3600;
+// No `export const revalidate` any more (it was 3600). The root layout reads
+// the language cookie, which makes this route render per request, so the
+// page-level window became a no-op; the same hour now lives on the
+// aggregate read below (unstable_cache), which is the expensive part.
+// Deliberately NOT tagged for on-demand invalidation, matching the previous
+// behaviour: these are medians across every published story, an hour stale
+// was always acceptable, and no visibility change ever purged this page.
 
 /**
  * "What it actually cost", across every published story.
@@ -46,18 +53,22 @@ type NamedBand = {
   median_cents: number;
 };
 
-async function getAggregates() {
-  const supabase = createPublicClient();
-  const { data, error } = await supabase.rpc("get_expense_aggregates");
-  if (error) throw error;
-  const row = data?.[0];
-  return {
-    overall: (row?.overall ?? null) as Band,
-    perMonth: (row?.per_month ?? null) as Band,
-    byRegion: ((row?.by_region ?? []) as unknown as NamedBand[]) ?? [],
-    byCategory: ((row?.by_category ?? []) as unknown as NamedBand[]) ?? [],
-  };
-}
+const getAggregates = unstable_cache(
+  async () => {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase.rpc("get_expense_aggregates");
+    if (error) throw error;
+    const row = data?.[0];
+    return {
+      overall: (row?.overall ?? null) as Band,
+      perMonth: (row?.per_month ?? null) as Band,
+      byRegion: ((row?.by_region ?? []) as unknown as NamedBand[]) ?? [],
+      byCategory: ((row?.by_category ?? []) as unknown as NamedBand[]) ?? [],
+    };
+  },
+  ["public:get_expense_aggregates"],
+  { revalidate: 3600 },
+);
 
 /**
  * Says WHY a section is empty rather than hiding it. A missing section reads

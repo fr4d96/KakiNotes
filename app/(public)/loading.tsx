@@ -13,9 +13,10 @@ import {
  * what fixed the old "the whole window goes blank and says Loading…" feel.
  *
  * Shaped as a prose page (title, standfirst, body) because that is what all
- * of these routes are. The home page is the odd one out, but it builds
- * statically with a 1m revalidate, so it resolves inside the 140ms delay in
- * `.nf-loading` and this never paints for it.
+ * of these routes are. The home page is the odd one out, but its one data
+ * read is cached for a minute (lib/story/public-queries.ts), so it usually
+ * resolves inside the 140ms delay in `.nf-loading` and this never paints
+ * for it.
  */
 export default function PublicLoading() {
   return (

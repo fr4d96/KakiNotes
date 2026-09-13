@@ -1,6 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { invalidateContributorPublicCache } from "@/lib/story/public-cache";
+import { PUBLIC_CONTRIBUTORS_TAG } from "@/lib/story/public-queries";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import {
@@ -140,17 +142,23 @@ export async function setUsernameAction(
 }
 
 /**
- * Both public contributor surfaces are ISR'd (/contributors/[slug] at
- * revalidate = 60, /contributors dynamic on searchParams), so they would
- * catch up on their own within a minute. Nudging them means a contributor
- * who just saved their bio sees it immediately instead of reloading and
- * wondering. Only the NEW slug is revalidated -- a renamed slug's old path
- * stops resolving anyway, since get_public_contributor() matches on the
- * current value.
+ * /contributors/[slug] caches its DATA for 60s (lib/story/public-queries.ts,
+ * since the language cookie made the page itself dynamic) and /contributors
+ * is dynamic on searchParams, so both would catch up on their own within a
+ * minute. Nudging them means a contributor who just saved their bio sees it
+ * immediately instead of reloading and wondering. Only the NEW slug is
+ * revalidated -- a renamed slug's old path stops resolving anyway, since
+ * get_public_contributor() matches on the current value. Without a slug
+ * there is no byline page to purge, but the directory and the data tag
+ * still are.
  */
 function revalidateContributorPublicPages(slug: string | undefined): void {
-  revalidatePath("/contributors");
-  if (slug) revalidatePath(`/contributors/${slug}`);
+  if (slug) {
+    invalidateContributorPublicCache(slug);
+  } else {
+    revalidatePath("/contributors");
+    revalidateTag(PUBLIC_CONTRIBUTORS_TAG, { expire: 0 });
+  }
 }
 
 export async function createOwnContributorAction(

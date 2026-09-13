@@ -1,22 +1,26 @@
 import "server-only";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import {
+  PUBLIC_CONTRIBUTORS_TAG,
+  PUBLIC_STORIES_TAG,
+} from "@/lib/story/public-queries";
 
 // Prompt 5's public pages all read through the cookie-free client in
 // lib/supabase/public.ts, but they do NOT all cache, and the difference
 // matters when reasoning about staleness:
 //
-//   - app/(public)/page.tsx        -- `revalidate = 60`, builds `○` static.
-//   - app/(public)/stories/[id]    -- `revalidate = 60`, ISR-cached per path
-//   - app/(public)/contributors/[slug]   at runtime (they show `ƒ` in the
-//                                        build table only because they have
-//                                        no generateStaticParams to
-//                                        prerender from).
+//   - app/(public)/page.tsx        -- DATA cached 60s (unstable_cache, the
+//   - app/(public)/stories/[id]       *Cached readers in public-queries.ts).
+//   - app/(public)/contributors/[slug]   Until 2026-09-14 these were ISR
+//                                        pages (`revalidate = 60`); the
+//                                        language cookie made every route
+//                                        dynamic, so the same window moved
+//                                        from the page to its queries.
 //   - app/(public)/stories         -- NO caching. Both await searchParams,
-//   - app/(public)/contributors       which forces dynamic rendering, so a
-//                                     `revalidate` export would be a no-op
-//                                     and has been removed. These two are
-//                                     re-queried on every single request
-//                                     and are therefore always fresh.
+//   - app/(public)/contributors       which forces dynamic rendering, and
+//                                     both call the UNCACHED readers. These
+//                                     two are re-queried on every single
+//                                     request and are therefore always fresh.
 //
 // So the three cached surfaces are eventually consistent within a minute on
 // their own; the two index pages need no invalidation at all. These helpers
@@ -24,6 +28,13 @@ import { revalidatePath } from "next/cache";
 // changes -- revalidatePath() on an uncached path is simply a harmless
 // no-op, which is why the lists below still name /stories and /contributors
 // rather than special-casing them.
+//
+// revalidatePath() still reaches the data cache: an unstable_cache() entry
+// is soft-tagged with the path it was filled under, and revalidatePath() is
+// a tag revalidation on that same path. The revalidateTag() calls below are
+// the path-independent belt to that: `{ expire: 0 }` rather than "max",
+// because a takedown must not serve stale-while-revalidate -- Engineering
+// Rule 12 says the story is gone NOW, not after one more visitor.
 //
 // Deliberately NOT called from lib/story/moderation.ts's archiveStory() or
 // lib/story/mutations.ts's revokePublicationConsent() -- both are reusable
@@ -78,6 +89,7 @@ export function invalidateStoryListingsPublicCache() {
   revalidatePath("/stories");
   revalidatePath("/");
   revalidatePath("/sitemap.xml");
+  revalidateTag(PUBLIC_STORIES_TAG, { expire: 0 });
 }
 
 export function invalidateStoryPublicCache(slug: string) {
@@ -89,4 +101,5 @@ export function invalidateContributorPublicCache(contributorSlug: string) {
   revalidatePath(`/contributors/${contributorSlug}`);
   revalidatePath("/contributors");
   revalidatePath("/sitemap.xml");
+  revalidateTag(PUBLIC_CONTRIBUTORS_TAG, { expire: 0 });
 }

@@ -36,7 +36,7 @@
  */
 import Link from "next/link";
 import type { Metadata } from "next";
-import { listPublishedStories } from "@/lib/story/public-queries";
+import { listPublishedStoriesCached } from "@/lib/story/public-queries";
 import { HeroSlideshow } from "@/components/home/hero-slideshow";
 import { FeaturedStoryStack } from "@/components/home/featured-story-stack";
 import { StoryIndex } from "@/components/home/story-index";
@@ -44,7 +44,10 @@ import { DestinationQuiz } from "@/components/home/destination-quiz";
 import { regionNames } from "@/lib/story/card-fields";
 import { ArrowRightIcon } from "@/components/icons";
 
-export const revalidate = 60;
+// No `export const revalidate` any more (it was 60). The root layout reads
+// the language cookie, which makes this route render per request, so the
+// page-level window became a no-op; the same 60s window now lives on the
+// data reads (the *Cached readers in lib/story/public-queries.ts).
 
 export const metadata: Metadata = {
   title: "Real stories from across Aotearoa",
@@ -87,7 +90,9 @@ function SectionHead({
 }
 
 export default async function HomePage() {
-  const stories = await listPublishedStories({ limit: 24 }).catch(() => []);
+  const stories = await listPublishedStoriesCached({ limit: 24 }).catch(
+    () => [],
+  );
   const hasStories = stories.length > 0;
 
   // Distinct regions actually present in the published catalogue, in order of

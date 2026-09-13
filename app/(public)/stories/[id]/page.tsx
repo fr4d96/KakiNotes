@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   getPublishedStoryBySlugCached,
-  getPublishedStoryMedia,
+  getPublishedStoryMediaCached,
   coverOf,
-  listPublishedStories,
-  listPublicRegions,
+  listPublishedStoriesCached,
+  listPublicRegionsCached,
 } from "@/lib/story/public-queries";
 import { getPublicImageUrl } from "@/lib/story/public-image-url";
 import { imageBlockMediaIds } from "@/lib/validation/story";
@@ -24,7 +24,10 @@ import {
   type PublicExpense,
 } from "@/components/story/public-expenses";
 
-export const revalidate = 60;
+// No `export const revalidate` any more (it was 60). The root layout reads
+// the language cookie, which makes this route render per request, so the
+// page-level window became a no-op; the same 60s window now lives on the
+// data reads (the *Cached readers in lib/story/public-queries.ts).
 
 type RegionEntry = { region_name?: string; destination_name?: string | null };
 
@@ -81,7 +84,8 @@ export async function generateMetadata({
   // og:image and shared as a bare text card. See that helper for the rule,
   // which the SQL readers now share.
   const coverUrl = getPublicImageUrl(
-    coverOf(await getPublishedStoryMedia(story.story_id))?.public_url ?? null,
+    coverOf(await getPublishedStoryMediaCached(story.story_id))?.public_url ??
+      null,
   );
 
   return {
@@ -109,8 +113,8 @@ export default async function StoryDetailPage({
   if (!story) notFound();
 
   const [media, activeRegions] = await Promise.all([
-    getPublishedStoryMedia(story.story_id),
-    listPublicRegions(),
+    getPublishedStoryMediaCached(story.story_id),
+    listPublicRegionsCached(),
   ]);
 
   const firstRegionName = regionLabelsRaw(story.regions)[0] ?? null;
@@ -119,7 +123,7 @@ export default async function StoryDetailPage({
     : undefined;
 
   const sameRegionMatches = matchedRegionId
-    ? await listPublishedStories({
+    ? await listPublishedStoriesCached({
         regionId: matchedRegionId,
         excludeStoryId: story.story_id,
         limit: 3,
@@ -131,7 +135,7 @@ export default async function StoryDetailPage({
       ? sameRegionMatches
       : [
           ...sameRegionMatches,
-          ...(await listPublishedStories({
+          ...(await listPublishedStoriesCached({
             excludeStoryId: story.story_id,
             limit: 3,
           })),
