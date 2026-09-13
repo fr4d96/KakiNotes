@@ -792,7 +792,7 @@ function StoryList({
                   )}
                   {updated && (
                     <p className="mt-1 font-mono text-xs text-foreground/45 tabular-nums">
-                      Updated {updated}
+                      {t("updatedAt", { date: updated })}
                     </p>
                   )}
                 </div>

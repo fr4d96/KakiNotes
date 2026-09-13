@@ -143,11 +143,16 @@ export default async function HomePage() {
                   own ceiling and, on a 1440px viewport, pushed the second
                   line hard against the CTA row with no air between them. */}
               <h1 className="nf-hero-pull font-sans text-[clamp(2.5rem,7vw,6rem)] leading-[0.94] font-extrabold tracking-[-.035em] text-balance text-white">
-                {/* Two keys, not one sentence with a tag: the accented word
-                    sits at the END in English and at the START in Chinese,
-                    and each language orders its own halves. */}
-                {t("heroLead")}{" "}
-                <span className="text-accent">{t("heroAccent")}</span>.
+                {/* One rich message, not two keys joined in JSX: the
+                    accented words sit at the END in English and at the
+                    START in Chinese, and the punctuation differs too (a
+                    Latin "." with a space before the span, a full-width
+                    "。" with none). Only the message file can express that. */}
+                {t.rich("hero", {
+                  accent: (chunks) => (
+                    <span className="text-accent">{chunks}</span>
+                  ),
+                })}
               </h1>
               <p
                 className="nf-hero-pull mt-5 max-w-[46ch] text-base text-white/80 sm:mt-6 sm:text-lg"

@@ -330,8 +330,6 @@
   },
   "home": {
     "metaTitle": "Real stories from across Aotearoa",
-    "heroLead": "Real stories from across",
-    "heroAccent": "Aotearoa",
     "heroSub": "First-person accounts of the jobs, places, and moments from travellers who have lived the working-holiday experience.",
     "heroCta": "Read the stories",
     "heroSecondary": "or see how this works",
@@ -449,7 +447,8 @@
         "centralOtagoWork": "Vineyards · Orchards",
         "centralOtagoNote": "Line up your next seasonal move."
       }
-    }
+    },
+    "hero": "Real stories from across <accent>Aotearoa</accent>."
   },
   "about": {
     "metaTitle": "About",
@@ -623,7 +622,8 @@
     "toasts": {
       "submitted": "Submitted for review.",
       "keptPrivate": "Saved privately. Only you can see it."
-    }
+    },
+    "updatedAt": "Updated {date}"
   },
   "storyStatus": {
     "draft": "Draft",

@@ -330,8 +330,6 @@
   },
   "home": {
     "metaTitle": "来自新西兰各地的真实故事",
-    "heroLead": "来自新西兰各地的",
-    "heroAccent": "真实故事",
     "heroSub": "第一人称记录：亲历打工度假的旅行者写下的工作、地方与那些瞬间。",
     "heroCta": "开始读故事",
     "heroSecondary": "或了解这里是怎么运作的",
@@ -449,7 +447,8 @@
         "centralOtagoWork": "葡萄园 · 果园",
         "centralOtagoNote": "提前安排好下一段季节性工作。"
       }
-    }
+    },
+    "hero": "来自新西兰各地的<accent>真实故事</accent>。"
   },
   "about": {
     "metaTitle": "关于",
@@ -623,7 +622,8 @@
     "toasts": {
       "submitted": "已提交审核。",
       "keptPrivate": "已保存为私密，只有你能看到。"
-    }
+    },
+    "updatedAt": "更新于 {date}"
   },
   "storyStatus": {
     "draft": "草稿",
