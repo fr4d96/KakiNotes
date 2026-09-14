@@ -276,7 +276,7 @@ export default async function StoryDetailPage({
       />
 
       <div className="mt-10 border-t border-border-subtle pt-6">
-        <ReportStoryForm storyId={story.story_id} />
+        <ReportStoryForm storyId={story.story_id} storySlug={story.slug} />
       </div>
 
       {relatedStories.length > 0 ? (

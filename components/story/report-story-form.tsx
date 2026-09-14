@@ -17,7 +17,23 @@ const initialState: ReportActionState = { status: "idle" };
  * submit. A signed-out submission surfaces as "needs-sign-in" state here,
  * not a page-level redirect.
  */
-export function ReportStoryForm({ storyId }: { storyId: string }) {
+export function ReportStoryForm({
+  storyId,
+  storySlug,
+}: {
+  /** The story's UUID. Posted with the form -- createReportSchema wants a uuid. */
+  storyId: string;
+  /**
+   * The story's SLUG, for the sign-in return path only.
+   *
+   * Both are needed and they are not interchangeable: the public story route
+   * resolves by slug (get_published_story(p_slug)), so a `next` built from
+   * the uuid sends a visitor who signs in here to a 404 on the very story
+   * they were reading. That was the bug until 2026-09-14. Required, not
+   * optional, so the one call site cannot quietly stop passing it.
+   */
+  storySlug: string;
+}) {
   const t = useTranslations("story.report");
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(
@@ -46,7 +62,7 @@ export function ReportStoryForm({ storyId }: { storyId: string }) {
       <p className="text-sm text-foreground/70">
         {t("needsSignInBefore")}{" "}
         <a
-          href={`/sign-in?next=${encodeURIComponent(`/stories/${storyId}`)}`}
+          href={`/sign-in?next=${encodeURIComponent(`/stories/${storySlug}`)}`}
           className="underline underline-offset-2"
         >
           {t("needsSignInLink")}
