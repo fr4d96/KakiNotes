@@ -3,7 +3,9 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-09-12 (a full /notifications page, and the header badge stops going stale
+Last updated: 2026-09-14 (four Playwright specs that had been failing since the editor became a
+stepped flow are green again — they now walk to the step they test; earlier, 2026-09-12: a full
+/notifications page, and the header badge stops going stale
 beside it; earlier the same day: rejected / changes-requested notifications, carrying the
 moderator's reason to the contributor for the first time; earlier the same day: in-app notifications —
 moderators are told when a story needs review, contributors when theirs goes live; earlier: the unit suite's
@@ -83,6 +85,50 @@ byline link on their card — and it 404s, because `get_public_contributor()` ex
 units — a display name starting outside the BMP returned half a surrogate pair and rendered as the
 replacement glyph. Now `Array.from(...)[0]`. The component gained its first 12 tests alongside;
 `AttributionChip` gained 7 and `StoryCard` 2. 987 total, `npm run verify` exits 0.
+
+**2026-09-14 (latest) — four e2e specs fail-fixed: the editor opens on step 1, and they were
+asserting on step 2.**
+No app code touched. `e2e/helpers/story-steps.ts` (new), and the two specs that needed it:
+`e2e/content-import-body-size.spec.ts` (all three cases) and `e2e/pdf-import.spec.ts`'s end-to-end
+case. These are the "all three `content-import-body-size` cases, `pdf-import`" entries the
+2026-09-04 note below listed as pre-existing failures; they had been red since 3dc6854 turned the
+story editor into a guided step flow on 2026-09-02.
+
+- **The cause was `display: none`, not the 2 MB fill.** `components/story/story-edit-form.tsx`
+  renders every step's pane up front and hides all but the active one with Tailwind's `hidden`;
+  the form always opens on "title" (nothing passes `initialStep`). The content-import textarea and
+  the CodeMirror body sit inside `<StepSection id="story">`, so they are attached from the first
+  paint but invisible, and Playwright's actionability check refuses to `fill()` or assert
+  `toBeVisible()` on them. Reproduced first, on a production build: 4 failed / 1 passed, every
+  failure "element is not visible" or "Received: hidden". The ~2.6 KB case failed identically to
+  the 3 MB one, which rules out fill performance — and after the fix the 2.2 MB fill runs in ~6 s.
+- **Confirmed before fixing, not assumed.** A throwaway probe (scratchpad, not committed) clicked
+  the nav's `Step 2 of 7: Your story` button and watched `#story-step-story` go from
+  `space-y-6 hidden` to `space-y-6`, `aria-current="step"` land on the button, and the textarea,
+  "Preview conversion" button and `.cm-content` all report visible. One thing the probe taught:
+  `waitForURL` resolves before React has painted the form, so a one-shot `count()` saw zero
+  textareas — the helper has to lean on auto-waiting locators only.
+- **`goToStoryStep(page, id)` builds the accessible name from `STORY_STEPS`** — the same array
+  `components/story/story-steps.tsx` labels its controls from — so a renamed or added step cannot
+  leave the helper clicking the wrong circle. It then asserts two independent things: the nav's
+  `aria-current="step"` and the pane's own `toBeVisible()`. Typed as
+  `Exclude<StoryStepId, "review">` because in the editor "review" is a locked `<span>`, not a
+  button. First runtime (not type-only) `@/` import from `e2e/`; Playwright 1.62 honours tsconfig
+  `paths`, and `lib/story/steps.ts` has only a type-only dependency, so it loads clean.
+- **One assertion HAD to change, and it is called out because the brief said not to.**
+  `pdf-import.spec.ts` also asserted `Images (2)` after the placeholder text — a heading the SAME
+  commit (3dc6854) deleted in favour of the photo panel's "N photos" summary. With the step fix in
+  and that line untouched, the failure changed from "Received: hidden" to "element(s) not found":
+  no copy anywhere renders it any more. The spec now walks to the "photos" step and asserts
+  `/^2 photos/` — the same fact (two media rows came through private bucket → processStoryMedia →
+  signed URL) via copy that exists. The body-size assertions are unchanged.
+
+**Verified:** `PLAYWRIGHT_PORT=3105 … --workers=1` against `npm run build` + `npm run start
+--port 3105`: 5/5, twice in a row (40 s, 37 s). ESLint, tsc and Prettier clean on the three touched
+files. Nothing under `app/`, `components/` or `lib/` changed. Not re-run: the rest of the e2e suite
+(the 2026-09-04 note's `founding-story-workflow` and `public-discovery` failures are separate and
+still open). Reminder for the next person: `next start` renames itself `next-server`, so
+`pkill -f "next start"` misses it — kill by port (`lsof -nP -tiTCP:3105 -sTCP:LISTEN`).
 
 **2026-09-12 (latest) — /notifications: the inbox gets a real page.**
 No migration — it reads the same three RPCs the bell does. `app/(contributor)/notifications/`

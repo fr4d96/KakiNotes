@@ -1,5 +1,6 @@
 import path from "node:path";
 import { test, expect, type Page } from "@playwright/test";
+import { goToStoryStep } from "./helpers/story-steps";
 
 /**
  * Real, browser-driven proof that the PDF import flow
@@ -213,6 +214,12 @@ test.describe("PDF import (real Route Handlers, real Next server)", () => {
 
     await page.waitForURL(/\/editorial\/[^/]+\/edit$/, { timeout: 30000 });
 
+    // The editor opens on "Title" with every other step's pane `hidden`
+    // (see e2e/helpers/story-steps.ts), so the body text and the photo
+    // panel each need their own step brought to the front before they can
+    // be asserted visible.
+    await goToStoryStep(page, "story");
+
     // Stage 3's placeholder body text — the "mandatory review step" signal
     // that this draft still needs real narrative text written.
     const editor = mainOf(page);
@@ -220,8 +227,11 @@ test.describe("PDF import (real Route Handlers, real Next server)", () => {
       editor.getByText("Imported from PDF — add your story text here.").first(),
     ).toBeVisible({ timeout: 30000 });
     // Both rendered pages went through the real image pipeline
-    // (private bucket -> processStoryMedia -> signed URL).
-    await expect(editor.getByText(/Images \(2\)/)).toBeVisible({
+    // (private bucket -> processStoryMedia -> signed URL). The count lives
+    // on the "Photos" step now: 3dc6854 dropped the old "Images (N)"
+    // heading in favour of the panel's own "N photos" summary line.
+    await goToStoryStep(page, "photos");
+    await expect(editor.getByText(/^2 photos/)).toBeVisible({
       timeout: 30000,
     });
   });

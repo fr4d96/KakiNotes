@@ -1,6 +1,7 @@
 import path from "node:path";
 import { test, expect } from "@playwright/test";
 import { signInUi } from "./helpers/sign-in";
+import { goToStoryStep } from "./helpers/story-steps";
 
 /**
  * Three-tier proof of the Server Action body-size margin (round-6 plan
@@ -74,6 +75,12 @@ async function signInAsEditorAndOpenAnEditorialDraft(
     .fill(`E2E Body-Size Contributor ${runId}`);
   await page.getByRole("button", { name: "Create Import Draft" }).click();
   await page.waitForURL(/\/editorial\/[^/]+\/edit$/, { timeout: 15000 });
+
+  // The content-import panel lives on the editor's "Your story" step, and
+  // the editor opens on "Title" with every other pane `hidden` -- see
+  // e2e/helpers/story-steps.ts. Without this, the fill() below resolves the
+  // textarea and then times out waiting for it to become visible.
+  await goToStoryStep(page, "story");
 }
 
 test.describe("Server Action body-size margin (R6-3)", () => {
