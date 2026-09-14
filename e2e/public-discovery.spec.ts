@@ -29,6 +29,24 @@ try {
   // File doesn't exist in this environment -- the tests below skip themselves.
 }
 
+/**
+ * Loaded separately and optionally, the same way e2e/moderation.spec.ts does
+ * it: the sitemap test needs the app's OWN runtime env, not the RLS-test
+ * pool, because app/sitemap.ts builds every <loc> from NEXT_PUBLIC_SITE_URL.
+ * process.loadEnvFile() never overrides an already-set process.env var, which
+ * is exactly Next's own .env precedence -- so the server under test and this
+ * file resolve the identical value whether it comes from .env.local or from
+ * a real environment variable in CI. SITE_URL below repeats app/sitemap.ts's
+ * fallback so the two can't drift apart when neither is set.
+ */
+try {
+  process.loadEnvFile(path.join(__dirname, "..", ".env.local"));
+} catch {
+  // Absent here -- SITE_URL falls back to app/sitemap.ts's own default.
+}
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 const SUPABASE_URL = process.env.SUPABASE_RLS_TEST_URL;
 const KEY = process.env.SUPABASE_RLS_TEST_PUBLISHABLE_KEY;
 const OWNER_EMAIL = process.env.SUPABASE_RLS_TEST_OWNER_EMAIL;
@@ -283,8 +301,18 @@ test.describe("SEO surfaces", () => {
     const body = await response.text();
     expect(body).toContain("<?xml");
     expect(body).toContain("<urlset");
-    expect(body).toContain(`${new URL(response.url()).origin}/stories`);
-    expect(body).toMatch(/\/stories\/[^<]+</);
+
+    // Asserted against the app's CONFIGURED site origin, not the request
+    // origin. A sitemap's entire job is to emit canonical absolute URLs, and
+    // canonical means "the site's public address" -- by design it does not
+    // vary with whatever port this run happened to fetch it on. Keying off
+    // response.url() coupled the test to the server port and made it fail on
+    // anything but 3000 (it fails on main the same way).
+    const locs = [...body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+    expect(locs).toContain(`${SITE_URL}/stories`);
+    expect(
+      locs.filter((loc) => loc.startsWith(`${SITE_URL}/stories/`)),
+    ).not.toHaveLength(0);
   });
 
   test("robots.txt disallows every staff/authenticated surface", async ({
