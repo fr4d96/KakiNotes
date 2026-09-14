@@ -230,8 +230,23 @@ test.describe("story detail", () => {
 
     await page.goto(`/stories/${fixtureSlug}`);
     await page.getByRole("button", { name: "Report this story" }).click();
+    // A reason has to be chosen for the submission to reach the auth check
+    // at all: the form is `noValidate`, so the browser won't block an empty
+    // category, and reportStoryAction() parses with createReportSchema
+    // (category: z.enum(...)) BEFORE it ever calls createStoryReport() --
+    // an empty category short-circuits into "validation-error" and the
+    // signed-out path this test is named for never runs. Same reason the
+    // signed-in test below selects one.
+    await page.getByLabel(/reason/i).selectOption("other");
     await page.getByRole("button", { name: "Submit report" }).click();
     await expect(page.getByRole("link", { name: /sign in/i })).toBeVisible();
+    // ...and it is the report form's own needs-sign-in state that rendered it,
+    // not an incidental "sign in" link elsewhere on the page. (The header's
+    // own sign-in control is a <button> opening a modal, not a link, so the
+    // locator above can't drift onto it -- this pins the intent anyway.)
+    await expect(
+      page.getByText(/please\s+sign in\s+to report a story\./i),
+    ).toBeVisible();
   });
 
   test("a signed-in visitor can submit a report and gets a neutral confirmation", async ({
