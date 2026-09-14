@@ -100,14 +100,29 @@ staff areas (moderation, editorial, admin, readiness) stay English in this phase
 - **The trade it forces, and what pays for it.** Reading a cookie in the root layout makes every
   route render per request, so `/` (60s), `/stories/[id]` (60s), `/contributors/[slug]` (60s) and
   `/costs` (3600s) lost their `revalidate` exports — they were already no-ops the moment the
-  cookie was read. The DATA is identical in both languages, so the same windows moved onto the
-  reads: `lib/story/public-queries.ts` gains `*Cached` variants (`unstable_cache`, tagged
-  `public-stories` / `public-contributors`), and `/costs` wraps `get_expense_aggregates` at 3600s.
-  The database sees the load it saw under ISR; only the render moved. `lib/story/public-cache.ts`'s
-  helpers now expire those tags with `{ expire: 0 }` beside their `revalidatePath()` calls — a
-  taken-down story must not be served stale-while-revalidate (Engineering Rule 12). `/stories` and
-  `/contributors` were never cacheable (both await `searchParams`) and deliberately keep the
-  UNCACHED readers, so a filter result is always fresh.
+  cookie was read. The DATA is identical in both languages, so the windows that actually existed
+  moved onto the reads: `lib/story/public-queries.ts` gains `listPublishedStoriesCached`
+  (`unstable_cache`, tagged `public-stories`) for `/`, and `/costs` wraps `get_expense_aggregates`
+  at 3600s. `lib/story/public-cache.ts`'s helpers expire those tags with `{ expire: 0 }` beside
+  their `revalidatePath()` calls — a taken-down story must not be served stale-while-revalidate
+  (Engineering Rule 12). `/stories` and `/contributors` were never cacheable (both await
+  `searchParams`) and deliberately keep the UNCACHED readers, so a filter result is always fresh.
+  **Corrected the same day, and worth reading before touching this again:** the first cut of this
+  gave `/stories/[id]` and `/contributors/[slug]` `*Cached` readers too, on the assumption that
+  they were losing a 60s ISR window like the other two. They were not. Read off the PRE-i18n
+  production build, `/` was `○ (Static)` with `Revalidate 1m` and `/costs` `○` with `1h`, but both
+  `[param]` routes were already `ƒ (Dynamic)` with an **empty** Revalidate column — the export had
+  never engaged and they re-queried on every request. So those two wrappers did not preserve a
+  window, they ADDED one, to the two surfaces where staleness is least acceptable: any visibility
+  change that does not run through one of the two Server Actions calling `public-cache.ts` (a
+  direct SQL takedown, a support fix, a future action nobody wires up) kept serving the old page
+  for up to a minute. `e2e/contributor-story-update.spec.ts` is what caught it — approve
+  out-of-band, reload signed-out, and the replacement must be live NOW; it passes on main, failed
+  on this branch, passes again now. Both pages read UNCACHED again. The one part kept is React
+  `cache()`, renamed to `*Deduped` so it cannot be misread: it dedupes WITHIN a request and dies
+  with it, costing no freshness at all while stopping both pages doing their lookup twice (once
+  for `generateMetadata`, once for the body). **The lesson worth keeping: a `revalidate` export is
+  not evidence that a route was cached — the build's Revalidate column is.**
   `unstable_cache`, not `use cache`: the Next 16 docs mark it superseded, but `use cache` needs
   the `cacheComponents` flag, which changes the rendering model of the whole app. That is its own
   migration, not a side effect of adding a language.
