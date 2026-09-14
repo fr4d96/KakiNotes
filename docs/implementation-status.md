@@ -2030,6 +2030,10 @@ and applies nothing — it is deliberately left as follow-up work, described in 
   ISR-cached per path at runtime. `docs/architecture.md`'s "cookie-free public client" section had
   previously lumped all four `ƒ` routes together and claimed `revalidate` had no practical effect on
   any of them — that was wrong about the two detail routes, and is now corrected there.
+  — **WRONG, corrected 2026-09-14.** This bullet's claim about the two detail routes is the one
+  that was wrong. The build's own `.next/prerender-manifest.json` lists `/` (60s) and `/costs`
+  (3600s) and carries an EMPTY `dynamicRoutes` map, so `/stories/[id]` and `/contributors/[slug]`
+  were never ISR-cached and their `revalidate` exports never engaged. See the 2026-09-14 entry.
 - **Comments corrected to match reality.** `lib/story/public-cache.ts`'s header claimed all five
   public pages "carry `export const revalidate = 60`, so they're already eventually consistent
   within a minute" — now split into the three that cache and the two that do not (and it notes that

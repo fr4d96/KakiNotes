@@ -9,21 +9,31 @@ import {
 // lib/supabase/public.ts, but they do NOT all cache, and the difference
 // matters when reasoning about staleness:
 //
-//   - app/(public)/page.tsx        -- DATA cached 60s (unstable_cache, the
-//   - app/(public)/stories/[id]       *Cached readers in public-queries.ts).
-//   - app/(public)/contributors/[slug]   Until 2026-09-14 these were ISR
-//                                        pages (`revalidate = 60`); the
-//                                        language cookie made every route
-//                                        dynamic, so the same window moved
-//                                        from the page to its queries.
+//   - app/(public)/page.tsx        -- DATA cached 60s (listPublishedStoriesCached,
+//                                     unstable_cache). This page really did
+//                                     prerender with a 60s window before the
+//                                     language cookie made every route
+//                                     dynamic, so the window moved from the
+//                                     page to its query.
+//   - app/(public)/costs           -- DATA cached 1h, same story.
+//   - app/(public)/stories/[id]    -- NO cross-request caching, and never had
+//   - app/(public)/contributors/[slug]   any. An earlier version of this
+//                                     comment said these were "ISR pages";
+//                                     main's own .next/prerender-manifest.json
+//                                     lists no dynamic routes at all, so their
+//                                     `revalidate = 60` exports never engaged.
+//                                     They re-query every request. Do not
+//                                     "restore" a window here -- there was
+//                                     none, and adding one is a minute of
+//                                     staleness on a taken-down story.
 //   - app/(public)/stories         -- NO caching. Both await searchParams,
 //   - app/(public)/contributors       which forces dynamic rendering, and
 //                                     both call the UNCACHED readers. These
 //                                     two are re-queried on every single
 //                                     request and are therefore always fresh.
 //
-// So the three cached surfaces are eventually consistent within a minute on
-// their own; the two index pages need no invalidation at all. These helpers
+// So `/` and `/costs` are eventually consistent within their own window; the
+// four others re-query every request and need no invalidation to be correct. These helpers
 // are for *on-demand* invalidation the moment public visibility actually
 // changes -- revalidatePath() on an uncached path is simply a harmless
 // no-op, which is why the lists below still name /stories and /contributors

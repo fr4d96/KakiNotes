@@ -1600,11 +1600,18 @@ The other four public routes all show `ƒ` in the build table, but for two diffe
 only one of them means "not cached" (corrected 2026-08-31 — this section previously lumped all four
 together and claimed `revalidate` had no practical effect on any of them):
 
-- `/stories/[id]` and `/contributors/[slug]` show `ƒ` only because they have no
-  `generateStaticParams`, so there is nothing to prerender at build time. They keep
-  `export const revalidate = 60` and **are** genuinely ISR-cached per path at runtime: the first
-  request for a given slug renders and caches it, later requests inside the window serve the cached
-  copy. Leave those exports alone.
+- `/stories/[id]` and `/contributors/[slug]` show `ƒ` and are **not cached across requests** — they
+  re-query on every request. **Corrected 2026-09-14, and this is the second correction to this
+  bullet**: the 2026-08-31 pass claimed they were "genuinely ISR-cached per path at runtime" and
+  told readers to leave their `revalidate = 60` exports alone. That was wrong, and it was wrong in
+  the direction that costs you: checked against the build's own
+  `.next/prerender-manifest.json`, which is the authority here, `/` appears at
+  `initialRevalidateSeconds: 60` and `/costs` at `3600`, and the `dynamicRoutes` map is **empty** —
+  neither of these two routes is in it at all, so their `revalidate` exports never engaged. Both
+  exports are now gone (the language cookie made every route dynamic regardless), and the reads
+  behind these pages are deliberately **uncached**. Do not "restore" a window here on the strength
+  of a comment: there was never one to restore, and adding one puts up to a minute of staleness on
+  a story that was just taken down (Engineering Rule 12). Read the manifest, not the prose.
 - `/stories` and `/contributors` `await searchParams` (filter state and the keyset pagination
   cursor respectively), which forces per-request dynamic rendering in the App Router independent of
   the Supabase client used. A `revalidate` export there is a **silent no-op**, so both have been
