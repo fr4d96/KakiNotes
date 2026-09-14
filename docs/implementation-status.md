@@ -3,7 +3,10 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-09-14 (Simplified Chinese — a cookie-based language toggle beside the theme
+Last updated: 2026-09-14 (four Playwright specs that had been failing since the editor became a
+stepped flow are green again — they now walk to the step they test, and read the step's label
+from the translation file the app now labels from; earlier the same day: Simplified Chinese — a
+cookie-based language toggle beside the theme
 toggle, and every reader- and contributor-facing screen translated; staff areas stay English;
 earlier: a full /notifications page, and the header badge stops going stale
 beside it; earlier: rejected / changes-requested notifications, carrying the
@@ -86,7 +89,63 @@ units — a display name starting outside the BMP returned half a surrogate pair
 replacement glyph. Now `Array.from(...)[0]`. The component gained its first 12 tests alongside;
 `AttributionChip` gained 7 and `StoryCard` 2. 987 total, `npm run verify` exits 0.
 
-**2026-09-14 (latest) — the site speaks Simplified Chinese.**
+**2026-09-14 (latest) — four e2e specs fail-fixed: the editor opens on step 1, and they were
+asserting on step 2.**
+No app code touched. `e2e/helpers/story-steps.ts` (new), and the two specs that needed it:
+`e2e/content-import-body-size.spec.ts` (all three cases) and `e2e/pdf-import.spec.ts`'s end-to-end
+case. These are the "all three `content-import-body-size` cases, `pdf-import`" entries the
+2026-09-04 note below listed as pre-existing failures; they had been red since 3dc6854 turned the
+story editor into a guided step flow on 2026-09-02.
+
+- **The cause was `display: none`, not the 2 MB fill.** `components/story/story-edit-form.tsx`
+  renders every step's pane up front and hides all but the active one with Tailwind's `hidden`;
+  the form always opens on "title" (nothing passes `initialStep`). The content-import textarea and
+  the CodeMirror body sit inside `<StepSection id="story">`, so they are attached from the first
+  paint but invisible, and Playwright's actionability check refuses to `fill()` or assert
+  `toBeVisible()` on them. Reproduced first, on a production build: 4 failed / 1 passed, every
+  failure "element is not visible" or "Received: hidden". The ~2.6 KB case failed identically to
+  the 3 MB one, which rules out fill performance — and after the fix the 2.2 MB fill runs in ~6 s.
+- **Confirmed before fixing, not assumed.** A throwaway probe (scratchpad, not committed) clicked
+  the nav's `Step 2 of 7: Your story` button and watched `#story-step-story` go from
+  `space-y-6 hidden` to `space-y-6`, `aria-current="step"` land on the button, and the textarea,
+  "Preview conversion" button and `.cm-content` all report visible. One thing the probe taught:
+  `waitForURL` resolves before React has painted the form, so a one-shot `count()` saw zero
+  textareas — the helper has to lean on auto-waiting locators only.
+- **`goToStoryStep(page, id)` builds the accessible name from what the nav renders it from** —
+  `STORY_STEPS` for order and count, and `messages/en.json` for the step label
+  (`editor.stepLabels.<id>`), the `"Step {index} of {total}: {label}"` template and the nav's
+  own name — so a renamed step, a re-worded template or an added step cannot leave the helper
+  clicking the wrong circle. It then asserts two independent things: the nav's
+  `aria-current="step"` and the pane's own `toBeVisible()`. Typed as
+  `Exclude<StoryStepId, "review">` because in the editor "review" is a locked `<span>`, not a
+  button. First runtime (not type-only) `@/` imports from `e2e/`, one of them JSON; Playwright
+  1.62 honours tsconfig `paths` and `resolveJsonModule`, and it loads clean.
+- **The helper was rewritten once before it merged, and the reason is worth keeping.** Its first
+  version read `step.label` straight off `STORY_STEPS`. The same day, the i18n phase-1 branch
+  (the entry below) landed on `main` and moved every label out of that array into the message
+  catalogue — a clean Git merge, one doc-only conflict, and a helper that no longer typechecked.
+  That is the good outcome: reading the label from the array meant a rename anywhere else broke
+  the helper LOUDLY at `tsc`, not silently at 3 a.m. in CI. The rewrite reads the catalogue the
+  app now reads, and the English strings are byte-identical to the old literals, so the specs'
+  own assertions (`Pasted plain text…`, `Preview conversion`, `2 photos`, the PDF placeholder)
+  needed no change — checked against `messages/en.json` key by key before re-running, and then
+  re-run: 5/5 against a production build of the merged tree.
+- **One assertion HAD to change, and it is called out because the brief said not to.**
+  `pdf-import.spec.ts` also asserted `Images (2)` after the placeholder text — a heading the SAME
+  commit (3dc6854) deleted in favour of the photo panel's "N photos" summary. With the step fix in
+  and that line untouched, the failure changed from "Received: hidden" to "element(s) not found":
+  no copy anywhere renders it any more. The spec now walks to the "photos" step and asserts
+  `/^2 photos/` — the same fact (two media rows came through private bucket → processStoryMedia →
+  signed URL) via copy that exists. The body-size assertions are unchanged.
+
+**Verified:** `PLAYWRIGHT_PORT=3105 … --workers=1` against `npm run build` + `npm run start
+--port 3105`: 5/5, twice in a row (40 s, 37 s). ESLint, tsc and Prettier clean on the three touched
+files. Nothing under `app/`, `components/` or `lib/` changed. Not re-run: the rest of the e2e suite
+(the 2026-09-04 note's `founding-story-workflow` and `public-discovery` failures are separate and
+still open). Reminder for the next person: `next start` renames itself `next-server`, so
+`pkill -f "next start"` misses it — kill by port (`lsof -nP -tiTCP:3105 -sTCP:LISTEN`).
+
+**2026-09-14 — the site speaks Simplified Chinese.**
 No migration. `next-intl` 4.14.4, cookie-based, English still the default: a toggle beside the
 theme toggle in all three headers writes `NEXT_LOCALE` through one Zod-validated Server Action,
 and `i18n/request.ts` reads it back, validates it against `LOCALES` and falls back to English for
