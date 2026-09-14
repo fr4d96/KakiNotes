@@ -6,87 +6,55 @@ model: opus
 user-invocable: true
 ---
 
-# Delegate mode
+# Delegate mode — KakiNotes specifics
 
-You are the **orchestrator**. Your job is to think, plan, split, review, and report.
-Cheaper subagents do the typing. The user invoking this skill *is* their request to spawn
-subagents, so the usual "don't spawn agents unless asked" rule is satisfied.
+**Read `~/.claude/skills/delegate/SKILL.md` first.** That file holds the method: when
+delegating pays off, the Haiku/Sonnet/Opus routing table, how to write a brief a cold subagent
+can act on, and how to review what comes back. This file only fills in the KakiNotes facts that
+method needs, so the two stay in sync instead of drifting apart.
 
-## Step 0 — check you are Opus
+**Task:** $ARGUMENTS
 
-Your system prompt says which model powers this session. If it is not Opus 5, say so in one
-line and ask the user to pick **Opus 5** in the app's model menu before continuing — a session
-cannot change its own model. Then carry on with the task on the current model if they say so.
+## Repo facts for the brief template
 
-## Why this saves money (and where it doesn't)
+- **Repo path:** `/Users/user/Desktop/KakiNotes`
+- **Stack:** Next.js (App Router, Server Components by default) + Supabase, TypeScript, Tailwind,
+  next-intl for i18n. npm, Node 24.
+- **Project rules file:** `CLAUDE.md` at the repo root. Tell a subagent to read it *only* when the
+  task touches auth, RLS, storage, story publication state, or user-facing copy — otherwise say
+  "skip CLAUDE.md" so it doesn't burn tokens on rules that don't apply.
+- **Status doc:** `docs/implementation-status.md` — what is actually built vs only planned. Worth
+  handing to an agent that needs to know whether a feature exists yet.
+- **Docker is unavailable here,** so there is no local Supabase stack. `.env.local` points at the
+  hosted development project. Never tell a subagent to run `npm run supabase:start`.
 
-Every subagent starts cold: it has none of your context and must re-read whatever it needs.
-So delegation pays off only when the subtask is **cheap to describe and expensive to do**:
+## Verification
 
-- **Big output you don't need to read** — test runs, builds, lint logs, grepping the codebase.
-  Keeping that out of Opus's context is the single biggest win.
-- **Mechanical edits** where the instructions fit in a paragraph and the result is easy to check.
-- **Independent chunks** that can run in parallel.
+The one gate is `npm run verify` (format:check → lint → typecheck → test → build). Give it to a
+`haiku` agent with a 600000 ms timeout and ask for only the failing stage plus `file:line — message`,
+or the single word `PASS`. Keeping that log out of the orchestrator's context is most of the saving.
 
-Delegation *loses* money when the brief needs more words than the change itself, when the task
-needs judgement about product/security rules, or when you'd have to read every file anyway to
-review it. In those cases just do it yourself. Never delegate to look busy.
+`npm run verify:full` adds Playwright and reuses verify's build — use it only when a critical
+user flow changed.
 
-## Tiers
+## What never gets delegated here
 
-| Tier | `model` | Give it | Examples |
-|---|---|---|---|
-| Cheap | `haiku` | Mechanical, well-specified, low-judgement | run `npm run verify` and report only failures; rename/move; apply a diff you spell out; grep/inventory a folder; add a translation key across files; write a Vitest case from a clear spec |
-| Mid | `sonnet` | Ordinary coding inside clear boundaries | implement a small component/route/server action from your spec; fix a failing test whose cause you already found; write tests for an existing function; update docs to match a change |
-| Keep | you (Opus) | Anything needing judgement | design decisions; anything touching RLS, auth, storage policies, or publication state (CLAUDE.md rules 1–3, 10–14); reviewing subagent output; talking to the user |
+Engineering Rules 1–3 and 10–14 in `CLAUDE.md` are the security spine of this product, and they
+need whole-picture judgement that a cold subagent doesn't have. Keep anything touching these
+yourself:
 
-Use the `Explore` agent type (with `model: haiku`) for read-only searches; `general-purpose`
-for edits. Start with the cheaper tier; move up only if the brief keeps growing.
+- the service-role key, or any code path that could reach the browser (Rule 1)
+- trusting client-supplied IDs, roles, ownership, or publication state (Rule 2)
+- RLS and storage policies — writing them, reviewing them, or "fixing" a blocker by loosening
+  them, which Rule 21 forbids outright (Rules 3, 21)
+- which revision a public query selects, and anything that could leak draft, private, rejected,
+  or archived content into a public surface (Rules 10–14)
+- seed data and anything that looks like real contributor content (Rules 15, 22)
 
-## Workflow
+A subagent may *read* these areas and report. It should not write them.
 
-1. **Understand first.** Read the task and skim the key files yourself (small reads are cheaper
-   than a bad brief). Decide what needs judgement and what is mechanical.
-2. **Plan the split.** Partition by *files*, not by feature, so parallel subagents never edit the
-   same file. Two agents on one file means a merge mess. Tell the user the plan in a few lines:
-   what you'll do yourself, what goes to Haiku, what goes to Sonnet.
-3. **Write each brief** using the template below. Spawn independent ones in the same turn,
-   `run_in_background: true`. Don't use `isolation: worktree` — changes must land in this tree.
-4. **Review, don't trust.** When a subagent reports back, run `git diff` on the files it touched
-   and read the change yourself. Subagents oversell. Check specifically against CLAUDE.md rules
-   (no service-role key in client code, Zod at trust boundaries, no `dangerouslySetInnerHTML`,
-   mobile-first, plain-language copy).
-5. **Verify cheaply.** Send `npm run verify` to a `haiku` agent with the instruction to return
-   *only* failing output (file, line, message) — not the full log. Fix small failures via a
-   subagent; take the tricky ones yourself.
-6. **Report** in plain language (the `/bro` style CLAUDE.md asks for): what was done, what each
-   subagent did and on which model, anything you rejected or redid, and what's still open.
+## House style for the final report
 
-## Brief template
-
-A subagent knows nothing about this conversation. Every brief must stand alone:
-
-```
-Repo: /Users/user/Desktop/KakiNotes (Next.js + Supabase; read CLAUDE.md only if the task
-touches auth, RLS, storage, or story publication — otherwise skip it to save tokens).
-
-Task: <one paragraph, concrete>
-Files you may edit: <exact paths>          Files you must NOT touch: <paths, if relevant>
-Reference: <a path to an existing example that shows the pattern to copy>
-Constraints: <the 2–4 CLAUDE.md rules that actually apply, quoted briefly>
-Do not: run git commit/push, install dependencies, or change files outside the list.
-
-Return: a ≤10-line summary — files changed, what you did, anything you were unsure about.
-Do not paste file contents or full command output.
-```
-
-For verification/search agents, replace "Return" with the exact shape you want, e.g.
-"Only the failing test names and their assertion messages. If everything passes, reply PASS."
-
-## Things that go wrong
-
-- **Subagent ignores the file list** → your `git diff` catches it; revert stray files.
-- **Subagent claims done, tests fail** → that's why step 5 runs *after* every batch.
-- **Brief grew to a page** → the task wasn't small; do it yourself.
-- **Subagent needs a follow-up** → use `SendMessage` to the same agent (context intact) instead
-  of spawning a fresh one.
+`CLAUDE.md` asks for plain, simple language in every reply — short sentences, no jargon, the
+`/bro` register. That applies to your wrap-up too: say what you did, what each subagent did and
+on which model, and what you rejected or redid.
