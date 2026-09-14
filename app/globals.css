@@ -225,10 +225,22 @@
    * inherited, since the CodeMirror editor renders into its own `.cm-content`
    * box that doesn't reliably inherit page-level font-family in all
    * browsers.
+   *
+   * The four CJK faces at the end are for Simplified Chinese (2026-09-14).
+   * They sit AFTER the Latin faces on purpose: a font-family list is
+   * consulted per CHARACTER, so Latin text still renders in Avenir Next and
+   * only the Chinese characters -- which none of the Latin faces contain --
+   * fall through to them. Without this, Chinese text lands on whatever the
+   * OS picks last, which on Windows is often a serif (SimSun) beside the
+   * app's sans Latin. PingFang SC ships with macOS/iOS, Microsoft YaHei
+   * with Windows, Noto Sans SC with most Linux and Android; Hiragino Sans
+   * GB covers older macOS. Nothing is downloaded -- same "use what the
+   * reader already has" approach as Avenir Next above.
    */
   --font-sans:
     "Avenir Next", "Avenir", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Helvetica, Arial, sans-serif;
+    Roboto, Helvetica, Arial, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans SC", sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 

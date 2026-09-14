@@ -53,8 +53,9 @@
  */
 
 import { useId } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { ArrowRightIcon } from "@/components/icons";
-import { TRIP_DATE_ORDER_MESSAGE } from "@/lib/validation/story";
+import { isLocale, type Locale } from "@/i18n/locales";
 
 export type TripDateMode = "range" | "year";
 
@@ -68,12 +69,23 @@ const MS_PER_DAY = 86_400_000;
  * check; en-GB's day-month-year also matches how both New Zealand (the
  * destination) and Malaysia (the initial market) write a date.
  */
-const tripDateFormat = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-  timeZone: "UTC",
-});
+// Locale-aware since 2026-09-14, but still built ONCE per locale and still
+// UTC: these are calendar dates (Engineering Rule 9), and formatting them
+// in the viewer's zone is what makes a date shift by a day either side of
+// midnight. English keeps en-GB's day-month-year, which is how both New
+// Zealand and Malaysia write a date.
+const tripDateFormats: Record<string, Intl.DateTimeFormat> = {};
+
+function tripDateFormat(locale: Locale): Intl.DateTimeFormat {
+  const tag = locale === "zh-CN" ? "zh-CN" : "en-GB";
+  tripDateFormats[tag] ??= new Intl.DateTimeFormat(tag, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  return tripDateFormats[tag];
+}
 
 /**
  * `YYYY-MM-DD` -> UTC epoch ms, or null if it is not a real calendar date.
@@ -100,10 +112,13 @@ export function parseCalendarDate(value: string): number | null {
   return ms;
 }
 
-/** `"2025-03-14"` -> `"14 Mar 2025"`; null for anything unparseable. */
-export function formatCalendarDate(value: string): string | null {
+/** `"2025-03-14"` -> `"14 Mar 2025"` / `"2025年3月14日"`; null if unparseable. */
+export function formatCalendarDate(
+  value: string,
+  locale: Locale = "en",
+): string | null {
   const ms = parseCalendarDate(value);
-  return ms === null ? null : tripDateFormat.format(ms);
+  return ms === null ? null : tripDateFormat(locale).format(ms);
 }
 
 /**
@@ -170,31 +185,35 @@ export function TripDateField({
   onEndDateChange,
   onYearChange,
 }: TripDateFieldProps) {
+  const t = useTranslations("editor.tripDates");
+  const tValidation = useTranslations("validation.story");
+  const rawLocale = useLocale();
+  const locale = isLocale(rawLocale) ? rawLocale : "en";
   const id = useId();
   const modeName = `${id}-trip-date-mode`;
   const startId = `${id}-trip-start`;
   const endId = `${id}-trip-end`;
   const yearId = `${id}-trip-year`;
 
-  const startLabel = formatCalendarDate(startDate);
-  const endLabel = formatCalendarDate(endDate);
+  const startLabel = formatCalendarDate(startDate, locale);
+  const endLabel = formatCalendarDate(endDate, locale);
   const days = tripDurationDays(startDate, endDate);
   // Both ends are real dates but the wrong way round. Display echo only --
   // revisionInputSchema's refine() is what actually blocks the save.
   const inverted = startLabel !== null && endLabel !== null && days === null;
 
   const segments: Array<{ value: TripDateMode; label: string }> = [
-    { value: "range", label: "Specific dates" },
-    { value: "year", label: "Just the year" },
+    { value: "range", label: t("specific") },
+    { value: "year", label: t("yearOnly") },
   ];
 
   return (
     <fieldset>
-      <legend className="text-sm font-medium">When did you travel?</legend>
+      <legend className="text-sm font-medium">{t("heading")}</legend>
 
       <div
         role="radiogroup"
-        aria-label="How precisely do you remember your travel dates?"
+        aria-label={t("precision")}
         className="relative mt-2 grid w-full max-w-sm grid-cols-2 rounded-full border border-border-subtle bg-surface-muted p-1"
       >
         {/* The moving part. Sized to exactly one half of the track's inner
@@ -242,8 +261,8 @@ export function TripDateField({
           <div className="flex flex-col gap-2 sm:flex-row">
             <FieldWell
               htmlFor={startId}
-              label="From"
-              hiddenLabel="trip start date"
+              label={t("from")}
+              hiddenLabel={t("startHidden")}
             >
               <input
                 id={startId}
@@ -253,7 +272,11 @@ export function TripDateField({
                 className="mt-1 w-full bg-transparent font-mono text-sm tabular-nums outline-offset-2"
               />
             </FieldWell>
-            <FieldWell htmlFor={endId} label="To" hiddenLabel="trip end date">
+            <FieldWell
+              htmlFor={endId}
+              label={t("to")}
+              hiddenLabel={t("endHidden")}
+            >
               <input
                 id={endId}
                 type="date"
@@ -269,7 +292,7 @@ export function TripDateField({
               Rule), and no day count for an inverted one. */}
           {inverted ? (
             <p className="mt-2 text-xs text-destructive">
-              {TRIP_DATE_ORDER_MESSAGE}
+              {tValidation("tripDateOrder")}
             </p>
           ) : startLabel && endLabel && days !== null ? (
             <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs text-muted-foreground tabular-nums">
@@ -280,7 +303,7 @@ export function TripDateField({
                 /
               </span>
               <span className="text-foreground">
-                {days === 1 ? "1 day" : `${days} days`}
+                {t("days", { count: days })}
               </span>
             </p>
           ) : null}
@@ -288,7 +311,11 @@ export function TripDateField({
       ) : (
         <div className="mt-3">
           <div className="max-w-40">
-            <FieldWell htmlFor={yearId} label="Year" hiddenLabel="trip year">
+            <FieldWell
+              htmlFor={yearId}
+              label={t("year")}
+              hiddenLabel={t("yearHidden")}
+            >
               <input
                 id={yearId}
                 type="number"
@@ -303,7 +330,7 @@ export function TripDateField({
             </FieldWell>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Use this if you remember the year but not the exact dates.
+            {t("yearOnlyHint")}
           </p>
         </div>
       )}

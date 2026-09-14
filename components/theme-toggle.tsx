@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useTranslations } from "next-intl";
 import { controlToneClasses } from "@/components/ui-tone";
 
 type Theme = "light" | "dark";
@@ -39,9 +40,10 @@ function setTheme(next: Theme) {
 }
 
 export function ThemeToggle({ inverted = false }: { inverted?: boolean }) {
+  const t = useTranslations("common.themeToggle");
   const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const isDark = theme === "dark";
-  const label = isDark ? "Switch to light mode" : "Switch to dark mode";
+  const label = isDark ? t("switchToLight") : t("switchToDark");
   const toneClasses = controlToneClasses(inverted);
 
   return (

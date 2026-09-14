@@ -1,16 +1,9 @@
-const STATUS_LABELS: Record<string, string> = {
-  draft: "Draft",
-  // The contributor finished this one and chose to keep it to themselves.
-  // "Private", not "Saved" or "Unpublished": it says who can see it, which
-  // is the only thing they actually chose.
-  private: "Private",
-  awaiting_contributor_approval: "Awaiting your approval",
-  pending_review: "In review",
-  changes_requested: "Changes requested",
-  published: "Published",
-  rejected: "Not approved",
-  archived: "Archived",
-};
+import { useTranslations } from "next-intl";
+
+// The labels live in messages/<locale>.json under `storyStatus`, keyed by
+// the story_lifecycle_status enum value itself. "Private", not "Saved" or
+// "Unpublished": it says who can see it, which is the only thing the
+// contributor actually chose.
 
 const STATUS_STYLES: Record<string, string> = {
   draft: "bg-surface-muted text-foreground/65",
@@ -26,13 +19,17 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export function StatusBadge({ status }: { status: string }) {
+  const t = useTranslations("storyStatus");
+  // An enum value this app has not been taught yet renders as itself rather
+  // than as a missing-message error.
+  const label = t.has(status as never) ? t(status as never) : status;
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${
         STATUS_STYLES[status] ?? STATUS_STYLES.draft
       }`}
     >
-      {STATUS_LABELS[status] ?? status}
+      {label}
     </span>
   );
 }

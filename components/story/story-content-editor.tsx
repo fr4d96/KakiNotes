@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useImperativeHandle, useRef } from "react";
+import { useTranslations } from "next-intl";
 
 import {
   markdownToStoryContent,
@@ -56,15 +57,10 @@ export const StoryContentEditor = forwardRef<
   StoryContentEditorHandle,
   StoryContentEditorProps
 >(function StoryContentEditor(
-  {
-    initialContent,
-    onChange,
-    editable = true,
-    ariaLabel = "Story content",
-    onRequestImages,
-  },
+  { initialContent, onChange, editable = true, ariaLabel, onRequestImages },
   ref,
 ) {
+  const t = useTranslations("editor.fields");
   const editorRef = useRef<MarkdownEditorHandle>(null);
 
   useImperativeHandle(
@@ -95,7 +91,7 @@ export const StoryContentEditor = forwardRef<
         initialValue={storyContentText(initialContent)}
         onChange={(text) => onChange(markdownToStoryContent(text))}
         editable={editable}
-        ariaLabel={ariaLabel}
+        ariaLabel={ariaLabel ?? t("storyContent")}
         onRequestImages={onRequestImages}
       />
     </div>

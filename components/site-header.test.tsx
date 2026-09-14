@@ -9,6 +9,16 @@ const { usePathnameMock, sessionMock } = vi.hoisted(() => ({
 }));
 vi.mock("next/navigation", () => ({
   usePathname: usePathnameMock,
+  // LocaleToggle (beside the theme toggle) refreshes the route after it
+  // writes the language cookie; nothing here exercises that.
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+
+// LocaleToggle's Server Action reads next/headers' cookies(), which has no
+// request scope under jsdom -- see components/locale-toggle.test.tsx for
+// the toggle's own behaviour.
+vi.mock("@/lib/i18n/set-locale-action", () => ({
+  setLocaleAction: vi.fn(async () => ({ ok: true })),
 }));
 
 // The real SignInForm/SignUpForm transitively import their "use server"

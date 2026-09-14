@@ -2,12 +2,14 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { signUpAction, type AuthFormState } from "@/app/(auth)/actions";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 const initialState: AuthFormState = {};
 
 export function SignUpForm() {
+  const t = useTranslations("auth.signUp");
   const [state, formAction, pending] = useActionState(
     signUpAction,
     initialState,
@@ -26,7 +28,7 @@ export function SignUpForm() {
       <form action={formAction} className="space-y-5" noValidate>
         <div>
           <label htmlFor="displayName" className="block text-sm font-medium">
-            Display name (optional)
+            {t("displayNameLabel")}
           </label>
           <input
             id="displayName"
@@ -40,7 +42,7 @@ export function SignUpForm() {
 
         <div>
           <label htmlFor="email" className="block text-sm font-medium">
-            Email
+            {t("emailLabel")}
           </label>
           <input
             id="email"
@@ -54,7 +56,7 @@ export function SignUpForm() {
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium">
-            Password
+            {t("passwordLabel")}
           </label>
           <input
             id="password"
@@ -78,13 +80,13 @@ export function SignUpForm() {
           disabled={pending}
           className="w-full rounded-md bg-accent px-3 py-2 text-accent-foreground hover:opacity-90 disabled:opacity-60"
         >
-          {pending ? "Creating account…" : "Create account"}
+          {pending ? t("submitting") : t("submit")}
         </button>
 
         <p className="text-sm text-muted-foreground">
-          Already have an account?{" "}
+          {t("haveAccount")}{" "}
           <Link href="/sign-in" className="hover:underline">
-            Sign in
+            {t("signInLink")}
           </Link>
         </p>
       </form>

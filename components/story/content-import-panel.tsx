@@ -1,24 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { StoryContentBlock } from "@/lib/validation/story";
 import type { ImportReport } from "@/lib/story/content-import";
 import { ContentBlockRenderer } from "@/components/story/content-block-renderer";
 import { importStoryContentAction } from "@/app/(editor)/editorial/import-actions";
 
-const ERROR_MESSAGES: Record<string, string> = {
-  input_too_large:
-    "That's too much text to import at once — try a smaller section.",
-  too_many_nodes:
-    "This HTML is too complex to import — try a smaller/simpler section.",
-  too_deeply_nested:
-    "This HTML is nested too deeply to import — try a smaller/simpler section.",
-  empty_content: "No usable content was found in that text.",
-  invalid_content:
-    "The converted content didn't pass validation — try a smaller/simpler section.",
-  unauthorized: "You're not authorized to import content.",
-  invalid_input: "Invalid input.",
-};
+// The action's error CODES; their sentences live in
+// messages/<locale>.json at `import.errors`.
+const ERROR_CODES = [
+  "input_too_large",
+  "too_many_nodes",
+  "too_deeply_nested",
+  "empty_content",
+  "invalid_content",
+  "unauthorized",
+  "invalid_input",
+] as const;
 
 export type ContentImportPanelProps = {
   /**
@@ -37,6 +36,7 @@ export function ContentImportPanel({
   onApply,
   disabled,
 }: ContentImportPanelProps) {
+  const t = useTranslations("import");
   const [format, setFormat] = useState<"plain" | "html">("plain");
   const [rawInput, setRawInput] = useState("");
   const [converting, setConverting] = useState(false);
@@ -62,7 +62,9 @@ export function ContentImportPanel({
         setPreview({ blocks: result.blocks, report: result.report });
       } else {
         setError(
-          ERROR_MESSAGES[result.error] ?? "Could not convert this content.",
+          (ERROR_CODES as readonly string[]).includes(result.error)
+            ? t(`errors.${result.error}` as never)
+            : t("errors.convertFailed"),
         );
       }
     } catch {
@@ -74,9 +76,7 @@ export function ContentImportPanel({
       // all. Handled explicitly here so this is a clear, recoverable
       // message rather than a silent failure (setConverting(false) alone,
       // with no catch, would leave the user with no feedback at all).
-      setError(
-        "That request couldn't be sent — try pasting a smaller amount of text.",
-      );
+      setError(t("errors.requestTooLarge"));
     } finally {
       setConverting(false);
     }
@@ -103,12 +103,8 @@ export function ContentImportPanel({
 
   return (
     <div className="rounded-md border border-border-subtle p-4">
-      <h2 className="text-sm font-semibold">Import content</h2>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Paste plain text or rich HTML from the contributor&apos;s original
-        submission. Preview the conversion before using it — this replaces the
-        story body below.
-      </p>
+      <h2 className="text-sm font-semibold">{t("heading")}</h2>
+      <p className="mt-1 text-xs text-muted-foreground">{t("intro")}</p>
 
       <div className="mt-3 flex gap-4 text-sm">
         <label className="flex items-center gap-1.5">
@@ -117,7 +113,7 @@ export function ContentImportPanel({
             checked={format === "plain"}
             onChange={() => setFormat("plain")}
           />
-          Plain text
+          {t("plainText")}
         </label>
         <label className="flex items-center gap-1.5">
           <input
@@ -125,7 +121,7 @@ export function ContentImportPanel({
             checked={format === "html"}
             onChange={() => setFormat("html")}
           />
-          HTML
+          {t("html")}
         </label>
       </div>
 
@@ -134,7 +130,7 @@ export function ContentImportPanel({
         onChange={(e) => setRawInput(e.target.value)}
         rows={8}
         placeholder={
-          format === "html" ? "<p>Pasted HTML…</p>" : "Pasted plain text…"
+          format === "html" ? t("placeholderHtml") : t("placeholderPlain")
         }
         className="mt-2 w-full rounded-md border border-border-subtle px-3 py-2 font-mono text-xs dark:bg-transparent"
       />
@@ -145,7 +141,7 @@ export function ContentImportPanel({
         disabled={converting || rawInput.trim().length === 0 || disabled}
         className="mt-2 rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium disabled:opacity-60"
       >
-        {converting ? "Converting…" : "Preview conversion"}
+        {converting ? t("converting") : t("previewConversion")}
       </button>
 
       {error && (
@@ -157,39 +153,46 @@ export function ContentImportPanel({
       {preview && (
         <div className="mt-4 space-y-3">
           <div className="rounded-md border border-border-subtle bg-black/[0.02] p-3 text-xs dark:bg-white/[0.03]">
-            <p>{preview.report.blocksProduced} block(s) produced.</p>
+            <p>
+              {t("blocksProduced", { count: preview.report.blocksProduced })}
+            </p>
             {preview.report.convertedTables > 0 && (
               <p>
-                {preview.report.convertedTables} table(s) converted to plain
-                text.
+                {t("tablesConverted", {
+                  count: preview.report.convertedTables,
+                })}
               </p>
             )}
             {preview.report.convertedCodeBlocks > 0 && (
               <p>
-                {preview.report.convertedCodeBlocks} code block(s) converted to
-                plain text.
+                {t("codeBlocksConverted", {
+                  count: preview.report.convertedCodeBlocks,
+                })}
               </p>
             )}
             {Object.keys(preview.report.droppedElements).length > 0 && (
               <p>
-                Removed as unsafe:{" "}
-                {Object.entries(preview.report.droppedElements)
-                  .map(([tag, count]) => `${tag} (${count})`)
-                  .join(", ")}
+                {t("removedAsUnsafe", {
+                  list: Object.entries(preview.report.droppedElements)
+                    .map(([tag, count]) => `${tag} (${count})`)
+                    .join(", "),
+                })}
               </p>
             )}
             {Object.keys(preview.report.unsupportedElements).length > 0 && (
               <p>
-                Not convertible (skipped):{" "}
-                {Object.entries(preview.report.unsupportedElements)
-                  .map(([tag, count]) => `${tag} (${count})`)
-                  .join(", ")}
+                {t("notConvertible", {
+                  list: Object.entries(preview.report.unsupportedElements)
+                    .map(([tag, count]) => `${tag} (${count})`)
+                    .join(", "),
+                })}
               </p>
             )}
             {preview.report.unsafeLinksRemovedCount > 0 && (
               <p>
-                {preview.report.unsafeLinksRemovedCount} unsafe link(s) had
-                their link removed (text kept).
+                {t("unsafeLinks", {
+                  count: preview.report.unsafeLinksRemovedCount,
+                })}
               </p>
             )}
           </div>
@@ -204,7 +207,7 @@ export function ContentImportPanel({
             disabled={applying || disabled}
             className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground disabled:opacity-60"
           >
-            {applying ? "Applying…" : "Use this content"}
+            {applying ? t("applying") : t("useThisContent")}
           </button>
           {applyError && (
             <p role="alert" className="text-sm text-destructive">

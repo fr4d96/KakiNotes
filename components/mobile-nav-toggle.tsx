@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { controlToneClasses } from "@/components/ui-tone";
 
 // Either a real navigable link, or an action item (e.g. "open the sign-in
@@ -26,6 +27,8 @@ export function MobileNavToggle({
   navItems: NavItem[];
   inverted?: boolean;
 }) {
+  const t = useTranslations("common");
+  const tNav = useTranslations("nav");
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const toggleToneClasses = controlToneClasses(inverted);
@@ -42,13 +45,13 @@ export function MobileNavToggle({
         }}
         className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${toggleToneClasses}`}
       >
-        {open ? "Close" : "Menu"}
+        {open ? t("close") : t("menu")}
       </button>
 
       {open ? (
         <nav
           id={menuId}
-          aria-label="Primary"
+          aria-label={tNav("primary")}
           className="absolute inset-x-0 top-full z-40 border-b border-border-subtle bg-surface px-4 py-4 text-foreground"
         >
           <ul className="flex flex-col gap-3 text-sm">

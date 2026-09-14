@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { SubmitConsentPanel } from "@/components/story/submit-consent-panel";
 import { EyeIcon, HiddenEyeIcon } from "@/components/icons";
 import type { StoryRequirement } from "@/lib/story/steps";
@@ -82,6 +83,7 @@ export function PublishChoicePanel({
   missingForPrivate,
   canEdit,
 }: PublishChoicePanelProps) {
+  const t = useTranslations("publish");
   // Public is preselected because this is a public stories platform and it
   // is what the button did before this panel existed -- a contributor who
   // has always published is not made to re-answer a question they have
@@ -102,25 +104,23 @@ export function PublishChoicePanel({
     <div className="flex flex-col gap-4">
       {allowPrivate && (
         <fieldset className="rounded-md border border-border-subtle p-4">
-          <legend className="px-1 text-sm font-semibold">
-            Who is this story for?
-          </legend>
+          <legend className="px-1 text-sm font-semibold">{t("heading")}</legend>
           <div className="mt-1 flex flex-col gap-2">
             <DestinationOption
               value="public"
               checked={choice === "public"}
               onSelect={setDestination}
               icon={<EyeIcon className="h-5 w-5" aria-hidden />}
-              title="Everyone"
-              description="A moderator reads it first. Once they approve it, anyone can find and read it."
+              title={t("everyone")}
+              description={t("everyoneHint")}
             />
             <DestinationOption
               value="private"
               checked={choice === "private"}
               onSelect={setDestination}
               icon={<HiddenEyeIcon className="h-5 w-5" aria-hidden />}
-              title="Just me"
-              description="Nobody reviews it and nobody else can see it. You can still edit it, or share it publicly later."
+              title={t("justMe")}
+              description={t("justMeHint")}
             />
           </div>
         </fieldset>
@@ -226,21 +226,26 @@ function MissingRequirementsNotice({
   missing: StoryRequirement[];
   canEdit: boolean;
 }) {
+  const t = useTranslations("editor");
+  const tPanel = useTranslations("publish");
   return (
     <div
       role="status"
       className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
     >
       <p className="font-medium">
-        Add {missing.map((r) => r.label).join(", ")} before you can save this
-        story.
+        {t("missing.beforeSave", {
+          list: missing
+            .map((r) => t(`requirements.${r.labelKey}` as never))
+            .join(t("missing.listSeparator")),
+        })}
       </p>
       {canEdit && (
         <Link
           href={`/stories/${storyId}/edit?step=${missing[0]?.step ?? "title"}`}
           className="mt-1 inline-block underline underline-offset-2"
         >
-          Go to that step
+          {tPanel("goToStep")}
         </Link>
       )}
     </div>
@@ -269,6 +274,7 @@ function KeepPrivateForm({
   expectedVersion: number;
   isAlreadyPrivate: boolean;
 }) {
+  const t = useTranslations("publish");
   const [state, formAction, pending] = useActionState(
     keepStoryPrivateAction,
     initialState,
@@ -283,16 +289,9 @@ function KeepPrivateForm({
       <input type="hidden" name="revisionId" value={revisionId} />
       <input type="hidden" name="expectedVersion" value={expectedVersion} />
 
-      <h2 className="text-sm font-semibold">Keeping this one to yourself</h2>
-      <p className="mt-1 text-xs text-muted-foreground">
-        No moderator reads it, and it never shows up in search, on the public
-        site, or on your public profile. Your photos stay private too.
-      </p>
-      <p className="mt-2 text-xs text-muted-foreground">
-        You can keep editing it whenever you like. If you change your mind
-        later, come back here and choose &ldquo;Everyone&rdquo; — that is when
-        it goes to a moderator.
-      </p>
+      <h2 className="text-sm font-semibold">{t("keepingPrivate")}</h2>
+      <p className="mt-1 text-xs text-muted-foreground">{t("privateBody1")}</p>
+      <p className="mt-2 text-xs text-muted-foreground">{t("privateBody2")}</p>
 
       <button
         type="submit"
@@ -300,10 +299,10 @@ function KeepPrivateForm({
         className="mt-4 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-60"
       >
         {pending
-          ? "Saving…"
+          ? t("saving")
           : isAlreadyPrivate
-            ? "Save changes"
-            : "Save as private"}
+            ? t("saveChanges")
+            : t("saveAsPrivate")}
       </button>
 
       {state.error && (

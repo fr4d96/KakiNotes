@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { PreviewableMediaItem } from "@/lib/story/contributor-queries";
 import { mintPreviewUrlAction } from "@/app/(contributor)/stories/[id]/media-actions";
 import { Spinner } from "@/components/ui/spinner";
@@ -15,6 +16,7 @@ import { Spinner } from "@/components/ui/spinner";
  * presentation fields only.
  */
 export function PreviewGallery({ media }: { media: PreviewableMediaItem[] }) {
+  const t = useTranslations("editor.images");
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -66,7 +68,7 @@ export function PreviewGallery({ media }: { media: PreviewableMediaItem[] }) {
             ) : (
               <div
                 className="flex h-full w-full items-center justify-center text-muted-foreground"
-                aria-label="Loading image"
+                aria-label={t("loading")}
               >
                 <Spinner className="h-6 w-6" />
               </div>

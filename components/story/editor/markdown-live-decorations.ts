@@ -1006,8 +1006,9 @@ export function createMarkdownLiveExtensions(): Extension[] {
 // the rest of the stack is cross-platform fallbacks so Windows/Linux/
 // Android readers still get a comparable humanist sans, never a serif or
 // the browser's generic default.
+/** Kept identical to --font-sans in app/globals.css, CJK faces included. */
 export const MARKDOWN_EDITOR_FONT_FAMILY =
-  '"Avenir Next", "Avenir", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+  '"Avenir Next", "Avenir", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif';
 
 const MONOSPACE_FONT_FAMILY =
   "ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace";

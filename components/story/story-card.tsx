@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { getPublicImageUrl } from "@/lib/story/public-image-url";
 import { firstRegionLabel, stringList } from "@/lib/story/card-fields";
 import { AttributionChip } from "@/components/story/attribution-chip";
@@ -35,6 +36,7 @@ export type StoryCardData = {
  * query per card.
  */
 export function StoryCard({ story }: { story: StoryCardData }) {
+  const t = useTranslations("common");
   const coverUrl = getPublicImageUrl(story.cover_image_path);
   const regionLabel = firstRegionLabel(story.regions);
   const badges = stringList(story.tags).slice(0, 3);
@@ -78,7 +80,10 @@ export function StoryCard({ story }: { story: StoryCardData }) {
         ) : null}
         <div className="mt-auto flex items-center justify-between gap-2 pt-2 text-sm text-foreground/70">
           <AttributionChip
-            name={story.attribution_value ?? "Anonymous"}
+            /* The word, not the data: attribution_value is null exactly
+               when the story is published anonymously, so this is our label
+               for "no name", never something a contributor wrote. */
+            name={story.attribution_value ?? t("anonymous")}
             avatarEmoji={story.contributor_avatar_emoji}
             tripYear={story.trip_year}
             destination={regionLabel}

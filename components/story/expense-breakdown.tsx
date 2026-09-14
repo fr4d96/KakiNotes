@@ -1,10 +1,12 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import type { ActiveExpenseCategory } from "@/lib/story/active-lookups";
 import { EXPENSE_NOTE_MAX_LENGTH } from "@/lib/validation/story";
 import { formatNzdCents } from "@/lib/story/expense-per-month";
 import { CloseIcon } from "@/components/icons";
+import { isLocale } from "@/i18n/locales";
 
 /**
  * One row of the optional expense breakdown, as the FORM holds it: amounts
@@ -168,6 +170,9 @@ export function ExpenseBreakdown({
   totalExpenseDollars: string;
   onChange: (next: ExpenseDraftRow[]) => void;
 }) {
+  const t = useTranslations("editor.expenses");
+  const rawLocale = useLocale();
+  const locale = isLocale(rawLocale) ? rawLocale : "en";
   // Open on arrival if there is already something to see -- a contributor
   // returning to their draft should not have to find their own budget.
   const [open, setOpen] = useState(rows.length > 0);
@@ -259,9 +264,9 @@ export function ExpenseBreakdown({
         className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm font-medium hover:bg-surface-muted"
       >
         <span>
-          Break it down by category
+          {t("heading")}
           <span className="ml-2 font-normal text-muted-foreground">
-            Optional
+            {t("optional")}
           </span>
         </span>
         <ChevronDownIcon open={open} />
@@ -270,9 +275,7 @@ export function ExpenseBreakdown({
       {open && (
         <div id={panelId} className="border-t border-border-subtle p-3">
           <p className="text-xs text-muted-foreground">
-            Only add what you actually recorded. Leaving something out is fine —
-            it doesn&apos;t have to add up to your total. Up to{" "}
-            {MAX_EXPENSE_ROWS}.
+            {t("intro", { max: MAX_EXPENSE_ROWS })}
           </p>
 
           {/* No fixed height and no overflow container: the list cannot
@@ -298,14 +301,14 @@ export function ExpenseBreakdown({
                               htmlFor={`${panelId}-label-${index}`}
                               className="sr-only"
                             >
-                              Category name
+                              {t("categoryName")}
                             </label>
                             <input
                               id={`${panelId}-label-${index}`}
                               type="text"
                               value={row.name}
                               maxLength={EXPENSE_LABEL_MAX_LENGTH}
-                              placeholder="What did you spend on?"
+                              placeholder={t("spentOn")}
                               onChange={(e) =>
                                 updateRow(index, { name: e.target.value })
                               }
@@ -327,14 +330,14 @@ export function ExpenseBreakdown({
                               htmlFor={`${panelId}-note-${index}`}
                               className="sr-only"
                             >
-                              A short note about this cost
+                              {t("noteLabel")}
                             </label>
                             <input
                               id={`${panelId}-note-${index}`}
                               type="text"
                               value={row.note}
                               maxLength={EXPENSE_NOTE_MAX_LENGTH}
-                              placeholder="Add a short note (optional)"
+                              placeholder={t("notePlaceholder")}
                               onChange={(e) =>
                                 updateRow(index, { note: e.target.value })
                               }
@@ -384,15 +387,14 @@ export function ExpenseBreakdown({
 
           {atCap ? (
             <p className="mt-3 text-xs text-muted-foreground">
-              That&apos;s {MAX_EXPENSE_ROWS} categories — the most a breakdown
-              holds. Remove one to add something else.
+              {t("atCap", { max: MAX_EXPENSE_ROWS })}
             </p>
           ) : (
             <div className="mt-3 space-y-3">
               {unusedCategories.length > 0 && (
                 <div>
                   <label htmlFor={addId} className="block text-sm font-medium">
-                    Add a category
+                    {t("addCategory")}
                   </label>
                   <select
                     id={addId}
@@ -402,7 +404,7 @@ export function ExpenseBreakdown({
                     }}
                     className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2 text-sm dark:bg-transparent"
                   >
-                    <option value="">Choose a category…</option>
+                    <option value="">{t("chooseCategory")}</option>
                     {unusedCategories.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.name}
@@ -418,7 +420,7 @@ export function ExpenseBreakdown({
                   this, not a fallback for when the list fails you. */}
               <div>
                 <label htmlFor={customId} className="block text-sm font-medium">
-                  Or name your own
+                  {t("orNameYourOwn")}
                 </label>
                 <div className="mt-1 flex gap-2">
                   <input
@@ -426,7 +428,7 @@ export function ExpenseBreakdown({
                     type="text"
                     value={customLabel}
                     maxLength={EXPENSE_LABEL_MAX_LENGTH}
-                    placeholder="e.g. Phone plan"
+                    placeholder={t("customPlaceholder")}
                     onChange={(e) => setCustomLabel(e.target.value)}
                     onKeyDown={(e) => {
                       // Enter adds the row instead of submitting the form
@@ -455,12 +457,11 @@ export function ExpenseBreakdown({
 
           {rows.length > 0 && (
             <p className="mt-3 text-sm text-muted-foreground">
-              Breakdown so far: {formatNzdCents(subtotalCents)}
+              {t("subtotal", { amount: formatNzdCents(subtotalCents, locale) })}
               {exceedsTotal && (
                 // Advisory, never blocking -- see this component's header.
                 <span role="status" className="block text-xs">
-                  That&apos;s more than the total above. Both are saved as you
-                  typed them; check whichever one is wrong.
+                  {t("exceedsTotal")}
                 </span>
               )}
             </p>

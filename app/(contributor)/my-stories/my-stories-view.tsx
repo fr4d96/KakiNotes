@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { StatusBadge } from "./status-badge";
 import { StoryCoverThumbnail } from "./story-cover-thumbnail";
@@ -20,6 +21,8 @@ import {
   stringList,
 } from "@/lib/story/card-fields";
 import { isPrivateStory } from "@/lib/story/story-visibility";
+import { formatDate } from "@/lib/i18n/format";
+import { isLocale, type Locale } from "@/i18n/locales";
 import {
   ChevronIcon,
   EditorialPencilIcon,
@@ -92,13 +95,10 @@ function setStoredView(next: ViewMode) {
   viewListeners.forEach((listener) => listener());
 }
 
-function formatDate(value: string | null): string | null {
+/** "14 Sept 2026" / "2026年9月14日", via the shared locale-aware helper. */
+function formatUpdatedAt(value: string | null, locale: Locale): string | null {
   if (!value) return null;
-  return new Date(value).toLocaleDateString("en-NZ", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return formatDate(value, locale) || null;
 }
 
 /**
@@ -156,19 +156,15 @@ export function storySection(story: MyStoryWithCover): StorySection {
  * then what is over. Each carries a plain-language hint because "In review"
  * alone does not say who is waiting on whom.
  */
-const SECTIONS: {
-  key: StorySection;
-  label: string;
-  hint: string;
-}[] = [
-  { key: "drafts", label: "Drafts", hint: "Yours to finish" },
-  { key: "review", label: "In review", hint: "Waiting on a moderator" },
-  { key: "published", label: "Published", hint: "Readers can see these" },
+const SECTIONS: { key: StorySection }[] = [
+  { key: "drafts" },
+  { key: "review" },
+  { key: "published" },
   // Beside Published rather than beside Drafts: both are finished stories
   // that came out the way the contributor wanted. Only the terminal states
   // sit after them.
-  { key: "private", label: "Private", hint: "Only you can see these" },
-  { key: "closed", label: "Not published", hint: "Archived or not approved" },
+  { key: "private" },
+  { key: "closed" },
 ];
 
 /**
@@ -256,9 +252,10 @@ function storyStatusFlags(story: MyStoryWithCover) {
  * work on or is now sitting with a moderator.
  */
 function UpdateChip({ inReview }: { inReview: boolean }) {
+  const t = useTranslations("myStories");
   return (
     <span className="inline-flex items-center rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-bold text-foreground/65">
-      {inReview ? "Update in review" : "Update in progress"}
+      {inReview ? t("updateInReview") : t("updateInProgress")}
     </span>
   );
 }
@@ -323,6 +320,7 @@ function DeleteDraftAction({
   title: string;
   className?: string;
 }) {
+  const t = useTranslations("myStories");
   const router = useRouter();
   const { showToast } = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -332,7 +330,7 @@ function DeleteDraftAction({
     setDeleting(true);
     const result = await deleteDraftStoryAction(story.id, story.version);
     if (result.ok) {
-      showToast(`"${title}" deleted.`);
+      showToast(t("deleteDialog.toast", { title }));
       router.refresh();
       return;
     }
@@ -346,17 +344,17 @@ function DeleteDraftAction({
       <button
         type="button"
         onClick={() => setConfirmOpen(true)}
-        title={`Delete ${title}`}
-        aria-label={`Delete ${title}`}
+        title={t("actions.delete", { title })}
+        aria-label={t("actions.delete", { title })}
         className={`${ACTION_ICON_CLASS} text-destructive ${className ?? ""}`}
       >
         <TrashIcon className="h-4 w-4" />
       </button>
       <ConfirmDialog
         open={confirmOpen}
-        title="Delete this story?"
-        description={`"${title}" will be permanently deleted. This can't be undone.`}
-        confirmLabel="Delete story"
+        title={t("deleteDialog.title")}
+        description={t("deleteDialog.description", { title })}
+        confirmLabel={t("deleteDialog.confirm")}
         danger
         pending={deleting}
         onConfirm={handleConfirm}
@@ -407,6 +405,7 @@ function TakedownAction({
   request: TakedownRequestRow | null;
   className?: string;
 }) {
+  const t = useTranslations("myStories");
   const router = useRouter();
   const { showToast } = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -419,9 +418,7 @@ function TakedownAction({
     setPending(true);
     const result = await requestStoryTakedownAction(story.id, story.version);
     if (result.ok) {
-      showToast(
-        `Asked for "${title}" to be taken down. It stays public until the team reviews it.`,
-      );
+      showToast(t("takedownDialog.toast", { title }));
       router.refresh();
       return;
     }
@@ -435,7 +432,7 @@ function TakedownAction({
     setPending(true);
     const result = await cancelStoryTakedownAction(request.request_id);
     if (result.ok) {
-      showToast(`"${title}" stays up — request withdrawn.`);
+      showToast(t("cancelTakedownDialog.toast", { title }));
       router.refresh();
       return;
     }
@@ -450,17 +447,17 @@ function TakedownAction({
         <button
           type="button"
           onClick={() => setCancelOpen(true)}
-          title={`Takedown requested for ${title} — awaiting review. Choose to cancel the request.`}
-          aria-label={`Cancel the takedown request for ${title}`}
+          title={t("actions.takedownPending", { title })}
+          aria-label={t("actions.cancelTakedown", { title })}
           className={`${ACTION_ICON_CLASS} text-muted-foreground ${className ?? ""}`}
         >
           <HiddenEyeIcon className="h-4 w-4" />
         </button>
         <ConfirmDialog
           open={cancelOpen}
-          title="Keep this story up?"
-          description={`You asked for "${title}" to be taken down and nobody has reviewed it yet. Cancelling leaves the story published, exactly as it is now. You can ask again at any time.`}
-          confirmLabel="Cancel the request"
+          title={t("cancelTakedownDialog.title")}
+          description={t("cancelTakedownDialog.description", { title })}
+          confirmLabel={t("cancelTakedownDialog.confirm")}
           pending={pending}
           onConfirm={handleCancel}
           onCancel={() => setCancelOpen(false)}
@@ -474,17 +471,17 @@ function TakedownAction({
       <button
         type="button"
         onClick={() => setConfirmOpen(true)}
-        title={`Take down ${title}`}
-        aria-label={`Take down ${title}`}
+        title={t("actions.takeDown", { title })}
+        aria-label={t("actions.takeDown", { title })}
         className={`${ACTION_ICON_CLASS} text-destructive ${className ?? ""}`}
       >
         <HiddenEyeIcon className="h-4 w-4" />
       </button>
       <ConfirmDialog
         open={confirmOpen}
-        title="Ask for this story to be taken down?"
-        description={`The Kakinotes team reviews the request, and "${title}" stays public until they do. Nothing is deleted either way — your writing and photos stay in your account. If you only want to change something, use Edit instead: your story stays up while the change is reviewed.`}
-        confirmLabel="Ask for takedown"
+        title={t("takedownDialog.title")}
+        description={t("takedownDialog.description", { title })}
+        confirmLabel={t("takedownDialog.confirm")}
         danger
         pending={pending}
         onConfirm={handleRequest}
@@ -552,12 +549,22 @@ type FilterAxis = {
   options: string[];
 };
 
-function buildFilterAxes(stories: MyStoryWithCover[]): FilterAxis[] {
+function buildFilterAxes(
+  stories: MyStoryWithCover[],
+  // The axis KEY is stable; only its label is translated. The OPTION values
+  // stay as list_my_stories() gives them -- region and destination names
+  // arrive without slugs, and a tag may be one the contributor typed.
+  labels: Record<FilterAxis["key"], string>,
+): FilterAxis[] {
   const defs: Array<Pick<FilterAxis, "key" | "label" | "read">> = [
-    { key: "region", label: "Region", read: (s) => regionNames(s.regions) },
+    {
+      key: "region",
+      label: labels.region,
+      read: (s) => regionNames(s.regions),
+    },
     {
       key: "destination",
-      label: "Destination",
+      label: labels.destination,
       read: (s) => destinationNames(s.regions),
     },
     // list_my_stories()'s `tags` is already a flat array of resolved names
@@ -565,7 +572,7 @@ function buildFilterAxes(stories: MyStoryWithCover[]): FilterAxis[] {
     // label the contributor typed themselves -- so a self-authored tag
     // filters exactly like a seeded one, which on this product is most of
     // them.
-    { key: "tag", label: "Tags", read: (s) => stringList(s.tags) },
+    { key: "tag", label: labels.tag, read: (s) => stringList(s.tags) },
   ];
 
   const axes: FilterAxis[] = [];
@@ -599,6 +606,7 @@ function StoryGrid({
   stories: MyStoryWithCover[];
   takedownByStory: Map<string, TakedownRequestRow>;
 }) {
+  const t = useTranslations("myStories");
   return (
     <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
       {stories.map((story) => {
@@ -611,7 +619,7 @@ function StoryGrid({
           inReview,
           updateInFlight,
         } = storyStatusFlags(story);
-        const title = story.title ?? "Untitled story";
+        const title = story.title ?? t("untitled");
         const href = primaryStoryHref(story);
         return (
           <li key={story.id}>
@@ -652,7 +660,7 @@ function StoryGrid({
                 {editable && (
                   <ActionIconLink
                     href={`/stories/${story.id}/edit`}
-                    label={`Edit ${title}`}
+                    label={t("actions.edit", { title })}
                     className="text-accent"
                   >
                     <EditorialPencilIcon className="h-4 w-4" />
@@ -670,7 +678,7 @@ function StoryGrid({
                 {awaitingApproval ? (
                   <ActionIconLink
                     href={`/stories/${story.id}/preview`}
-                    label={`Review ${title}`}
+                    label={t("actions.review", { title })}
                     className="text-accent"
                   >
                     <EyeIcon className="h-4 w-4" />
@@ -678,7 +686,7 @@ function StoryGrid({
                 ) : (
                   <ActionIconLink
                     href={`/stories/${story.id}/preview`}
-                    label={`Preview ${title}`}
+                    label={t("actions.preview", { title })}
                     className="text-foreground/70"
                   >
                     <EyeIcon className="h-4 w-4" />
@@ -720,6 +728,9 @@ function StoryList({
   stories: MyStoryWithCover[];
   takedownByStory: Map<string, TakedownRequestRow>;
 }) {
+  const t = useTranslations("myStories");
+  const rawLocale = useLocale();
+  const locale = isLocale(rawLocale) ? rawLocale : "en";
   return (
     <ul>
       {stories.map((story, index) => {
@@ -732,8 +743,8 @@ function StoryList({
           inReview,
           updateInFlight,
         } = storyStatusFlags(story);
-        const updated = formatDate(story.updated_at);
-        const title = story.title ?? "Untitled story";
+        const updated = formatUpdatedAt(story.updated_at, locale);
+        const title = story.title ?? t("untitled");
         const href = primaryStoryHref(story);
         return (
           <li key={story.id} className="nf-entry">
@@ -781,7 +792,7 @@ function StoryList({
                   )}
                   {updated && (
                     <p className="mt-1 font-mono text-xs text-foreground/45 tabular-nums">
-                      Updated {updated}
+                      {t("updatedAt", { date: updated })}
                     </p>
                   )}
                 </div>
@@ -790,7 +801,7 @@ function StoryList({
                   {editable && (
                     <ActionIconLink
                       href={`/stories/${story.id}/edit`}
-                      label={`Edit ${title}`}
+                      label={t("actions.edit", { title })}
                       className="text-accent"
                     >
                       <EditorialPencilIcon className="h-4 w-4" />
@@ -808,7 +819,7 @@ function StoryList({
                   {awaitingApproval ? (
                     <ActionIconLink
                       href={`/stories/${story.id}/preview`}
-                      label={`Review ${title}`}
+                      label={t("actions.review", { title })}
                       className="text-accent"
                     >
                       <EyeIcon className="h-4 w-4" />
@@ -816,7 +827,7 @@ function StoryList({
                   ) : (
                     <ActionIconLink
                       href={`/stories/${story.id}/preview`}
-                      label={`Preview ${title}`}
+                      label={t("actions.preview", { title })}
                       className="text-foreground/70"
                     >
                       <EyeIcon className="h-4 w-4" />
@@ -849,6 +860,7 @@ export function MyStoriesView({
   stories: MyStoryWithCover[];
   takedownRequests?: TakedownRequestRow[];
 }) {
+  const t = useTranslations("myStories");
   // Keyed once here rather than scanned per row: the list pages twelve at a
   // time and every row asks this question.
   const takedownByStory = useMemo(
@@ -861,7 +873,15 @@ export function MyStoriesView({
     getServerViewSnapshot,
   );
 
-  const axes = useMemo(() => buildFilterAxes(stories), [stories]);
+  const axes = useMemo(
+    () =>
+      buildFilterAxes(stories, {
+        region: t("filters.region"),
+        destination: t("filters.destination"),
+        tag: t("filters.tag"),
+      }),
+    [stories, t],
+  );
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
     {},
   );
@@ -935,20 +955,20 @@ export function MyStoriesView({
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="journiq-heading text-[2.4rem]">My Stories</h1>
+        <h1 className="journiq-heading text-[2.4rem]">{t("title")}</h1>
         <div className="flex items-center gap-3">
           {stories.length > 0 && (
             <div
               role="group"
-              aria-label="View"
+              aria-label={t("viewLabel")}
               className="flex rounded-md border border-border-subtle p-0.5"
             >
               <button
                 type="button"
                 onClick={() => changeView("grid")}
                 aria-pressed={view === "grid"}
-                aria-label="Grid view"
-                title="Grid view"
+                aria-label={t("gridView")}
+                title={t("gridView")}
                 className={`rounded px-2 py-1.5 ${
                   view === "grid"
                     ? "bg-surface-muted text-foreground"
@@ -961,8 +981,8 @@ export function MyStoriesView({
                 type="button"
                 onClick={() => changeView("list")}
                 aria-pressed={view === "list"}
-                aria-label="List view"
-                title="List view"
+                aria-label={t("listView")}
+                title={t("listView")}
                 className={`rounded px-2 py-1.5 ${
                   view === "list"
                     ? "bg-surface-muted text-foreground"
@@ -977,32 +997,32 @@ export function MyStoriesView({
             href="/stories/new/import"
             className="journiq-button border border-border-subtle bg-transparent text-foreground"
           >
-            Import
+            {t("import")}
           </Link>
           <Link
             href="/stories/new"
             className="journiq-button bg-accent text-accent-foreground"
           >
-            New Story
+            {t("newStory")}
           </Link>
         </div>
       </div>
 
       {stories.length === 0 ? (
         <p className="mt-8 text-foreground/65">
-          You haven&apos;t started a story yet.{" "}
+          {t("emptyBefore")}{" "}
           <Link
             href="/stories/new"
             className="text-accent underline underline-offset-2"
           >
-            Start your first one
+            {t("emptyStartLink")}
           </Link>{" "}
-          or{" "}
+          {t("emptyOr")}{" "}
           <Link
             href="/stories/new/import"
             className="text-accent underline underline-offset-2"
           >
-            import a PDF
+            {t("emptyImportLink")}
           </Link>
           .
         </p>
@@ -1017,6 +1037,10 @@ export function MyStoriesView({
                   options={[ALL, ...axis.options]}
                   active={activeFilters[axis.key] ?? ALL}
                   onChange={(value) => changeFilter(axis.key, value)}
+                  allLabel={t("filters.all")}
+                  groupLabel={t("filters.filterBy", {
+                    axis: axis.label.toLowerCase(),
+                  })}
                 />
               ))}
             </div>
@@ -1027,7 +1051,7 @@ export function MyStoriesView({
               className="mt-5 font-mono text-xs tracking-wider text-foreground/50 tabular-nums"
               aria-live="polite"
             >
-              {filtered.length} {filtered.length === 1 ? "STORY" : "STORIES"}
+              {t("storyCount", { count: filtered.length })}
               {isFiltered ? (
                 <>
                   {" · "}
@@ -1036,7 +1060,7 @@ export function MyStoriesView({
                     onClick={clearFilters}
                     className="underline underline-offset-4 hover:text-accent"
                   >
-                    CLEAR
+                    {t("clear")}
                   </button>
                 </>
               ) : null}
@@ -1045,19 +1069,21 @@ export function MyStoriesView({
 
           {filtered.length === 0 ? (
             <p className="mt-8 text-foreground/65">
-              No stories match those filters.{" "}
+              {t("noMatchesBefore")}{" "}
               <button
                 type="button"
                 onClick={clearFilters}
                 className="text-accent underline underline-offset-2"
               >
-                Clear filters
+                {t("clearFilters")}
               </button>
               .
             </p>
           ) : (
             <div className={axes.length > 0 ? "mt-4" : "mt-8"}>
-              {SECTIONS.map(({ key, label, hint }) => {
+              {SECTIONS.map(({ key }) => {
+                const label = t(`sections.${key}`);
+                const hint = t(`sections.${key}Hint`);
                 const rows = grouped[key];
                 // An empty section is not drawn at all. A contributor who has
                 // never had anything rejected should not be told so.

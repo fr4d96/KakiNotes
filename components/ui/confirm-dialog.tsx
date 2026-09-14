@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
+import { useTranslations } from "next-intl";
 
 /**
  * A native <dialog>-based confirmation prompt, same shell mechanics as
@@ -13,8 +14,8 @@ export function ConfirmDialog({
   open,
   title,
   description,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel,
+  cancelLabel,
   danger = false,
   pending = false,
   onConfirm,
@@ -32,6 +33,7 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("common");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();
@@ -72,7 +74,7 @@ export function ConfirmDialog({
             disabled={pending}
             className="journiq-button border border-border-subtle text-sm disabled:opacity-60"
           >
-            {cancelLabel}
+            {cancelLabel ?? t("cancel")}
           </button>
           <button
             type="button"
@@ -84,7 +86,7 @@ export function ConfirmDialog({
                 : "bg-accent text-accent-foreground"
             }`}
           >
-            {pending ? "Working…" : confirmLabel}
+            {pending ? t("working") : (confirmLabel ?? t("confirm"))}
           </button>
         </div>
       </div>

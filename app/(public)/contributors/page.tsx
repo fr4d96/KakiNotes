@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import { ContributorAvatar } from "@/components/contributor/contributor-avatar";
 import { countryName } from "@/lib/countries";
+import { formatCountryName } from "@/lib/i18n/format";
 import { listPublicContributors } from "@/lib/story/public-queries";
 
 // No `export const revalidate` here on purpose. This route awaits
@@ -11,11 +13,10 @@ import { listPublicContributors } from "@/lib/story/public-queries";
 // revalidate period. A `revalidate` export here would be a silent no-op, so
 // don't re-add one.
 
-export const metadata: Metadata = {
-  title: "Contributors",
-  description:
-    "Contributors who've published a real Working Holiday Visa story on Kakinotes.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("contributors");
+  return { title: t("metaTitle"), description: t("metaDescription") };
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -29,6 +30,10 @@ export default async function ContributorsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const raw = await searchParams;
+  const [t, locale] = await Promise.all([
+    getTranslations("contributors"),
+    getLocale(),
+  ]);
   const cursorDisplayName = first(raw.cursorDisplayName);
   const cursorId = first(raw.cursorId);
 
@@ -50,22 +55,18 @@ export default async function ContributorsPage({
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-        Contributors
+        {t("title")}
       </h1>
-      <p className="mt-3 max-w-2xl text-foreground/70">
-        People who&apos;ve shared their own Working Holiday experience — showing
-        only the fields each contributor has chosen to make public.
-      </p>
+      <p className="mt-3 max-w-2xl text-foreground/70">{t("intro")}</p>
 
       <div className="mt-8" aria-live="polite">
         {loadError ? (
           <p className="rounded-md border border-border-subtle bg-surface-muted p-6 text-sm text-foreground/70">
-            We couldn&apos;t load contributors right now. Please try again in a
-            moment.
+            {t("loadError")}
           </p>
         ) : contributors.length === 0 ? (
           <p className="rounded-md border border-border-subtle bg-surface-muted p-6 text-sm text-foreground/70">
-            No public contributor profiles yet.
+            {t("empty")}
           </p>
         ) : (
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -87,10 +88,15 @@ export default async function ContributorsPage({
                     </span>
                   ) : null}
                   <span className="mt-auto text-xs text-foreground/50">
-                    {c.published_story_count}{" "}
-                    {c.published_story_count === 1 ? "story" : "stories"}
+                    {t("storyCount", { count: c.published_story_count })}
                     {countryName(c.home_country_code)
-                      ? ` · from ${countryName(c.home_country_code)}`
+                      ? ` · ${t("fromCountry", {
+                          country: formatCountryName(
+                            c.home_country_code,
+                            locale,
+                            countryName(c.home_country_code),
+                          ) as string,
+                        })}`
                       : ""}
                   </span>
                 </Link>
@@ -108,7 +114,7 @@ export default async function ContributorsPage({
             )}&cursorId=${last.contributor_id}`}
             className="rounded-md border border-border-subtle px-4 py-2 text-sm font-medium hover:bg-surface-muted"
           >
-            Load more contributors
+            {t("loadMore")}
           </Link>
         </div>
       ) : null}

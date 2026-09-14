@@ -22,7 +22,7 @@ describe("describeNotification", () => {
   it("sends a moderator to the review page keyed by revision id", () => {
     const view = describeNotification(base);
     expect(view.href).toBe("/moderation/stories/r1");
-    expect(view.heading).toBe("New story to review");
+    expect(view.headingKey).toBe("story_submitted");
     expect(view.title).toBe("Picking kiwifruit in Te Puke");
     expect(view.unread).toBe(true);
   });
@@ -34,7 +34,7 @@ describe("describeNotification", () => {
       read_at: "2026-09-11T11:00:00Z",
     });
     expect(view.href).toBe("/stories/picking-kiwifruit-abc123");
-    expect(view.heading).toBe("Your story is live");
+    expect(view.headingKey).toBe("story_published");
     expect(view.unread).toBe(false);
   });
 
@@ -45,7 +45,7 @@ describe("describeNotification", () => {
       reason: "Please remove the employer's full name.",
     });
     expect(view.href).toBe("/my-stories");
-    expect(view.heading).toBe("Your story wasn't approved");
+    expect(view.headingKey).toBe("story_rejected");
     expect(view.reason).toBe("Please remove the employer's full name.");
   });
 
@@ -56,7 +56,7 @@ describe("describeNotification", () => {
       reason: "Add a bit about the visa timeline.",
     });
     expect(view.href).toBe("/my-stories");
-    expect(view.heading).toBe("Changes requested on your story");
+    expect(view.headingKey).toBe("story_changes_requested");
     expect(view.reason).toBe("Add a bit about the visa timeline.");
   });
 

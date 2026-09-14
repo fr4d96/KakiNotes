@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Skeleton, LoadingScreen } from "@/components/ui/skeleton";
 import { StoryCardGridSkeleton } from "@/components/story/story-card-skeleton";
 
@@ -7,9 +8,10 @@ import { StoryCardGridSkeleton } from "@/components/story/story-card-skeleton";
  * uses. Matches page.tsx's max-w-7xl column.
  */
 export default function ContributorProfileLoading() {
+  const t = useTranslations("common.loadingLabels");
   return (
     <LoadingScreen
-      label="Loading contributor profile"
+      label={t("contributorProfile")}
       className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16"
     >
       <div className="flex items-center gap-4">

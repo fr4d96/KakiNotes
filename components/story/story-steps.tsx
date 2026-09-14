@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   STORY_STEPS,
   REQUIRED_STORY_STEPS,
@@ -24,15 +25,10 @@ import {
  * Typed as a total Record so adding a step to STORY_STEPS fails the build
  * here instead of silently rendering an unlabelled circle.
  */
-const RAIL_LABELS: Record<StoryStepId, string> = {
-  title: "Title",
-  story: "Your story",
-  photos: "Photos",
-  trip: "Trip",
-  expenses: "Expenses",
-  places: "Places",
-  review: "Review",
-};
+// The rail's labels live in messages/<locale>.json at
+// `editor.railLabels.<id>`. Deliberately SHORTER than STORY_STEPS' own
+// ("Places", not "Places & tags"): the rail gives each step a narrow fixed
+// column. Keyed by step id so a new step fails the build in both places.
 
 export type StoryStepProgressProps = {
   currentStep: StoryStepId;
@@ -76,6 +72,7 @@ export function StoryStepProgress({
   hrefs,
   lockedSteps,
 }: StoryStepProgressProps) {
+  const t = useTranslations("editor");
   const currentIndex = STORY_STEPS.findIndex((s) => s.id === currentStep);
   const done = new Set(doneSteps);
   const locked = new Set(lockedSteps);
@@ -94,19 +91,30 @@ export function StoryStepProgress({
   }
 
   function labelFor(id: StoryStepId, index: number) {
-    const step = STORY_STEPS[index];
     const { isCurrent, isDone } = stateOf(id, index);
     const parts = [
-      isCurrent && "current step",
+      isCurrent && t("progress.state.current"),
       isDone
-        ? "done"
+        ? t("progress.state.done")
         : REQUIRED_STORY_STEPS.includes(id)
-          ? "still needed"
+          ? t("progress.state.stillNeeded")
           : null,
-      locked.has(id) && "not available yet",
+      locked.has(id) && t("progress.state.notAvailable"),
     ].filter(Boolean);
-    const suffix = parts.length ? ` (${parts.join(", ")})` : "";
-    return `Step ${index + 1} of ${STORY_STEPS.length}: ${step.label}${suffix}`;
+    const values = {
+      index: index + 1,
+      total: STORY_STEPS.length,
+      label: t(`stepLabels.${id}` as never),
+    };
+    // Two messages rather than one with an optional clause: the bracketed
+    // state list is punctuation a translator has to be able to move, and
+    // the separator between states differs by language ("、" in Chinese).
+    return parts.length
+      ? t("progress.stepOfNamedWithState", {
+          ...values,
+          state: parts.join(t("progress.stateSeparator")),
+        })
+      : t("progress.stepOfNamed", values);
   }
 
   // A shared inner face so the <button> and <Link> branches below can never
@@ -155,22 +163,25 @@ export function StoryStepProgress({
                 : "text-muted-foreground lg:inline"
           }`}
         >
-          {RAIL_LABELS[id]}
+          {t(`railLabels.${id}` as never)}
         </span>
       </>
     );
   }
 
   return (
-    <nav aria-label="Story progress" className="w-full">
+    <nav aria-label={t("progress.navLabel")} className="w-full">
       {/* Compact summary. Always rendered, at every width: it is the only
           thing on a phone, and next to the full rail it is still the line
           that tells you where you are without counting circles. */}
       <p className="text-xs font-medium text-muted-foreground">
-        Step {currentIndex + 1} of {STORY_STEPS.length}
+        {t("progress.stepOf", {
+          index: currentIndex + 1,
+          total: STORY_STEPS.length,
+        })}
         <span className="text-foreground">
           {" "}
-          · {STORY_STEPS[currentIndex].label}
+          · {t(`stepLabels.${STORY_STEPS[currentIndex].id}` as never)}
         </span>
       </p>
 
@@ -202,7 +213,7 @@ export function StoryStepProgress({
                 // accessible name already carries.
                 <span
                   aria-label={labelFor(step.id, index)}
-                  title="Finish the steps before it, then use “Review & submit”."
+                  title={t("steps.lockedHint")}
                   className={`${shared} cursor-not-allowed opacity-45`}
                 >
                   {inner}

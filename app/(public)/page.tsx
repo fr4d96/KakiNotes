@@ -36,7 +36,8 @@
  */
 import Link from "next/link";
 import type { Metadata } from "next";
-import { listPublishedStories } from "@/lib/story/public-queries";
+import { getTranslations } from "next-intl/server";
+import { listPublishedStoriesCached } from "@/lib/story/public-queries";
 import { HeroSlideshow } from "@/components/home/hero-slideshow";
 import { FeaturedStoryStack } from "@/components/home/featured-story-stack";
 import { StoryIndex } from "@/components/home/story-index";
@@ -44,25 +45,22 @@ import { DestinationQuiz } from "@/components/home/destination-quiz";
 import { regionNames } from "@/lib/story/card-fields";
 import { ArrowRightIcon } from "@/components/icons";
 
-export const revalidate = 60;
+// No `export const revalidate` any more (it was 60). The root layout reads
+// the language cookie, which makes this route render per request, so the
+// page-level window became a no-op; the same 60s window now lives on the
+// data reads (the *Cached readers in lib/story/public-queries.ts).
 
-export const metadata: Metadata = {
-  title: "Real stories from across Aotearoa",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("home");
+  return { title: t("metaTitle") };
+}
 
+// Message-key pairs; the prose lives in messages/<locale>.json under
+// `home.steps`.
 const steps = [
-  [
-    "Written by the person who lived it",
-    "Every account is first-person, submitted under a name or pseudonym the writer chose themselves.",
-  ],
-  [
-    "Checked before it is published",
-    "Each story is reviewed against our publication rules, and its images are processed and rights-checked, before it appears here.",
-  ],
-  [
-    "Kept as a record, not a feed",
-    "Stories stay searchable by place, work, and year — there is nothing to scroll past and nothing to miss.",
-  ],
+  ["writtenTitle", "writtenBody"],
+  ["checkedTitle", "checkedBody"],
+  ["recordTitle", "recordBody"],
 ] as const;
 
 function SectionHead({
@@ -87,7 +85,10 @@ function SectionHead({
 }
 
 export default async function HomePage() {
-  const stories = await listPublishedStories({ limit: 24 }).catch(() => []);
+  const [stories, t] = await Promise.all([
+    listPublishedStoriesCached({ limit: 24 }).catch(() => []),
+    getTranslations("home"),
+  ]);
   const hasStories = stories.length > 0;
 
   // Distinct regions actually present in the published catalogue, in order of
@@ -142,25 +143,32 @@ export default async function HomePage() {
                   own ceiling and, on a 1440px viewport, pushed the second
                   line hard against the CTA row with no air between them. */}
               <h1 className="nf-hero-pull font-sans text-[clamp(2.5rem,7vw,6rem)] leading-[0.94] font-extrabold tracking-[-.035em] text-balance text-white">
-                Real stories from across{" "}
-                <span className="text-accent">Aotearoa</span>.
+                {/* One rich message, not two keys joined in JSX: the
+                    accented words sit at the END in English and at the
+                    START in Chinese, and the punctuation differs too (a
+                    Latin "." with a space before the span, a full-width
+                    "。" with none). Only the message file can express that. */}
+                {t.rich("hero", {
+                  accent: (chunks) => (
+                    <span className="text-accent">{chunks}</span>
+                  ),
+                })}
               </h1>
               <p
                 className="nf-hero-pull mt-5 max-w-[46ch] text-base text-white/80 sm:mt-6 sm:text-lg"
                 style={{ animationDelay: "140ms" }}
               >
-                First-person accounts of the jobs, places, and moments from
-                travellers who have lived the working-holiday experience.
+                {t("heroSub")}
               </p>
               <div
                 className="nf-hero-pull mt-7 flex flex-wrap items-center gap-x-6 gap-y-4 sm:mt-8"
                 style={{ animationDelay: "260ms" }}
               >
                 <Link href="#index" className="night-button-primary">
-                  Read the stories <ArrowRightIcon className="h-4 w-4" />
+                  {t("heroCta")} <ArrowRightIcon className="h-4 w-4" />
                 </Link>
                 <Link href="#how" className="night-button-ghost">
-                  or see how this works
+                  {t("heroSecondary")}
                 </Link>
               </div>
             </div>
@@ -207,8 +215,8 @@ export default async function HomePage() {
           <section className="py-16 sm:py-24 lg:py-28">
             <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
               <SectionHead
-                title="Featured"
-                description="Drag a card aside, or step through with the arrows."
+                title={t("featuredHeading")}
+                description={t("featuredDescription")}
               />
               {/* The stack's depth cards sit 14px to the side of the top
                   card and rotate up to 2deg, and a thrown card flies to
@@ -239,8 +247,8 @@ export default async function HomePage() {
           >
             <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
               <SectionHead
-                title="The record"
-                description="Every published account, narrowed by where it happened and the work it describes."
+                title={t("recordHeading")}
+                description={t("recordDescription")}
               />
               <div className="mt-8 sm:mt-12">
                 <StoryIndex stories={stories} />
@@ -253,8 +261,8 @@ export default async function HomePage() {
       <section id="how" className="scroll-mt-24 py-16 sm:py-24 lg:py-28">
         <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
           <SectionHead
-            title="Why you can trust what you read here"
-            description="Kakinotes is a record of personal experience — not advice, and not a marketplace."
+            title={t("trustHeading")}
+            description={t("trustDescription")}
           />
           {/*
             Three statements, set as an editorial rhythm rather than three
@@ -266,16 +274,16 @@ export default async function HomePage() {
             no borders, no shadows, no hover lift to maintain.
           */}
           <dl className="mt-10 md:mt-16">
-            {steps.map(([title, body]) => (
+            {steps.map(([titleKey, bodyKey]) => (
               <div
-                key={title}
+                key={titleKey}
                 className="grid gap-x-10 gap-y-3 border-t border-border-subtle py-8 first:border-t-0 first:pt-0 sm:py-10 md:grid-cols-[minmax(0,7fr)_minmax(0,9fr)]"
               >
                 <dt className="text-2xl leading-[1.15] font-extrabold tracking-[-.025em] text-balance sm:text-[1.75rem]">
-                  {title}
+                  {t(`steps.${titleKey}`)}
                 </dt>
                 <dd className="max-w-[62ch] text-base text-foreground/65 sm:text-lg">
-                  {body}
+                  {t(`steps.${bodyKey}`)}
                 </dd>
               </div>
             ))}
@@ -290,13 +298,9 @@ export default async function HomePage() {
         >
           <div className="mx-auto grid max-w-[1440px] gap-10 px-4 sm:px-6 lg:grid-cols-[.8fr_1.2fr] lg:gap-16 lg:px-8">
             <div className="nf-pull lg:sticky lg:top-28 lg:self-start">
-              <h2 className="night-heading">
-                Not sure where to start reading?
-              </h2>
+              <h2 className="night-heading">{t("quizHeading")}</h2>
               <p className="mt-5 max-w-xl text-foreground/65">
-                Answer five quick questions and we will point you at a region
-                and the stories from travellers who went there. It is a starting
-                point for browsing, not a recommendation.
+                {t("quizDescription")}
               </p>
             </div>
             {/* No panel chrome here. DestinationQuiz renders its own bordered,
@@ -318,19 +322,14 @@ export default async function HomePage() {
       >
         <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
           <div className="nf-pull max-w-3xl">
-            <h2 className="night-heading text-white">
-              Your experience could help someone take their first step
-            </h2>
-            <p className="mt-5 max-w-2xl text-white/75">
-              Share the honest version of your working holiday — the wins,
-              mistakes, practical lessons, and moments you will always remember.
-            </p>
+            <h2 className="night-heading text-white">{t("shareHeading")}</h2>
+            <p className="mt-5 max-w-2xl text-white/75">{t("shareBody")}</p>
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
               <Link href="/sign-up" className="night-button-primary">
-                Share your story <ArrowRightIcon className="h-4 w-4" />
+                {t("shareCta")} <ArrowRightIcon className="h-4 w-4" />
               </Link>
               <Link href="/about" className="night-button-ghost">
-                See writing tips
+                {t("shareSecondary")}
               </Link>
             </div>
           </div>

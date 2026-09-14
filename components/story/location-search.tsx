@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import type {
   ActiveDestination,
   ActiveRegion,
@@ -149,6 +150,7 @@ export function LocationSearch({
   destinations,
   onMatch,
 }: LocationSearchProps) {
+  const t = useTranslations("editor.place");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [open, setOpen] = useState(false);
@@ -226,7 +228,7 @@ export function LocationSearch({
   return (
     <div ref={containerRef} className="relative">
       <label htmlFor={inputId} className="sr-only">
-        Search for a place
+        {t("heading")}
       </label>
       <div className="flex gap-2">
         <input
@@ -246,7 +248,7 @@ export function LocationSearch({
             }
           }}
           onFocus={() => results.length > 0 && setOpen(true)}
-          placeholder="Type a full place name, e.g. Queenstown"
+          placeholder={t("placeholder")}
           autoComplete="off"
           className="w-full flex-1 rounded-md border border-border-subtle px-3 py-2 text-sm dark:bg-transparent"
         />
@@ -256,7 +258,7 @@ export function LocationSearch({
           disabled={status === "searching"}
           className="shrink-0 rounded-md border border-border-subtle px-3 py-2 text-sm font-medium hover:bg-surface-muted disabled:opacity-50"
         >
-          {status === "searching" ? "Searching…" : "Search"}
+          {status === "searching" ? t("searching") : t("search")}
         </button>
       </div>
       {open && results.length > 0 && (
@@ -278,7 +280,7 @@ export function LocationSearch({
           {/* Attribution required by Nominatim's usage policy; scoped to when
               OSM results are on screen rather than shown permanently. */}
           <p className="border-t border-border-subtle px-3 py-1 text-[11px] text-muted-foreground/70">
-            Results by{" "}
+            {t("attributionBefore")}{" "}
             <a
               href="https://www.openstreetmap.org/copyright"
               target="_blank"
@@ -287,7 +289,7 @@ export function LocationSearch({
             >
               OpenStreetMap
             </a>{" "}
-            contributors
+            {t("attributionAfter")}
           </p>
         </div>
       )}
@@ -296,19 +298,17 @@ export function LocationSearch({
           names the recovery -- the manual dropdowns are right below. */}
       {status === "too-short" && (
         <p role="status" className="mt-1 text-xs text-muted-foreground">
-          Type at least {MIN_QUERY_LENGTH} characters, then search again.
+          {t("tooShort", { min: MIN_QUERY_LENGTH })}
         </p>
       )}
       {status === "empty" && (
         <p role="status" className="mt-1 text-xs text-muted-foreground">
-          No places matched &ldquo;{searchedTerm}&rdquo;. The map needs a
-          complete name — try &ldquo;Queenstown&rdquo; rather than
-          &ldquo;Queens&rdquo; — or just pick the region below.
+          {t("noMatches", { term: searchedTerm })}
         </p>
       )}
       {status === "error" && (
         <p role="alert" className="mt-1 text-xs text-destructive">
-          Place search is unavailable right now — pick the region below instead.
+          {t("unavailable")}
         </p>
       )}
     </div>

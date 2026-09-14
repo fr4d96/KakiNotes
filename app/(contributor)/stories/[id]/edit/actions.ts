@@ -1,5 +1,7 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
+
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import {
@@ -10,6 +12,7 @@ import {
   type RevisionInput,
 } from "@/lib/validation/story";
 import { getErrorMessage } from "@/lib/errors";
+import { firstIssueMessage } from "@/lib/validation/issue-messages";
 import {
   saveRevisionDraft,
   setRevisionLocations,
@@ -54,8 +57,9 @@ export type MutationResult = { ok: true } | { ok: false; error: string };
 export type SaveFieldsResult =
   { ok: true; version: number } | { ok: false; error: string };
 
-function errorMessage(error: unknown): string {
-  return getErrorMessage(error, "Something went wrong.");
+async function errorMessage(error: unknown): Promise<string> {
+  const t = await getTranslations("actionErrors");
+  return getErrorMessage(error, t("generic"));
 }
 
 // Typed as the narrower "always ok:false" shape (it never actually returns
@@ -65,7 +69,10 @@ function errorMessage(error: unknown): string {
 // early-return path never needs to produce.
 async function requireSignedIn(): Promise<{ ok: false; error: string } | null> {
   const user = await getCurrentUser();
-  if (!user) return { ok: false, error: "You must be signed in." };
+  if (!user) {
+    const t = await getTranslations("common");
+    return { ok: false, error: t("mustBeSignedIn") };
+  }
   return null;
 }
 
@@ -74,6 +81,7 @@ export async function saveRevisionFieldsAction(
   expectedVersion: number,
   input: RevisionInput,
 ): Promise<SaveFieldsResult> {
+  const tv = await getTranslations("validation");
   const authError = await requireSignedIn();
   if (authError) return authError;
 
@@ -81,7 +89,7 @@ export async function saveRevisionFieldsAction(
   if (!parsed.success) {
     return {
       ok: false,
-      error: parsed.error.issues[0]?.message ?? "Invalid input.",
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
     };
   }
   try {
@@ -92,7 +100,7 @@ export async function saveRevisionFieldsAction(
     );
     return { ok: true, version };
   } catch (error) {
-    return { ok: false, error: errorMessage(error) };
+    return { ok: false, error: await errorMessage(error) };
   }
 }
 
@@ -101,6 +109,7 @@ export async function setLocationsAction(
   expectedVersion: number,
   locations: unknown,
 ): Promise<MutationResult> {
+  const tv = await getTranslations("validation");
   const authError = await requireSignedIn();
   if (authError) return authError;
 
@@ -108,14 +117,14 @@ export async function setLocationsAction(
   if (!parsed.success) {
     return {
       ok: false,
-      error: parsed.error.issues[0]?.message ?? "Invalid locations.",
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
     };
   }
   try {
     await setRevisionLocations(revisionId, expectedVersion, parsed.data);
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: errorMessage(error) };
+    return { ok: false, error: await errorMessage(error) };
   }
 }
 
@@ -124,6 +133,7 @@ export async function setTagsAction(
   expectedVersion: number,
   tags: unknown,
 ): Promise<MutationResult> {
+  const tv = await getTranslations("validation");
   const authError = await requireSignedIn();
   if (authError) return authError;
 
@@ -131,14 +141,14 @@ export async function setTagsAction(
   if (!parsed.success) {
     return {
       ok: false,
-      error: parsed.error.issues[0]?.message ?? "Invalid tags.",
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
     };
   }
   try {
     await setRevisionTags(revisionId, expectedVersion, parsed.data);
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: errorMessage(error) };
+    return { ok: false, error: await errorMessage(error) };
   }
 }
 
@@ -155,6 +165,7 @@ export async function setExpensesAction(
   expectedVersion: number,
   expenses: unknown,
 ): Promise<MutationResult> {
+  const tv = await getTranslations("validation");
   const authError = await requireSignedIn();
   if (authError) return authError;
 
@@ -162,14 +173,14 @@ export async function setExpensesAction(
   if (!parsed.success) {
     return {
       ok: false,
-      error: parsed.error.issues[0]?.message ?? "Invalid expenses.",
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
     };
   }
   try {
     await setRevisionExpenses(revisionId, expectedVersion, parsed.data);
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: errorMessage(error) };
+    return { ok: false, error: await errorMessage(error) };
   }
 }
 
@@ -185,6 +196,10 @@ const mediaCaptionInputSchema = z.object({
 export async function updateMediaCaptionAction(
   params: unknown,
 ): Promise<MutationResult> {
+  const [tErr, tv] = await Promise.all([
+    getTranslations("actionErrors"),
+    getTranslations("validation"),
+  ]);
   const authError = await requireSignedIn();
   if (authError) return authError;
 
@@ -192,20 +207,20 @@ export async function updateMediaCaptionAction(
   if (!parsed.success) {
     return {
       ok: false,
-      error: parsed.error.issues[0]?.message ?? "Invalid caption.",
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
     };
   }
   if (!parsed.data.decorative && !parsed.data.altText) {
     return {
       ok: false,
-      error: "Alt text is required unless the image is marked decorative.",
+      error: tErr("altTextRequired"),
     };
   }
   try {
     await updateStoryMediaCaption(parsed.data);
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: errorMessage(error) };
+    return { ok: false, error: await errorMessage(error) };
   }
 }
 
@@ -214,18 +229,19 @@ export async function reorderMediaAction(
   expectedVersion: number,
   mediaOrder: unknown,
 ): Promise<MutationResult> {
+  const tErr = await getTranslations("actionErrors");
   const authError = await requireSignedIn();
   if (authError) return authError;
 
   const parsed = z.array(z.uuid()).max(12).safeParse(mediaOrder);
   if (!parsed.success) {
-    return { ok: false, error: "Invalid media order." };
+    return { ok: false, error: tErr("invalidMediaOrder") };
   }
   try {
     await reorderStoryMedia(revisionId, expectedVersion, parsed.data);
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: errorMessage(error) };
+    return { ok: false, error: await errorMessage(error) };
   }
 }
 
@@ -234,16 +250,17 @@ export async function setCoverAction(
   expectedVersion: number,
   mediaId: string,
 ): Promise<MutationResult> {
+  const tErr = await getTranslations("actionErrors");
   const authError = await requireSignedIn();
   if (authError) return authError;
 
   const parsed = z.uuid().safeParse(mediaId);
-  if (!parsed.success) return { ok: false, error: "Invalid media." };
+  if (!parsed.success) return { ok: false, error: tErr("invalidMedia") };
   try {
     await setStoryCoverMedia(revisionId, expectedVersion, parsed.data);
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: errorMessage(error) };
+    return { ok: false, error: await errorMessage(error) };
   }
 }
 
@@ -258,31 +275,33 @@ export async function detachMediaAction(
   expectedVersion: number,
   mediaId: string,
 ): Promise<MutationResult> {
+  const tErr = await getTranslations("actionErrors");
   const authError = await requireSignedIn();
   if (authError) return authError;
 
   const parsed = z.uuid().safeParse(mediaId);
-  if (!parsed.success) return { ok: false, error: "Invalid media." };
+  if (!parsed.success) return { ok: false, error: tErr("invalidMedia") };
   try {
     await detachStoryMedia(revisionId, expectedVersion, parsed.data);
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: errorMessage(error) };
+    return { ok: false, error: await errorMessage(error) };
   }
 }
 
 export async function cancelPendingUploadAction(
   mediaId: string,
 ): Promise<MutationResult> {
+  const tErr = await getTranslations("actionErrors");
   const authError = await requireSignedIn();
   if (authError) return authError;
 
   const parsed = z.uuid().safeParse(mediaId);
-  if (!parsed.success) return { ok: false, error: "Invalid media." };
+  if (!parsed.success) return { ok: false, error: tErr("invalidMedia") };
   try {
     await cancelPendingStoryMediaUpload(parsed.data);
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: errorMessage(error) };
+    return { ok: false, error: await errorMessage(error) };
   }
 }

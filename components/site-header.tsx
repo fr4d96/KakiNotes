@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { BrandLogo } from "@/components/brand-logo";
 import { MobileNavToggle } from "@/components/mobile-nav-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LocaleToggle } from "@/components/locale-toggle";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { SignInForm } from "@/components/auth/sign-in-form";
 import { SignUpForm } from "@/components/auth/sign-up-form";
@@ -15,13 +17,14 @@ import type { AppRole } from "@/lib/auth/staff-guard";
 
 // "Destinations" is a home-page anchor and must match the section id in
 // app/(public)/page.tsx. "Stories" and "Contributors" link to their own
-// real browsing pages rather than sections on the home page.
+// real browsing pages rather than sections on the home page. Labels are
+// message keys under `nav`, resolved inside the component.
 const primaryNav = [
-  { href: "/stories", label: "Stories" },
-  { href: "/contributors", label: "Contributors" },
-  { href: "/#match", label: "Destinations" },
-  { href: "/about", label: "About" },
-];
+  { href: "/stories", key: "stories" },
+  { href: "/contributors", key: "contributors" },
+  { href: "/#match", key: "destinations" },
+  { href: "/about", key: "about" },
+] as const;
 
 type AuthModalKind = "sign-in" | "sign-up" | null;
 
@@ -51,16 +54,20 @@ type AuthModalKind = "sign-in" | "sign-up" | null;
  * underneath.
  *
  * Session awareness: public pages deliberately never call getCurrentUser()
- * server-side (see (contributor)/layout.tsx's own comment) so they stay
- * static/cache-friendly -- this header is the one place that still needs
- * to know if the visitor is signed in, so it checks client-side only, via
- * the browser Supabase client (lib/supabase/client.ts). That keeps every
- * public page's server-rendered HTML untouched; only this already-client
- * component re-renders once the check resolves.
+ * server-side (see (contributor)/layout.tsx's own comment) -- this header
+ * is the one place that still needs to know if the visitor is signed in,
+ * so it checks client-side only, via the browser Supabase client
+ * (lib/supabase/client.ts). That keeps every public page's server-rendered
+ * HTML identical for every visitor; only this already-client component
+ * re-renders once the check resolves. (Public pages have rendered per
+ * request since the language cookie, 2026-09-14, and cache their DATA
+ * instead -- but "the HTML carries nothing per-person" is still the
+ * property that lets that data be shared, and a server-side session read
+ * here would break it.)
  *
  * Once signed in, NotificationBell renders beside the avatar (both
  * breakpoints) and does its own RPC reads the same client-side way, for
- * the same cacheability reason -- see that component.
+ * the same reason -- see that component.
  *
  * Once signed in, the same effect also reads the caller's own
  * profiles.avatar_emoji (RLS already scopes this to auth.uid() -- see
@@ -76,6 +83,7 @@ type AuthModalKind = "sign-in" | "sign-up" | null;
  * is reading, so the public nav bar stays Stories/Destinations/About.
  */
 export function SiteHeader() {
+  const t = useTranslations("nav");
   const [authModal, setAuthModal] = useState<AuthModalKind>(null);
   const [signedIn, setSignedIn] = useState(false);
   const [avatarEmoji, setAvatarEmoji] = useState<string | null>(null);
@@ -142,6 +150,10 @@ export function SiteHeader() {
   const headerToneClasses =
     "journiq-header-solid border-b border-border-subtle text-foreground shadow-sm";
   const signInToneClasses = "border-border-subtle";
+  const navItems = primaryNav.map((item) => ({
+    href: item.href,
+    label: t(item.key),
+  }));
 
   return (
     <header
@@ -157,11 +169,11 @@ export function SiteHeader() {
         </Link>
 
         <nav
-          aria-label="Primary"
+          aria-label={t("primary")}
           className="ml-auto hidden items-center gap-6 text-sm font-bold md:flex"
         >
           <div className="flex items-center gap-6">
-            {primaryNav.map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -174,6 +186,7 @@ export function SiteHeader() {
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <LocaleToggle />
             {signedIn ? (
               <>
                 <NotificationBell />
@@ -186,14 +199,14 @@ export function SiteHeader() {
                   onClick={() => setAuthModal("sign-in")}
                   className={`rounded-full border px-4 py-2 text-sm font-bold ${signInToneClasses}`}
                 >
-                  Sign in
+                  {t("signIn")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setAuthModal("sign-up")}
                   className="rounded-full bg-accent px-4 py-2 text-sm font-black text-accent-foreground"
                 >
-                  Share your story
+                  {t("shareYourStory")}
                 </button>
               </>
             )}
@@ -202,6 +215,7 @@ export function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-2 md:hidden">
           <ThemeToggle />
+          <LocaleToggle />
           {signedIn ? (
             // Replaces the hamburger entirely on mobile once signed in --
             // its dropdown carries the primary nav links too (extraItems),
@@ -210,17 +224,17 @@ export function SiteHeader() {
               <NotificationBell />
               <UserAvatarMenu
                 emoji={avatarEmoji}
-                extraItems={primaryNav}
+                extraItems={navItems}
                 role={role}
               />
             </>
           ) : (
             <MobileNavToggle
               navItems={[
-                ...primaryNav,
-                { label: "Sign in", onClick: () => setAuthModal("sign-in") },
+                ...navItems,
+                { label: t("signIn"), onClick: () => setAuthModal("sign-in") },
                 {
-                  label: "Share your story",
+                  label: t("shareYourStory"),
                   onClick: () => setAuthModal("sign-up"),
                 },
               ]}
@@ -232,7 +246,7 @@ export function SiteHeader() {
       <AuthModal
         open={authModal === "sign-in"}
         onClose={() => setAuthModal(null)}
-        title="Sign in"
+        title={t("signIn")}
       >
         {/* Deliberately no "/account" default here -- an empty next tells
             signInAction "nothing specific was requested," so it can land
@@ -245,7 +259,7 @@ export function SiteHeader() {
       <AuthModal
         open={authModal === "sign-up"}
         onClose={() => setAuthModal(null)}
-        title="Create your account"
+        title={t("createYourAccount")}
       >
         <SignUpForm />
       </AuthModal>

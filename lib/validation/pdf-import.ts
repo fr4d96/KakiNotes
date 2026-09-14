@@ -32,13 +32,13 @@ export const pdfImportFileSchema = z.object({
   bytes: z
     .instanceof(Uint8Array)
     .refine((bytes) => bytes.byteLength > 0, {
-      message: "The PDF file is empty.",
+      message: "pdf.empty",
     })
     .refine((bytes) => bytes.byteLength <= MAX_PDF_IMPORT_INPUT_BYTES, {
-      message: "The PDF file is too large.",
+      message: "pdf.tooLarge",
     })
     .refine((bytes) => isPdfMagicBytes(bytes), {
-      message: "The file is not a PDF (magic bytes did not match).",
+      message: "pdf.notAPdf",
     }),
 });
 
@@ -62,7 +62,7 @@ export type PdfImportFileInput = z.infer<typeof pdfImportFileSchema>;
  */
 export const pdfImportPageNumbersSchema = z
   .array(z.number().int().min(1))
-  .min(1, "Select at least one page.")
+  .min(1, "story.selectPage")
   .max(
     MAX_IMAGES_PER_REVISION,
     `Select at most ${MAX_IMAGES_PER_REVISION} pages.`,

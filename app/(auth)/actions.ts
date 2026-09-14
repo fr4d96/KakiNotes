@@ -1,7 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { firstIssueMessage } from "@/lib/validation/issue-messages";
 import {
   signUpSchema,
   signInSchema,
@@ -16,7 +18,7 @@ import { resolveEmailForUsername } from "@/lib/auth/username-login";
 import {
   checkSignInRateLimit,
   recordSignInFailure,
-  rateLimitedMessage,
+  rateLimitRetryMinutes,
   checkPasswordResetRateLimit,
   recordPasswordResetRequest,
   checkSignUpRateLimit,
@@ -25,13 +27,12 @@ import {
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-/**
- * One message for every way a sign-in can fail: unknown email, unknown
- * username, an identifier that is neither shape, a wrong password, or a
- * service-role lookup that could not run. Never says which — see
- * lib/auth/username-login.ts and lib/auth/sign-in-identifier.ts.
- */
-const GENERIC_SIGN_IN_ERROR = "Incorrect email/username or password.";
+// One message for every way a sign-in can fail: unknown email, unknown
+// username, an identifier that is neither shape, a wrong password, or a
+// service-role lookup that could not run. Never says which — see
+// lib/auth/username-login.ts and lib/auth/sign-in-identifier.ts. Lives in
+// messages/<locale>.json as `auth.errors.signInFailed` and is read once at
+// the top of signInAction.
 
 export type AuthFormState = {
   error?: string;
@@ -42,6 +43,10 @@ export async function signUpAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
+  const [t, tv] = await Promise.all([
+    getTranslations("auth"),
+    getTranslations("validation"),
+  ]);
   const parsed = signUpSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -49,7 +54,9 @@ export async function signUpAction(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return {
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
+    };
   }
 
   // A throttled signup is TOLD, unlike a throttled password reset, which is
@@ -64,7 +71,12 @@ export async function signUpAction(
   // whether that address is registered.
   const verdict = await checkSignUpRateLimit(parsed.data.email);
   if (!verdict.allowed) {
-    return { error: rateLimitedMessage(verdict.retryAfterSeconds, "sign-up") };
+    return {
+      error: t("errors.rateLimited", {
+        kind: "signUp",
+        minutes: rateLimitRetryMinutes(verdict.retryAfterSeconds),
+      }),
+    };
   }
 
   // Counts every request, not just failures: the confirmation email and the
@@ -92,23 +104,27 @@ export async function signUpAction(
     return { error: error.message };
   }
 
-  return {
-    success:
-      "Check your email to confirm your account before signing in. If email confirmation is disabled for this project, you can sign in right away.",
-  };
+  return { success: t("signUp.success") };
 }
 
 export async function signInAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
+  const [t, tv] = await Promise.all([
+    getTranslations("auth"),
+    getTranslations("validation"),
+  ]);
+  const genericSignInError = t("errors.signInFailed");
   const parsed = signInSchema.safeParse({
     identifier: formData.get("identifier"),
     password: formData.get("password"),
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return {
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
+    };
   }
 
   // Before any credential work, and before the service-role username lookup
@@ -117,7 +133,12 @@ export async function signInAction(
   // only the recordSignInFailure() calls below move a counter.
   const verdict = await checkSignInRateLimit(parsed.data.identifier);
   if (!verdict.allowed) {
-    return { error: rateLimitedMessage(verdict.retryAfterSeconds) };
+    return {
+      error: t("errors.rateLimited", {
+        kind: "signIn",
+        minutes: rateLimitRetryMinutes(verdict.retryAfterSeconds),
+      }),
+    };
   }
 
   // Supabase's signInWithPassword takes an email or a phone number and
@@ -129,7 +150,7 @@ export async function signInAction(
   const identifier = classifySignInIdentifier(parsed.data.identifier);
   if (!identifier) {
     await recordSignInFailure(parsed.data.identifier);
-    return { error: GENERIC_SIGN_IN_ERROR };
+    return { error: genericSignInError };
   }
 
   const email =
@@ -139,7 +160,7 @@ export async function signInAction(
 
   if (!email) {
     await recordSignInFailure(parsed.data.identifier);
-    return { error: GENERIC_SIGN_IN_ERROR };
+    return { error: genericSignInError };
   }
 
   const supabase = await createClient();
@@ -152,7 +173,7 @@ export async function signInAction(
     await recordSignInFailure(parsed.data.identifier);
     // Deliberately generic — never confirms whether the email or username
     // is registered.
-    return { error: GENERIC_SIGN_IN_ERROR };
+    return { error: genericSignInError };
   }
 
   // An explicit `next` (e.g. bounced here from a protected page) always
@@ -178,6 +199,7 @@ export async function forgotPasswordAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
+  const t = await getTranslations("auth");
   const parsed = forgotPasswordSchema.safeParse({
     email: formData.get("email"),
   });
@@ -186,8 +208,7 @@ export async function forgotPasswordAction(
   // exists — never confirms/denies account existence (Prompt 2 brief:
   // "Use generic forgot-password responses").
   const genericSuccess: AuthFormState = {
-    success:
-      "If an account exists for that email, we've sent a link to reset your password.",
+    success: t("forgotPassword.success"),
   };
 
   if (!parsed.success) {
@@ -226,13 +247,19 @@ export async function resetPasswordAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
+  const [t, tv] = await Promise.all([
+    getTranslations("auth"),
+    getTranslations("validation"),
+  ]);
   const parsed = resetPasswordSchema.safeParse({
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return {
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
+    };
   }
 
   const supabase = await createClient();
@@ -241,10 +268,7 @@ export async function resetPasswordAction(
   // recovery link — never trusts a client-supplied user id.
   const { data: userData, error: getUserError } = await supabase.auth.getUser();
   if (getUserError || !userData.user) {
-    return {
-      error:
-        "Your password reset link has expired or already been used. Request a new one.",
-    };
+    return { error: t("resetPassword.linkUsed") };
   }
 
   const { error } = await supabase.auth.updateUser({

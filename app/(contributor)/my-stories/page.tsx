@@ -1,13 +1,15 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { listMyStoriesWithCovers } from "@/lib/story/contributor-queries";
 import { listMyTakedownRequests } from "@/lib/story/mutations";
 import { MyStoriesView } from "./my-stories-view";
 import { SubmissionToast } from "./submission-toast";
 
-export const metadata: Metadata = {
-  title: "My Stories",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("myStories");
+  return { title: t("metaTitle") };
+}
 
 export default async function MyStoriesPage() {
   const stories = await listMyStoriesWithCovers();

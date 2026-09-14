@@ -3,8 +3,10 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-09-12 (a full /notifications page, and the header badge stops going stale
-beside it; earlier the same day: rejected / changes-requested notifications, carrying the
+Last updated: 2026-09-14 (Simplified Chinese — a cookie-based language toggle beside the theme
+toggle, and every reader- and contributor-facing screen translated; staff areas stay English;
+earlier: a full /notifications page, and the header badge stops going stale
+beside it; earlier: rejected / changes-requested notifications, carrying the
 moderator's reason to the contributor for the first time; earlier the same day: in-app notifications —
 moderators are told when a story needs review, contributors when theirs goes live; earlier: the unit suite's
 5s default timeout raised to 20s, fixing a
@@ -84,7 +86,118 @@ units — a display name starting outside the BMP returned half a surrogate pair
 replacement glyph. Now `Array.from(...)[0]`. The component gained its first 12 tests alongside;
 `AttributionChip` gained 7 and `StoryCard` 2. 987 total, `npm run verify` exits 0.
 
-**2026-09-12 (latest) — /notifications: the inbox gets a real page.**
+**2026-09-14 (latest) — the site speaks Simplified Chinese.**
+No migration. `next-intl` 4.14.4, cookie-based, English still the default: a toggle beside the
+theme toggle in all three headers writes `NEXT_LOCALE` through one Zod-validated Server Action,
+and `i18n/request.ts` reads it back, validates it against `LOCALES` and falls back to English for
+anything missing or unrecognised. ~950 strings across every reader- and contributor-facing screen;
+staff areas (moderation, editorial, admin, readiness) stay English in this phase.
+
+- **Cookie, not a URL prefix — and that is the whole design decision.** The stories are
+  contributor writing and are never translated, so `/zh/stories/<slug>` would hand search engines
+  the same body under a second address. It also keeps the language out of shared links: a link
+  opens in the READER's language, not the sharer's.
+- **The trade it forces, and what pays for it.** Reading a cookie in the root layout makes every
+  route render per request, so `/` (60s), `/stories/[id]` (60s), `/contributors/[slug]` (60s) and
+  `/costs` (3600s) lost their `revalidate` exports — they were already no-ops the moment the
+  cookie was read. The DATA is identical in both languages, so the windows that actually existed
+  moved onto the reads: `lib/story/public-queries.ts` gains `listPublishedStoriesCached`
+  (`unstable_cache`, tagged `public-stories`) for `/`, and `/costs` wraps `get_expense_aggregates`
+  at 3600s. `lib/story/public-cache.ts`'s helpers expire those tags with `{ expire: 0 }` beside
+  their `revalidatePath()` calls — a taken-down story must not be served stale-while-revalidate
+  (Engineering Rule 12). `/stories` and `/contributors` were never cacheable (both await
+  `searchParams`) and deliberately keep the UNCACHED readers, so a filter result is always fresh.
+  **Corrected the same day, and worth reading before touching this again:** the first cut of this
+  gave `/stories/[id]` and `/contributors/[slug]` `*Cached` readers too, on the assumption that
+  they were losing a 60s ISR window like the other two. They were not. Read off the PRE-i18n
+  production build, `/` was `○ (Static)` with `Revalidate 1m` and `/costs` `○` with `1h`, but both
+  `[param]` routes were already `ƒ (Dynamic)` with an **empty** Revalidate column — the export had
+  never engaged and they re-queried on every request. So those two wrappers did not preserve a
+  window, they ADDED one, to the two surfaces where staleness is least acceptable: any visibility
+  change that does not run through one of the two Server Actions calling `public-cache.ts` (a
+  direct SQL takedown, a support fix, a future action nobody wires up) kept serving the old page
+  for up to a minute. `e2e/contributor-story-update.spec.ts` is what caught it — approve
+  out-of-band, reload signed-out, and the replacement must be live NOW; it passes on main, failed
+  on this branch, passes again now. Both pages read UNCACHED again. The one part kept is React
+  `cache()`, renamed to `*Deduped` so it cannot be misread: it dedupes WITHIN a request and dies
+  with it, costing no freshness at all while stopping both pages doing their lookup twice (once
+  for `generateMetadata`, once for the body). **The lesson worth keeping: a `revalidate` export is
+  not evidence that a route was cached — the build's Revalidate column is.**
+  `unstable_cache`, not `use cache`: the Next 16 docs mark it superseded, but `use cache` needs
+  the `cacheComponents` flag, which changes the rendering model of the whole app. That is its own
+  migration, not a side effect of adding a language.
+- **Vocabulary: an overlay, and an honest limit.** `lib/i18n/vocab.ts` translates the CLOSED
+  `regions` / `destinations` / `work_types` / `expense_categories` vocabularies by SLUG, falling
+  back to the database `name`. Checked against the migrations rather than assumed: the public RPCs
+  build their JSON as `'region_name', reg.name` with **no slug beside it**, so the overlay cannot
+  reach story cards, the story page's place list, the contributor facts rows, or `/costs`'
+  by-region and by-category lists — those stay English. It DOES reach the surfaces that read the
+  tables directly, which is the `/stories` region and destination filters (verified live: 奥克兰,
+  丰盛湾, 坎特伯雷) and the authoring pickers. **A `name_zh_cn` column on those four tables is the
+  proper long-term home**; this overlay is deliberately display-only so this change carries no
+  edit to `list_published_stories()`, the most performance-sensitive public query in the app.
+  Never applied to `tags`, typed destination labels or custom expense labels — user data.
+- **Zod schemas emit KEYS, not prose.** `lib/validation/{auth,username,profile,story,pdf-import}.ts`
+  carry `"auth.emailRequired"`-style messages and `lib/validation/issue-messages.ts` turns them into
+  text at the trust boundary (`translateIssue` / `firstIssueMessage` / `translateFieldErrors`).
+  `{min}`/`{max}` are filled from the Zod ISSUE, so the constant in the schema and the number in
+  the sentence cannot drift apart. Zod's own defaults and the staff-only schemas (admin, moderation,
+  readiness) pass through untouched. `lib/validation` stays free of React and next-intl. The
+  schemas' own tests assert keys. Same treatment for two data modules that are imported by Server
+  Components, Client Components and plain tests alike: `lib/story/steps.ts` (STORY_STEPS is ids
+  only; `missingStoryRequirements()` returns `labelKey`) and
+  `lib/notifications/notification-view.ts` (`describeNotification()` returns `headingKey`).
+- **Four modules cannot call a hook, so they take their text as a parameter**: `buildStoryPdf({
+labels, locale })`, `slashCommands({ labels })`, the direct-to-Storage uploader and
+  `resolveSlices(rows, smallerCategoriesLabel)`. All four keep English defaults, so their existing
+  tests construct the same inputs and assert the same output.
+- **The PDF export is translated too**, which cost nothing extra: `assets/fonts/NotoSansSC-Regular.ttf`
+  was already bundled for Chinese story text (2026-08), and pdfkit subsets what it embeds. A
+  contributor reading in Chinese downloads a Chinese PDF; `exportStatusLabel()` returns a stable
+  key the route translates.
+- **Formatting is locale-explicit, never ambient.** `lib/i18n/format.ts` takes the locale as an
+  argument in every helper, so the same function serves a Server Component, a Client Component and
+  a test. English output is byte-identical to the hard-coded `en-NZ`/`en-GB` it replaced — which is
+  what let ~400 existing English assertions keep passing untouched. Country names go through
+  `Intl.DisplayNames` for zh-CN (and the Account dropdown re-sorts with `Intl.Collator`, because a
+  250-row list in English A-Z order tells a Chinese reader nothing), while English keeps
+  `lib/countries.ts`'s own curated wording.
+- **Tests stay English by default.** `vitest.setup.ts` mocks `next-intl` and `next-intl/server` to
+  resolve straight from `messages/en.json`; `tests/support/i18n.ts` owns a `setTestLocale()` switch
+  a test flips to render a component in Chinese. No per-test provider, no assertion churn.
+- **Font stack.** `--font-sans` (and the CodeMirror copy of it) gain PingFang SC / Hiragino Sans GB
+  / Microsoft YaHei / Noto Sans SC **after** the Latin faces — a font-family list is consulted per
+  CHARACTER, so Latin text still renders in Avenir Next and only Chinese falls through. Without it,
+  Chinese lands on whatever the OS picks last, which on Windows is a serif beside the app's sans.
+
+**Deliberately out of scope**, so nobody looks for them: staff areas and the dev-only `/index`
+route; story content, contributor bios, tags and typed place names (user data); `Accept-Language`
+sniffing (no cookie means English — worth adding, but it changes what a first-time visitor sees
+and deserves its own decision); a `name_zh_cn` column; and `app/global-error.tsx`, which stays
+English because it replaces the root layout — `NextIntlClientProvider` is gone by then, and the
+locale read is part of what that boundary exists to survive. Six words of English in the
+last-resort fallback beats a blank screen.
+
+**The home page and `/costs` marketing copy want a native-speaker review before launch.** The
+glossary is applied consistently (打工度假签证／故事／投稿人／分享你的故事／登录／注册／
+退出登录／我的故事／通知／账户／新西兰／目的地／个人经历，并非建议／草稿／审核中／已发布／私密),
+and the UI strings are plain, but the persuasive copy on those two pages is the kind that reads
+subtly translated to a native eye.
+
+**Verified.** `npm run verify` exits 0 — **1072/1072** unit tests. New coverage: the toggle (5),
+the set-locale action rejecting everything outside `LOCALES` (8), the request config's fallback (9),
+messages parity — identical keys, identical ICU arguments, no empty values, no untranslated
+leftovers (4), the formatting helpers in both locales (22), `issue-messages` against the real
+schemas and the real translator (8), plus `SiteFooter` (a Server Component) and `SignInForm` (a
+Client Component) rendered explicitly under zh-CN. `e2e/locale.spec.ts` is **6/6** in real Chromium
+against a production build: the toggle flips `<html lang>`, the cookie survives a reload and a
+cross-route navigation, a server-rendered page comes back in Chinese, the sign-in labels stay bound
+to their inputs after translation, the toggle is keyboard-operable, and 375px has no horizontal
+overflow. Driven live in the browser at 375px as well: the header's five controls end at x=359
+inside a 375px viewport, `/stories`' filters and their region options render in Chinese, My Stories
+shows `2026年9月7日` dates, and the language survives a full reload.
+
+**2026-09-12 — /notifications: the inbox gets a real page.**
 No migration — it reads the same three RPCs the bell does. `app/(contributor)/notifications/`
 (page + list + a mark-read Server Action), `lib/notifications/queries.ts`, and a
 "See all notifications" link at the foot of the bell's dropdown.
@@ -1917,6 +2030,10 @@ and applies nothing — it is deliberately left as follow-up work, described in 
   ISR-cached per path at runtime. `docs/architecture.md`'s "cookie-free public client" section had
   previously lumped all four `ƒ` routes together and claimed `revalidate` had no practical effect on
   any of them — that was wrong about the two detail routes, and is now corrected there.
+  — **WRONG, corrected 2026-09-14.** This bullet's claim about the two detail routes is the one
+  that was wrong. The build's own `.next/prerender-manifest.json` lists `/` (60s) and `/costs`
+  (3600s) and carries an EMPTY `dynamicRoutes` map, so `/stories/[id]` and `/contributors/[slug]`
+  were never ISR-cached and their `revalidate` exports never engaged. See the 2026-09-14 entry.
 - **Comments corrected to match reality.** `lib/story/public-cache.ts`'s header claimed all five
   public pages "carry `export const revalidate = 60`, so they're already eventually consistent
   within a minute" — now split into the three that cache and the two that do not (and it notes that

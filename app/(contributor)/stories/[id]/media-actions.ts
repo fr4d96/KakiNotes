@@ -1,5 +1,7 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
+
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { createClient } from "@/lib/supabase/server";
@@ -20,17 +22,21 @@ import { getErrorMessage } from "@/lib/errors";
 export async function refreshMediaAction(
   storyId: string,
 ): Promise<{ media: RevisionMediaItem[] } | { error: string }> {
+  const [tErr, tCommon] = await Promise.all([
+    getTranslations("actionErrors"),
+    getTranslations("common"),
+  ]);
   const user = await getCurrentUser();
-  if (!user) return { error: "You must be signed in." };
+  if (!user) return { error: tCommon("mustBeSignedIn") };
   const parsed = z.uuid().safeParse(storyId);
-  if (!parsed.success) return { error: "Invalid story." };
+  if (!parsed.success) return { error: tErr("invalidStory") };
 
   try {
     const preview = await getStoryPreview(parsed.data);
     return { media: preview?.media ?? [] };
   } catch (error) {
     return {
-      error: getErrorMessage(error, "Could not refresh media."),
+      error: getErrorMessage(error, tErr("refreshMediaFailed")),
     };
   }
 }
@@ -51,11 +57,15 @@ export async function refreshMediaAction(
 export async function mintPreviewUrlAction(
   mediaId: string,
 ): Promise<{ url: string } | { error: string }> {
+  const [tErr, tCommon] = await Promise.all([
+    getTranslations("actionErrors"),
+    getTranslations("common"),
+  ]);
   const user = await getCurrentUser();
-  if (!user) return { error: "You must be signed in." };
+  if (!user) return { error: tCommon("mustBeSignedIn") };
 
   const parsed = z.uuid().safeParse(mediaId);
-  if (!parsed.success) return { error: "Invalid media." };
+  if (!parsed.success) return { error: tErr("invalidMedia") };
 
   const supabase = await createClient();
   const { error: authError } = await supabase.rpc(
@@ -63,7 +73,7 @@ export async function mintPreviewUrlAction(
     { p_media_id: parsed.data },
   );
   if (authError) {
-    return { error: "Not authorized to preview this image." };
+    return { error: tErr("previewNotAuthorized") };
   }
 
   try {
@@ -71,7 +81,7 @@ export async function mintPreviewUrlAction(
     return { url };
   } catch (error) {
     return {
-      error: getErrorMessage(error, "Could not load image."),
+      error: getErrorMessage(error, tErr("loadImageFailed")),
     };
   }
 }

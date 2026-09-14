@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Skeleton, LoadingScreen } from "@/components/ui/skeleton";
 
 /**
@@ -6,9 +7,10 @@ import { Skeleton, LoadingScreen } from "@/components/ui/skeleton";
  * so the fold is filled without implying a count the query might not return.
  */
 export default function ContributorsLoading() {
+  const t = useTranslations("common.loadingLabels");
   return (
     <LoadingScreen
-      label="Loading contributors"
+      label={t("contributors")}
       className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16"
     >
       <Skeleton className="h-9 w-56 sm:h-11" />

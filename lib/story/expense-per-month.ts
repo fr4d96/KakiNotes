@@ -1,3 +1,6 @@
+import { formatCurrencyNzd } from "@/lib/i18n/format";
+import type { Locale } from "@/i18n/locales";
+
 /**
  * "What did that work out to per month?" -- derived, never stored.
  *
@@ -123,12 +126,19 @@ export function expensePerMonth(input: {
   };
 }
 
-/** Cents -> "$1,234.50". One definition, shared by every expense surface. */
-export function formatNzdCents(cents: number): string {
-  return new Intl.NumberFormat("en-NZ", {
-    style: "currency",
-    currency: "NZD",
-  }).format(cents / 100);
+/**
+ * Cents -> "$1,234.50" (en) / "NZ$1,234.50" (zh-CN). One definition, shared
+ * by every expense surface: the public story page, /costs, the editor's
+ * donut and breakdown, and the PDF export.
+ *
+ * The locale is a PARAMETER with an English default rather than something
+ * read from context, because this is called from Server Components, Client
+ * Components and a PDF renderer alike. Callers that know the visitor's
+ * locale pass it; the default keeps every existing call site and its tests
+ * byte-identical.
+ */
+export function formatNzdCents(cents: number, locale: Locale = "en"): string {
+  return formatCurrencyNzd(cents, locale);
 }
 
 /**

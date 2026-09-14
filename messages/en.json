@@ -1,0 +1,1143 @@
+{
+  "meta": {
+    "siteDescription": "Real, detailed Working Holiday Visa stories from people who've done a working holiday in New Zealand."
+  },
+  "common": {
+    "skipToMain": "Skip to main content",
+    "localeToggle": {
+      "switchToZh": "Switch to Chinese",
+      "switchToEn": "Switch to English"
+    },
+    "relativeTime": {
+      "justNow": "just now",
+      "minutesAgo": "{count} min ago",
+      "hoursAgo": "{count, plural, one {1 hour ago} other {# hours ago}}",
+      "daysAgo": "{count, plural, one {1 day ago} other {# days ago}}"
+    },
+    "loading": "Loading",
+    "loadingPage": "Loading page",
+    "close": "Close",
+    "menu": "Menu",
+    "or": "or",
+    "invalidInput": "Invalid input.",
+    "loadingLabels": {
+      "workspace": "Loading your workspace",
+      "contributorProfile": "Loading contributor profile",
+      "costs": "Loading cost figures",
+      "contributors": "Loading contributors",
+      "story": "Loading story",
+      "stories": "Loading stories"
+    },
+    "themeToggle": {
+      "switchToLight": "Switch to light mode",
+      "switchToDark": "Switch to dark mode"
+    },
+    "anonymous": "Anonymous",
+    "personalExperienceLabel": "One person's experience — not immigration, legal, employment, tax, or financial advice",
+    "mustBeSignedIn": "You must be signed in.",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "working": "Working…",
+    "requiredSuffix": " required"
+  },
+  "nav": {
+    "primary": "Primary",
+    "contributor": "Contributor",
+    "stories": "Stories",
+    "contributors": "Contributors",
+    "destinations": "Destinations",
+    "about": "About",
+    "signIn": "Sign in",
+    "shareYourStory": "Share your story",
+    "createYourAccount": "Create your account",
+    "myStories": "My Stories",
+    "newStory": "New Story",
+    "account": "Account",
+    "signOut": "Sign out",
+    "accountMenu": "Account menu",
+    "staff": "Staff"
+  },
+  "footer": {
+    "tagline": "A storytelling community for honest working-holiday experiences across Aotearoa New Zealand.",
+    "disclaimer": "Kakinotes is an independent platform for personal stories and does not provide immigration, legal, employment, tax, or financial advice.",
+    "explore": "Explore",
+    "community": "Community",
+    "support": "Support",
+    "shareAStory": "Share a story",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "guidelines": "Guidelines",
+    "copyrightRemoval": "Copyright & Removal",
+    "copyrightLine": "© {year} Kakinotes",
+    "madeFor": "Made for working-holiday travellers in Aotearoa New Zealand"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Sign in",
+      "invalidLink": "That link is invalid or has expired. Please try again.",
+      "identifierLabel": "Email or username",
+      "identifierHint": "Use your email, or a username if you've set one in your account.",
+      "passwordLabel": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "forgotPassword": "Forgot your password?",
+      "noAccount": "No account?",
+      "signUpLink": "Sign up"
+    },
+    "signUp": {
+      "title": "Create your account",
+      "intro": "Kakinotes publishes real, personal experiences — not advice. You'll choose how your name appears before anything you write is public.",
+      "displayNameLabel": "Display name (optional)",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "submit": "Create account",
+      "submitting": "Creating account…",
+      "haveAccount": "Already have an account?",
+      "signInLink": "Sign in",
+      "success": "Check your email to confirm your account before signing in. If email confirmation is disabled for this project, you can sign in right away.",
+      "metaTitle": "Sign up"
+    },
+    "google": {
+      "continue": "Continue with Google",
+      "redirecting": "Redirecting…"
+    },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "intro": "Enter your email and we'll send a link to reset your password.",
+      "emailLabel": "Email",
+      "submit": "Send reset link",
+      "submitting": "Sending…",
+      "backToSignIn": "Back to sign in",
+      "success": "If an account exists for that email, we've sent a link to reset your password.",
+      "metaTitle": "Forgot password"
+    },
+    "resetPassword": {
+      "title": "Choose a new password",
+      "expiredTitle": "Link expired",
+      "expiredBody": "This password reset link is invalid or has already been used.",
+      "requestNew": "Request a new reset link",
+      "passwordLabel": "New password",
+      "confirmLabel": "Confirm new password",
+      "submit": "Save new password",
+      "submitting": "Saving…",
+      "linkUsed": "Your password reset link has expired or already been used. Request a new one.",
+      "metaTitle": "Reset password"
+    },
+    "errors": {
+      "signInFailed": "Incorrect email/username or password.",
+      "rateLimited": "Too many {kind, select, signUp {sign-up} other {sign-in}} attempts. Try again in about {minutes, plural, one {# minute} other {# minutes}}."
+    }
+  },
+  "validation": {
+    "common": {
+      "invalidInput": "Invalid input.",
+      "displayNameRequired": "Display name is required.",
+      "displayNameTooLong": "Display name must be {max} characters or fewer."
+    },
+    "auth": {
+      "emailRequired": "Email is required.",
+      "emailInvalid": "Enter a valid email address.",
+      "passwordTooShort": "Password must be at least {min} characters.",
+      "passwordTooLong": "Password is too long.",
+      "identifierRequired": "Enter your email or username.",
+      "passwordRequired": "Password is required.",
+      "passwordsMismatch": "Passwords do not match."
+    },
+    "username": {
+      "pattern": "Use 3-30 lowercase letters, numbers, underscores, or hyphens, starting with a letter or number.",
+      "reserved": "That username is reserved. Choose another."
+    },
+    "profile": {
+      "slugPattern": "Use 3-60 lowercase letters, numbers, or hyphens, starting with a letter or number.",
+      "bioTooLong": "Bio must be {max} characters or fewer.",
+      "countryCode": "Use a 2-letter country code, e.g. MY.",
+      "avatarEmoji": "Choose one of the provided avatars."
+    },
+    "story": {
+      "tripDateOrder": "Trip start date must be on or before the end date.",
+      "contentRequired": "Your story needs at least some content.",
+      "contentTooLong": "Story content is too long (max {max} characters).",
+      "headingLevel": "Use ## or smaller for headings inside your story — the title is your only # heading.",
+      "imageAsLink": "Images can't be pasted as links — use the image button to insert one.",
+      "linkScheme": "Links must be http(s) or a root-relative path.",
+      "singleBlock": "A story has a single content block.",
+      "titleRequired": "Title is required.",
+      "locationEitherOr": "Provide either a selection or a custom label, not both.",
+      "tooManyTags": "You can add up to {max} tags to a story.",
+      "expenseNeedsCategory": "An expense row needs a category or a name.",
+      "consentRequired": "You must confirm you have permission to publish this story.",
+      "termsVersionMissing": "Missing terms version.",
+      "selectPage": "Select at least one page.",
+      "changeNoteRequired": "Describe what needs to change."
+    },
+    "pdf": {
+      "empty": "The PDF file is empty.",
+      "tooLarge": "The PDF file is too large.",
+      "notAPdf": "The file is not a PDF (magic bytes did not match)."
+    }
+  },
+  "vocab": {
+    "regions": {
+      "northland": "Northland",
+      "auckland": "Auckland",
+      "waikato": "Waikato",
+      "bay-of-plenty": "Bay of Plenty",
+      "gisborne": "Gisborne",
+      "hawkes-bay": "Hawke's Bay",
+      "taranaki": "Taranaki",
+      "manawatu-whanganui": "Manawatū-Whanganui",
+      "wellington": "Wellington",
+      "tasman": "Tasman",
+      "nelson": "Nelson",
+      "marlborough": "Marlborough",
+      "west-coast": "West Coast",
+      "canterbury": "Canterbury",
+      "otago": "Otago",
+      "southland": "Southland"
+    },
+    "expenseCategories": {
+      "flights": "Flights",
+      "visa-fee": "Visa fee",
+      "insurance": "Insurance",
+      "first-month-rent": "First month rent",
+      "bond": "Bond",
+      "vehicle": "Vehicle",
+      "gear": "Gear",
+      "food": "Food",
+      "transport": "Transport",
+      "activities": "Activities",
+      "other": "Other"
+    }
+  },
+  "stories": {
+    "metaTitle": "Stories",
+    "metaDescription": "Browse real, first-person Working Holiday Visa stories from New Zealand, filterable by region, tag, trip year, travel style, and reported cost.",
+    "title": "Stories",
+    "intro": "Real Working Holiday accounts from people who've done it — filter by region, tag, trip year, travel style, or reported cost to find one like yours.",
+    "loadError": "We couldn't load stories right now. Please try again in a moment.",
+    "noMatches": "No stories match those filters yet. Try broadening your search.",
+    "loadMore": "Load more stories",
+    "filters": {
+      "search": "Search",
+      "searchPlaceholder": "Find a story like yours",
+      "showFilters": "Filters",
+      "hideFilters": "Hide filters",
+      "apply": "Apply filters",
+      "clear": "Clear",
+      "region": "Region",
+      "anyRegion": "Any region",
+      "destination": "Destination",
+      "anyDestination": "Any destination",
+      "tag": "Tag",
+      "anyTag": "Any tag",
+      "tripYear": "Trip year",
+      "anyYear": "Any year",
+      "travelStyle": "Travel style",
+      "anyStyle": "Any style",
+      "reportedCost": "Reported cost",
+      "anyCost": "Any cost",
+      "costAvailability": "Cost availability",
+      "anyStory": "Any story",
+      "hasReportedCost": "Has a reported cost",
+      "noReportedCost": "No reported cost",
+      "costBands": {
+        "under_5k": "Under NZ$5k",
+        "5k_15k": "NZ$5k – 15k",
+        "15k_30k": "NZ$15k – 30k",
+        "30k_plus": "NZ$30k+"
+      }
+    }
+  },
+  "story": {
+    "trip": "Trip: {range}",
+    "contentUnavailable": "This story's content couldn't be rendered.",
+    "relatedStories": "Related stories",
+    "expenses": {
+      "heading": "What this trip cost",
+      "reportedForWholeTrip": "reported for the whole trip",
+      "perMonth": "About <amount>{amountValue}</amount> a month across {months} months.",
+      "disclaimer": "These are the figures one traveller recorded for their own trip. They are a personal account, not a budget or an estimate — costs vary a lot by region, season, and how you travel."
+    },
+    "report": {
+      "open": "Report this story",
+      "submitted": "Thanks — your report has been submitted for review.",
+      "needsSignInBefore": "Please",
+      "needsSignInLink": "sign in",
+      "needsSignInAfter": "to report a story.",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "Choose a reason",
+      "detailsLabel": "Details (optional)",
+      "submit": "Submit report",
+      "submitting": "Submitting…",
+      "cancel": "Cancel",
+      "failed": "Something went wrong. Please try again.",
+      "categories": {
+        "misinformation": "Misinformation",
+        "unsafe_employment_advice": "Unsafe employment advice",
+        "harassment": "Harassment",
+        "copyright_privacy": "Copyright or privacy",
+        "spam_commercial": "Spam or commercial content",
+        "other": "Other"
+      }
+    }
+  },
+  "expenses": {
+    "donut": {
+      "smallerCategories": "Smaller categories",
+      "brokenDown": "Broken down",
+      "empty": "Add a category and an amount to see where your money went."
+    }
+  },
+  "contributors": {
+    "metaTitle": "Contributors",
+    "metaDescription": "Contributors who've published a real Working Holiday Visa story on Kakinotes.",
+    "title": "Contributors",
+    "intro": "People who've shared their own Working Holiday experience — showing only the fields each contributor has chosen to make public.",
+    "loadError": "We couldn't load contributors right now. Please try again in a moment.",
+    "empty": "No public contributor profiles yet.",
+    "loadMore": "Load more contributors",
+    "storyCount": "{count, plural, one {# story} other {# stories}}",
+    "fromCountry": "from {country}",
+    "storyCountPublished": "{count, plural, one {# story} other {# stories}} published",
+    "workedIn": "Worked in",
+    "years": "Years",
+    "wroteAbout": "Wrote about",
+    "publishedStories": "Published stories"
+  },
+  "costs": {
+    "metaTitle": "What a working holiday cost",
+    "metaDescription": "What real contributors recorded spending on their New Zealand working holiday — reported figures from published stories, not an estimate or a budget.",
+    "title": "What a working holiday cost",
+    "framing": "These are the figures contributors recorded about trips they actually took. They are a record of what happened to those people, not an estimate, a budget, or a prediction for your own trip. What a working holiday costs varies enormously by region, season, and how you travel.",
+    "overallHeading": "Reported total for a whole trip",
+    "overallUnit": "is the middle figure",
+    "perMonthHeading": "Reported cost per month",
+    "perMonthNote": "From stories that recorded both trip dates, for trips of at least a month — a total on its own cannot tell a three-month trip from a year.",
+    "perMonthUnit": "a month",
+    "byRegionHeading": "By region",
+    "byCategoryHeading": "Where the money went",
+    "halfReportedBetween": "Half of these {count, plural, one {# story} other {# stories}} reported between <low>{low}</low> and <high>{high}</high>.",
+    "storyCount": "{count, plural, one {# story} other {# stories}}",
+    "notEnough": "Not enough published stories yet to report {what} honestly. Figures appear once at least five stories cover the same thing.",
+    "notEnoughWhat": {
+      "total": "a typical total",
+      "perMonth": "a monthly figure",
+      "regions": "regional differences",
+      "categories": "a breakdown by category"
+    },
+    "footerBefore": "Every figure here comes from a story you can read in full.",
+    "footerLink": "Browse the stories",
+    "footerAfter": "to see the trips behind the numbers — the context is usually the part that matters."
+  },
+  "home": {
+    "metaTitle": "Real stories from across Aotearoa",
+    "heroSub": "First-person accounts of the jobs, places, and moments from travellers who have lived the working-holiday experience.",
+    "heroCta": "Read the stories",
+    "heroSecondary": "or see how this works",
+    "featuredHeading": "Featured",
+    "featuredDescription": "Drag a card aside, or step through with the arrows.",
+    "recordHeading": "The record",
+    "recordDescription": "Every published account, narrowed by where it happened and the work it describes.",
+    "trustHeading": "Why you can trust what you read here",
+    "trustDescription": "Kakinotes is a record of personal experience — not advice, and not a marketplace.",
+    "steps": {
+      "writtenTitle": "Written by the person who lived it",
+      "writtenBody": "Every account is first-person, submitted under a name or pseudonym the writer chose themselves.",
+      "checkedTitle": "Checked before it is published",
+      "checkedBody": "Each story is reviewed against our publication rules, and its images are processed and rights-checked, before it appears here.",
+      "recordTitle": "Kept as a record, not a feed",
+      "recordBody": "Stories stay searchable by place, work, and year — there is nothing to scroll past and nothing to miss."
+    },
+    "quizHeading": "Not sure where to start reading?",
+    "quizDescription": "Answer five quick questions and we will point you at a region and the stories from travellers who went there. It is a starting point for browsing, not a recommendation.",
+    "shareHeading": "Your experience could help someone take their first step",
+    "shareBody": "Share the honest version of your working holiday — the wins, mistakes, practical lessons, and moments you will always remember.",
+    "shareCta": "Share your story",
+    "shareSecondary": "See writing tips",
+    "slideshow": {
+      "playAnimation": "Play hero animation",
+      "pauseAnimation": "Pause hero animation",
+      "playMotion": "Play motion",
+      "pauseMotion": "Pause motion"
+    },
+    "index": {
+      "place": "Place",
+      "topic": "Topic",
+      "all": "All",
+      "filterBy": "Filter stories by {axis}",
+      "entries": "{count, plural, one {# ENTRY} other {# ENTRIES}}",
+      "showing": "SHOWING {from}–{to}",
+      "clear": "CLEAR",
+      "noMatches": "No stories carry all of those yet. Try clearing a filter.",
+      "recordPages": "Record pages",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "prev": "← Prev",
+      "next": "Next →",
+      "pageOf": "Page {page} of {total}",
+      "browseCatalogue": "Browse the full catalogue"
+    },
+    "featured": {
+      "region": "Featured Working Holiday stories",
+      "previous": "Previous stories",
+      "next": "Next stories",
+      "goTo": "Go to story {index} of {total}",
+      "readStory": "Read story",
+      "dragHint": "Drag the front card, or use the arrows."
+    },
+    "quiz": {
+      "yourMatch": "Your match",
+      "progress": "{step} / {total}",
+      "back": "← Back",
+      "resultKicker": "Your working holiday match",
+      "bestSeason": "Best season",
+      "work": "Work",
+      "practicalNote": "Practical note",
+      "exploreStories": "Explore stories",
+      "tryAgain": "Try again",
+      "questions": {
+        "home": "Where would you feel most at home?",
+        "job": "What kind of job would you try?",
+        "matters": "What matters most?",
+        "pace": "Choose your ideal pace.",
+        "season": "Which season sounds best?"
+      },
+      "answers": {
+        "coastalTown": "A relaxed coastal town",
+        "mountains": "Mountains and alpine scenery",
+        "countryside": "Open countryside",
+        "hospitality": "Hospitality or café work",
+        "fruitPicking": "Fruit picking",
+        "farmWork": "Farm work",
+        "skiField": "Ski-field work",
+        "vineyard": "Vineyard work",
+        "savingMoney": "Saving money",
+        "meetingPeople": "Meeting people",
+        "timeOutdoors": "Time outdoors",
+        "usefulExperience": "Useful experience",
+        "workTravelBalance": "Work and travel balance",
+        "busySocial": "Busy and social",
+        "relaxedScenic": "Relaxed and scenic",
+        "activePhysical": "Active and physical",
+        "independentFlexible": "Independent and flexible",
+        "summer": "Summer",
+        "autumn": "Autumn",
+        "winter": "Winter",
+        "spring": "Spring",
+        "flexible": "Flexible",
+        "livelyCity": "A lively city",
+        "seasonalCommunity": "A seasonal-work community"
+      },
+      "seasons": {
+        "yearRound": "Year-round",
+        "spring": "Spring",
+        "autumn": "Autumn",
+        "winter": "Winter"
+      },
+      "info": {
+        "aucklandWork": "Hospitality · Retail",
+        "aucklandNote": "Compare rent and commuting costs.",
+        "wellingtonWork": "Cafés · Events",
+        "wellingtonNote": "Expect wind and a competitive rental market.",
+        "canterburyWork": "Farm work · Warehousing",
+        "canterburyNote": "Transport helps for rural roles.",
+        "bayOfPlentyWork": "Fruit picking · Packhouse",
+        "bayOfPlentyNote": "Hours can depend on weather.",
+        "queenstownWork": "Ski fields · Hospitality",
+        "queenstownNote": "Plan accommodation early.",
+        "centralOtagoWork": "Vineyards · Orchards",
+        "centralOtagoNote": "Line up your next seasonal move."
+      }
+    },
+    "hero": "Real stories from across <accent>Aotearoa</accent>."
+  },
+  "about": {
+    "metaTitle": "About",
+    "title": "About Kakinotes",
+    "p1": "Kakinotes shares detailed, written first-person stories from Working Holiday Visa travellers in New Zealand, so future travellers can find accounts relevant to their own plans.",
+    "p2": "Kakinotes is an independent platform. It is not Immigration New Zealand and does not provide immigration, legal, employment, tax, or financial advice — every story is one person's personal experience.",
+    "p3": "A fuller description of the project, its founding contributors, and how stories are reviewed is coming soon."
+  },
+  "legal": {
+    "privacyTitle": "Privacy",
+    "privacyBody": "Our full privacy policy is being finalised. Kakinotes does not collect passport scans, visa or immigration documents, bank credentials, exact live locations, or medical records.",
+    "termsTitle": "Terms",
+    "termsBody": "Our full terms of use are being finalised. This page is a placeholder.",
+    "guidelinesTitle": "Community Guidelines",
+    "guidelinesBody": "Our full community guidelines are being finalised. In brief: stories must be genuine personal experiences, published with the contributor's permission and rights-cleared images.",
+    "copyrightTitle": "Copyright & Removal",
+    "copyrightBody": "If you believe a published story or image infringes your rights, or you are a contributor who wants a story corrected, withdrawn, or deleted, a reporting and removal process is coming soon. This page is a placeholder."
+  },
+  "errors": {
+    "somethingWentWrong": "Something went wrong",
+    "tryAgainWithReference": "Please try again. If this keeps happening, contact us and mention this reference: {reference}.",
+    "noReference": "n/a",
+    "tryAgain": "Try again",
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "We couldn't find the page you were looking for.",
+    "goHome": "Go home"
+  },
+  "account": {
+    "metaTitle": "Account",
+    "title": "Account",
+    "tablistLabel": "Account settings",
+    "setupPromptTitle": "Set your contributor identity to start",
+    "setupPromptBodyBefore": "It's how your stories are attributed, and you need one before you can publish.",
+    "setupPromptLink": "Open the Contributor identity tab",
+    "tabs": {
+      "profile": "Profile",
+      "profileDescription": "Your account settings. None of this is shown to readers.",
+      "signIn": "Sign-in",
+      "signInDescription": "Optional. Set a username and you can sign in with either it or your email — your email keeps working either way.",
+      "contributorIdentity": "Contributor identity",
+      "contributorIdentityDescription": "How you're attributed on every story, and what readers see on your contributor page. You choose this — it's never inferred from your account."
+    },
+    "profile": {
+      "nameLabel": "Account name",
+      "nameHintBefore": "Just for your account. Readers never see this — the name on your stories is set on the",
+      "nameHintLink": "Contributor identity tab",
+      "submit": "Update profile",
+      "saving": "Saving…",
+      "saved": "Profile updated."
+    },
+    "username": {
+      "label": "Username",
+      "placeholder": "your-username",
+      "hint": "3-30 lowercase letters, numbers, underscores, or hyphens. This is never shown to anyone else — it only gives you a second way to sign in besides your email.",
+      "set": "Set username",
+      "change": "Change username",
+      "saving": "Saving…",
+      "saved": "Username saved. You can now sign in with it."
+    },
+    "contributor": {
+      "intro": "This is your public face. Everything here can appear on your stories and on your contributor page, once you have a published story.",
+      "avatarHint": "Pick an avatar, or leave unset to show the first letter of your name.",
+      "nameLabel": "How your name appears on stories",
+      "attributionLegend": "Attribution type",
+      "attribution": {
+        "real_name": "My real name",
+        "display_name": "A display name",
+        "pseudonym": "A pseudonym",
+        "anonymous": "Anonymous"
+      },
+      "bioLabel": "About you",
+      "bioHint": "A short introduction shown on your contributor page. Optional.",
+      "countryLabel": "Where you are from",
+      "countryHint": "Shown on your contributor page so readers can find someone who started where they did. Leave it unset to keep it off your page.",
+      "countryUnset": "Prefer not to say",
+      "listMe": "List me in the Contributors directory",
+      "slugLabel": "Contributor page web address",
+      "slugHintBefore": "Your page will be at this address on",
+      "slugHintAfter": ". You also need at least one published story, and “Anonymous” attribution can't be listed.",
+      "slugPlaceholder": "your-name",
+      "slugHint2": "Required to list you in the directory. Lowercase letters, numbers, and hyphens only.",
+      "create": "Set up contributor identity",
+      "update": "Update contributor identity",
+      "saving": "Saving…",
+      "created": "Contributor identity created.",
+      "updated": "Contributor identity updated."
+    },
+    "avatar": {
+      "label": "Avatar",
+      "use": "Use {emoji} as your avatar",
+      "tapToRemove": "Tap your chosen avatar again to remove it.",
+      "defaultHint": "Pick an avatar, or leave unset for the default."
+    },
+    "errors": {
+      "slugRequiredForPublic": "Choose a public contributor URL before making your profile public.",
+      "anonymousCannotBePublic": "An anonymous attribution can't have a public profile.",
+      "profileUpdateFailed": "Could not update your profile. Please try again.",
+      "usernameTaken": "That username is already taken.",
+      "usernameSaveFailed": "Could not save your username. Please try again.",
+      "slugTaken": "That contributor URL is already taken.",
+      "alreadyHaveIdentity": "You already have a contributor identity.",
+      "identityCreateFailed": "Could not set up your contributor identity. Please try again.",
+      "identityUpdateFailed": "Could not update your contributor identity. Please try again."
+    }
+  },
+  "myStories": {
+    "metaTitle": "My Stories",
+    "title": "My Stories",
+    "untitled": "Untitled story",
+    "import": "Import",
+    "newStory": "New Story",
+    "emptyBefore": "You haven't started a story yet.",
+    "emptyStartLink": "Start your first one",
+    "emptyOr": "or",
+    "emptyImportLink": "import a PDF",
+    "viewLabel": "View",
+    "gridView": "Grid view",
+    "listView": "List view",
+    "storyCount": "{count, plural, one {# STORY} other {# STORIES}}",
+    "clear": "CLEAR",
+    "noMatchesBefore": "No stories match those filters.",
+    "clearFilters": "Clear filters",
+    "filters": {
+      "region": "Region",
+      "destination": "Destination",
+      "tag": "Tags",
+      "all": "All",
+      "filterBy": "Filter stories by {axis}"
+    },
+    "sections": {
+      "drafts": "Drafts",
+      "draftsHint": "Yours to finish",
+      "review": "In review",
+      "reviewHint": "Waiting on a moderator",
+      "published": "Published",
+      "publishedHint": "Readers can see these",
+      "private": "Private",
+      "privateHint": "Only you can see these",
+      "closed": "Not published",
+      "closedHint": "Archived or not approved"
+    },
+    "updateInReview": "Update in review",
+    "updateInProgress": "Update in progress",
+    "actions": {
+      "edit": "Edit {title}",
+      "review": "Review {title}",
+      "preview": "Preview {title}",
+      "delete": "Delete {title}",
+      "takeDown": "Take down {title}",
+      "cancelTakedown": "Cancel the takedown request for {title}",
+      "takedownPending": "Takedown requested for {title} — awaiting review. Choose to cancel the request."
+    },
+    "deleteDialog": {
+      "title": "Delete this story?",
+      "description": "\"{title}\" will be permanently deleted. This can't be undone.",
+      "confirm": "Delete story",
+      "toast": "\"{title}\" deleted."
+    },
+    "takedownDialog": {
+      "title": "Ask for this story to be taken down?",
+      "description": "The Kakinotes team reviews the request, and \"{title}\" stays public until they do. Nothing is deleted either way — your writing and photos stay in your account. If you only want to change something, use Edit instead: your story stays up while the change is reviewed.",
+      "confirm": "Ask for takedown",
+      "toast": "Asked for \"{title}\" to be taken down. It stays public until the team reviews it."
+    },
+    "cancelTakedownDialog": {
+      "title": "Keep this story up?",
+      "description": "You asked for \"{title}\" to be taken down and nobody has reviewed it yet. Cancelling leaves the story published, exactly as it is now. You can ask again at any time.",
+      "confirm": "Cancel the request",
+      "toast": "\"{title}\" stays up — request withdrawn."
+    },
+    "toasts": {
+      "submitted": "Submitted for review.",
+      "keptPrivate": "Saved privately. Only you can see it."
+    },
+    "updatedAt": "Updated {date}"
+  },
+  "storyStatus": {
+    "draft": "Draft",
+    "private": "Private",
+    "awaiting_contributor_approval": "Awaiting your approval",
+    "pending_review": "In review",
+    "changes_requested": "Changes requested",
+    "published": "Published",
+    "rejected": "Not approved",
+    "archived": "Archived"
+  },
+  "editor": {
+    "newStory": "New Story",
+    "editStory": "Edit Story",
+    "preview": "Preview",
+    "reviewAndSubmit": "Review & submit →",
+    "save": {
+      "saving": "Saving…",
+      "savedAt": "Saved {when}",
+      "notSavedYet": "Not saved yet",
+      "justNow": "just now",
+      "minutesAgo": "{count}m ago",
+      "hoursAgo": "{count}h ago",
+      "failed": "Save failed.",
+      "invalidContent": "Invalid content."
+    },
+    "steps": {
+      "title": "Title",
+      "story": "Your story",
+      "photos": "Photos",
+      "trip": "Trip",
+      "expenses": "Expenses",
+      "places": "Places",
+      "review": "Review",
+      "progressLabel": "Story progress",
+      "lockedHint": "Finish the steps before it, then use “Review & submit”."
+    },
+    "fields": {
+      "title": "Title",
+      "subtitle": "Sub-Title",
+      "subtitleHint": "Optional. One or two lines that say what the story is about.",
+      "story": "Story",
+      "storyContent": "Story content",
+      "travelStyle": "Travel style",
+      "travelStyleUnset": "Not specified",
+      "travelStyleOther": "Other (type your own)",
+      "travelStylePlaceholder": "Describe your travel style",
+      "travelStyleOwnLabel": "Other travel style (type your own)",
+      "totalExpenses": "Total expenses (NZD)",
+      "locations": "Locations",
+      "region": "Region",
+      "chooseRegion": "Choose a region…",
+      "townOrPlace": "Town or place (optional)",
+      "remove": "Remove",
+      "noteToEditors": "Note to editors",
+      "addLocationManually": "Add a location manually",
+      "unmatchedPlace": "We could not match that place to a New Zealand region — use \"Add a location manually\" below.",
+      "photosHint": "Add photos here. “Add to story” drops one into your text and takes you back to it.",
+      "unmatchedPlaceNamed": "We could not match \"{label}\" to a New Zealand region — use \"Add a location manually\" below.",
+      "noteToEditorsHint": "(optional, private, never published)"
+    },
+    "tripDates": {
+      "heading": "When did you travel?",
+      "precision": "How precisely do you remember your travel dates?",
+      "specific": "Specific dates",
+      "yearOnly": "Just the year",
+      "yearOnlyHint": "Use this if you remember the year but not the exact dates.",
+      "from": "From",
+      "to": "To",
+      "year": "Year",
+      "days": "{count, plural, one {# day} other {# days}}",
+      "startHidden": "trip start date",
+      "endHidden": "trip end date",
+      "yearHidden": "trip year"
+    },
+    "tags": {
+      "heading": "Choose tags",
+      "add": "Add a tag",
+      "placeholder": "Add a tag…",
+      "limitReached": "Tag limit reached",
+      "none": "No suggested tags left to add",
+      "chooseSuggested": "Choose from suggested tags",
+      "suggested": "Suggested tags"
+    },
+    "place": {
+      "heading": "Search for a place",
+      "placeholder": "Type a full place name, e.g. Queenstown",
+      "search": "Search",
+      "searching": "Searching…",
+      "unavailable": "Place search is unavailable right now — pick the region below instead.",
+      "tooShort": "Type at least {min} characters, then search again.",
+      "noMatches": "No places matched “{term}”. The map needs a complete name — try “Queenstown” rather than “Queens” — or just pick the region below.",
+      "attributionBefore": "Results by",
+      "attributionAfter": "contributors"
+    },
+    "expenses": {
+      "heading": "Break it down by category",
+      "optional": "Optional",
+      "addCategory": "Add a category",
+      "chooseCategory": "Choose a category…",
+      "orNameYourOwn": "Or name your own",
+      "categoryName": "Category name",
+      "spentOn": "What did you spend on?",
+      "noteLabel": "A short note about this cost",
+      "notePlaceholder": "Add a short note (optional)",
+      "subtotal": "Breakdown so far: {amount}",
+      "intro": "Only add what you actually recorded. Leaving something out is fine — it doesn't have to add up to your total. Up to {max}.",
+      "atCap": "That's {max} categories — the most a breakdown holds. Remove one to add something else.",
+      "customPlaceholder": "e.g. Phone plan",
+      "exceedsTotal": "That's more than the total above. Both are saved as you typed them; check whichever one is wrong."
+    },
+    "images": {
+      "loading": "Loading image"
+    },
+    "stepHints": {
+      "title": "What it's called",
+      "story": "The writing itself",
+      "photos": "Optional",
+      "trip": "Optional",
+      "expenses": "Optional",
+      "places": "Where and what",
+      "review": "Check it, then send"
+    },
+    "stepLabels": {
+      "title": "Title",
+      "story": "Your story",
+      "photos": "Photos",
+      "trip": "Trip",
+      "expenses": "Expenses",
+      "places": "Places & tags",
+      "review": "Review & submit"
+    },
+    "requirements": {
+      "title": "a title",
+      "content": "your story",
+      "location": "at least one location",
+      "tag": "at least one tag"
+    },
+    "progress": {
+      "navLabel": "Story progress",
+      "stepOf": "Step {index} of {total}",
+      "stepOfNamed": "Step {index} of {total}: {label}",
+      "stepOfNamedWithState": "Step {index} of {total}: {label} ({state})",
+      "state": {
+        "current": "current step",
+        "done": "done",
+        "stillNeeded": "still needed",
+        "notAvailable": "not available yet"
+      },
+      "stateSeparator": ", "
+    },
+    "railLabels": {
+      "title": "Title",
+      "story": "Your story",
+      "photos": "Photos",
+      "trip": "Trip",
+      "expenses": "Expenses",
+      "places": "Places",
+      "review": "Review"
+    },
+    "missing": {
+      "beforeSubmit": "Add {list} before you can submit.",
+      "beforeSave": "Add {list} before you can save this story.",
+      "addOne": "Add {what}",
+      "listSeparator": ", "
+    },
+    "nav": {
+      "back": "← {label}",
+      "next": "Next: {label} →",
+      "backToMyStories": "← My Stories"
+    },
+    "photos": {
+      "dropzone": "Drag and drop images here, or click to browse",
+      "count": "{count, plural, one {# photo} other {# photos}}",
+      "placedCount": "{count} in your story",
+      "needsDescriptionCount": "{count, plural, one {# photo still needs a description} other {# photos still need a description}}",
+      "badges": {
+        "cover": "Cover",
+        "inStory": "In story",
+        "needsDescription": "Needs description",
+        "duplicate": "Duplicate"
+      },
+      "state": {
+        "uploading": "Uploading…",
+        "preparing": "Preparing…",
+        "processing": "Processing…",
+        "ready": "Ready",
+        "failed": "Failed to process — try a different file"
+      },
+      "describeThisPhoto": "Describe this photo",
+      "describeHint": "For readers who can't see it. One plain sentence about what is in the photo.",
+      "altPlaceholder": "Vines in rows under a grey sky",
+      "decorative": "It's decorative — no description needed",
+      "caption": "Caption",
+      "captionHint": "(optional, shown under the photo)",
+      "setAsCover": "Set as cover",
+      "deletePhoto": "Delete photo",
+      "done": "Done",
+      "addToStory": "Add to story",
+      "moveEarlier": "↑ Earlier",
+      "moveLater": "↓ Later",
+      "moveEarlierLabel": "Move {name} earlier",
+      "moveLaterLabel": "Move {name} later",
+      "describe": "Describe",
+      "details": "Details",
+      "describeLabel": "Describe {name}",
+      "detailsLabel": "Details {name}",
+      "itemName": "photo {index}",
+      "errors": {
+        "tooLarge": "That photo is too large to upload.",
+        "unsupportedType": "Use JPEG, PNG, WebP, or HEIC.",
+        "uploadFailed": "Upload failed.",
+        "uploadFailedStatus": "Upload failed (error {status}).",
+        "uploadedToast": "{fileName} uploaded."
+      }
+    },
+    "toolbar": {
+      "commandsLabel": "Story formatting commands",
+      "syntaxGuide": "Markdown syntax guide (opens in a new tab)",
+      "heading": "Heading",
+      "bold": "Bold (Ctrl/Cmd+B)",
+      "italic": "Italic (Ctrl/Cmd+I)",
+      "strikethrough": "Strikethrough (~~text~~)",
+      "quote": "Quote",
+      "bulletedList": "Bulleted list",
+      "numberedList": "Numbered list",
+      "checklist": "Checklist",
+      "link": "Link (Ctrl/Cmd+K)",
+      "table": "Table",
+      "photo": "Add a photo (opens the Images panel)",
+      "placeholder": "Tell your story… or type / for headings, lists and quotes",
+      "wordCount": "{count, plural, one {# word} other {# words}}",
+      "readingTime": "{minutes} min read",
+      "aimForWords": "aim for 150+ words",
+      "statSeparator": " · "
+    },
+    "slash": {
+      "heading": "Heading",
+      "headingDetail": "A section title",
+      "subheading": "Smaller heading",
+      "subheadingDetail": "A sub-section title",
+      "list": "Bulleted list",
+      "listDetail": "A list of points",
+      "numbered": "Numbered list",
+      "numberedDetail": "A list of steps, in order",
+      "quote": "Quote",
+      "quoteDetail": "Set a passage apart",
+      "link": "Link",
+      "linkDetail": "Link some words to a page",
+      "table": "Table",
+      "tableDetail": "A small grid of rows and columns",
+      "photo": "Photo",
+      "photoDetail": "Go to the Images panel to upload and place a photo",
+      "todo": "Checklist",
+      "todoDetail": "Tick-box items"
+    }
+  },
+  "publish": {
+    "heading": "Who is this story for?",
+    "goToStep": "Go to that step",
+    "everyone": "Everyone",
+    "everyoneHint": "A moderator reads it first. Once they approve it, anyone can find and read it.",
+    "justMe": "Just me",
+    "justMeHint": "Nobody reviews it and nobody else can see it. You can still edit it, or share it publicly later.",
+    "keepingPrivate": "Keeping this one to yourself",
+    "saving": "Saving…",
+    "saveChanges": "Save changes",
+    "saveAsPrivate": "Save as private",
+    "privateBody1": "No moderator reads it, and it never shows up in search, on the public site, or on your public profile. Your photos stay private too.",
+    "privateBody2": "You can keep editing it whenever you like. If you change your mind later, come back here and choose “Everyone” — that is when it goes to a moderator."
+  },
+  "consent": {
+    "heading": "Publication permission",
+    "imageRights": "I confirm I have the right to share every attached image publicly.",
+    "peopleQuestion": "Do any photos show identifiable people?",
+    "noPeople": "No identifiable people",
+    "havePermission": "Yes — I have their permission",
+    "submitting": "Submitting…",
+    "publishRights": "I confirm I have the right to publish this story and give permission for it to be published on Kakinotes."
+  },
+  "review": {
+    "editorPrepared": "An editor prepared this story for you",
+    "approveAndSubmit": "Approve & submit for moderation",
+    "approve": "Approve",
+    "requestChanges": "Request changes",
+    "whatChanged": "What would you like changed?",
+    "sending": "Sending…",
+    "sendRequest": "Send request",
+    "decline": "Decline",
+    "declineHint": "Optional: let the editor know why.",
+    "declining": "Declining…",
+    "confirmDecline": "Confirm decline",
+    "intro": "Review it above, then approve it for moderation, ask for changes, or decline publication entirely."
+  },
+  "whatsPublic": {
+    "heading": "What will be public",
+    "nameShowsAs": "Your name will show as:",
+    "copyrightRemoval": "Copyright & Removal",
+    "nameLine": "Your name will show as: <name>{value}</name> ({attribution})",
+    "titleAndBody": "The full story title and body text",
+    "titleExcerptAndBody": "The full story title and excerpt and body text",
+    "tripDetails": "Trip details you set: region, destination, tags, trip date/year, travel style, and reported cost (if you added one)",
+    "images": "{count, plural, one {# image} other {# images}}, with alt text and metadata already stripped",
+    "imagesWithCaptions": "{count, plural, one {# image} other {# images}} ({captioned} with a visible caption), with alt text and metadata already stripped",
+    "notesNeverShown": "Internal editor and moderator notes are never shown publicly. You can request removal or correction at any time — see",
+    "attribution": {
+      "real_name": "your real name",
+      "display_name": "your chosen display name",
+      "pseudonym": "a pseudonym",
+      "anonymous": "anonymous (no name shown)"
+    }
+  },
+  "startRevision": {
+    "edit": "Edit this story",
+    "publishedTitle": "Make changes to this story?",
+    "draftTitle": "Start editing again?",
+    "confirm": "Yes, edit it",
+    "editTitle": "Edit {title}",
+    "publishedBody": "\"{title}\" is published. Your changes go to a moderator first — the version people can read now stays up, unchanged, until the new one is approved.",
+    "draftBody": "You'll pick up \"{title}\" where you left off, and send it back for review when you're done."
+  },
+  "preview": {
+    "metaTitle": "Preview",
+    "downloadCopy": "Download a copy",
+    "contentUnavailable": "This draft's content couldn't be rendered.",
+    "submitForReview": "Submit for review",
+    "submitCorrection": "Submit correction for review"
+  },
+  "import": {
+    "heading": "Import content",
+    "intro": "Paste plain text or rich HTML from the contributor's original submission. Preview the conversion before using it — this replaces the story body below.",
+    "plainText": "Plain text",
+    "html": "HTML",
+    "placeholderPlain": "Pasted plain text…",
+    "placeholderHtml": "<p>Pasted HTML…</p>",
+    "converting": "Converting…",
+    "previewConversion": "Preview conversion",
+    "applying": "Applying…",
+    "useThisContent": "Use this content",
+    "blocksProduced": "{count} block(s) produced.",
+    "tablesConverted": "{count} table(s) converted to plain text.",
+    "codeBlocksConverted": "{count} code block(s) converted to plain text.",
+    "removedAsUnsafe": "Removed as unsafe: {list}",
+    "notConvertible": "Not convertible (skipped): {list}",
+    "unsafeLinks": "{count} unsafe link(s) had their link removed (text kept).",
+    "errors": {
+      "input_too_large": "That's too much text to import at once — try a smaller section.",
+      "too_many_nodes": "This HTML is too complex to import — try a smaller/simpler section.",
+      "too_deeply_nested": "This HTML is nested too deeply to import — try a smaller/simpler section.",
+      "empty_content": "No usable content was found in that text.",
+      "invalid_content": "The converted content didn't pass validation — try a smaller/simpler section.",
+      "unauthorized": "You're not authorized to import content.",
+      "invalid_input": "Invalid input.",
+      "convertFailed": "Could not convert this content.",
+      "requestTooLarge": "That request couldn't be sent — try pasting a smaller amount of text."
+    }
+  },
+  "notifications": {
+    "metaTitle": "Notifications",
+    "title": "Notifications",
+    "intro": "Updates about your stories, and — if you review stories — what is waiting for you.",
+    "emptyTitle": "Nothing here yet",
+    "emptyBody": "When a moderator publishes one of your stories, or asks for changes, you'll see it here.",
+    "goToMyStories": "Go to My Stories",
+    "unreadOf": "{unread} unread of {total}",
+    "allRead": "{count, plural, one {# notification} other {# notifications}}, all read",
+    "markAllAsRead": "Mark all as read",
+    "marking": "Marking…",
+    "markRead": "Mark read",
+    "unreadSuffix": " (unread)",
+    "bell": {
+      "label": "Notifications",
+      "markAllRead": "Mark all read",
+      "tryAgain": "Try again",
+      "loading": "Loading…",
+      "allCaughtUp": "You're all caught up.",
+      "seeAll": "See all notifications",
+      "labelWithCount": "Notifications, {count} unread"
+    },
+    "kinds": {
+      "story_submitted": "New story to review",
+      "story_published": "Your story is live",
+      "story_rejected": "Your story wasn't approved",
+      "story_changes_requested": "Changes requested on your story"
+    },
+    "age": {
+      "justNow": "just now",
+      "minutes": "{count}m",
+      "hours": "{count}h",
+      "days": "{count}d"
+    }
+  },
+  "newStory": {
+    "metaTitle": "New Story",
+    "title": "Name your story",
+    "intro": "Give it a working title to start. You can change it any time while you write.",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Six months picking kiwifruit in Te Puke",
+    "starting": "Starting…",
+    "startWriting": "Start writing",
+    "havePdf": "Have it as a PDF?",
+    "importInstead": "Import it instead",
+    "backToMyStories": "Back to My Stories",
+    "errors": {
+      "needsContributorIdentity": "Set up your contributor identity on the Account page before starting a story.",
+      "createFailed": "Could not start a new story. Please try again."
+    }
+  },
+  "pdfImport": {
+    "metaTitle": "Import from PDF",
+    "title": "Import from PDF",
+    "intro": "Upload a PDF (including one exported from a design tool) and pick the pages to use as photos. Your story text is added afterwards in the editor.",
+    "blankInstead": "Start a blank story instead",
+    "titleLabel": "Title",
+    "fileLabel": "PDF file",
+    "selectPages": "Select pages to attach",
+    "describePage": "Describe this page",
+    "reading": "Reading PDF…",
+    "uploadAndPreview": "Upload & preview pages",
+    "creating": "Creating…",
+    "createStory": "Create My Story",
+    "errors": {
+      "chooseFileFirst": "Choose a PDF file first.",
+      "chooseFile": "Choose a PDF file.",
+      "notAPdf": "That file doesn't look like a PDF.",
+      "couldNotRead": "Could not read that PDF.",
+      "uploadFailed": "That upload couldn't be sent. Try again.",
+      "titleFirst": "Add a title first.",
+      "selectPage": "Select at least one page.",
+      "altTextRequired": "Add alt text for every selected page.",
+      "createFailed": "Could not create your story.",
+      "requestFailed": "That request couldn't be sent. Try again.",
+      "fileTooLarge": "The PDF file is too large (max {max} MB)."
+    },
+    "pagesSelected": "{count, plural, one {# page selected} other {# pages selected}}",
+    "fileHint": "Up to {max} MB. Select the pages to add as images after uploading — your story text is added afterwards in the editor.",
+    "selectedOf": "{selected} of {max} selected",
+    "limitReached": " — limit reached",
+    "pageLabel": "Page {page}",
+    "pageLabelSelected": "Page {page}, selected",
+    "pageLabelDisabled": "Page {page}, limit of {max} pages reached",
+    "pageNumber": "Page {page}",
+    "altTextLabel": "Alt text for page {page} (required)"
+  },
+  "editStory": {
+    "notEditableTitle": "Not editable right now",
+    "notEditableBody": "This story's current revision is {status} and can't be edited from this page.",
+    "viewPreview": "View preview"
+  },
+  "pdf": {
+    "personalExperienceBy": "Personal experience, not advice — shared by {name}",
+    "trip": "Trip",
+    "travelStyle": "Travel style",
+    "places": "Places",
+    "tags": "Tags",
+    "totalCost": "Total cost",
+    "whatItCost": "What it cost",
+    "total": "Total",
+    "morePhotos": "More photos",
+    "colophon": "Your copy of \"{title}\" ({status}), exported from Kakinotes on {date}. This is one person's personal account of a Working Holiday Visa experience, not advice. {siteUrl}",
+    "subject": "Personal experience, not advice.",
+    "status": {
+      "published": "Published",
+      "approved": "Approved",
+      "private": "Private",
+      "unpublishedUpdate": "Unpublished draft update",
+      "draft": "Draft",
+      "updateInReview": "Update in review",
+      "inReview": "In review",
+      "changesRequested": "Changes requested",
+      "notPublished": "Not published",
+      "withdrawn": "Withdrawn",
+      "superseded": "Superseded",
+      "unpublished": "Unpublished"
+    }
+  },
+  "actionErrors": {
+    "generic": "Something went wrong.",
+    "invalidInput": "Invalid input.",
+    "invalidStory": "Invalid story.",
+    "invalidMedia": "Invalid media.",
+    "invalidRevision": "Invalid revision.",
+    "invalidRequest": "Invalid request.",
+    "invalidNote": "Invalid note.",
+    "invalidSubmission": "Invalid submission.",
+    "invalidLocations": "Invalid locations.",
+    "invalidTags": "Invalid tags.",
+    "invalidExpenses": "Invalid expenses.",
+    "invalidCaption": "Invalid caption.",
+    "invalidMediaOrder": "Invalid media order.",
+    "invalidExpectedVersion": "Invalid expectedVersion.",
+    "altTextRequired": "Alt text is required unless the image is marked decorative.",
+    "refreshMediaFailed": "Could not refresh media.",
+    "loadImageFailed": "Could not load image.",
+    "previewNotAuthorized": "Not authorized to preview this image.",
+    "deleteStoryFailed": "Could not delete this story.",
+    "loadStoryFailed": "Could not load this story.",
+    "reserveUploadFailed": "Could not reserve an upload slot.",
+    "heicConvertFailed": "Could not convert this HEIC photo. Please try again.",
+    "finalizeUploadFailed": "Could not finalize the upload.",
+    "submitFailed": "Could not submit this story for review.",
+    "savePrivateFailed": "Could not save this story privately.",
+    "requestChangesFailed": "Could not request changes.",
+    "declineFailed": "Could not decline."
+  },
+  "takedown": {
+    "alreadyDown": "This story has already been taken down.",
+    "changedWhileOpen": "This story changed while this page was open. Refresh and try again.",
+    "notYours": "You can only take down your own story.",
+    "alreadyRequested": "You've already asked for this story to come down — it's waiting on the team.",
+    "alreadyReviewed": "That request has already been reviewed.",
+    "onlyPublished": "Only a published story can be taken down.",
+    "gone": "That story no longer exists.",
+    "failed": "Could not take this story down. Please try again."
+  }
+}

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import {
   Skeleton,
   SkeletonText,
@@ -25,8 +26,9 @@ import {
  * structure holds still across the swap instead of jumping.
  */
 export default function Loading() {
+  const t = useTranslations("common");
   return (
-    <LoadingScreen label="Loading page">
+    <LoadingScreen label={t("loadingPage")}>
       <div className="border-b border-border-subtle">
         <div className="mx-auto flex min-h-[76px] max-w-[1440px] items-center gap-5 px-4 sm:px-6">
           <Skeleton className="h-8 w-8 rounded-lg" />
