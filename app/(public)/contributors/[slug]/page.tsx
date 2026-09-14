@@ -2,18 +2,22 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
-  getPublicContributorCached,
-  listContributorPublishedStoriesCached,
+  getPublicContributorDeduped,
+  listContributorPublishedStories,
 } from "@/lib/story/public-queries";
 import { StoryCard } from "@/components/story/story-card";
 import { ContributorAvatar } from "@/components/contributor/contributor-avatar";
 import { countryName } from "@/lib/countries";
 import { formatCountryName } from "@/lib/i18n/format";
 
-// No `export const revalidate` any more (it was 60). The root layout reads
-// the language cookie, which makes this route render per request, so the
-// page-level window became a no-op; the same 60s window now lives on the
-// data reads (the *Cached readers in lib/story/public-queries.ts).
+// No `export const revalidate` any more (it was 60) -- and deliberately no
+// *Cached reader replacing it, for the same reason as
+// app/(public)/stories/[id]/page.tsx: the export never engaged on this
+// route either. The pre-i18n build already reported it as `Æ (Dynamic)`
+// with an empty Revalidate column, so there is no window here to preserve
+// and unstable_cache() would only ADD staleness -- a contributor who makes
+// their profile private, or a story taken down from under their byline,
+// must stop being listed NOW, not a minute from now (Engineering Rule 12).
 
 export async function generateMetadata({
   params,
@@ -21,7 +25,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const contributor = await getPublicContributorCached(slug);
+  const contributor = await getPublicContributorDeduped(slug);
   if (!contributor) return {};
   return {
     title: contributor.display_name,
@@ -68,13 +72,13 @@ export default async function ContributorDetailPage({
 }) {
   const { slug } = await params;
   const [contributor, t, locale] = await Promise.all([
-    getPublicContributorCached(slug),
+    getPublicContributorDeduped(slug),
     getTranslations("contributors"),
     getLocale(),
   ]);
   if (!contributor) notFound();
 
-  const stories = await listContributorPublishedStoriesCached(
+  const stories = await listContributorPublishedStories(
     contributor.contributor_id,
     { limit: 24 },
   );

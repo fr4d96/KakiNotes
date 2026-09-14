@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
-  getPublishedStoryBySlugCached,
-  getPublishedStoryMediaCached,
+  getPublishedStoryBySlugDeduped,
+  getPublishedStoryMediaDeduped,
   coverOf,
-  listPublishedStoriesCached,
-  listPublicRegionsCached,
+  listPublishedStories,
+  listPublicRegions,
 } from "@/lib/story/public-queries";
 import { getPublicImageUrl } from "@/lib/story/public-image-url";
 import { imageBlockMediaIds } from "@/lib/validation/story";
@@ -25,10 +25,22 @@ import {
   type PublicExpense,
 } from "@/components/story/public-expenses";
 
-// No `export const revalidate` any more (it was 60). The root layout reads
-// the language cookie, which makes this route render per request, so the
-// page-level window became a no-op; the same 60s window now lives on the
-// data reads (the *Cached readers in lib/story/public-queries.ts).
+// No `export const revalidate` any more (it was 60) -- and deliberately no
+// *Cached reader replacing it either. The export looked like ISR but never
+// engaged on THIS route: on the pre-i18n build it already reported as
+// `Æ (Dynamic)` with an EMPTY Revalidate column, unlike `/` (1m) and
+// `/costs` (1h), which really were static. So there was no 60s window here
+// to preserve, and wrapping these reads in unstable_cache() would ADD
+// caching this page never had -- up to a minute of staleness on the single
+// most visibility-sensitive public surface in the app (Engineering Rule 12:
+// archived/taken-down/unapproved content must never still be served). Any
+// visibility change that does not route through the two Server Actions in
+// lib/story/public-cache.ts's caller list -- a direct SQL takedown, a
+// support fix, a future action someone forgets to wire up -- would keep
+// serving the old page. e2e/contributor-story-update.spec.ts pins this:
+// approve out-of-band, reload, and the replacement must be live NOW.
+// Reading fresh per request is exactly what this route did before the
+// language cookie existed, so this costs the database nothing new.
 
 type RegionEntry = { region_name?: string; destination_name?: string | null };
 
@@ -77,7 +89,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id: slug } = await params;
-  const story = await getPublishedStoryBySlugCached(slug);
+  const story = await getPublishedStoryBySlugDeduped(slug);
   if (!story) return {};
 
   // coverOf(), not `.find(is_cover)`: a story whose contributor never opened
@@ -85,7 +97,7 @@ export async function generateMetadata({
   // og:image and shared as a bare text card. See that helper for the rule,
   // which the SQL readers now share.
   const coverUrl = getPublicImageUrl(
-    coverOf(await getPublishedStoryMediaCached(story.story_id))?.public_url ??
+    coverOf(await getPublishedStoryMediaDeduped(story.story_id))?.public_url ??
       null,
   );
 
@@ -111,15 +123,15 @@ export default async function StoryDetailPage({
 }) {
   const { id: slug } = await params;
   const [story, t, tCommon] = await Promise.all([
-    getPublishedStoryBySlugCached(slug),
+    getPublishedStoryBySlugDeduped(slug),
     getTranslations("story"),
     getTranslations("common"),
   ]);
   if (!story) notFound();
 
   const [media, activeRegions] = await Promise.all([
-    getPublishedStoryMediaCached(story.story_id),
-    listPublicRegionsCached(),
+    getPublishedStoryMediaDeduped(story.story_id),
+    listPublicRegions(),
   ]);
 
   const firstRegionName = regionLabelsRaw(story.regions)[0] ?? null;
@@ -128,7 +140,7 @@ export default async function StoryDetailPage({
     : undefined;
 
   const sameRegionMatches = matchedRegionId
-    ? await listPublishedStoriesCached({
+    ? await listPublishedStories({
         regionId: matchedRegionId,
         excludeStoryId: story.story_id,
         limit: 3,
@@ -140,7 +152,7 @@ export default async function StoryDetailPage({
       ? sameRegionMatches
       : [
           ...sameRegionMatches,
-          ...(await listPublishedStoriesCached({
+          ...(await listPublishedStories({
             excludeStoryId: story.story_id,
             limit: 3,
           })),

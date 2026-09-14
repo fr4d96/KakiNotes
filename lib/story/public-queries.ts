@@ -15,21 +15,36 @@ import type { CostBand } from "@/lib/validation/discovery";
 //
 // What that buys, and what changed on 2026-09-14 (Simplified Chinese):
 //
-//   Before, cookie-freeness let `/` build static and `/stories/[id]` and
-//   `/contributors/[slug]` ISR-cache per path with `revalidate = 60`. The
-//   root layout now reads the language cookie (i18n/request.ts) to choose
-//   <html lang> and the UI language, and a cookie read makes every route
-//   beneath it render per request -- so those `revalidate` exports became
-//   no-ops and were removed. The HTML must be re-rendered per request
-//   (it differs by language); the DATA does not (it is identical in both),
-//   so the *Cached variants below hold the same 60s window at the data
-//   layer via unstable_cache(). The database sees the same load it did
-//   under ISR; only the render moved.
+//   The root layout now reads the language cookie (i18n/request.ts) to
+//   choose <html lang> and the UI language, and a cookie read makes every
+//   route beneath it render per request -- so the `revalidate` exports on
+//   the public pages became no-ops and were removed. The HTML must be
+//   re-rendered per request (it differs by language); the DATA does not (it
+//   is identical in both), so where a page GENUINELY lost a cache, the same
+//   window moved down to the data layer via unstable_cache().
+//
+//   Which pages genuinely lost one is the part worth checking rather than
+//   assuming, because only ONE did. Read off the pre-i18n production build:
+//
+//     /                      (Static)   Revalidate 1m   <- really was ISR
+//     /costs                 (Static)   Revalidate 1h   <- really was ISR
+//     /stories/[id]          (Dynamic)  Revalidate --   <- never engaged
+//     /contributors/[slug]   (Dynamic)  Revalidate --   <- never engaged
+//
+//   `/` and `/costs` prerendered and held their window; the two [param]
+//   routes reported as Dynamic with an EMPTY Revalidate column despite
+//   exporting `revalidate = 60`, i.e. they were already re-querying on
+//   every single request. So listPublishedStoriesCached() below (used by
+//   `/`) preserves a window that existed, while wrapping the story and
+//   contributor readers would have ADDED a 60s staleness window those two
+//   routes never had -- on the surfaces where staleness is least
+//   acceptable (Engineering Rule 12). They deliberately call the UNCACHED
+//   functions; see the header comments on those two pages.
 //
 //   The two index pages, /stories and /contributors, are unchanged: they
-//   await searchParams, were never cacheable, and deliberately keep calling
-//   the UNCACHED functions so a filter result is always fresh. Note the cost
-//   that leaves in place: /stories issues 5 round trips per visit (regions,
+//   await searchParams, were never cacheable, and call the UNCACHED
+//   functions so a filter result is always fresh. Note the cost that leaves
+//   in place: /stories issues 5 round trips per visit (regions,
 //   destinations, tags, travel styles, stories) plus middleware's
 //   get_published_story existence check, on every request.
 //
@@ -49,9 +64,16 @@ import type { CostBand } from "@/lib/validation/discovery";
 // not a side effect of adding a language.
 
 export const PUBLIC_STORIES_TAG = "public-stories";
+/**
+ * No reader caches under this tag today -- `/contributors/[slug]` reads
+ * fresh (see above). It stays because lib/story/public-cache.ts and
+ * app/(contributor)/actions.ts revalidate it beside their revalidatePath()
+ * calls, so the contract is already in place for any future cached
+ * contributor reader; revalidating an unused tag is a no-op.
+ */
 export const PUBLIC_CONTRIBUTORS_TAG = "public-contributors";
 
-/** The window `/`, `/stories/[id]` and `/contributors/[slug]` used under ISR. */
+/** The window `/` really did hold under ISR, now held at the data layer. */
 const PUBLIC_REVALIDATE_SECONDS = 60;
 
 export type PublishedStoriesFilter = {
@@ -81,17 +103,14 @@ export async function getPublishedStoryBySlug(slug: string) {
 }
 
 /**
- * Two layers, on purpose: unstable_cache() holds the row for 60s ACROSS
- * requests (the data-layer stand-in for the ISR this page lost -- see the
- * header), and React's cache() dedupes WITHIN a request, so generateMetadata()
- * and the page component share one lookup instead of two.
+ * React cache() ONLY -- per-request dedupe, never across requests. It costs
+ * no freshness at all (the entry dies with the request), and it stops
+ * /stories/[id] issuing get_published_story twice per visit, once for
+ * generateMetadata() and once for the page body. Deliberately NOT wrapped in
+ * unstable_cache(): see the header for why that route must not hold a
+ * cross-request window.
  */
-export const getPublishedStoryBySlugCached = cache(
-  unstable_cache(getPublishedStoryBySlug, ["public:get_published_story"], {
-    tags: [PUBLIC_STORIES_TAG],
-    revalidate: PUBLIC_REVALIDATE_SECONDS,
-  }),
-);
+export const getPublishedStoryBySlugDeduped = cache(getPublishedStoryBySlug);
 
 export async function getPublishedStoryMedia(storyId: string) {
   const supabase = createPublicClient();
@@ -102,12 +121,8 @@ export async function getPublishedStoryMedia(storyId: string) {
   return data ?? [];
 }
 
-export const getPublishedStoryMediaCached = cache(
-  unstable_cache(getPublishedStoryMedia, ["public:get_published_story_media"], {
-    tags: [PUBLIC_STORIES_TAG],
-    revalidate: PUBLIC_REVALIDATE_SECONDS,
-  }),
-);
+/** Per-request dedupe only, same rationale as getPublishedStoryBySlugDeduped. */
+export const getPublishedStoryMediaDeduped = cache(getPublishedStoryMedia);
 
 /**
  * A story's cover: the explicitly chosen photo if there is one, otherwise the
@@ -210,18 +225,6 @@ export async function listPublicContributors(
   return data ?? [];
 }
 
-/** For `/contributors/[slug]` only; the directory stays uncached. */
-export const listContributorPublishedStoriesCached = unstable_cache(
-  listContributorPublishedStories,
-  ["public:list_published_stories:contributor"],
-  // A byline page lists the contributor's stories, so it must go stale
-  // with either: a story taken down, or the contributor's profile changed.
-  {
-    tags: [PUBLIC_STORIES_TAG, PUBLIC_CONTRIBUTORS_TAG],
-    revalidate: PUBLIC_REVALIDATE_SECONDS,
-  },
-);
-
 export async function getPublicContributor(slug: string) {
   const supabase = createPublicClient();
   const { data, error } = await supabase.rpc("get_public_contributor", {
@@ -231,12 +234,8 @@ export async function getPublicContributor(slug: string) {
   return data?.[0] ?? null;
 }
 
-export const getPublicContributorCached = cache(
-  unstable_cache(getPublicContributor, ["public:get_public_contributor"], {
-    tags: [PUBLIC_CONTRIBUTORS_TAG],
-    revalidate: PUBLIC_REVALIDATE_SECONDS,
-  }),
-);
+/** Per-request dedupe only, same rationale as getPublishedStoryBySlugDeduped. */
+export const getPublicContributorDeduped = cache(getPublicContributor);
 
 // --- Lookup tables, cookie-free variant ------------------------------------
 //
@@ -268,13 +267,6 @@ export async function listPublicRegions(): Promise<PublicRegion[]> {
   if (error) throw error;
   return data ?? [];
 }
-
-/** The story page resolves a region id from this; the list barely changes. */
-export const listPublicRegionsCached = unstable_cache(
-  listPublicRegions,
-  ["public:regions"],
-  { tags: [PUBLIC_STORIES_TAG], revalidate: PUBLIC_REVALIDATE_SECONDS },
-);
 
 export async function listPublicDestinations(): Promise<PublicDestination[]> {
   const supabase = createPublicClient();
