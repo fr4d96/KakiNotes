@@ -9,6 +9,8 @@ import { StoryCard } from "@/components/story/story-card";
 import { ContributorAvatar } from "@/components/contributor/contributor-avatar";
 import { countryName } from "@/lib/countries";
 import { formatCountryName } from "@/lib/i18n/format";
+import { vocabName } from "@/lib/i18n/vocab";
+import type { Locale } from "@/i18n/locales";
 
 // No `export const revalidate` any more (it was 60) -- and deliberately no
 // *Cached reader replacing it, for the same reason as
@@ -44,6 +46,31 @@ export async function generateMetadata({
  * be able to leave a region chip behind, and the only way to guarantee that
  * is to never compute this set anywhere else.
  */
+/**
+ * contributor.regions is jsonb since 20260914150100: an array of
+ * `{name, name_zh_cn}` objects (Json), not the bare string[] it used to be.
+ * Narrowed defensively -- a malformed entry renders nothing rather than
+ * "[object Object]" or "undefined".
+ */
+function contributorRegionNames(regions: unknown, locale: Locale): string[] {
+  if (!Array.isArray(regions)) return [];
+  return regions
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const row = entry as { name?: unknown; name_zh_cn?: unknown };
+      if (typeof row.name !== "string" || row.name.length === 0) return null;
+      return vocabName(
+        {
+          name: row.name,
+          name_zh_cn:
+            typeof row.name_zh_cn === "string" ? row.name_zh_cn : null,
+        },
+        locale,
+      );
+    })
+    .filter((v): v is string => v !== null);
+}
+
 function FactRow({ label, values }: { label: string; values: string[] }) {
   if (values.length === 0) return null;
   return (
@@ -114,10 +141,15 @@ export default async function ContributorDetailPage({
       ) : null}
 
       <dl className="mt-6 max-w-2xl space-y-2">
-        {/* The VALUES here stay as the database returned them: region
-            names arrive from contributor_public_facts() without slugs (see
-            lib/i18n/vocab.ts), and tags are the contributor's own words. */}
-        <FactRow label={t("workedIn")} values={contributor.regions ?? []} />
+        {/* Region names arrive from contributor_public_facts() as
+            {name, name_zh_cn} objects and are localized by
+            contributorRegionNames() above (see lib/i18n/vocab.ts); tags stay
+            as the database returned them -- they are the contributor's own
+            words. */}
+        <FactRow
+          label={t("workedIn")}
+          values={contributorRegionNames(contributor.regions, locale)}
+        />
         <FactRow
           label={t("years")}
           values={(contributor.trip_years ?? []).map(String)}

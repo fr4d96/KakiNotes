@@ -2,15 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useLocale, useTranslations, type Messages } from "next-intl";
-import { hasVocabOverlay, localizeVocabName } from "@/lib/i18n/vocab";
-import { isLocale } from "@/i18n/locales";
+import { useTranslations, type Messages } from "next-intl";
 
 // Keys into messages/<locale>.json's `home.quiz`, not prose: the quiz is
 // reader-facing copy. The SCORE keys are region names and stay as they are
 // -- they are the scoring vocabulary and the lookup key into
 // DESTINATION_INFO, never shown to anyone directly (the winning region is
-// rendered through the vocab overlay).
+// rendered through its own `destinations` message key -- see DESTINATION_INFO).
 // Keys drawn from the message file's own shape (i18n/global.d.ts types
 // `Messages` off messages/en.json), so a key that does not exist -- or one
 // deleted from the messages later -- fails `npm run typecheck` rather than
@@ -130,54 +128,54 @@ const QUESTIONS: Question[] = [
   },
 ];
 
-// Message keys again, plus the region SLUG so the heading can be shown
-// through the vocabulary overlay (lib/i18n/vocab.ts). The record's own keys
-// are the scoring names used by the answers above.
+// Message keys again, plus a `nameKey` into the quiz's own `destinations`
+// namespace (messages/<locale>.json, home.quiz.destinations) so the heading
+// is translated without touching the database's regions table -- this
+// quiz's scoring vocabulary is its own fixed set (see the note above
+// QUESTIONS), not the catalogue's, and "Queenstown Lakes" / "Central Otago"
+// are not real region rows there. The record's own keys are the scoring
+// names used by the answers above.
 const DESTINATION_INFO: Record<
   string,
   {
-    slug: string;
+    nameKey: keyof QuizMessages["destinations"];
     seasonKey: keyof QuizMessages["seasons"];
     workKey: keyof QuizMessages["info"];
     noteKey: keyof QuizMessages["info"];
   }
 > = {
   Auckland: {
-    slug: "auckland",
+    nameKey: "auckland",
     seasonKey: "yearRound",
     workKey: "aucklandWork",
     noteKey: "aucklandNote",
   },
   Wellington: {
-    slug: "wellington",
+    nameKey: "wellington",
     seasonKey: "spring",
     workKey: "wellingtonWork",
     noteKey: "wellingtonNote",
   },
   Canterbury: {
-    slug: "canterbury",
+    nameKey: "canterbury",
     seasonKey: "spring",
     workKey: "canterburyWork",
     noteKey: "canterburyNote",
   },
   "Bay of Plenty": {
-    slug: "bay-of-plenty",
+    nameKey: "bayOfPlenty",
     seasonKey: "autumn",
     workKey: "bayOfPlentyWork",
     noteKey: "bayOfPlentyNote",
   },
   "Queenstown Lakes": {
-    // Not a region row: Queenstown Lakes is a DISTRICT inside Otago, and
-    // this quiz is deliberately its own fixed vocabulary rather than the
-    // catalogue's (see the note above QUESTIONS). No slug, so the heading
-    // shows the name as written here.
-    slug: "",
+    nameKey: "queenstownLakes",
     seasonKey: "winter",
     workKey: "queenstownWork",
     noteKey: "queenstownNote",
   },
   "Central Otago": {
-    slug: "",
+    nameKey: "centralOtago",
     seasonKey: "autumn",
     workKey: "centralOtagoWork",
     noteKey: "centralOtagoNote",
@@ -188,9 +186,6 @@ const DEFAULT_DESTINATION = "Auckland";
 
 export function DestinationQuiz() {
   const t = useTranslations("home.quiz");
-  const tVocab = useTranslations("vocab");
-  const rawLocale = useLocale();
-  const locale = isLocale(rawLocale) ? rawLocale : "en";
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<(number | undefined)[]>([]);
 
@@ -226,14 +221,9 @@ export function DestinationQuiz() {
 
   const destination = isResult ? computeDestination() : null;
   const facts = destination ? DESTINATION_INFO[destination] : null;
-  const destinationLabel =
-    destination && facts && hasVocabOverlay(locale)
-      ? localizeVocabName(
-          "regions",
-          { slug: facts.slug, name: destination },
-          tVocab,
-        )
-      : destination;
+  const destinationLabel = facts
+    ? t(`destinations.${facts.nameKey}`)
+    : destination;
 
   return (
     <div className="rounded-2xl border border-border-subtle bg-surface p-6 sm:p-8">

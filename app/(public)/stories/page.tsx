@@ -11,7 +11,7 @@ import {
 import { parseStorySearchParams } from "@/lib/validation/discovery";
 import { FilterBar } from "@/components/story/filter-bar";
 import { StoryCard } from "@/components/story/story-card";
-import { hasVocabOverlay, localizeVocabName } from "@/lib/i18n/vocab";
+import { vocabName, sortByLocalizedName } from "@/lib/i18n/vocab";
 
 // No `export const revalidate` here on purpose. This route awaits
 // `searchParams` (the filter state), which forces dynamic rendering in the App
@@ -38,9 +38,8 @@ export default async function StoriesPage({
 }) {
   const rawParams = await searchParams;
   const filters = parseStorySearchParams(rawParams);
-  const [t, tVocab, locale] = await Promise.all([
+  const [t, locale] = await Promise.all([
     getTranslations("stories"),
-    getTranslations("vocab"),
     getLocale(),
   ]);
 
@@ -88,13 +87,11 @@ export default async function StoriesPage({
   }
   const hasNextPage = stories.length === 20;
 
-  // English is the database's own language, so the overlay is skipped
-  // entirely rather than doing 16 + 34 no-op lookups per request.
-  const localizeName = (
-    kind: "regions" | "destinations",
-    row: { slug: string; name: string },
-  ) =>
-    hasVocabOverlay(locale) ? localizeVocabName(kind, row, tVocab) : row.name;
+  // The SQL `.order("name")` on both readers is English-only, so re-sort
+  // client-side by the name the visitor actually sees -- pinyin order for
+  // zh-CN, unchanged for English.
+  const sortedRegions = sortByLocalizedName(regions, locale);
+  const sortedDestinations = sortByLocalizedName(destinations, locale);
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 sm:py-16">
@@ -110,13 +107,13 @@ export default async function StoriesPage({
             uuid, so the submitted filter is identical in both languages and
             a shared /stories?region=… link works for everyone. */}
         <FilterBar
-          regions={regions.map((r) => ({
+          regions={sortedRegions.map((r) => ({
             id: r.id,
-            name: localizeName("regions", r),
+            name: vocabName(r, locale),
           }))}
-          destinations={destinations.map((d) => ({
+          destinations={sortedDestinations.map((d) => ({
             id: d.id,
-            name: localizeName("destinations", d),
+            name: vocabName(d, locale),
             regionId: d.regionId,
           }))}
           tags={tags}

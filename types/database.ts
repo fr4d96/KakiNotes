@@ -106,6 +106,7 @@ export type Database = {
           created_at: string;
           id: string;
           name: string;
+          name_zh_cn: string | null;
           region_id: string;
           slug: string;
           updated_at: string;
@@ -115,6 +116,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           name: string;
+          name_zh_cn?: string | null;
           region_id: string;
           slug: string;
           updated_at?: string;
@@ -124,6 +126,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           name?: string;
+          name_zh_cn?: string | null;
           region_id?: string;
           slug?: string;
           updated_at?: string;
@@ -190,6 +193,7 @@ export type Database = {
           description: string | null;
           id: string;
           name: string;
+          name_zh_cn: string | null;
           slug: string;
           sort_order: number;
           updated_at: string;
@@ -200,6 +204,7 @@ export type Database = {
           description?: string | null;
           id?: string;
           name: string;
+          name_zh_cn?: string | null;
           slug: string;
           sort_order?: number;
           updated_at?: string;
@@ -210,6 +215,7 @@ export type Database = {
           description?: string | null;
           id?: string;
           name?: string;
+          name_zh_cn?: string | null;
           slug?: string;
           sort_order?: number;
           updated_at?: string;
@@ -426,6 +432,7 @@ export type Database = {
           id: string;
           island_or_grouping: string | null;
           name: string;
+          name_zh_cn: string | null;
           slug: string;
           updated_at: string;
         };
@@ -435,6 +442,7 @@ export type Database = {
           id?: string;
           island_or_grouping?: string | null;
           name: string;
+          name_zh_cn?: string | null;
           slug: string;
           updated_at?: string;
         };
@@ -444,6 +452,7 @@ export type Database = {
           id?: string;
           island_or_grouping?: string | null;
           name?: string;
+          name_zh_cn?: string | null;
           slug?: string;
           updated_at?: string;
         };
@@ -1649,7 +1658,7 @@ export type Database = {
         Args: { p_contributor_id: string };
         Returns: {
           published_story_count: number;
-          regions: string[];
+          regions: Json;
           tags: string[];
           trip_years: number[];
         }[];
@@ -1890,7 +1899,7 @@ export type Database = {
           home_country_code: string;
           public_slug: string;
           published_story_count: number;
-          regions: string[];
+          regions: Json;
           tags: string[];
           trip_years: number[];
         }[];
@@ -2231,7 +2240,7 @@ export type Database = {
           home_country_code: string;
           public_slug: string;
           published_story_count: number;
-          regions: string[];
+          regions: Json;
           tags: string[];
           trip_years: number[];
         }[];

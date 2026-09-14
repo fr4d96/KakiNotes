@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { createPublicClient } from "@/lib/supabase/public";
 import { formatNzdCents } from "@/lib/story/expense-per-month";
+import { prefixedVocabName, vocabName } from "@/lib/i18n/vocab";
 import type { Locale } from "@/i18n/locales";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -50,10 +51,29 @@ type Band = {
 
 type NamedBand = {
   name?: string;
+  name_zh_cn?: string | null;
   region_name?: string;
+  region_name_zh_cn?: string | null;
   story_count: number;
   median_cents: number;
 };
+
+/**
+ * by_region rows carry `region_name`/`region_name_zh_cn`; by_category rows
+ * carry `name`/`name_zh_cn` (see get_expense_aggregates() shapes noted in
+ * lib/i18n/vocab.ts). Whichever pair is present picks the visitor's
+ * language; a row with neither renders an empty label rather than
+ * "undefined".
+ */
+function namedBandLabel(row: NamedBand, locale: Locale): string {
+  if (typeof row.region_name === "string") {
+    return prefixedVocabName(row, "region", locale) ?? row.region_name;
+  }
+  if (typeof row.name === "string") {
+    return vocabName({ name: row.name, name_zh_cn: row.name_zh_cn }, locale);
+  }
+  return "";
+}
 
 const getAggregates = unstable_cache(
   async () => {
@@ -111,10 +131,21 @@ function BandFigure({
       <p className="mt-1 text-sm text-foreground/60">
         {/* One message, not three fragments joined in JSX: Chinese puts the
             count, the two figures and the verb in a different order. */}
+        {/* The TAG and the VALUE cannot share a name: next-intl resolves
+            `<low>` to a render function and `{lowValue}` to a string, and
+            passing one `low` for both threw FORMATTING_ERROR, which rendered
+            the raw message key on the page. Same tag/value split as
+            components/story/public-expenses.tsx's `amount`/`amountValue`. */}
         {t.rich("halfReportedBetween", {
           count: band.story_count,
-          low: formatNzdCents(band.p25_cents, locale),
-          high: formatNzdCents(band.p75_cents, locale),
+          lowValue: formatNzdCents(band.p25_cents, locale),
+          highValue: formatNzdCents(band.p75_cents, locale),
+          low: (chunks) => (
+            <strong className="font-medium text-foreground">{chunks}</strong>
+          ),
+          high: (chunks) => (
+            <strong className="font-medium text-foreground">{chunks}</strong>
+          ),
         })}
       </p>
     </>
@@ -132,7 +163,7 @@ function NamedBandList({
   return (
     <ul className="mt-3 divide-y divide-border-subtle border-t border-border-subtle">
       {rows.map((row) => {
-        const label = row.region_name ?? row.name ?? "";
+        const label = namedBandLabel(row, locale);
         return (
           <li
             key={label}
@@ -198,9 +229,9 @@ export default async function CostsPage() {
         >
           {t("byRegionHeading")}
         </h2>
-        {/* Region and category names come from get_expense_aggregates() as
-            bare display strings with no slug, so they stay in the database's
-            English -- see lib/i18n/vocab.ts. */}
+        {/* Region and category names come from get_expense_aggregates() with
+            a Simplified Chinese twin beside the English name; namedBandLabel
+            above picks the visitor's language -- see lib/i18n/vocab.ts. */}
         {byRegion.length > 0 ? (
           <NamedBandList rows={byRegion} locale={locale} />
         ) : (

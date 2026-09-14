@@ -176,39 +176,6 @@
       "notAPdf": "The file is not a PDF (magic bytes did not match)."
     }
   },
-  "vocab": {
-    "regions": {
-      "northland": "Northland",
-      "auckland": "Auckland",
-      "waikato": "Waikato",
-      "bay-of-plenty": "Bay of Plenty",
-      "gisborne": "Gisborne",
-      "hawkes-bay": "Hawke's Bay",
-      "taranaki": "Taranaki",
-      "manawatu-whanganui": "Manawatū-Whanganui",
-      "wellington": "Wellington",
-      "tasman": "Tasman",
-      "nelson": "Nelson",
-      "marlborough": "Marlborough",
-      "west-coast": "West Coast",
-      "canterbury": "Canterbury",
-      "otago": "Otago",
-      "southland": "Southland"
-    },
-    "expenseCategories": {
-      "flights": "Flights",
-      "visa-fee": "Visa fee",
-      "insurance": "Insurance",
-      "first-month-rent": "First month rent",
-      "bond": "Bond",
-      "vehicle": "Vehicle",
-      "gear": "Gear",
-      "food": "Food",
-      "transport": "Transport",
-      "activities": "Activities",
-      "other": "Other"
-    }
-  },
   "stories": {
     "metaTitle": "Stories",
     "metaDescription": "Browse real, first-person Working Holiday Visa stories from New Zealand, filterable by region, tag, trip year, travel style, and reported cost.",
@@ -316,7 +283,7 @@
     "perMonthUnit": "a month",
     "byRegionHeading": "By region",
     "byCategoryHeading": "Where the money went",
-    "halfReportedBetween": "Half of these {count, plural, one {# story} other {# stories}} reported between <low>{low}</low> and <high>{high}</high>.",
+    "halfReportedBetween": "Half of these {count, plural, one {# story} other {# stories}} reported between <low>{lowValue}</low> and <high>{highValue}</high>.",
     "storyCount": "{count, plural, one {# story} other {# stories}}",
     "notEnough": "Not enough published stories yet to report {what} honestly. Figures appear once at least five stories cover the same thing.",
     "notEnoughWhat": {
@@ -395,6 +362,14 @@
       "practicalNote": "Practical note",
       "exploreStories": "Explore stories",
       "tryAgain": "Try again",
+      "destinations": {
+        "auckland": "Auckland",
+        "wellington": "Wellington",
+        "canterbury": "Canterbury",
+        "bayOfPlenty": "Bay of Plenty",
+        "queenstownLakes": "Queenstown Lakes",
+        "centralOtago": "Central Otago"
+      },
       "questions": {
         "home": "Where would you feel most at home?",
         "job": "What kind of job would you try?",

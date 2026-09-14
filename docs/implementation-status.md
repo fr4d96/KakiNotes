@@ -3,7 +3,9 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-09-14 (four Playwright specs that had been failing since the editor became a
+Last updated: 2026-09-14 (Chinese vocabulary phase 2 — region, destination and expense-category
+names are Chinese on story cards, story pages, the byline and /costs, via a `name_zh_cn` column
+rather than the phase-1 slug overlay; earlier the same day: four Playwright specs that had been failing since the editor became a
 stepped flow are green again — they now walk to the step they test, and read the step's label
 from the translation file the app now labels from; earlier the same day: Simplified Chinese — a
 cookie-based language toggle beside the theme
@@ -89,7 +91,80 @@ units — a display name starting outside the BMP returned half a surrogate pair
 replacement glyph. Now `Array.from(...)[0]`. The component gained its first 12 tests alongside;
 `AttributionChip` gained 7 and `StoryCard` 2. 987 total, `npm run verify` exits 0.
 
-**2026-09-14 (latest) — four e2e specs fail-fixed: the editor opens on step 1, and they were
+**2026-09-14 (latest) — the vocabulary itself speaks Chinese (phase 2).**
+`20260914150000_vocab_name_zh_cn.sql` and `20260914150100_contributor_facts_regions_zh_cn.sql`,
+both APPLIED to the linked project, `types/database.ts` regenerated. `lib/i18n/vocab.ts` is
+rewritten and the phase-1 slug overlay (and the whole `vocab` namespace in both message files)
+is deleted.
+
+- **The column, not the overlay — which is what the phase-1 entry said the fix would be.**
+  `name_zh_cn` on `regions`, `destinations` and `expense_categories`, backfilled 61/61 rows
+  (16 + 34 + 11). Regions and categories reuse the phase-1 strings from `messages/zh-CN.json`
+  VERBATIM, so nothing a Chinese reader already saw in the /stories filters changed wording;
+  the 34 destinations are new. `work_types` is deliberately untouched — retired as a taxonomy
+  on 2026-08-16 and shown nowhere.
+- **The RPCs emit BOTH names and take no locale parameter.** Six functions now carry the twin
+  beside the English name (`region_name_zh_cn`, `destination_name_zh_cn`, `name_zh_cn`). Their
+  output is therefore identical whichever language the visitor reads, which is the whole point:
+  `listPublishedStoriesCached` keeps a cache key with no locale in it, so this change does not
+  halve the hit rate on the most performance-sensitive public query. The pick happens in
+  TypeScript (`vocabName` / `prefixedVocabName`).
+- **`contributor_public_facts()` changed its `regions` OUT type from `text[]` to jsonb** —
+  `[{"name": "...", "name_zh_cn": "..."}]` — so the byline's "Worked in" row could be reached
+  at all. jsonb rather than a parallel `regions_zh_cn text[]`: two arrays that line up only
+  because their subqueries share an ORDER BY are an invariant that survives exactly until
+  someone edits one of them. It also means a caller still expecting `string[]` fails TYPECHECK
+  after regenerating types rather than rendering "[object Object]" at runtime — which is how
+  its one consumer was found.
+- **DROP + CREATE for that trio, CREATE OR REPLACE for the other four.** Only the contributor
+  functions changed a return type; the other four grew keys INSIDE jsonb columns that already
+  existed, so their signatures held. Every grant was re-applied and verified after applying:
+  five functions carry `anon`+`authenticated`, `list_my_stories` `authenticated` only, and
+  `contributor_public_facts` none at all — it is internal, reachable only through the two
+  SECURITY DEFINER RPCs above it.
+- **Transcription proof, not eyeballing**, reusing 20260910120000's check: each migration's
+  function body had its added lines mechanically reverted, was whitespace-stripped and hashed,
+  and matched `md5(regexp_replace(prosrc, '\s', '', 'g'))` from the live database for all seven
+  functions. That is how ~900 copied lines of plpgsql get trusted.
+- **NULL is the contributor's protection, and it is structural.** `destination_name` is
+  `coalesce(dest.name, loc.custom_destination_label)` while its twin reads ONLY the curated
+  table, so a contributor-TYPED label always arrives with a null beside it and renders exactly
+  as its author typed it. Same for an expense's `custom_label`; `tags` carry no translation at
+  all. Verified on the byline: "Worked in" reads 奥克兰 / 丰盛湾 while "Wrote about" still shows
+  the tag literally named "Auckland", untranslated.
+- **Sorting had to move too.** Both readers `.order("name")` in SQL, which is English A-Z and
+  tells a Chinese reader nothing. `sortByLocalizedName()` re-sorts with `Intl.Collator`'s pinyin
+  collation for zh-CN and leaves English order untouched. Verified live: the region filter reads
+  奥克兰, 奥塔哥, 北地大区, 丰盛湾, 怀卡托 — real pinyin order.
+- **The PDF export got place names for free.** `resolveLocationLabels()` takes a locale now, and
+  the export route already knew it — the locale is simply resolved before the labels rather than
+  after.
+- **The quiz could not use the database, and says so.** `components/home/destination-quiz.tsx`
+  scores toward invented destinations ("Queenstown Lakes", "Central Otago") that are not region
+  rows, so it moved to its own `home.quiz.destinations` message keys instead of pretending to be
+  vocabulary.
+
+**Two bugs caught by reading the diff and the page, not by tests.** `StoryCard` had been made
+`async` in order to `await getLocale()` — which typechecks cleanly and would have broken the home
+page at runtime, because `featured-story-stack.tsx` and `story-index.tsx` are Client Components
+and a Client Component cannot render an async Server Component. It uses `useLocale()` now,
+matching the `useTranslations()` already beside it. Separately, /costs rendered the raw key
+`costs.halfReportedBetween` in BOTH languages — a phase-1 bug untouched by this change: the
+message used `low` as both a rich-text TAG and a value placeholder, and next-intl needs the tag
+to be a function. The values are `{lowValue}`/`{highValue}` now, the same tag/value split
+`public-expenses.tsx` already used for `amount`/`amountValue`.
+
+**What live data could NOT exercise.** The dev project has zero expense rows on published
+revisions, and every /costs bucket sits below the 5-story minimum, so `get_published_story`'s
+`expenses` twin and the by-region/by-category lists were never rendered from real rows. Their
+payload SHAPE was checked directly in SQL instead, and `lib/i18n/vocab.test.ts` covers the pick.
+Worth re-checking once seed data carries published expenses.
+
+**Still deliberately out of scope:** staff areas; story content, bios and tags (user data);
+`Accept-Language` sniffing; and a third language — which would be a second column and a re-run of
+this pattern, a fine price for not carrying an untyped locale map.
+
+**2026-09-14 — four e2e specs fail-fixed: the editor opens on step 1, and they were
 asserting on step 2.**
 No app code touched. `e2e/helpers/story-steps.ts` (new), and the two specs that needed it:
 `e2e/content-import-body-size.spec.ts` (all three cases) and `e2e/pdf-import.spec.ts`'s end-to-end

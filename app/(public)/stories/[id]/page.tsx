@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
   getPublishedStoryBySlugDeduped,
   getPublishedStoryMediaDeduped,
@@ -11,6 +11,8 @@ import {
 import { getPublicImageUrl } from "@/lib/story/public-image-url";
 import { imageBlockMediaIds } from "@/lib/validation/story";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
+import { prefixedVocabName, vocabName } from "@/lib/i18n/vocab";
+import type { Locale } from "@/i18n/locales";
 import {
   ContentBlockRenderer,
   type ContentBlockMediaMap,
@@ -42,17 +44,24 @@ import {
 // Reading fresh per request is exactly what this route did before the
 // language cookie existed, so this costs the database nothing new.
 
-type RegionEntry = { region_name?: string; destination_name?: string | null };
+type RegionEntry = {
+  region_name?: string;
+  region_name_zh_cn?: string | null;
+  destination_name?: string | null;
+  destination_name_zh_cn?: string | null;
+};
 
-function regionLabels(regions: unknown): string[] {
+/** Display labels ("destination, region"), in the visitor's language. */
+function regionLabels(regions: unknown, locale: Locale): string[] {
   if (!Array.isArray(regions)) return [];
   return regions
-    .map((r: RegionEntry) =>
-      r?.destination_name
-        ? `${r.destination_name}, ${r.region_name}`
-        : r?.region_name,
-    )
-    .filter((v): v is string => Boolean(v));
+    .map((entry) => {
+      const region = prefixedVocabName(entry, "region", locale);
+      if (!region) return null;
+      const destination = prefixedVocabName(entry, "destination", locale);
+      return destination ? `${destination}, ${region}` : region;
+    })
+    .filter((v): v is string => v !== null);
 }
 
 /** Bare region names only (no destination suffix) -- used to resolve a
@@ -68,6 +77,46 @@ function regionLabelsRaw(regions: unknown): string[] {
 function stringList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((v): v is string => typeof v === "string");
+}
+
+/**
+ * The expense breakdown, name-localized. get_published_story() emits each
+ * entry as `{name, name_zh_cn, amount_nzd_cents, note}` (Json), so this
+ * narrows defensively -- a malformed entry is dropped rather than rendered
+ * as "undefined". PublicExpenses only knows about the plain `name` field, so
+ * the Chinese pick happens here, before the data reaches it.
+ */
+function localizedExpenses(expenses: unknown, locale: Locale): PublicExpense[] {
+  if (!Array.isArray(expenses)) return [];
+  return expenses
+    .map((entry): PublicExpense | null => {
+      if (!entry || typeof entry !== "object") return null;
+      const row = entry as {
+        name?: unknown;
+        name_zh_cn?: unknown;
+        amount_nzd_cents?: unknown;
+        note?: unknown;
+      };
+      if (
+        typeof row.name !== "string" ||
+        typeof row.amount_nzd_cents !== "number"
+      ) {
+        return null;
+      }
+      return {
+        name: vocabName(
+          {
+            name: row.name,
+            name_zh_cn:
+              typeof row.name_zh_cn === "string" ? row.name_zh_cn : null,
+          },
+          locale,
+        ),
+        amount_nzd_cents: row.amount_nzd_cents,
+        note: typeof row.note === "string" ? row.note : null,
+      };
+    })
+    .filter((e): e is PublicExpense => e !== null);
 }
 
 function jsonLdScript(value: unknown) {
@@ -122,10 +171,11 @@ export default async function StoryDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: slug } = await params;
-  const [story, t, tCommon] = await Promise.all([
+  const [story, t, tCommon, locale] = await Promise.all([
     getPublishedStoryBySlugDeduped(slug),
     getTranslations("story"),
     getTranslations("common"),
+    getLocale(),
   ]);
   if (!story) notFound();
 
@@ -186,7 +236,7 @@ export default async function StoryDetailPage({
   }
   const galleryMedia = media.filter((m) => !inlineMediaIds.has(m.media_id));
 
-  const regions = regionLabels(story.regions);
+  const regions = regionLabels(story.regions, locale);
   const tripLabel =
     story.trip_start_date && story.trip_end_date
       ? `${story.trip_start_date} – ${story.trip_end_date}`
@@ -272,7 +322,7 @@ export default async function StoryDetailPage({
         totalCents={story.total_expense_nzd_cents}
         tripStartDate={story.trip_start_date}
         tripEndDate={story.trip_end_date}
-        expenses={(story.expenses as unknown as PublicExpense[] | null) ?? []}
+        expenses={localizedExpenses(story.expenses, locale)}
       />
 
       <div className="mt-10 border-t border-border-subtle pt-6">

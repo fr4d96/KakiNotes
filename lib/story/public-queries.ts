@@ -248,12 +248,18 @@ export const getPublicContributorDeduped = cache(getPublicContributor);
 // closed regions/destinations vocabulary in the visitor's language. Tags
 // keep only their name: a tag is the contributor's own word and is never
 // translated.
-export type PublicRegion = { id: string; name: string; slug: string };
+export type PublicRegion = {
+  id: string;
+  name: string;
+  slug: string;
+  name_zh_cn: string | null;
+};
 export type PublicDestination = {
   id: string;
   name: string;
   slug: string;
   regionId: string;
+  name_zh_cn: string | null;
 };
 export type PublicTag = { id: string; name: string };
 
@@ -261,7 +267,7 @@ export async function listPublicRegions(): Promise<PublicRegion[]> {
   const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("regions")
-    .select("id, name, slug")
+    .select("id, name, slug, name_zh_cn")
     .eq("active", true)
     .order("name");
   if (error) throw error;
@@ -272,7 +278,7 @@ export async function listPublicDestinations(): Promise<PublicDestination[]> {
   const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("destinations")
-    .select("id, name, slug, region_id")
+    .select("id, name, slug, region_id, name_zh_cn")
     .eq("active", true)
     .order("name");
   if (error) throw error;
@@ -281,6 +287,7 @@ export async function listPublicDestinations(): Promise<PublicDestination[]> {
     name: d.name,
     slug: d.slug,
     regionId: d.region_id,
+    name_zh_cn: d.name_zh_cn,
   }));
 }
 

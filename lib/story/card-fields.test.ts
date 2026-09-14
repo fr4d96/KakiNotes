@@ -81,3 +81,66 @@ describe("destinationNames", () => {
     expect(destinationNames("not-an-array")).toEqual([]);
   });
 });
+
+// --------------------------------------------------------------------------
+// Simplified Chinese (20260914150000 put name_zh_cn on the vocabulary tables
+// and the RPCs now emit it beside every English name). Every helper above
+// defaults to English, which is why none of the assertions in this file
+// needed changing when the locale argument was added.
+// --------------------------------------------------------------------------
+
+describe("card-fields under zh-CN", () => {
+  const zhEntry = {
+    region_name: "Otago",
+    region_name_zh_cn: "奥塔哥",
+    destination_name: "Queenstown",
+    destination_name_zh_cn: "皇后镇",
+  };
+
+  it("firstRegionLabel builds the label from the Chinese names", () => {
+    expect(firstRegionLabel([zhEntry], "zh-CN")).toBe("皇后镇, 奥塔哥");
+  });
+
+  it("firstRegionLabel keeps English when the locale is English", () => {
+    expect(firstRegionLabel([zhEntry], "en")).toBe("Queenstown, Otago");
+  });
+
+  // A contributor-typed destination has no curated row behind it, so its
+  // translation is null and it must render exactly as typed -- beside a
+  // region name that IS translated.
+  it("leaves a contributor-typed destination untranslated", () => {
+    expect(
+      firstRegionLabel(
+        [
+          {
+            region_name: "Otago",
+            region_name_zh_cn: "奥塔哥",
+            destination_name: "Nan's farm",
+            destination_name_zh_cn: null,
+          },
+        ],
+        "zh-CN",
+      ),
+    ).toBe("Nan's farm, 奥塔哥");
+  });
+
+  it("falls back to the English region when there is no translation", () => {
+    expect(
+      firstRegionLabel(
+        [{ region_name: "Otago", region_name_zh_cn: null }],
+        "zh-CN",
+      ),
+    ).toBe("Otago");
+  });
+
+  it("regionNames and destinationNames return the Chinese names", () => {
+    expect(regionNames([zhEntry], "zh-CN")).toEqual(["奥塔哥"]);
+    expect(destinationNames([zhEntry], "zh-CN")).toEqual(["皇后镇"]);
+  });
+
+  it("skips a malformed entry instead of rendering undefined", () => {
+    expect(
+      regionNames([{ region_name_zh_cn: "奥塔哥" }, zhEntry], "zh-CN"),
+    ).toEqual(["奥塔哥"]);
+  });
+});
