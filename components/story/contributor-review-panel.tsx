@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useTranslations } from "next-intl";
 import { SubmitConsentPanel } from "@/components/story/submit-consent-panel";
 import {
   requestEditorialChangesAction,
@@ -33,6 +34,7 @@ export function ContributorReviewPanel({
   expectedVersion,
   hasMedia,
 }: ContributorReviewPanelProps) {
+  const t = useTranslations("review");
   const [mode, setMode] = useState<"approve" | "changes" | "decline" | null>(
     null,
   );
@@ -48,11 +50,10 @@ export function ContributorReviewPanel({
   return (
     <div className="rounded-md border border-blue-300 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-950">
       <h2 className="text-sm font-semibold text-blue-900 dark:text-blue-200">
-        An editor prepared this story for you
+        {t("editorPrepared")}
       </h2>
       <p className="mt-1 text-xs text-blue-800 dark:text-blue-300">
-        Review it above, then approve it for moderation, ask for changes, or
-        decline publication entirely.
+        {t("intro")}
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
@@ -61,21 +62,21 @@ export function ContributorReviewPanel({
           onClick={() => setMode(mode === "approve" ? null : "approve")}
           className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground"
         >
-          Approve
+          {t("approve")}
         </button>
         <button
           type="button"
           onClick={() => setMode(mode === "changes" ? null : "changes")}
           className="rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium"
         >
-          Request changes
+          {t("requestChanges")}
         </button>
         <button
           type="button"
           onClick={() => setMode(mode === "decline" ? null : "decline")}
           className="rounded-md border border-destructive/40 px-3 py-1.5 text-sm font-medium text-destructive"
         >
-          Decline
+          {t("decline")}
         </button>
       </div>
 
@@ -87,7 +88,7 @@ export function ContributorReviewPanel({
             expectedVersion={expectedVersion}
             hasMedia={hasMedia}
             isEditorialImport
-            submitLabel="Approve & submit for moderation"
+            submitLabel={t("approveAndSubmit")}
           />
         </div>
       )}
@@ -99,7 +100,7 @@ export function ContributorReviewPanel({
             name="note"
             required
             rows={3}
-            placeholder="What would you like changed?"
+            placeholder={t("whatChanged")}
             className="w-full rounded-md border border-border-subtle px-3 py-2 text-sm dark:bg-transparent"
           />
           <button
@@ -107,7 +108,7 @@ export function ContributorReviewPanel({
             disabled={changesPending}
             className="rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium disabled:opacity-60"
           >
-            {changesPending ? "Sending…" : "Send request"}
+            {changesPending ? t("sending") : t("sendRequest")}
           </button>
           {changesState.error && (
             <p role="alert" className="text-sm text-destructive">
@@ -123,7 +124,7 @@ export function ContributorReviewPanel({
           <textarea
             name="note"
             rows={3}
-            placeholder="Optional: let the editor know why."
+            placeholder={t("declineHint")}
             className="w-full rounded-md border border-border-subtle px-3 py-2 text-sm dark:bg-transparent"
           />
           <button
@@ -131,7 +132,7 @@ export function ContributorReviewPanel({
             disabled={declinePending}
             className="rounded-md border border-destructive/40 px-3 py-1.5 text-sm font-medium text-destructive disabled:opacity-60"
           >
-            {declinePending ? "Declining…" : "Confirm decline"}
+            {declinePending ? t("declining") : t("confirmDecline")}
           </button>
           {declineState.error && (
             <p role="alert" className="text-sm text-destructive">

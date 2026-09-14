@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Skeleton, LoadingScreen } from "@/components/ui/skeleton";
 
 /**
@@ -10,9 +11,10 @@ import { Skeleton, LoadingScreen } from "@/components/ui/skeleton";
  * reads as "the site broke", not "the site is thinking".
  */
 export default function AuthLoading() {
+  const t = useTranslations("common");
   return (
     <LoadingScreen
-      label="Loading"
+      label={t("loading")}
       className="mx-auto max-w-md px-4 py-12 sm:px-6 sm:py-16"
     >
       <Skeleton className="h-8 w-40 sm:h-9" />

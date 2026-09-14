@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { RevisionTagSelection } from "@/lib/story/contributor-queries";
 import type { ActiveTag } from "@/lib/story/active-lookups";
 import { MAX_TAGS_PER_REVISION, TAG_MAX_LENGTH } from "@/lib/validation/story";
@@ -38,6 +39,8 @@ export function TagEditor({
   suggestions: ActiveTag[];
   onChange: (next: RevisionTagSelection[]) => void;
 }) {
+  const t = useTranslations("editor.tags");
+  const tCommon = useTranslations("common");
   const [draft, setDraft] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [browseOpen, setBrowseOpen] = useState(false);
@@ -124,7 +127,7 @@ export function TagEditor({
             Enforced on the preview page's submit gate, not here. */}
         <span className="text-destructive">
           <span aria-hidden="true"> *</span>
-          <span className="sr-only"> required</span>
+          <span className="sr-only">{tCommon("requiredSuffix")}</span>
         </span>
       </legend>
       <p className="mt-1 text-xs text-muted-foreground">
@@ -154,7 +157,7 @@ export function TagEditor({
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <label htmlFor={inputId} className="sr-only">
-          Add a tag
+          {t("add")}
         </label>
         <input
           id={inputId}
@@ -167,7 +170,7 @@ export function TagEditor({
           value={draft}
           disabled={atCap}
           maxLength={TAG_MAX_LENGTH}
-          placeholder={atCap ? "Tag limit reached" : "Add a tag…"}
+          placeholder={atCap ? t("limitReached") : t("placeholder")}
           aria-describedby={notice ? noticeId : undefined}
           onChange={(e) => {
             const value = e.target.value;
@@ -209,13 +212,11 @@ export function TagEditor({
             aria-controls={listId}
             aria-haspopup="listbox"
             title={
-              unusedSuggestions.length === 0
-                ? "No suggested tags left to add"
-                : "Choose from suggested tags"
+              unusedSuggestions.length === 0 ? t("none") : t("chooseSuggested")
             }
             className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-sm font-medium disabled:opacity-50 hover:bg-surface-muted"
           >
-            Choose tags
+            {t("heading")}
             <ChevronDownIcon open={showBrowseList} />
           </button>
 
@@ -223,7 +224,7 @@ export function TagEditor({
             <ul
               id={listId}
               role="listbox"
-              aria-label="Suggested tags"
+              aria-label={t("suggested")}
               onKeyDown={(e) => {
                 if (e.key === "Escape") {
                   setBrowseOpen(false);

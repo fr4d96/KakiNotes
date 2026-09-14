@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { createDraftSchema } from "@/lib/validation/story";
+import { getTranslations } from "next-intl/server";
+import { firstIssueMessage } from "@/lib/validation/issue-messages";
 import { createSelfServiceDraftShell } from "@/lib/story/mutations";
 import { getErrorMessage } from "@/lib/errors";
 
@@ -14,16 +16,23 @@ export async function createDraftAction(
   _prevState: NewStoryFormState,
   formData: FormData,
 ): Promise<NewStoryFormState> {
+  const [t, tv, tCommon] = await Promise.all([
+    getTranslations("newStory"),
+    getTranslations("validation"),
+    getTranslations("common"),
+  ]);
   const user = await getCurrentUser();
   if (!user) {
-    return { error: "You must be signed in." };
+    return { error: tCommon("mustBeSignedIn") };
   }
 
   const parsed = createDraftSchema.safeParse({
     title: formData.get("title"),
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return {
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
+    };
   }
 
   let result: { story_id: string; revision_id: string } | null;
@@ -39,15 +48,14 @@ export async function createDraftAction(
     // generic fallback instead of the actionable message).
     if (/contributor identity/i.test(getErrorMessage(error, ""))) {
       return {
-        error:
-          "Set up your contributor identity on the Account page before starting a story.",
+        error: t("errors.needsContributorIdentity"),
       };
     }
-    return { error: "Could not start a new story. Please try again." };
+    return { error: t("errors.createFailed") };
   }
 
   if (!result?.story_id) {
-    return { error: "Could not start a new story. Please try again." };
+    return { error: t("errors.createFailed") };
   }
 
   redirect(`/stories/${result.story_id}/edit`);

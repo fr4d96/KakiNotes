@@ -7,7 +7,11 @@ import { PageTransition } from "@/components/page-transition";
 
 /**
  * The only place in the app that calls getCurrentUser(). Public layouts
- * never do this, so they stay static/cache-friendly.
+ * never do this: their HTML must carry nothing per-person, so the data
+ * behind it can be cached and shared (lib/story/public-queries.ts). The
+ * public pages themselves have rendered per request since the language
+ * cookie (2026-09-14); it is the data cache, not page staticness, that a
+ * session read here would defeat.
  */
 export default async function ContributorLayout({
   children,

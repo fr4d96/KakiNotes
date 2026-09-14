@@ -2,12 +2,14 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { signInAction, type AuthFormState } from "@/app/(auth)/actions";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 const initialState: AuthFormState = {};
 
 export function SignInForm({ next }: { next: string }) {
+  const t = useTranslations("auth.signIn");
   const [state, formAction, pending] = useActionState(
     signInAction,
     initialState,
@@ -20,7 +22,7 @@ export function SignInForm({ next }: { next: string }) {
 
         <div>
           <label htmlFor="identifier" className="block text-sm font-medium">
-            Email or username
+            {t("identifierLabel")}
           </label>
           {/*
             type="text", not type="email" — the browser's built-in email
@@ -39,14 +41,13 @@ export function SignInForm({ next }: { next: string }) {
             className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2"
           />
           <p className="mt-1 text-xs text-foreground/55">
-            Use your email, or a username if you&apos;ve set one in your
-            account.
+            {t("identifierHint")}
           </p>
         </div>
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium">
-            Password
+            {t("passwordLabel")}
           </label>
           <input
             id="password"
@@ -69,18 +70,18 @@ export function SignInForm({ next }: { next: string }) {
           disabled={pending}
           className="w-full rounded-md bg-accent px-3 py-2 text-accent-foreground hover:opacity-90 disabled:opacity-60"
         >
-          {pending ? "Signing in…" : "Sign in"}
+          {pending ? t("submitting") : t("submit")}
         </button>
 
         <p className="text-sm text-muted-foreground">
           <Link href="/forgot-password" className="hover:underline">
-            Forgot your password?
+            {t("forgotPassword")}
           </Link>
         </p>
         <p className="text-sm text-muted-foreground">
-          No account?{" "}
+          {t("noAccount")}{" "}
           <Link href="/sign-up" className="hover:underline">
-            Sign up
+            {t("signUpLink")}
           </Link>
         </p>
       </form>

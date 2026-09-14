@@ -1,4 +1,6 @@
+import { useLocale, useTranslations } from "next-intl";
 import { ExpenseDonut } from "@/components/story/expense-donut";
+import { isLocale } from "@/i18n/locales";
 import {
   expensePerMonth,
   formatMonths,
@@ -46,6 +48,9 @@ export function PublicExpenses({
   tripEndDate: string | null;
   expenses: PublicExpense[];
 }) {
+  const t = useTranslations("story.expenses");
+  const rawLocale = useLocale();
+  const locale = isLocale(rawLocale) ? rawLocale : "en";
   const breakdown = expenses.filter((e) => e.amount_nzd_cents > 0);
 
   // Nothing recorded: render nothing at all rather than an empty section
@@ -75,16 +80,16 @@ export function PublicExpenses({
         id="story-expenses-heading"
         className="text-xl font-semibold tracking-tight"
       >
-        What this trip cost
+        {t("heading")}
       </h2>
 
       {totalCents != null && (
         <p className="mt-2">
           <span className="text-2xl font-semibold">
-            {formatNzdCents(totalCents)}
+            {formatNzdCents(totalCents, locale)}
           </span>{" "}
           <span className="text-sm text-foreground/60">
-            reported for the whole trip
+            {t("reportedForWholeTrip")}
           </span>
         </p>
       )}
@@ -95,11 +100,16 @@ export function PublicExpenses({
           would rather show nothing than a confident extrapolation. */}
       {perMonth.kind === "ok" && (
         <p className="mt-1 text-sm text-foreground/60">
-          About{" "}
-          <strong className="font-medium text-foreground">
-            {formatNzdCents(perMonth.perMonthCents)}
-          </strong>{" "}
-          a month across {formatMonths(perMonth.months)} months.
+          {/* t.rich, not string concatenation: Chinese puts the amount and
+              the month count in a different order, and only the message
+              file can express that. */}
+          {t.rich("perMonth", {
+            amountValue: formatNzdCents(perMonth.perMonthCents, locale),
+            months: formatMonths(perMonth.months),
+            amount: (chunks) => (
+              <strong className="font-medium text-foreground">{chunks}</strong>
+            ),
+          })}
         </p>
       )}
 
@@ -113,11 +123,7 @@ export function PublicExpenses({
         </div>
       )}
 
-      <p className="mt-6 text-xs text-foreground/60">
-        These are the figures one traveller recorded for their own trip. They
-        are a personal account, not a budget or an estimate — costs vary a lot
-        by region, season, and how you travel.
-      </p>
+      <p className="mt-6 text-xs text-foreground/60">{t("disclaimer")}</p>
     </section>
   );
 }

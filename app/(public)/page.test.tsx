@@ -1,10 +1,10 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { listPublishedStories } from "@/lib/story/public-queries";
+import { listPublishedStoriesCached } from "@/lib/story/public-queries";
 
 vi.mock("@/lib/story/public-queries", () => ({
-  listPublishedStories: vi.fn(async () => []),
+  listPublishedStoriesCached: vi.fn(async () => []),
   listPublicRegions: vi.fn(async () => []),
   listPublicDestinations: vi.fn(async () => []),
 }));
@@ -57,8 +57,8 @@ const otherStory = {
 };
 
 function mockStories(...batch: unknown[]) {
-  vi.mocked(listPublishedStories).mockResolvedValueOnce(
-    batch as unknown as Awaited<ReturnType<typeof listPublishedStories>>,
+  vi.mocked(listPublishedStoriesCached).mockResolvedValueOnce(
+    batch as unknown as Awaited<ReturnType<typeof listPublishedStoriesCached>>,
   );
 }
 

@@ -55,7 +55,10 @@ vi.mock("@/lib/rate-limit", () => ({
     mockCheckSignInRateLimit(identifier),
   recordSignInFailure: (identifier: string) =>
     mockRecordSignInFailure(identifier),
-  rateLimitedMessage: (seconds: number) => `RATE_LIMITED:${seconds}`,
+  // The real rounding rule is covered in lib/rate-limit.test.ts; the action
+  // phrases the wait through messages/en.json's `auth.errors.rateLimited`.
+  rateLimitRetryMinutes: (seconds: number) =>
+    Math.max(1, Math.ceil(seconds / 60)),
   checkPasswordResetRateLimit: (email: string) =>
     mockCheckPasswordResetRateLimit(email),
   recordPasswordResetRequest: (email: string) =>
@@ -214,7 +217,9 @@ describe("signUpAction rate limiting", () => {
 
     const state = await signUpAction({}, form());
 
-    expect(state.error).toBe("RATE_LIMITED:2400");
+    expect(state.error).toBe(
+      "Too many sign-up attempts. Try again in about 40 minutes.",
+    );
     expect(state.success).toBeUndefined();
   });
 
@@ -443,7 +448,9 @@ describe("signInAction rate limiting", () => {
 
     const state = await signInAction({}, form());
 
-    expect(state.error).toBe("RATE_LIMITED:300");
+    expect(state.error).toBe(
+      "Too many sign-in attempts. Try again in about 5 minutes.",
+    );
     expect(mockSignInWithPassword).not.toHaveBeenCalled();
   });
 

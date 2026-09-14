@@ -36,10 +36,10 @@ import { getErrorMessage } from "@/lib/errors";
  * approve/archive fully succeeded. Swallowed here (logged, never silently
  * dropped) so a cache-invalidation hiccup can never make a successful
  * publish/archive look like a failure; the public pages still self-correct
- * either way -- `/`, `/stories/[id]` and `/contributors/[slug]` within
- * their own `revalidate = 60` window, and `/stories`/`/contributors`
- * immediately, since those two are dynamic and re-query on every request
- * (see lib/story/public-cache.ts's own header comment).
+ * either way -- `/` within its own 60s data window, and `/stories/[id]`,
+ * `/contributors/[slug]`, `/stories` and `/contributors` immediately, since
+ * all four re-query on every request (see lib/story/public-cache.ts's own
+ * header comment).
  */
 function invalidatePublicCacheSafely(slug: string, action: string) {
   try {

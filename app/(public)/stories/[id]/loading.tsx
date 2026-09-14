@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import {
   Skeleton,
   SkeletonText,
@@ -17,9 +18,10 @@ import { StoryCardGridSkeleton } from "@/components/story/story-card-skeleton";
  * reader as the pictures resolve.
  */
 export default function StoryDetailLoading() {
+  const t = useTranslations("common.loadingLabels");
   return (
     <LoadingScreen
-      label="Loading story"
+      label={t("story")}
       className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16"
     >
       <Skeleton className="h-7 w-64 rounded-full" />

@@ -1,5 +1,7 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
+
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -18,12 +20,15 @@ import {
   createNextDraftRevision,
 } from "@/lib/story/mutations";
 import { getErrorMessage } from "@/lib/errors";
+import { firstIssueMessage } from "@/lib/validation/issue-messages";
 
 export type ConsentActionState = { error?: string; success?: string };
 
 async function requireSignedIn(): Promise<string | null> {
   const user = await getCurrentUser();
-  return user ? null : "You must be signed in.";
+  if (user) return null;
+  const t = await getTranslations("common");
+  return t("mustBeSignedIn");
 }
 
 /**
@@ -36,6 +41,10 @@ export async function submitOwnConsentAction(
   _prevState: ConsentActionState,
   formData: FormData,
 ): Promise<ConsentActionState> {
+  const [tErr, tv] = await Promise.all([
+    getTranslations("actionErrors"),
+    getTranslations("validation"),
+  ]);
   const authError = await requireSignedIn();
   if (authError) return { error: authError };
 
@@ -61,7 +70,9 @@ export async function submitOwnConsentAction(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid submission." };
+    return {
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
+    };
   }
 
   try {
@@ -69,7 +80,7 @@ export async function submitOwnConsentAction(
     await submitRevisionWithConsent({ ...parsed.data, expectedTermsVersion });
   } catch (error) {
     return {
-      error: getErrorMessage(error, "Could not submit this story for review."),
+      error: getErrorMessage(error, tErr("submitFailed")),
     };
   }
 
@@ -113,6 +124,10 @@ export async function keepStoryPrivateAction(
   _prevState: ConsentActionState,
   formData: FormData,
 ): Promise<ConsentActionState> {
+  const [tErr, tv] = await Promise.all([
+    getTranslations("actionErrors"),
+    getTranslations("validation"),
+  ]);
   const authError = await requireSignedIn();
   if (authError) return { error: authError };
 
@@ -121,14 +136,16 @@ export async function keepStoryPrivateAction(
     expectedVersion: Number(formData.get("expectedVersion")),
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid request." };
+    return {
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
+    };
   }
 
   try {
     await keepRevisionPrivate(parsed.data);
   } catch (error) {
     return {
-      error: getErrorMessage(error, "Could not save this story privately."),
+      error: getErrorMessage(error, tErr("savePrivateFailed")),
     };
   }
 
@@ -147,6 +164,10 @@ export async function requestEditorialChangesAction(
   _prevState: ConsentActionState,
   formData: FormData,
 ): Promise<ConsentActionState> {
+  const [tErr, tv] = await Promise.all([
+    getTranslations("actionErrors"),
+    getTranslations("validation"),
+  ]);
   const authError = await requireSignedIn();
   if (authError) return { error: authError };
 
@@ -154,19 +175,19 @@ export async function requestEditorialChangesAction(
   const note = z
     .string()
     .trim()
-    .min(1, "Describe what needs to change.")
+    .min(1, "story.changeNoteRequired")
     .max(4000)
     .safeParse(formData.get("note"));
-  if (!storyId.success) return { error: "Invalid story." };
+  if (!storyId.success) return { error: tErr("invalidStory") };
   if (!note.success) {
-    return { error: note.error.issues[0]?.message ?? "Invalid note." };
+    return { error: firstIssueMessage(note.error, tv, "common.invalidInput") };
   }
 
   try {
     await requestEditorialChanges(storyId.data, note.data);
   } catch (error) {
     return {
-      error: getErrorMessage(error, "Could not request changes."),
+      error: getErrorMessage(error, tErr("requestChangesFailed")),
     };
   }
 
@@ -179,6 +200,7 @@ export async function declineEditorialPublicationAction(
   _prevState: ConsentActionState,
   formData: FormData,
 ): Promise<ConsentActionState> {
+  const tErr = await getTranslations("actionErrors");
   const authError = await requireSignedIn();
   if (authError) return { error: authError };
 
@@ -188,14 +210,14 @@ export async function declineEditorialPublicationAction(
     .trim()
     .max(4000)
     .safeParse(formData.get("note") ?? "");
-  if (!storyId.success) return { error: "Invalid story." };
-  if (!note.success) return { error: "Invalid note." };
+  if (!storyId.success) return { error: tErr("invalidStory") };
+  if (!note.success) return { error: tErr("invalidNote") };
 
   try {
     await declineEditorialPublication(storyId.data, note.data);
   } catch (error) {
     return {
-      error: getErrorMessage(error, "Could not decline."),
+      error: getErrorMessage(error, tErr("declineFailed")),
     };
   }
 

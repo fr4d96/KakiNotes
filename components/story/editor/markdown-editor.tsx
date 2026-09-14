@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { markdown as markdownLang } from "@codemirror/lang-markdown";
 import { EditorView, keymap } from "@codemirror/view";
@@ -148,13 +149,14 @@ function ToolbarButton({
 const MARKDOWN_GUIDE_URL = "https://www.markdownguide.org/cheat-sheet/";
 
 function MarkdownGuideLink() {
+  const t = useTranslations("editor.toolbar");
   return (
     <a
       href={MARKDOWN_GUIDE_URL}
       target="_blank"
       rel="noopener noreferrer"
-      title="Markdown syntax guide (opens in a new tab)"
-      aria-label="Markdown syntax guide (opens in a new tab)"
+      title={t("syntaxGuide")}
+      aria-label={t("syntaxGuide")}
       className="flex h-8 w-8 items-center justify-center rounded-full border border-current text-xs font-semibold italic hover:bg-surface-muted"
     >
       i
@@ -182,6 +184,7 @@ function EditorToolbar({
   getView: () => EditorView | null;
   onRequestImages?: () => void;
 }) {
+  const t = useTranslations("editor.toolbar");
   const run = (fn: (view: EditorView) => void) => () => {
     const view = getView();
     if (view) fn(view);
@@ -196,62 +199,62 @@ function EditorToolbar({
           view automatically. */}
       <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
         <ToolbarButton
-          title="Heading"
+          title={t("heading")}
           label="H"
           onClick={run((v) => toggleLinePrefix(v, "## "))}
         />
         <ToolbarButton
-          title="Bold (Ctrl/Cmd+B)"
+          title={t("bold")}
           label={<strong>B</strong>}
           onClick={run((v) => wrapSelection(v, "**", "**", "bold text"))}
         />
         <ToolbarButton
-          title="Italic (Ctrl/Cmd+I)"
+          title={t("italic")}
           label={<em>i</em>}
           onClick={run((v) => wrapSelection(v, "*", "*", "italic text"))}
         />
         <ToolbarButton
-          title="Strikethrough (~~text~~)"
+          title={t("strikethrough")}
           label={<span className="line-through">S</span>}
           onClick={run((v) => wrapSelection(v, "~~", "~~", "struck text"))}
         />
         <div className="mx-1 h-5 w-px bg-surface-muted" />
         <ToolbarButton
-          title="Quote"
+          title={t("quote")}
           label="❝"
           onClick={run((v) => toggleLinePrefix(v, "> "))}
         />
         <ToolbarButton
-          title="Bulleted list"
+          title={t("bulletedList")}
           label="•"
           onClick={run((v) => toggleLinePrefix(v, "- "))}
         />
         <ToolbarButton
-          title="Numbered list"
+          title={t("numberedList")}
           label="1."
           onClick={run((v) => toggleLinePrefix(v, "1. "))}
         />
         <ToolbarButton
-          title="Checklist"
+          title={t("checklist")}
           label="☑"
           onClick={run((v) => toggleLinePrefix(v, "- [ ] "))}
         />
         <div className="mx-1 h-5 w-px bg-surface-muted" />
         <ToolbarButton
-          title="Link (Ctrl/Cmd+K)"
+          title={t("link")}
           label="🔗"
           onClick={run((v) =>
             wrapSelection(v, "[", "](https://)", "link text"),
           )}
         />
         <ToolbarButton
-          title="Table"
+          title={t("table")}
           label="▦"
           onClick={run((v) => insertTable(v))}
         />
         {onRequestImages && (
           <ToolbarButton
-            title="Add a photo (opens the Images panel)"
+            title={t("photo")}
             label={<GalleryIcon className="h-4 w-4" />}
             onClick={onRequestImages}
           />
@@ -270,15 +273,36 @@ export const MarkdownEditor = React.forwardRef<
   MarkdownEditorHandle,
   MarkdownEditorProps
 >(function MarkdownEditor(
-  {
-    initialValue,
-    onChange,
-    editable = true,
-    ariaLabel = "Story content",
-    onRequestImages,
-  },
+  { initialValue, onChange, editable = true, ariaLabel, onRequestImages },
   ref,
 ) {
+  const t = useTranslations("editor.toolbar");
+  const tFields = useTranslations("editor.fields");
+  const tSlash = useTranslations("editor.slash");
+  // The slash menu's entries, resolved once here and handed to the
+  // CodeMirror source, which is plain module code and cannot translate.
+  const labels = React.useMemo(
+    () =>
+      Object.fromEntries(
+        (
+          [
+            "heading",
+            "subheading",
+            "list",
+            "numbered",
+            "todo",
+            "quote",
+            "link",
+            "table",
+            "photo",
+          ] as const
+        ).map((key) => [
+          key,
+          { label: tSlash(key), detail: tSlash(`${key}Detail`) },
+        ]),
+      ),
+    [tSlash],
+  );
   // Uncontrolled, like the Plate editor this replaces: `value` is only ever
   // read from this lazy initializer, never resynced from a changing prop --
   // resyncing on every parent re-render would fight the user's cursor
@@ -372,23 +396,25 @@ export const MarkdownEditor = React.forwardRef<
       ),
       // Renames the completion popup's own accessible name, which CodeMirror
       // otherwise labels "Completions".
-      EditorState.phrases.of({ Completions: "Story formatting commands" }),
+      EditorState.phrases.of({ Completions: t("commandsLabel") }),
       slashMenuTheme,
       ...createMarkdownLiveExtensions(),
     ],
-    [],
+    // `t` is stable per locale; listing it means switching language rebuilds
+    // the extensions with the new popup label rather than keeping the old one.
+    [t],
   );
 
   const extensions = React.useMemo(
     () => [
       ...stableExtensions,
       autocompletion({
-        override: [createSlashCommandSource({ onRequestImages })],
+        override: [createSlashCommandSource({ onRequestImages, labels })],
         // No type icons: this is a prose menu, not a code completion list.
         icons: false,
       }),
     ],
-    [stableExtensions, onRequestImages],
+    [stableExtensions, onRequestImages, labels],
   );
 
   const words = markdownWordCount(text);
@@ -421,7 +447,7 @@ export const MarkdownEditor = React.forwardRef<
         <EditorToolbar getView={getView} onRequestImages={onRequestImages} />
       )}
       <div
-        aria-label={ariaLabel}
+        aria-label={ariaLabel ?? tFields("storyContent")}
         role="textbox"
         aria-multiline="true"
         // min-h-0 is load-bearing: a flex child's default `min-height: auto`
@@ -444,7 +470,7 @@ export const MarkdownEditor = React.forwardRef<
             autocompletion: false,
           }}
           theme="none"
-          placeholder="Tell your story… or type / for headings, lists and quotes"
+          placeholder={t("placeholder")}
           className={
             editable
               ? "h-full px-1 py-2 text-base [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
@@ -459,9 +485,11 @@ export const MarkdownEditor = React.forwardRef<
               times while you write is worse than one you can read on
               demand. */}
           <p>
-            {words === 1 ? "1 word" : `${words.toLocaleString()} words`}
+            {t("wordCount", { count: words })}
             {minutes > 0 &&
-              ` · ${minutes} min read${words < 150 ? " · aim for 150+ words" : ""}`}
+              `${t("statSeparator")}${t("readingTime", { minutes })}${
+                words < 150 ? `${t("statSeparator")}${t("aimForWords")}` : ""
+              }`}
           </p>
           {pasteNotice && (
             <p role="status" className="text-amber-700 dark:text-amber-400">

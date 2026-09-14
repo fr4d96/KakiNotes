@@ -36,6 +36,13 @@ export type SlashCommandOptions = {
    * it.
    */
   onRequestImages?: () => void;
+  /**
+   * `key -> { label, detail }`, supplied by the caller so this module holds
+   * no prose: it is imported by CodeMirror setup code, not by a component,
+   * and cannot call a translation hook of its own. Omitted entirely in
+   * tests, which fall back to the English defaults below.
+   */
+  labels?: Record<string, { label: string; detail: string }>;
 };
 
 export type SlashCommand = {
@@ -76,53 +83,48 @@ const LINK_PLACEHOLDER = "link text";
 export function slashCommands(
   options: SlashCommandOptions = {},
 ): SlashCommand[] {
+  const text = (key: string, label: string, detail: string) =>
+    options.labels?.[key] ?? { label, detail };
   const commands: SlashCommand[] = [
     {
       key: "heading",
-      label: "Heading",
-      detail: "A section title",
+      ...text("heading", "Heading", "A section title"),
       aliases: ["h2", "title", "section"],
       apply: (view, from, to) => replaceWith(view, from, to, "## "),
     },
     {
       key: "subheading",
-      label: "Smaller heading",
-      detail: "A sub-section title",
+      ...text("subheading", "Smaller heading", "A sub-section title"),
       aliases: ["h3", "subtitle"],
       apply: (view, from, to) => replaceWith(view, from, to, "### "),
     },
     {
       key: "list",
-      label: "Bulleted list",
-      detail: "A list of points",
+      ...text("list", "Bulleted list", "A list of points"),
       aliases: ["bullet", "ul", "point"],
       apply: (view, from, to) => replaceWith(view, from, to, "- "),
     },
     {
       key: "numbered",
-      label: "Numbered list",
-      detail: "A list of steps, in order",
+      ...text("numbered", "Numbered list", "A list of steps, in order"),
       aliases: ["ol", "ordered", "steps"],
       apply: (view, from, to) => replaceWith(view, from, to, "1. "),
     },
     {
       key: "todo",
-      label: "Checklist",
-      detail: "Tick-box items",
+      ...text("todo", "Checklist", "Tick-box items"),
       aliases: ["task", "checkbox", "check"],
       apply: (view, from, to) => replaceWith(view, from, to, "- [ ] "),
     },
     {
       key: "quote",
-      label: "Quote",
-      detail: "Set a passage apart",
+      ...text("quote", "Quote", "Set a passage apart"),
       aliases: ["blockquote"],
       apply: (view, from, to) => replaceWith(view, from, to, "> "),
     },
     {
       key: "link",
-      label: "Link",
-      detail: "Link some words to a page",
+      ...text("link", "Link", "Link some words to a page"),
       aliases: ["url", "href"],
       apply: (view, from, to) => {
         const insert = `[${LINK_PLACEHOLDER}](https://)`;
@@ -140,8 +142,7 @@ export function slashCommands(
     },
     {
       key: "table",
-      label: "Table",
-      detail: "A small grid of rows and columns",
+      ...text("table", "Table", "A small grid of rows and columns"),
       aliases: ["grid"],
       apply: (view, from, to) => {
         clearTrigger(view, from, to);
@@ -154,8 +155,11 @@ export function slashCommands(
     const onRequestImages = options.onRequestImages;
     commands.push({
       key: "photo",
-      label: "Photo",
-      detail: "Go to the Images panel to upload and place a photo",
+      ...text(
+        "photo",
+        "Photo",
+        "Go to the Images panel to upload and place a photo",
+      ),
       aliases: ["image", "picture", "img"],
       apply: (view, from, to) => {
         clearTrigger(view, from, to);

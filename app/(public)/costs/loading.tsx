@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import {
   Skeleton,
   SkeletonText,
@@ -39,9 +40,10 @@ function NamedBandListSkeleton({ rows = 5 }: { rows?: number }) {
 }
 
 export default function CostsLoading() {
+  const t = useTranslations("common.loadingLabels");
   return (
     <LoadingScreen
-      label="Loading cost figures"
+      label={t("costs")}
       className="mx-auto max-w-3xl px-4 py-10 sm:px-6"
     >
       <Skeleton className="h-9 w-full max-w-lg" />

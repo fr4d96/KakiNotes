@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 /**
  * "My Stories" / "New Story" as always-visible, clickable header links,
@@ -23,9 +24,9 @@ import { usePathname } from "next/navigation";
  * ThemeToggle/UserAvatarMenu already use in that header.
  */
 const links = [
-  { href: "/my-stories", label: "My Stories" },
-  { href: "/stories/new", label: "New Story" },
-];
+  { href: "/my-stories", key: "myStories" },
+  { href: "/stories/new", key: "newStory" },
+] as const;
 
 export function ContributorNavLinks({
   className = "",
@@ -33,10 +34,11 @@ export function ContributorNavLinks({
   className?: string;
 }) {
   const pathname = usePathname();
+  const t = useTranslations("nav");
 
   return (
     <nav
-      aria-label="Contributor"
+      aria-label={t("contributor")}
       className={`items-center gap-6 text-sm font-bold ${className}`}
     >
       {links.map((item) => {
@@ -51,7 +53,7 @@ export function ContributorNavLinks({
             aria-current={isActive ? "page" : undefined}
             className="journiq-nav-link"
           >
-            {item.label}
+            {t(item.key)}
           </Link>
         );
       })}

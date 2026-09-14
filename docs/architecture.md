@@ -11,9 +11,22 @@ Next.js 16 App Router, Turbopack, Server Components by default, strict TypeScrip
 directory, `@/*` import alias. Actual current tree:
 
 ```
+i18n/                          # Simplified Chinese, phase 1 (2026-09-14)
+  locales.ts                   # LOCALES/DEFAULT_LOCALE/isLocale/LOCALE_COOKIE + intlLocale()
+                                # (en -> en-NZ, so the app's NZ date/number conventions survive).
+                                # Dependency-free: imported by server, client and tests alike.
+  request.ts                   # next-intl's getRequestConfig — reads the NEXT_LOCALE cookie,
+                                # validates it against LOCALES, falls back to English, loads
+                                # messages/<locale>.json. NO URL routing (see "Language" below).
+  global.d.ts                  # types every t() key against messages/en.json
+messages/
+  en.json, zh-CN.json          # the whole UI copy, namespaced by area. messages.test.ts holds the
+                                # two files to identical key sets, identical ICU arguments, no empty
+                                # values and no untranslated leftovers.
 app/
-  layout.tsx                  # bare shell: <html>/<body>, skip link, sitewide metadata. No
-                               # header/footer/session check — stays static/cache-friendly.
+  layout.tsx                  # <html lang>, NextIntlClientProvider, skip link, sitewide metadata.
+                               # No header/footer/session check. NOT static since it reads the
+                               # language cookie — the public pages cache their DATA instead.
   loading.tsx / not-found.tsx / error.tsx / global-error.tsx
   (public)/                   # anonymous-readable, static header+footer in its own layout
     layout.tsx
@@ -61,7 +74,19 @@ lib/
     staff-guard.ts            # pure resolveStaffAccess() decision function, unit-tested directly
                                 # (split out of roles.ts so the test file never imports
                                 # "server-only" — see roles.ts vs staff-guard.ts below)
+  i18n/
+    format.ts                  # locale-EXPLICIT date/number/currency/relative-time/country
+                                # helpers (no ambient locale, no server-only, no React), so the
+                                # same function serves a Server Component, a Client Component
+                                # and a plain test. English output is byte-identical to the
+                                # hard-coded en-NZ it replaced.
+    vocab.ts                   # display-only zh-CN for the CLOSED vocabulary tables, keyed by
+                                # SLUG, falling back to the database name. See "Language" below
+                                # for exactly which surfaces have a slug to key off.
+    set-locale-action.ts       # 'use server' — the ONLY writer of the language cookie; Zod-validated
   validation/
+    issue-messages.ts         # turns the schemas' message KEYS into text at the trust boundary
+                                # (translateIssue / firstIssueMessage / translateFieldErrors)
     auth.ts                   # Zod: sign-up/in, forgot/reset password
     profile.ts                # Zod: profile update, own-contributor create/update
     safe-redirect.ts           # resolveSafeReturnTo() — the one function every "next" param
@@ -91,7 +116,8 @@ lib/
     mutation-queue.ts           # client-side serialized, per-slot-coalescing async mutation queue
 components/
   site-header.tsx, site-footer.tsx, mobile-nav-toggle.tsx, contributor-nav.tsx,
-  placeholder-page.tsx
+  placeholder-page.tsx, locale-toggle.tsx   # locale-toggle sits beside theme-toggle in all
+                                             # three headers
   contributor/
     contributor-avatar.tsx      # the ONE contributor avatar: chosen emoji, else the initial letter.
                                 #   Shared by the story attribution chip, the /contributors
@@ -133,6 +159,8 @@ scripts/
   rls-test-cleanup.sql, run-rls-cleanup.mjs   # scoped, fail-closed dev-only cleanup for the above
 e2e/
   home.spec.ts                 # Playwright smoke test (public nav, staff-route 404s)
+  locale.spec.ts               # the language toggle: <html lang>, cookie persistence, a
+                                # server-rendered page in Chinese, keyboard operability, 375px
   auth.spec.ts                 # sign-up/in/forgot/reset pages render; protected-route redirect
                                 # with safe next param; invalid callback link handling
 ```
@@ -1572,11 +1600,18 @@ The other four public routes all show `ƒ` in the build table, but for two diffe
 only one of them means "not cached" (corrected 2026-08-31 — this section previously lumped all four
 together and claimed `revalidate` had no practical effect on any of them):
 
-- `/stories/[id]` and `/contributors/[slug]` show `ƒ` only because they have no
-  `generateStaticParams`, so there is nothing to prerender at build time. They keep
-  `export const revalidate = 60` and **are** genuinely ISR-cached per path at runtime: the first
-  request for a given slug renders and caches it, later requests inside the window serve the cached
-  copy. Leave those exports alone.
+- `/stories/[id]` and `/contributors/[slug]` show `ƒ` and are **not cached across requests** — they
+  re-query on every request. **Corrected 2026-09-14, and this is the second correction to this
+  bullet**: the 2026-08-31 pass claimed they were "genuinely ISR-cached per path at runtime" and
+  told readers to leave their `revalidate = 60` exports alone. That was wrong, and it was wrong in
+  the direction that costs you: checked against the build's own
+  `.next/prerender-manifest.json`, which is the authority here, `/` appears at
+  `initialRevalidateSeconds: 60` and `/costs` at `3600`, and the `dynamicRoutes` map is **empty** —
+  neither of these two routes is in it at all, so their `revalidate` exports never engaged. Both
+  exports are now gone (the language cookie made every route dynamic regardless), and the reads
+  behind these pages are deliberately **uncached**. Do not "restore" a window here on the strength
+  of a comment: there was never one to restore, and adding one puts up to a minute of staleness on
+  a story that was just taken down (Engineering Rule 12). Read the manifest, not the prose.
 - `/stories` and `/contributors` `await searchParams` (filter state and the keyset pagination
   cursor respectively), which forces per-request dynamic rendering in the App Router independent of
   the Supabase client used. A `revalidate` export there is a **silent no-op**, so both have been
@@ -2310,6 +2345,77 @@ wins. `app/layout.tsx` sets `data-theme` via a blocking inline `<script>` in `<h
 flash of the wrong theme and a hydration mismatch. `components/theme-toggle.tsx` (`"use client"`)
 toggles the attribute and persists the choice; wired into `components/site-header.tsx` (both the
 desktop `<nav>` and the mobile-only control row) since it's a site-wide control, not homepage-only.
+
+## Language (Simplified Chinese, phase 1 — 2026-09-14)
+
+English is the default. A visitor switches with the header toggle beside the
+theme toggle; the choice lives in the `NEXT_LOCALE` cookie, written by one
+Zod-validated Server Action (`lib/i18n/set-locale-action.ts`) and read back by
+`i18n/request.ts`, which validates it against `LOCALES` and falls back to
+English for anything missing or unrecognised.
+
+**No `/zh/` URL prefix, deliberately.** The stories themselves are contributor
+writing and are never translated, so a second URL per story would give search
+engines the same body under two addresses. That also means the language is not
+in the URL, so a shared link opens in the reader's own language, not the
+sharer's.
+
+**The cost, and what pays for it.** Reading a cookie in the root layout makes
+every route render per request, so `/`, `/stories/[id]`, `/contributors/[slug]`
+(60s) and `/costs` (3600s) lost their `revalidate` exports. The DATA is
+identical in both languages, so the same windows now sit on the reads
+(`lib/story/public-queries.ts`'s `*Cached` readers, `unstable_cache`, tagged
+`public-stories` / `public-contributors`). `lib/story/public-cache.ts`'s
+existing invalidation helpers expire those tags with `{ expire: 0 }` alongside
+their `revalidatePath()` calls, because a takedown must not be served stale.
+`/stories` and `/contributors` were never cacheable (they await `searchParams`)
+and deliberately keep calling the UNCACHED readers.
+
+**What is translated, and what is not.** Every reader- and contributor-facing
+screen is. Story text, titles, excerpts, contributor bios, tags and typed
+destination labels are user data and are never touched. Staff areas
+(moderation, editorial, admin, readiness) and the dev-only `/index` route stay
+English in this phase — staff can still flip the toggle, and the shared
+components they borrow (`StatusBadge`, `StoryEditForm`, the confirm dialog)
+follow it.
+
+**Vocabulary tables.** `lib/i18n/vocab.ts` is a display-only overlay for the
+closed `regions` / `destinations` / `work_types` / `expense_categories`
+vocabularies, keyed by each row's SLUG and falling back to the database `name`.
+It needs a slug, so it reaches the surfaces that read those tables directly
+(the `/stories` filters, the authoring pickers, the quiz result). It does NOT
+reach the public RPCs: `list_published_stories()`, `get_published_story()`,
+`get_published_story_expenses()` and `get_expense_aggregates()` all build their
+JSON as `'region_name', reg.name` with no slug beside it, so story cards, the
+story page's place list, the contributor facts rows and `/costs`' by-region and
+by-category lists stay English. A `name_zh_cn` column on those four tables is
+the proper fix; the overlay is deliberately display-only so this phase carries
+no change to `list_published_stories()`.
+
+**Messages.** `messages/en.json` and `messages/zh-CN.json`, namespaced by area.
+`messages/messages.test.ts` holds them to identical key sets, identical ICU
+arguments and no empty values, and fails on a zh-CN value left identical to its
+English one unless it is on a short, commented allowlist (a brand name, two
+numerals, a lowercase-ASCII example value). `i18n/global.d.ts` types every
+`t()` key against `en.json`, so a typo fails `npm run typecheck`.
+
+**Schemas carry keys, not prose.** `lib/validation/*` emit stable message keys
+(`"auth.emailRequired"`), and `lib/validation/issue-messages.ts` turns them
+into text at the trust boundary. `{min}`/`{max}` come from the Zod issue
+itself, so the constant in the schema and the number in the sentence cannot
+drift. Zod's own defaults and the staff-only schemas pass through untouched.
+`lib/validation` stays free of React and next-intl.
+
+**Modules that cannot call a hook take their text as a parameter**: the PDF
+renderer (`buildStoryPdf({ labels, locale })`), the CodeMirror slash menu
+(`slashCommands({ labels })`), the direct-to-Storage uploader and
+`resolveSlices()`. Each has English defaults, so their tests are unchanged.
+
+**Known gaps, all deliberate**: no `Accept-Language` sniffing (no cookie means
+English); `app/global-error.tsx` stays English because it replaces the root
+layout, so the provider is gone and the locale read is part of what it has to
+survive failing; the home page and `/costs` marketing copy want a
+native-speaker review before launch.
 
 ## Roadmap (corrected)
 

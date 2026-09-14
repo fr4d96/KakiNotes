@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   MAX_PDF_IMPORT_INPUT_BYTES,
   isPdfMagicBytes,
@@ -27,6 +28,7 @@ const MAX_MB = Math.round(MAX_PDF_IMPORT_INPUT_BYTES / (1024 * 1024));
  * in the contributor's own editor at /stories/:id/edit on success.
  */
 export function PdfImportPicker() {
+  const t = useTranslations("pdfImport");
   const router = useRouter();
 
   const [title, setTitle] = useState("");
@@ -65,22 +67,22 @@ export function PdfImportPicker() {
   async function handlePreview() {
     setSubmitError(null);
     if (!file) {
-      setPreviewError("Choose a PDF file first.");
+      setPreviewError(t("errors.chooseFileFirst"));
       return;
     }
     const isPdfExtension = /\.pdf$/i.test(file.name);
     const isPdfType = file.type === "application/pdf" || file.type === "";
     if (!isPdfExtension || !isPdfType) {
-      setPreviewError("Choose a PDF file.");
+      setPreviewError(t("errors.chooseFile"));
       return;
     }
     if (file.size > MAX_PDF_IMPORT_INPUT_BYTES) {
-      setPreviewError(`The PDF file is too large (max ${MAX_MB} MB).`);
+      setPreviewError(t("errors.fileTooLarge", { max: MAX_MB }));
       return;
     }
     const head = new Uint8Array(await file.slice(0, 5).arrayBuffer());
     if (!isPdfMagicBytes(head)) {
-      setPreviewError("That file doesn't look like a PDF.");
+      setPreviewError(t("errors.notAPdf"));
       return;
     }
 
@@ -99,14 +101,14 @@ export function PdfImportPicker() {
         error?: string;
       };
       if (!response.ok || !body.pages) {
-        setPreviewError(body.error ?? "Could not read that PDF.");
+        setPreviewError(body.error ?? t("errors.couldNotRead"));
         return;
       }
       setPages(body.pages);
       setSelectedPages([]);
       setAltText({});
     } catch {
-      setPreviewError("That upload couldn't be sent. Try again.");
+      setPreviewError(t("errors.uploadFailed"));
     } finally {
       setPreviewLoading(false);
     }
@@ -126,19 +128,19 @@ export function PdfImportPicker() {
     e.preventDefault();
     setSubmitError(null);
     if (!title.trim()) {
-      setSubmitError("Add a title first.");
+      setSubmitError(t("errors.titleFirst"));
       return;
     }
     if (!file) {
-      setSubmitError("Choose a PDF file first.");
+      setSubmitError(t("errors.chooseFileFirst"));
       return;
     }
     if (selectedPages.length === 0) {
-      setSubmitError("Select at least one page.");
+      setSubmitError(t("errors.selectPage"));
       return;
     }
     if (!allAltTextFilled) {
-      setSubmitError("Add alt text for every selected page.");
+      setSubmitError(t("errors.altTextRequired"));
       return;
     }
 
@@ -166,13 +168,13 @@ export function PdfImportPicker() {
         error?: string;
       };
       if (!response.ok || !body.storyId) {
-        setSubmitError(body.error ?? "Could not create your story.");
+        setSubmitError(body.error ?? t("errors.createFailed"));
         setSubmitting(false);
         return;
       }
       router.push(`/stories/${body.storyId}/edit`);
     } catch {
-      setSubmitError("That request couldn't be sent. Try again.");
+      setSubmitError(t("errors.requestFailed"));
       setSubmitting(false);
     }
   }
@@ -187,7 +189,7 @@ export function PdfImportPicker() {
 
       <div>
         <label htmlFor="pdf-import-title" className="block text-sm font-medium">
-          Title
+          {t("titleLabel")}
         </label>
         <input
           id="pdf-import-title"
@@ -202,7 +204,7 @@ export function PdfImportPicker() {
 
       <div>
         <label htmlFor="pdf-import-file" className="block text-sm font-medium">
-          PDF file
+          {t("fileLabel")}
         </label>
         <input
           id="pdf-import-file"
@@ -212,8 +214,7 @@ export function PdfImportPicker() {
           className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2 text-sm dark:bg-transparent"
         />
         <p className="mt-1 text-xs text-muted-foreground">
-          Up to {MAX_MB} MB. Select the pages to add as images after uploading —
-          your story text is added afterwards in the editor.
+          {t("fileHint", { max: MAX_MB })}
         </p>
         <button
           type="button"
@@ -221,7 +222,7 @@ export function PdfImportPicker() {
           disabled={!file || previewLoading}
           className="mt-2 rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium disabled:opacity-60"
         >
-          {previewLoading ? "Reading PDF…" : "Upload & preview pages"}
+          {previewLoading ? t("reading") : t("uploadAndPreview")}
         </button>
         {previewError && (
           <p role="alert" className="mt-2 text-sm text-destructive">
@@ -233,13 +234,16 @@ export function PdfImportPicker() {
       {pages && pages.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Select pages to attach</h2>
+            <h2 className="text-sm font-semibold">{t("selectPages")}</h2>
             <p
               aria-live="polite"
               className={`text-sm ${limitReached ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"}`}
             >
-              {selectedPages.length} of {MAX_IMAGES_PER_REVISION} selected
-              {limitReached ? " — limit reached" : ""}
+              {t("selectedOf", {
+                selected: selectedPages.length,
+                max: MAX_IMAGES_PER_REVISION,
+              })}
+              {limitReached ? t("limitReached") : ""}
             </p>
           </div>
 
@@ -256,8 +260,13 @@ export function PdfImportPicker() {
                     aria-pressed={selected}
                     aria-label={
                       disabled
-                        ? `Page ${page.pageNumber}, limit of ${MAX_IMAGES_PER_REVISION} pages reached`
-                        : `Page ${page.pageNumber}${selected ? ", selected" : ""}`
+                        ? t("pageLabelDisabled", {
+                            page: page.pageNumber,
+                            max: MAX_IMAGES_PER_REVISION,
+                          })
+                        : selected
+                          ? t("pageLabelSelected", { page: page.pageNumber })
+                          : t("pageLabel", { page: page.pageNumber })
                     }
                     title={
                       disabled
@@ -292,7 +301,7 @@ export function PdfImportPicker() {
                         htmlFor={`pdf-alt-text-${page.pageNumber}`}
                         className="block text-xs font-medium"
                       >
-                        Alt text for page {page.pageNumber} (required)
+                        {t("altTextLabel", { page: page.pageNumber })}
                       </label>
                       <input
                         id={`pdf-alt-text-${page.pageNumber}`}
@@ -306,7 +315,7 @@ export function PdfImportPicker() {
                           }))
                         }
                         maxLength={500}
-                        placeholder="Describe this page"
+                        placeholder={t("describePage")}
                         className="mt-1 w-full rounded border border-border-subtle px-2 py-1 text-xs dark:bg-transparent"
                       />
                     </div>
@@ -323,7 +332,7 @@ export function PdfImportPicker() {
         disabled={!canSubmit}
         className="inline-flex items-center justify-center rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-60"
       >
-        {submitting ? "Creating…" : "Create My Story"}
+        {submitting ? t("creating") : t("createStory")}
       </button>
     </form>
   );

@@ -2,15 +2,16 @@
 
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useToast } from "@/components/ui/toast";
 
-const TOAST_MESSAGES: Record<string, string> = {
-  submitted: "Submitted for review.",
-  // Deliberately says no review is coming, because the contributor has just
-  // been through a step whose every other outcome sends the story to a
-  // moderator -- leaving that unsaid invites them to wait for something
-  // that will never arrive.
-  "kept-private": "Saved privately. Only you can see it.",
+// The `toast` query value -> its message key. "kept-private" deliberately
+// says no review is coming, because the contributor has just been through a
+// step whose every other outcome sends the story to a moderator -- leaving
+// that unsaid invites them to wait for something that will never arrive.
+const TOAST_KEYS: Record<string, "submitted" | "keptPrivate"> = {
+  submitted: "submitted",
+  "kept-private": "keptPrivate",
 };
 
 /**
@@ -22,6 +23,7 @@ const TOAST_MESSAGES: Record<string, string> = {
  * a refresh or back-navigation doesn't re-fire it.
  */
 export function SubmissionToast() {
+  const t = useTranslations("myStories.toasts");
   const router = useRouter();
   const searchParams = useSearchParams();
   const toastKey = searchParams.get("toast");
@@ -29,8 +31,8 @@ export function SubmissionToast() {
 
   useEffect(() => {
     if (!toastKey) return;
-    const message = TOAST_MESSAGES[toastKey];
-    if (message) showToast(message);
+    const messageKey = TOAST_KEYS[toastKey];
+    if (messageKey) showToast(t(messageKey));
     const params = new URLSearchParams(searchParams);
     params.delete("toast");
     const query = params.toString();

@@ -8,6 +8,10 @@
  * The caller owns the axis values and the active selection; this component is
  * pure presentation. `ALL` is the conventional "no filter on this axis"
  * sentinel and is exported so callers compare against the same string.
+ *
+ * ALL is a VALUE, not a label: it is compared against and held in state, so
+ * it must not change with the language. What the reader SEES on that chip
+ * comes from `allLabel`.
  */
 export const ALL = "All";
 
@@ -16,11 +20,17 @@ export function FilterRow({
   options,
   active,
   onChange,
+  allLabel,
+  groupLabel,
 }: {
   label: string;
   options: string[];
   active: string;
   onChange: (value: string) => void;
+  /** What to draw on the ALL chip. Defaults to the sentinel's own text. */
+  allLabel?: string;
+  /** Accessible name for the chip group, e.g. "Filter stories by place". */
+  groupLabel?: string;
 }) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
@@ -35,7 +45,7 @@ export function FilterRow({
           from sm up. */}
       <div
         role="group"
-        aria-label={`Filter stories by ${label.toLowerCase()}`}
+        aria-label={groupLabel ?? `Filter stories by ${label.toLowerCase()}`}
         className="nf-scroll-x -mx-4 flex snap-x gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
       >
         {options.map((option) => {
@@ -52,7 +62,7 @@ export function FilterRow({
                   : "border-border-subtle text-foreground/80 hover:border-accent/60 hover:text-foreground"
               }`}
             >
-              {option}
+              {option === ALL ? (allLabel ?? option) : option}
             </button>
           );
         })}

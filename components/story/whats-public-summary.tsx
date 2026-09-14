@@ -1,9 +1,7 @@
-const ATTRIBUTION_LABELS: Record<string, string> = {
-  real_name: "your real name",
-  display_name: "your chosen display name",
-  pseudonym: "a pseudonym",
-  anonymous: "anonymous (no name shown)",
-};
+import { useTranslations } from "next-intl";
+
+// Labels live in messages/<locale>.json at `whatsPublic.attribution`, keyed
+// by the contributor_attribution_type enum value itself.
 
 export type WhatsPublicSummaryProps = {
   attributionType: string;
@@ -29,40 +27,41 @@ export function WhatsPublicSummary({
   imageCount,
   decorativeImageCount,
 }: WhatsPublicSummaryProps) {
-  const attributionLabel =
-    ATTRIBUTION_LABELS[attributionType] ?? attributionType;
+  const t = useTranslations("whatsPublic");
+  const key = `attribution.${attributionType}` as never;
+  // An enum value this app has not been taught renders as itself rather
+  // than as a missing-message error.
+  const attributionLabel = t.has(key) ? t(key) : attributionType;
   const captionedImageCount = imageCount - decorativeImageCount;
 
   return (
     <div className="rounded-md border border-border-subtle p-4 text-sm">
-      <h2 className="text-sm font-semibold">What will be public</h2>
+      <h2 className="text-sm font-semibold">{t("heading")}</h2>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
         <li>
-          Your name will show as: <strong>{attributionValue}</strong> (
-          {attributionLabel})
+          {t.rich("nameLine", {
+            value: attributionValue,
+            attribution: attributionLabel,
+            name: (chunks) => <strong>{chunks}</strong>,
+          })}
         </li>
-        <li>
-          The full story title{hasExcerpt ? " and excerpt" : ""} and body text
-        </li>
-        <li>
-          Trip details you set: region, destination, tags, trip date/year,
-          travel style, and reported cost (if you added one)
-        </li>
+        <li>{hasExcerpt ? t("titleExcerptAndBody") : t("titleAndBody")}</li>
+        <li>{t("tripDetails")}</li>
         {imageCount > 0 && (
           <li>
-            {imageCount} image{imageCount === 1 ? "" : "s"}
             {captionedImageCount > 0
-              ? ` (${captionedImageCount} with a visible caption)`
-              : ""}
-            , with alt text and metadata already stripped
+              ? t("imagesWithCaptions", {
+                  count: imageCount,
+                  captioned: captionedImageCount,
+                })
+              : t("images", { count: imageCount })}
           </li>
         )}
       </ul>
       <p className="mt-2 text-xs text-muted-foreground">
-        Internal editor and moderator notes are never shown publicly. You can
-        request removal or correction at any time — see{" "}
+        {t("notesNeverShown")}{" "}
         <a href="/copyright" className="underline underline-offset-2">
-          Copyright &amp; Removal
+          {t("copyrightRemoval")}
         </a>
         .
       </p>

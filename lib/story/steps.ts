@@ -24,14 +24,19 @@ import type { StoryDestination } from "@/lib/story/story-visibility";
  * duplicating an authorization decision, which Engineering Rule 2 rules
  * out. So "Next" on the last editing step navigates there instead.
  */
+// The id is the stable key for everything -- routing, done/locked sets,
+// and the message lookup: a step's label lives in messages/<locale>.json at
+// `editor.stepLabels.<id>` and its hint at `editor.stepHints.<id>`. No
+// prose here, because this module is imported by Server Components, Client
+// Components and plain tests alike and knows nothing about the visitor.
 export const STORY_STEPS = [
-  { id: "title", label: "Title", hint: "What it's called" },
-  { id: "story", label: "Your story", hint: "The writing itself" },
-  { id: "photos", label: "Photos", hint: "Optional" },
-  { id: "trip", label: "Trip", hint: "Optional" },
-  { id: "expenses", label: "Expenses", hint: "Optional" },
-  { id: "places", label: "Places & tags", hint: "Where and what" },
-  { id: "review", label: "Review & submit", hint: "Check it, then send" },
+  { id: "title" },
+  { id: "story" },
+  { id: "photos" },
+  { id: "trip" },
+  { id: "expenses" },
+  { id: "places" },
+  { id: "review" },
 ] as const;
 
 export type StoryStepId = (typeof STORY_STEPS)[number]["id"];
@@ -49,8 +54,13 @@ export const EDITING_STORY_STEPS = STORY_STEPS.filter(
 );
 
 export type StoryRequirement = {
-  /** Reads as a list item after "Add …": "a title", "at least one tag". */
-  label: string;
+  /**
+   * A key into messages/<locale>.json's `editor.requirements`, whose value
+   * reads as a list item after "Add …": "a title", "at least one tag".
+   * A key rather than the sentence, for the same reason the steps above
+   * carry none.
+   */
+  labelKey: "title" | "content" | "location" | "tag";
   /** Which step the contributor has to go to in order to supply it. */
   step: StoryStepId;
 };
@@ -91,14 +101,14 @@ export function missingStoryRequirements(input: {
   destination?: StoryDestination;
 }): StoryRequirement[] {
   const missing: StoryRequirement[] = [];
-  if (!input.title.trim()) missing.push({ label: "a title", step: "title" });
-  if (!input.hasContent) missing.push({ label: "your story", step: "story" });
+  if (!input.title.trim()) missing.push({ labelKey: "title", step: "title" });
+  if (!input.hasContent) missing.push({ labelKey: "content", step: "story" });
   if (input.destination === "private") return missing;
   if (input.locationCount < 1) {
-    missing.push({ label: "at least one location", step: "places" });
+    missing.push({ labelKey: "location", step: "places" });
   }
   if (input.tagCount < 1) {
-    missing.push({ label: "at least one tag", step: "places" });
+    missing.push({ labelKey: "tag", step: "places" });
   }
   return missing;
 }

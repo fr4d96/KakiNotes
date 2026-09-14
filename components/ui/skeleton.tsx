@@ -74,6 +74,8 @@ export function RouteProgress() {
  * progress hairline and the skeleton; only a screen reader needs the word.
  */
 export function LoadingScreen({
+  // Callers pass a translated, page-specific label; this default only ever
+  // shows if one forgets.
   label = "Loading",
   className = "",
   children,

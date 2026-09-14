@@ -60,13 +60,32 @@ export function canExportStory(
   return !(lifecycleStatus === "draft" && revisionStatus === "draft");
 }
 
+/**
+ * A key into messages/<locale>.json's `pdf.status`, not a sentence -- the
+ * label is stamped on a downloaded PDF, so it has to be in the reader's
+ * language. The export route resolves it.
+ */
+export type ExportStatusKey =
+  | "published"
+  | "approved"
+  | "private"
+  | "unpublishedUpdate"
+  | "draft"
+  | "updateInReview"
+  | "inReview"
+  | "changesRequested"
+  | "notPublished"
+  | "withdrawn"
+  | "superseded"
+  | "unpublished";
+
 export function exportStatusLabel(
   lifecycleStatus: string,
   revisionStatus: string,
-): string {
+): ExportStatusKey {
   switch (revisionStatus) {
     case "approved":
-      return lifecycleStatus === "published" ? "Published" : "Approved";
+      return lifecycleStatus === "published" ? "published" : "approved";
     case "draft":
       // A private story's revision stays a DRAFT forever -- that is what
       // keeps it out of the moderation queue and its images out of public
@@ -74,24 +93,22 @@ export function exportStatusLabel(
       // it would land by default, and that would be misleading in the one
       // place this label exists to be honest: a downloaded PDF, read later,
       // with none of the app around it to say otherwise.
-      if (lifecycleStatus === "private") return "Private";
-      return lifecycleStatus === "published"
-        ? "Unpublished draft update"
-        : "Draft";
+      if (lifecycleStatus === "private") return "private";
+      return lifecycleStatus === "published" ? "unpublishedUpdate" : "draft";
     case "submitted":
-      return lifecycleStatus === "published" ? "Update in review" : "In review";
+      return lifecycleStatus === "published" ? "updateInReview" : "inReview";
     case "changes_requested":
-      return "Changes requested";
+      return "changesRequested";
     case "rejected":
-      return "Not published";
+      return "notPublished";
     case "withdrawn":
-      return "Withdrawn";
+      return "withdrawn";
     case "superseded":
-      return "Superseded";
+      return "superseded";
     default:
       // A status added to the enum without updating this map should read as
-      // unknown rather than silently as "Published".
-      return "Unpublished";
+      // unknown rather than silently as "published".
+      return "unpublished";
   }
 }
 

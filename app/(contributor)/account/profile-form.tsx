@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import {
   updateProfileAction,
   type AccountFormState,
@@ -18,6 +19,7 @@ const initialState: AccountFormState = {};
  * in 20260910090000. What is left here is the account's own label.
  */
 export function ProfileForm({ displayName }: { displayName: string }) {
+  const t = useTranslations("account.profile");
   const [state, formAction, pending] = useActionState(
     updateProfileAction,
     initialState,
@@ -27,16 +29,15 @@ export function ProfileForm({ displayName }: { displayName: string }) {
     <form action={formAction} className="mt-4 space-y-5" noValidate>
       <div>
         <label htmlFor="displayName" className="block text-sm font-medium">
-          Account name
+          {t("nameLabel")}
         </label>
         <p className="mt-1 text-xs text-foreground/55">
-          Just for your account. Readers never see this — the name on your
-          stories is set on the{" "}
+          {t("nameHintBefore")}{" "}
           <a
             href="#contributor-identity"
             className="underline underline-offset-2"
           >
-            Contributor identity tab
+            {t("nameHintLink")}
           </a>
           .
         </p>
@@ -67,7 +68,7 @@ export function ProfileForm({ displayName }: { displayName: string }) {
         disabled={pending}
         className="journiq-button bg-accent text-sm text-accent-foreground disabled:opacity-60"
       >
-        {pending ? "Saving…" : "Update profile"}
+        {pending ? t("saving") : t("submit")}
       </button>
     </form>
   );

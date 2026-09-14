@@ -5,7 +5,19 @@ vi.mock("@/lib/auth/get-current-user", () => ({
   getCurrentUser: () => mockGetCurrentUser(),
 }));
 
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+}));
+// The public-cache helper is server-only and the public-queries module it
+// imports for its tags builds Supabase clients at import time; neither is
+// under test here.
+vi.mock("@/lib/story/public-cache", () => ({
+  invalidateContributorPublicCache: vi.fn(),
+}));
+vi.mock("@/lib/story/public-queries", () => ({
+  PUBLIC_CONTRIBUTORS_TAG: "public-contributors",
+}));
 
 // Records every call made through the chainable query-builder mock so tests
 // can assert exactly which row was targeted / what was written, without a

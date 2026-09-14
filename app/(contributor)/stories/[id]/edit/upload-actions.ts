@@ -1,5 +1,7 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
+
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import {
@@ -57,11 +59,15 @@ export async function beginMediaUploadAction(
   revisionId: string,
   sourceMimeType: "image/jpeg" | "image/png" | "image/webp" | "image/heic",
 ): Promise<{ mediaId: string; reservedPath: string } | { error: string }> {
+  const [tErr, tCommon] = await Promise.all([
+    getTranslations("actionErrors"),
+    getTranslations("common"),
+  ]);
   const user = await getCurrentUser();
-  if (!user) return { error: "You must be signed in." };
+  if (!user) return { error: tCommon("mustBeSignedIn") };
 
   const parsedRevisionId = uuidSchema.safeParse(revisionId);
-  if (!parsedRevisionId.success) return { error: "Invalid revision." };
+  if (!parsedRevisionId.success) return { error: tErr("invalidRevision") };
 
   try {
     const reserved = await beginStoryMediaUpload(
@@ -71,7 +77,7 @@ export async function beginMediaUploadAction(
     return { mediaId: reserved.media_id, reservedPath: reserved.reserved_path };
   } catch (error) {
     return {
-      error: getErrorMessage(error, "Could not reserve an upload slot."),
+      error: getErrorMessage(error, tErr("reserveUploadFailed")),
     };
   }
 }
@@ -79,11 +85,15 @@ export async function beginMediaUploadAction(
 export async function transcodeHeicUploadAction(
   mediaId: string,
 ): Promise<{ ok: true } | { error: string }> {
+  const [tErr, tCommon] = await Promise.all([
+    getTranslations("actionErrors"),
+    getTranslations("common"),
+  ]);
   const user = await getCurrentUser();
-  if (!user) return { error: "You must be signed in." };
+  if (!user) return { error: tCommon("mustBeSignedIn") };
 
   const parsedMediaId = uuidSchema.safeParse(mediaId);
-  if (!parsedMediaId.success) return { error: "Invalid media." };
+  if (!parsedMediaId.success) return { error: tErr("invalidMedia") };
 
   try {
     const { story_id, staging_path } = await authorizeHeicTranscode(
@@ -101,10 +111,7 @@ export async function transcodeHeicUploadAction(
       return { error: error.message };
     }
     return {
-      error: getErrorMessage(
-        error,
-        "Could not convert this HEIC photo. Please try again.",
-      ),
+      error: getErrorMessage(error, tErr("heicConvertFailed")),
     };
   }
 }
@@ -113,13 +120,17 @@ export async function finalizeMediaUploadAction(
   mediaId: string,
   expectedVersion: number,
 ): Promise<{ mediaId: string } | { error: string }> {
+  const [tErr, tCommon] = await Promise.all([
+    getTranslations("actionErrors"),
+    getTranslations("common"),
+  ]);
   const user = await getCurrentUser();
-  if (!user) return { error: "You must be signed in." };
+  if (!user) return { error: tCommon("mustBeSignedIn") };
 
   const parsedMediaId = uuidSchema.safeParse(mediaId);
-  if (!parsedMediaId.success) return { error: "Invalid media." };
+  if (!parsedMediaId.success) return { error: tErr("invalidMedia") };
   if (!Number.isInteger(expectedVersion)) {
-    return { error: "Invalid expectedVersion." };
+    return { error: tErr("invalidExpectedVersion") };
   }
 
   try {
@@ -130,7 +141,7 @@ export async function finalizeMediaUploadAction(
     // cleanup needed here, matching that script's existing role.
     await cancelPendingStoryMediaUpload(parsedMediaId.data).catch(() => {});
     return {
-      error: getErrorMessage(error, "Could not finalize the upload."),
+      error: getErrorMessage(error, tErr("finalizeUploadFailed")),
     };
   }
 

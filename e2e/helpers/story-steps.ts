@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { STORY_STEPS, type StoryStepId } from "@/lib/story/steps";
+import en from "@/messages/en.json";
 
 /**
  * Switch the story editor to one of its in-page steps and wait until that
@@ -16,11 +17,15 @@ import { STORY_STEPS, type StoryStepId } from "@/lib/story/steps";
  * specs failed exactly that way after 3dc6854 turned the editor into a
  * stepped flow; this is the one place they all go through now.
  *
- * The accessible name is rebuilt from STORY_STEPS -- the same array
- * components/story/story-steps.tsx labels its controls from -- rather than
- * typed out as "Step 2 of 7: Your story", so renaming or adding a step
- * cannot leave this helper clicking the wrong circle. The name may carry a
- * "(current step, done)" style suffix, hence the anchored prefix match.
+ * The accessible name is rebuilt from the same two sources
+ * components/story/story-steps.tsx renders it from -- STORY_STEPS for the
+ * order and count, messages/en.json for the label and the
+ * "Step {index} of {total}: {label}" template -- rather than typed out as
+ * "Step 2 of 7: Your story", so renaming a step, re-wording the template
+ * or adding a step cannot leave this helper clicking the wrong circle. The
+ * rendered name may carry a "(current step, done)" style suffix, hence the
+ * anchored prefix match. English only: the e2e runs set no locale cookie,
+ * so the app renders its default.
  *
  * "review" is excluded on purpose: in the editor it is a locked circle (a
  * plain <span>, not a button) because that step is a different route,
@@ -31,12 +36,15 @@ export async function goToStoryStep(
   id: Exclude<StoryStepId, "review">,
 ): Promise<void> {
   const index = STORY_STEPS.findIndex((s) => s.id === id);
-  const step = STORY_STEPS[index];
-  const name = new RegExp(
-    `^Step ${index + 1} of ${STORY_STEPS.length}: ${escapeRegExp(step.label)}`,
-  );
+  const rendered = en.editor.progress.stepOfNamed
+    .replace("{index}", String(index + 1))
+    .replace("{total}", String(STORY_STEPS.length))
+    .replace("{label}", en.editor.stepLabels[id]);
+  const name = new RegExp(`^${escapeRegExp(rendered)}`);
 
-  const nav = page.getByRole("navigation", { name: "Story progress" });
+  const nav = page.getByRole("navigation", {
+    name: en.editor.progress.navLabel,
+  });
   const control = nav.getByRole("button", { name });
   await control.click();
 

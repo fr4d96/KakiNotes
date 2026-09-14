@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   revisionInputSchema,
   travelStyles,
@@ -27,6 +28,7 @@ import {
   type LocationMatch,
 } from "@/components/story/location-search";
 import { MutationQueue } from "@/lib/story/mutation-queue";
+import { firstIssueMessage } from "@/lib/validation/issue-messages";
 import { getErrorMessage } from "@/lib/errors";
 import type {
   RevisionMediaItem,
@@ -171,10 +173,12 @@ function StepSection({
   activeStep: StoryStepId;
   children: React.ReactNode;
 }) {
+  const t = useTranslations("editor");
+  const label = t(`stepLabels.${id}` as never);
   return (
     <section
       id={`story-step-${id}`}
-      aria-label={STORY_STEPS.find((s) => s.id === id)?.label}
+      aria-label={label}
       className={`space-y-6 ${activeStep === id ? "" : "hidden"}`}
     >
       {children}
@@ -196,11 +200,15 @@ function formatCamelCaseLabel(value: string): string {
  * `aria-hidden` on the glyph plus a visually-hidden "required" is the usual
  * pattern -- a screen reader shouldn't read a bare "asterisk".
  */
+/** Sentinel for "the save failed and the error said nothing useful". */
+const SAVE_FAILED = "__save_failed__";
+
 function RequiredMark() {
+  const t = useTranslations("common");
   return (
     <span className="text-destructive">
       <span aria-hidden="true"> *</span>
-      <span className="sr-only"> required</span>
+      <span className="sr-only">{t("requiredSuffix")}</span>
     </span>
   );
 }
@@ -220,13 +228,22 @@ function RequiredMark() {
  * The relative time re-renders on a 30s interval, but ONLY while a save has
  * actually happened -- no timer runs on a form nobody has edited.
  */
-function relativeSaveTime(from: number, now: number): string {
+type SaveTimeTranslator = (
+  key: "justNow" | "minutesAgo" | "hoursAgo",
+  values?: { count: number },
+) => string;
+
+function relativeSaveTime(
+  from: number,
+  now: number,
+  t: SaveTimeTranslator,
+): string {
   const seconds = Math.max(0, Math.round((now - from) / 1000));
-  if (seconds < 45) return "just now";
+  if (seconds < 45) return t("justNow");
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) return t("minutesAgo", { count: minutes });
   const hours = Math.round(minutes / 60);
-  return `${hours}h ago`;
+  return t("hoursAgo", { count: hours });
 }
 
 function SaveStatus({
@@ -236,6 +253,7 @@ function SaveStatus({
   saving: boolean;
   lastSavedAt: number | null;
 }) {
+  const t = useTranslations("editor.save");
   const [now, setNow] = useState(() => Date.now());
 
   // No synchronous setState here: a fresh stamp makes `now` at most one
@@ -248,10 +266,12 @@ function SaveStatus({
   }, [lastSavedAt]);
 
   const label = saving
-    ? "Saving…"
+    ? t("saving")
     : lastSavedAt !== null
-      ? `Saved ${relativeSaveTime(lastSavedAt, now)}`
-      : "Not saved yet";
+      ? t("savedAt", {
+          when: relativeSaveTime(lastSavedAt, now, t as SaveTimeTranslator),
+        })
+      : t("notSavedYet");
 
   return (
     <span
@@ -299,6 +319,8 @@ export function StoryEditForm({
   isNewStory = false,
   initialStep = "title",
 }: StoryEditFormProps) {
+  const t = useTranslations("editor");
+  const tValidation = useTranslations("validation");
   const versionRef = useRef(initialVersion);
   const [conflict, setConflict] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -318,8 +340,15 @@ export function StoryEditForm({
   const queue = useMemo(() => {
     const q = new MutationQueue({
       onVersionConflict: () => setConflict(true),
+      // Stores the raw message, or SAVE_FAILED when the error carries none
+      // -- translated at render below. Deliberately NOT translated here:
+      // this callback is built inside the useMemo factory, which React
+      // treats as render phase, and reading a translator (or a ref holding
+      // one) there is exactly the violation the comment above describes.
+      // A sentinel rather than "" because the banner is rendered behind a
+      // truthiness check, and an empty string would silently show nothing.
       onError: (_slot, error) =>
-        setSaveError(getErrorMessage(error, "Save failed.")),
+        setSaveError(getErrorMessage(error, "") || SAVE_FAILED),
       // `saving` must stay true whenever ANY mutation is queued or running
       // across ANY slot -- not merely "the mutation that just settled did."
       // Reading queue.hasPending() at the moment of settling (rather than
@@ -529,7 +558,9 @@ export function StoryEditForm({
           contributorNote: next.contributorNote,
         });
         if (!parsed.success) {
-          setSaveError(parsed.error.issues[0]?.message ?? "Invalid input.");
+          setSaveError(
+            firstIssueMessage(parsed.error, tValidation, "common.invalidInput"),
+          );
           setSaving(false);
           return;
         }
@@ -565,7 +596,7 @@ export function StoryEditForm({
         });
       }, FIELDS_SAVE_DEBOUNCE_MS);
     },
-    [queue, revisionId],
+    [queue, revisionId, tValidation],
   );
 
   // Every field-backed value schedules its own save directly from the event
@@ -646,7 +677,11 @@ export function StoryEditForm({
       if (!parsed.success) {
         return {
           ok: false,
-          error: parsed.error.issues[0]?.message ?? "Invalid content.",
+          error: firstIssueMessage(
+            parsed.error,
+            tValidation,
+            "common.invalidInput",
+          ),
         };
       }
 
@@ -960,8 +995,8 @@ export function StoryEditForm({
     if (!match) {
       setLocationSearchNotice(
         label
-          ? `We could not match "${label}" to a New Zealand region — use "Add a location manually" below.`
-          : 'We could not match that place to a New Zealand region — use "Add a location manually" below.',
+          ? t("fields.unmatchedPlaceNamed", { label })
+          : t("fields.unmatchedPlace"),
       );
       return;
     }
@@ -1095,7 +1130,7 @@ export function StoryEditForm({
         <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 lg:max-w-5xl">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-3">
             <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
-              {isNewStory ? "New Story" : "Edit Story"}
+              {isNewStory ? t("newStory") : t("editStory")}
             </h1>
             <div className="flex items-center gap-3 text-sm">
               <SaveStatus saving={saving} lastSavedAt={lastSavedAt} />
@@ -1103,7 +1138,7 @@ export function StoryEditForm({
                 href={`/stories/${storyId}/preview`}
                 className="journiq-button bg-accent text-sm text-accent-foreground"
               >
-                Preview
+                {t("preview")}
               </Link>
             </div>
           </div>
@@ -1143,7 +1178,7 @@ export function StoryEditForm({
         )}
         {saveError && !conflict && (
           <p role="alert" className="mt-4 text-sm text-destructive">
-            {saveError}
+            {saveError === SAVE_FAILED ? t("save.failed") : saveError}
           </p>
         )}
 
@@ -1156,17 +1191,17 @@ export function StoryEditForm({
           tabIndex={-1}
           className="mt-6 text-2xl font-semibold tracking-tight outline-none sm:text-3xl"
         >
-          {STORY_STEPS[stepIndex].label}
+          {t(`stepLabels.${STORY_STEPS[stepIndex].id}` as never)}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {STORY_STEPS[stepIndex].hint}
+          {t(`stepHints.${STORY_STEPS[stepIndex].id}` as never)}
         </p>
 
         <div className="mt-6">
           <StepSection id="title" activeStep={step}>
             <div>
               <label htmlFor="edit-title" className="block text-sm font-medium">
-                Title
+                {t("fields.title")}
                 <RequiredMark />
               </label>
               <input
@@ -1187,7 +1222,7 @@ export function StoryEditForm({
                 htmlFor="edit-excerpt"
                 className="block text-sm font-medium"
               >
-                Sub-Title
+                {t("fields.subtitle")}
               </label>
               <textarea
                 id="edit-excerpt"
@@ -1201,7 +1236,7 @@ export function StoryEditForm({
                 className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2 dark:bg-transparent"
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                Optional. One or two lines that say what the story is about.
+                {t("fields.subtitleHint")}
               </p>
             </div>
           </StepSection>
@@ -1251,8 +1286,7 @@ export function StoryEditForm({
                 "N photos · N in your story" summary, so this was the third
                 count on one screen. */}
               <p className="text-sm text-muted-foreground">
-                Add photos here. &ldquo;Add to story&rdquo; drops one into your
-                text and takes you back to it.
+                {t("fields.photosHint")}
               </p>
               <div className="mt-3">
                 <ImageUploadManager
@@ -1329,7 +1363,7 @@ export function StoryEditForm({
                 htmlFor="edit-travel-style"
                 className="block text-sm font-medium"
               >
-                Travel style
+                {t("fields.travelStyle")}
               </label>
               <select
                 id="edit-travel-style"
@@ -1350,26 +1384,26 @@ export function StoryEditForm({
                 }}
                 className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2 dark:bg-transparent"
               >
-                <option value="">Not specified</option>
+                <option value="">{t("fields.travelStyleUnset")}</option>
                 {travelStyles.map((style) => (
                   <option key={style} value={style}>
                     {formatCamelCaseLabel(style)}
                   </option>
                 ))}
-                <option value="other">Other (type your own)</option>
+                <option value="other">{t("fields.travelStyleOther")}</option>
               </select>
               {travelStyleMode === "other" && (
                 <input
                   type="text"
                   value={travelStyle}
                   maxLength={50}
-                  placeholder="Describe your travel style"
+                  placeholder={t("fields.travelStylePlaceholder")}
                   onChange={(e) => {
                     setTravelStyle(e.target.value);
                     scheduleSave({ travelStyle: e.target.value });
                   }}
                   className="mt-2 w-full rounded-md border border-border-subtle px-3 py-2 dark:bg-transparent"
-                  aria-label="Other travel style (type your own)"
+                  aria-label={t("fields.travelStyleOwnLabel")}
                 />
               )}
             </div>
@@ -1392,7 +1426,7 @@ export function StoryEditForm({
                   htmlFor="edit-expense"
                   className="block text-sm font-medium"
                 >
-                  Total expenses (NZD)
+                  {t("fields.totalExpenses")}
                 </label>
                 <input
                   id="edit-expense"
@@ -1490,7 +1524,7 @@ export function StoryEditForm({
           <StepSection id="places" activeStep={step}>
             <fieldset>
               <legend className="text-sm font-medium">
-                Locations
+                {t("fields.locations")}
                 <RequiredMark />
               </legend>
               <div className="mt-1">
@@ -1509,7 +1543,7 @@ export function StoryEditForm({
                 {locations.map((loc, i) => (
                   <div key={i} className="flex flex-wrap items-center gap-2">
                     <select
-                      aria-label="Region"
+                      aria-label={t("fields.region")}
                       value={loc.regionId}
                       onChange={(e) =>
                         updateLocation(i, {
@@ -1530,7 +1564,7 @@ export function StoryEditForm({
                           region is chosen, so it can never be re-selected
                           to un-set a saved location (Remove does that). */}
                       {!loc.regionId && (
-                        <option value="">Choose a region…</option>
+                        <option value="">{t("fields.chooseRegion")}</option>
                       )}
                       {regions.map((r) => (
                         <option key={r.id} value={r.id}>
@@ -1547,7 +1581,7 @@ export function StoryEditForm({
                         and the two are mutually exclusive in the database. */}
                     <input
                       type="text"
-                      aria-label="Town or place (optional)"
+                      aria-label={t("fields.townOrPlace")}
                       value={
                         loc.destinationId
                           ? (destinations.find(
@@ -1557,7 +1591,7 @@ export function StoryEditForm({
                       }
                       disabled={Boolean(loc.destinationId)}
                       maxLength={120}
-                      placeholder="Town or place (optional)"
+                      placeholder={t("fields.townOrPlace")}
                       onChange={(e) =>
                         updateLocation(i, {
                           customDestinationLabel:
@@ -1573,7 +1607,7 @@ export function StoryEditForm({
                       onClick={() => removeLocation(i)}
                       className="text-sm text-destructive underline underline-offset-2"
                     >
-                      Remove
+                      {t("fields.remove")}
                     </button>
                   </div>
                 ))}
@@ -1583,7 +1617,7 @@ export function StoryEditForm({
                 onClick={addManualLocation}
                 className="mt-2 rounded-md border border-border-subtle px-3 py-2 text-sm font-medium hover:bg-surface-muted"
               >
-                Add a location manually
+                {t("fields.addLocationManually")}
               </button>
               {locations.length === 0 && (
                 <p className="mt-2 text-xs text-muted-foreground">
@@ -1601,14 +1635,14 @@ export function StoryEditForm({
 
             <details className="rounded-md border border-border-subtle">
               <summary className="cursor-pointer px-3 py-2 text-sm font-medium select-none">
-                Note to editors{" "}
+                {t("fields.noteToEditors")}{" "}
                 <span className="font-normal text-muted-foreground">
-                  (optional, private, never published)
+                  {t("fields.noteToEditorsHint")}
                 </span>
               </summary>
               <div className="border-t border-border-subtle p-3">
                 <label htmlFor="edit-note" className="sr-only">
-                  Note to editors
+                  {t("fields.noteToEditors")}
                 </label>
                 <textarea
                   id="edit-note"
@@ -1643,18 +1677,23 @@ export function StoryEditForm({
             className="mt-8 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
           >
             <p className="font-medium">
-              Add {missingRequirements.map((r) => r.label).join(", ")} before
-              you can submit.
+              {t("missing.beforeSubmit", {
+                list: missingRequirements
+                  .map((r) => t(`requirements.${r.labelKey}` as never))
+                  .join(t("missing.listSeparator")),
+              })}
             </p>
             <ul className="mt-2 flex flex-wrap gap-2">
               {missingRequirements.map((requirement) => (
-                <li key={requirement.label}>
+                <li key={requirement.labelKey}>
                   <button
                     type="button"
                     onClick={() => goToStep(requirement.step)}
                     className="rounded-md border border-amber-400 px-2.5 py-1 text-xs font-medium underline-offset-2 hover:underline dark:border-amber-700"
                   >
-                    Add {requirement.label}
+                    {t("missing.addOne", {
+                      what: t(`requirements.${requirement.labelKey}` as never),
+                    })}
                   </button>
                 </li>
               ))}
@@ -1672,14 +1711,16 @@ export function StoryEditForm({
               onClick={() => goToStep(previousStep.id)}
               className="rounded-md border border-border-subtle px-4 py-2 text-sm font-medium"
             >
-              ← {previousStep.label}
+              {t("nav.back", {
+                label: t(`stepLabels.${previousStep.id}` as never),
+              })}
             </button>
           ) : (
             <Link
               href="/my-stories"
               className="rounded-md border border-border-subtle px-4 py-2 text-sm font-medium"
             >
-              ← My Stories
+              {t("nav.backToMyStories")}
             </Link>
           )}
 
@@ -1689,7 +1730,7 @@ export function StoryEditForm({
                 href={`/stories/${storyId}/preview`}
                 className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground"
               >
-                Review &amp; submit →
+                {t("reviewAndSubmit")}
               </Link>
             ) : (
               // A real disabled <button>, not a styled-down <Link>: a link is
@@ -1704,7 +1745,7 @@ export function StoryEditForm({
                 aria-describedby={MISSING_REQUIREMENTS_ID}
                 className="cursor-not-allowed rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground opacity-45"
               >
-                Review &amp; submit →
+                {t("reviewAndSubmit")}
               </button>
             )
           ) : (
@@ -1714,7 +1755,9 @@ export function StoryEditForm({
                 onClick={() => goToStep(nextStep.id)}
                 className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground"
               >
-                Next: {nextStep.label} →
+                {t("nav.next", {
+                  label: t(`stepLabels.${nextStep.id}` as never),
+                })}
               </button>
             )
           )}

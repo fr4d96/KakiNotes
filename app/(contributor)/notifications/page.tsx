@@ -1,24 +1,26 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import {
   listMyNotifications,
   NOTIFICATIONS_PAGE_LIMIT,
 } from "@/lib/notifications/queries";
 import { NotificationsList } from "./notifications-list";
 
-export const metadata: Metadata = {
-  title: "Notifications",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("notifications");
+  return { title: t("metaTitle") };
+}
 
 export default async function NotificationsPage() {
-  const notifications = await listMyNotifications();
+  const [notifications, t] = await Promise.all([
+    listMyNotifications(),
+    getTranslations("notifications"),
+  ]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
-      <h1 className="journiq-heading text-[2.4rem]">Notifications</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Updates about your stories, and — if you review stories — what is
-        waiting for you.
-      </p>
+      <h1 className="journiq-heading text-[2.4rem]">{t("title")}</h1>
+      <p className="mt-2 text-sm text-muted-foreground">{t("intro")}</p>
 
       <div className="mt-8">
         {/*

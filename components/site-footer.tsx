@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { BrandLogo } from "@/components/brand-logo";
 
 export function SiteFooter() {
+  const t = useTranslations("footer");
+  const tNav = useTranslations("nav");
   return (
     // The footer FLIPS with the theme; it is not an always-dark band.
     //
@@ -31,48 +34,43 @@ export function SiteFooter() {
               Kakinotes
             </Link>
             <p className="mt-4 max-w-md text-sm text-muted-foreground">
-              A storytelling community for honest working-holiday experiences
-              across Aotearoa New Zealand.
+              {t("tagline")}
             </p>
             <p className="mt-5 max-w-lg text-xs leading-5 text-foreground/65">
-              Kakinotes is an independent platform for personal stories and does
-              not provide immigration, legal, employment, tax, or financial
-              advice.
+              {t("disclaimer")}
             </p>
           </div>
           <div>
-            <strong>Explore</strong>
+            <strong>{t("explore")}</strong>
             <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
-              <Link href="/stories">Stories</Link>
+              <Link href="/stories">{tNav("stories")}</Link>
               {/* The landing page's region tiles were folded into the index's
                   Place filter axis; "Destinations" now opens the match quiz,
                   which is what still asks the reader about place. */}
-              <Link href="/#match">Destinations</Link>
+              <Link href="/#match">{tNav("destinations")}</Link>
             </div>
           </div>
           <div>
-            <strong>Community</strong>
+            <strong>{t("community")}</strong>
             <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
-              <Link href="/sign-up">Share a story</Link>
-              <Link href="/contributors">Contributors</Link>
-              <Link href="/about">About</Link>
+              <Link href="/sign-up">{t("shareAStory")}</Link>
+              <Link href="/contributors">{tNav("contributors")}</Link>
+              <Link href="/about">{tNav("about")}</Link>
             </div>
           </div>
           <div>
-            <strong>Support</strong>
+            <strong>{t("support")}</strong>
             <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
-              <Link href="/privacy">Privacy</Link>
-              <Link href="/terms">Terms</Link>
-              <Link href="/community-guidelines">Guidelines</Link>
-              <Link href="/copyright">Copyright &amp; Removal</Link>
+              <Link href="/privacy">{t("privacy")}</Link>
+              <Link href="/terms">{t("terms")}</Link>
+              <Link href="/community-guidelines">{t("guidelines")}</Link>
+              <Link href="/copyright">{t("copyrightRemoval")}</Link>
             </div>
           </div>
         </div>
         <div className="mt-10 flex flex-col gap-2 border-t border-border-subtle pt-5 text-xs text-foreground/65 sm:flex-row sm:justify-between">
-          <span>© 2026 Kakinotes</span>
-          <span>
-            Made for working-holiday travellers in Aotearoa New Zealand
-          </span>
+          <span>{t("copyrightLine", { year: 2026 })}</span>
+          <span>{t("madeFor")}</span>
         </div>
       </div>
     </footer>

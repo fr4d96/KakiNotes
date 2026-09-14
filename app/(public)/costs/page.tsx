@@ -1,19 +1,28 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
+import { useTranslations } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 import { createPublicClient } from "@/lib/supabase/public";
 import { formatNzdCents } from "@/lib/story/expense-per-month";
+import type { Locale } from "@/i18n/locales";
 
-export const metadata: Metadata = {
-  title: "What a working holiday cost",
-  description:
-    "What real contributors recorded spending on their New Zealand working holiday — reported figures from published stories, not an estimate or a budget.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("costs");
+  return { title: t("metaTitle"), description: t("metaDescription") };
+}
 
 // Aggregated from published stories, which change when a story is published,
 // edited or withdrawn. Short-TTL ISR rather than force-dynamic: this is
 // expensive to compute, identical for every reader, and nobody is harmed by
 // it being an hour stale.
-export const revalidate = 3600;
+// No `export const revalidate` any more (it was 3600). The root layout reads
+// the language cookie, which makes this route render per request, so the
+// page-level window became a no-op; the same hour now lives on the
+// aggregate read below (unstable_cache), which is the expensive part.
+// Deliberately NOT tagged for on-demand invalidation, matching the previous
+// behaviour: these are medians across every published story, an hour stale
+// was always acceptable, and no visibility change ever purged this page.
 
 /**
  * "What it actually cost", across every published story.
@@ -46,58 +55,80 @@ type NamedBand = {
   median_cents: number;
 };
 
-async function getAggregates() {
-  const supabase = createPublicClient();
-  const { data, error } = await supabase.rpc("get_expense_aggregates");
-  if (error) throw error;
-  const row = data?.[0];
-  return {
-    overall: (row?.overall ?? null) as Band,
-    perMonth: (row?.per_month ?? null) as Band,
-    byRegion: ((row?.by_region ?? []) as unknown as NamedBand[]) ?? [],
-    byCategory: ((row?.by_category ?? []) as unknown as NamedBand[]) ?? [],
-  };
-}
+const getAggregates = unstable_cache(
+  async () => {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase.rpc("get_expense_aggregates");
+    if (error) throw error;
+    const row = data?.[0];
+    return {
+      overall: (row?.overall ?? null) as Band,
+      perMonth: (row?.per_month ?? null) as Band,
+      byRegion: ((row?.by_region ?? []) as unknown as NamedBand[]) ?? [],
+      byCategory: ((row?.by_category ?? []) as unknown as NamedBand[]) ?? [],
+    };
+  },
+  ["public:get_expense_aggregates"],
+  { revalidate: 3600 },
+);
 
 /**
  * Says WHY a section is empty rather than hiding it. A missing section reads
  * as "we never thought about this"; this reads as "not enough people have
  * told us yet", which is both true and an invitation.
  */
-function NotEnoughYet({ what }: { what: string }) {
+function NotEnoughYet({
+  what,
+}: {
+  what: "total" | "perMonth" | "regions" | "categories";
+}) {
+  const t = useTranslations("costs");
   return (
     <p className="mt-2 text-sm text-foreground/60">
-      Not enough published stories yet to report {what} honestly. Figures appear
-      once at least five stories cover the same thing.
+      {t("notEnough", { what: t(`notEnoughWhat.${what}`) })}
     </p>
   );
 }
 
-function BandFigure({ band, unit }: { band: NonNullable<Band>; unit: string }) {
+function BandFigure({
+  band,
+  unit,
+  locale,
+}: {
+  band: NonNullable<Band>;
+  unit: "overallUnit" | "perMonthUnit";
+  locale: Locale;
+}) {
+  const t = useTranslations("costs");
   return (
     <>
       <p className="mt-2">
         <span className="text-3xl font-semibold">
-          {formatNzdCents(band.median_cents)}
+          {formatNzdCents(band.median_cents, locale)}
         </span>{" "}
-        <span className="text-sm text-foreground/60">{unit}</span>
+        <span className="text-sm text-foreground/60">{t(unit)}</span>
       </p>
       <p className="mt-1 text-sm text-foreground/60">
-        Half of these {band.story_count} stories reported between{" "}
-        <strong className="font-medium text-foreground">
-          {formatNzdCents(band.p25_cents)}
-        </strong>{" "}
-        and{" "}
-        <strong className="font-medium text-foreground">
-          {formatNzdCents(band.p75_cents)}
-        </strong>
-        .
+        {/* One message, not three fragments joined in JSX: Chinese puts the
+            count, the two figures and the verb in a different order. */}
+        {t.rich("halfReportedBetween", {
+          count: band.story_count,
+          low: formatNzdCents(band.p25_cents, locale),
+          high: formatNzdCents(band.p75_cents, locale),
+        })}
       </p>
     </>
   );
 }
 
-function NamedBandList({ rows }: { rows: NamedBand[] }) {
+function NamedBandList({
+  rows,
+  locale,
+}: {
+  rows: NamedBand[];
+  locale: Locale;
+}) {
+  const t = useTranslations("costs");
   return (
     <ul className="mt-3 divide-y divide-border-subtle border-t border-border-subtle">
       {rows.map((row) => {
@@ -109,10 +140,10 @@ function NamedBandList({ rows }: { rows: NamedBand[] }) {
           >
             <span className="min-w-0 flex-1 truncate">{label}</span>
             <span className="shrink-0 text-foreground/60">
-              {row.story_count} {row.story_count === 1 ? "story" : "stories"}
+              {t("storyCount", { count: row.story_count })}
             </span>
             <span className="shrink-0 tabular-nums font-medium">
-              {formatNzdCents(row.median_cents)}
+              {formatNzdCents(row.median_cents, locale)}
             </span>
           </li>
         );
@@ -122,32 +153,26 @@ function NamedBandList({ rows }: { rows: NamedBand[] }) {
 }
 
 export default async function CostsPage() {
-  const { overall, perMonth, byRegion, byCategory } = await getAggregates();
+  const [{ overall, perMonth, byRegion, byCategory }, t, locale] =
+    await Promise.all([getAggregates(), getTranslations("costs"), getLocale()]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <h1 className="text-3xl font-semibold tracking-tight">
-        What a working holiday cost
-      </h1>
+      <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
 
       {/* The framing comes BEFORE any number, deliberately -- a reader who
           sees a figure first has already formed an expectation by the time
           they reach the caveat. */}
-      <p className="mt-4 text-foreground/80">
-        These are the figures contributors recorded about trips they actually
-        took. They are a record of what happened to those people, not an
-        estimate, a budget, or a prediction for your own trip. What a working
-        holiday costs varies enormously by region, season, and how you travel.
-      </p>
+      <p className="mt-4 text-foreground/80">{t("framing")}</p>
 
       <section aria-labelledby="costs-overall" className="mt-10">
         <h2 id="costs-overall" className="text-xl font-semibold tracking-tight">
-          Reported total for a whole trip
+          {t("overallHeading")}
         </h2>
         {overall ? (
-          <BandFigure band={overall} unit="is the middle figure" />
+          <BandFigure band={overall} unit="overallUnit" locale={locale} />
         ) : (
-          <NotEnoughYet what="a typical total" />
+          <NotEnoughYet what="total" />
         )}
       </section>
 
@@ -156,16 +181,13 @@ export default async function CostsPage() {
           id="costs-per-month"
           className="text-xl font-semibold tracking-tight"
         >
-          Reported cost per month
+          {t("perMonthHeading")}
         </h2>
-        <p className="mt-1 text-sm text-foreground/60">
-          From stories that recorded both trip dates, for trips of at least a
-          month — a total on its own cannot tell a three-month trip from a year.
-        </p>
+        <p className="mt-1 text-sm text-foreground/60">{t("perMonthNote")}</p>
         {perMonth ? (
-          <BandFigure band={perMonth} unit="a month" />
+          <BandFigure band={perMonth} unit="perMonthUnit" locale={locale} />
         ) : (
-          <NotEnoughYet what="a monthly figure" />
+          <NotEnoughYet what="perMonth" />
         )}
       </section>
 
@@ -174,12 +196,15 @@ export default async function CostsPage() {
           id="costs-by-region"
           className="text-xl font-semibold tracking-tight"
         >
-          By region
+          {t("byRegionHeading")}
         </h2>
+        {/* Region and category names come from get_expense_aggregates() as
+            bare display strings with no slug, so they stay in the database's
+            English -- see lib/i18n/vocab.ts. */}
         {byRegion.length > 0 ? (
-          <NamedBandList rows={byRegion} />
+          <NamedBandList rows={byRegion} locale={locale} />
         ) : (
-          <NotEnoughYet what="regional differences" />
+          <NotEnoughYet what="regions" />
         )}
       </section>
 
@@ -188,22 +213,21 @@ export default async function CostsPage() {
           id="costs-by-category"
           className="text-xl font-semibold tracking-tight"
         >
-          Where the money went
+          {t("byCategoryHeading")}
         </h2>
         {byCategory.length > 0 ? (
-          <NamedBandList rows={byCategory} />
+          <NamedBandList rows={byCategory} locale={locale} />
         ) : (
-          <NotEnoughYet what="a breakdown by category" />
+          <NotEnoughYet what="categories" />
         )}
       </section>
 
       <p className="mt-12 border-t border-border-subtle pt-6 text-sm text-foreground/60">
-        Every figure here comes from a story you can read in full.{" "}
+        {t("footerBefore")}{" "}
         <Link href="/stories" className="underline underline-offset-2">
-          Browse the stories
+          {t("footerLink")}
         </Link>{" "}
-        to see the trips behind the numbers — the context is usually the part
-        that matters.
+        {t("footerAfter")}
       </p>
     </div>
   );

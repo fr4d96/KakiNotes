@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import {
   getStoryPreview,
@@ -31,10 +32,10 @@ import { canExportStory } from "@/lib/story/story-export";
 // influence caching, not append arbitrary response headers.
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Preview",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("preview");
+  return { title: t("metaTitle"), robots: { index: false, follow: false } };
+}
 
 export default async function StoryPreviewPage({
   params,
@@ -42,6 +43,7 @@ export default async function StoryPreviewPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const t = await getTranslations("preview");
 
   let preview;
   try {
@@ -248,7 +250,7 @@ export default async function StoryPreviewPage({
             className="inline-flex items-center gap-1.5 text-foreground/70 underline underline-offset-2"
           >
             <DownloadIcon className="h-4 w-4" aria-hidden />
-            Download a copy
+            {t("downloadCopy")}
           </a>
         ) : (
           <span />
@@ -306,9 +308,7 @@ export default async function StoryPreviewPage({
         {parsedContent ? (
           <PreviewContentBody blocks={parsedContent} media={preview.media} />
         ) : (
-          <p className="text-destructive">
-            This draft&apos;s content couldn&apos;t be rendered.
-          </p>
+          <p className="text-destructive">{t("contentUnavailable")}</p>
         )}
       </div>
 
@@ -349,8 +349,8 @@ export default async function StoryPreviewPage({
             isEditorialImport={preview.sourceKind === "editorial_import"}
             submitLabel={
               preview.lifecycleStatus === "published"
-                ? "Submit correction for review"
-                : "Submit for review"
+                ? t("submitCorrection")
+                : t("submitForReview")
             }
             /*
               Mirrors keep_revision_private()'s own two refusals so the

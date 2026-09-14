@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { AVATAR_EMOJI_OPTIONS, type AvatarEmoji } from "@/lib/avatar";
 
 /**
@@ -17,14 +18,17 @@ import { AVATAR_EMOJI_OPTIONS, type AvatarEmoji } from "@/lib/avatar";
 export function AvatarPicker({
   name,
   initial,
-  label = "Avatar",
+  label,
   hint,
 }: {
   name: string;
   initial: string;
+  /** Defaults to the translated "Avatar". */
   label?: string;
   hint?: string;
 }) {
+  const t = useTranslations("account.avatar");
+  const fieldLabel = label ?? t("label");
   const [selected, setSelected] = useState<AvatarEmoji | "">(
     AVATAR_EMOJI_OPTIONS.includes(initial as AvatarEmoji)
       ? (initial as AvatarEmoji)
@@ -34,7 +38,7 @@ export function AvatarPicker({
   return (
     <div>
       <input type="hidden" name={name} value={selected} />
-      <span className="block text-sm font-medium">{label}</span>
+      <span className="block text-sm font-medium">{fieldLabel}</span>
       <div className="mt-2 grid grid-cols-8 gap-2 sm:grid-cols-12">
         {AVATAR_EMOJI_OPTIONS.map((emoji) => (
           <button
@@ -44,7 +48,7 @@ export function AvatarPicker({
               setSelected((current) => (current === emoji ? "" : emoji))
             }
             aria-pressed={selected === emoji}
-            aria-label={`Use ${emoji} as your avatar`}
+            aria-label={t("use", { emoji })}
             className={`flex aspect-square items-center justify-center rounded-full border text-lg transition-colors ${
               selected === emoji
                 ? "border-accent bg-accent/15"
@@ -56,9 +60,7 @@ export function AvatarPicker({
         ))}
       </div>
       <p className="mt-2 text-xs text-foreground/55">
-        {selected
-          ? "Tap your chosen avatar again to remove it."
-          : (hint ?? "Pick an avatar, or leave unset for the default.")}
+        {selected ? t("tapToRemove") : (hint ?? t("defaultHint"))}
       </p>
     </div>
   );

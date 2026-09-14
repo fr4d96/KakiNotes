@@ -2,9 +2,28 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useLocale, useTranslations, type Messages } from "next-intl";
+import { hasVocabOverlay, localizeVocabName } from "@/lib/i18n/vocab";
+import { isLocale } from "@/i18n/locales";
 
-type Answer = { label: string; scores: Record<string, number> };
-type Question = { prompt: string; answers: Answer[] };
+// Keys into messages/<locale>.json's `home.quiz`, not prose: the quiz is
+// reader-facing copy. The SCORE keys are region names and stay as they are
+// -- they are the scoring vocabulary and the lookup key into
+// DESTINATION_INFO, never shown to anyone directly (the winning region is
+// rendered through the vocab overlay).
+// Keys drawn from the message file's own shape (i18n/global.d.ts types
+// `Messages` off messages/en.json), so a key that does not exist -- or one
+// deleted from the messages later -- fails `npm run typecheck` rather than
+// rendering as raw text at runtime.
+type QuizMessages = Messages["home"]["quiz"];
+type Answer = {
+  labelKey: keyof QuizMessages["answers"];
+  scores: Record<string, number>;
+};
+type Question = {
+  promptKey: keyof QuizMessages["questions"];
+  answers: Answer[];
+};
 
 // Deliberately hardcoded -- a fixed, fun scoring quiz, not a real
 // recommendation engine. Does not read from Supabase or compare against
@@ -12,92 +31,92 @@ type Question = { prompt: string; answers: Answer[] };
 // to match whatever regions currently exist in the catalogue.
 const QUESTIONS: Question[] = [
   {
-    prompt: "Where would you feel most at home?",
+    promptKey: "home",
     answers: [
-      { label: "A lively city", scores: { Auckland: 3, Wellington: 3 } },
-      { label: "A relaxed coastal town", scores: { "Bay of Plenty": 4 } },
+      { labelKey: "livelyCity", scores: { Auckland: 3, Wellington: 3 } },
+      { labelKey: "coastalTown", scores: { "Bay of Plenty": 4 } },
       {
-        label: "Mountains and alpine scenery",
+        labelKey: "mountains",
         scores: { "Queenstown Lakes": 5, "Central Otago": 2 },
       },
-      { label: "Open countryside", scores: { Canterbury: 5 } },
+      { labelKey: "countryside", scores: { Canterbury: 5 } },
       {
-        label: "A seasonal-work community",
+        labelKey: "seasonalCommunity",
         scores: { "Bay of Plenty": 3, "Central Otago": 3 },
       },
     ],
   },
   {
-    prompt: "What kind of job would you try?",
+    promptKey: "job",
     answers: [
       {
-        label: "Hospitality or café work",
+        labelKey: "hospitality",
         scores: { Wellington: 4, Auckland: 3 },
       },
-      { label: "Fruit picking", scores: { "Bay of Plenty": 5 } },
-      { label: "Farm work", scores: { Canterbury: 5 } },
-      { label: "Ski-field work", scores: { "Queenstown Lakes": 6 } },
-      { label: "Vineyard work", scores: { "Central Otago": 6 } },
+      { labelKey: "fruitPicking", scores: { "Bay of Plenty": 5 } },
+      { labelKey: "farmWork", scores: { Canterbury: 5 } },
+      { labelKey: "skiField", scores: { "Queenstown Lakes": 6 } },
+      { labelKey: "vineyard", scores: { "Central Otago": 6 } },
     ],
   },
   {
-    prompt: "What matters most?",
+    promptKey: "matters",
     answers: [
       {
-        label: "Saving money",
+        labelKey: "savingMoney",
         scores: { "Bay of Plenty": 4, Canterbury: 2 },
       },
       {
-        label: "Meeting people",
+        labelKey: "meetingPeople",
         scores: { Auckland: 3, "Queenstown Lakes": 3 },
       },
       {
-        label: "Time outdoors",
+        labelKey: "timeOutdoors",
         scores: { Canterbury: 3, "Queenstown Lakes": 4 },
       },
       {
-        label: "Useful experience",
+        labelKey: "usefulExperience",
         scores: { Auckland: 3, Wellington: 3 },
       },
       {
-        label: "Work and travel balance",
+        labelKey: "workTravelBalance",
         scores: { Wellington: 3, "Central Otago": 3 },
       },
     ],
   },
   {
-    prompt: "Choose your ideal pace.",
+    promptKey: "pace",
     answers: [
       {
-        label: "Busy and social",
+        labelKey: "busySocial",
         scores: { Auckland: 4, "Queenstown Lakes": 3 },
       },
       {
-        label: "Relaxed and scenic",
+        labelKey: "relaxedScenic",
         scores: { "Bay of Plenty": 3, "Central Otago": 4 },
       },
       {
-        label: "Active and physical",
+        labelKey: "activePhysical",
         scores: { Canterbury: 3, "Queenstown Lakes": 4 },
       },
       {
-        label: "Independent and flexible",
+        labelKey: "independentFlexible",
         scores: { Canterbury: 2, "Central Otago": 3 },
       },
     ],
   },
   {
-    prompt: "Which season sounds best?",
+    promptKey: "season",
     answers: [
-      { label: "Summer", scores: { Auckland: 2, "Bay of Plenty": 3 } },
+      { labelKey: "summer", scores: { Auckland: 2, "Bay of Plenty": 3 } },
       {
-        label: "Autumn",
+        labelKey: "autumn",
         scores: { "Central Otago": 5, "Bay of Plenty": 3 },
       },
-      { label: "Winter", scores: { "Queenstown Lakes": 6 } },
-      { label: "Spring", scores: { Canterbury: 4, Wellington: 2 } },
+      { labelKey: "winter", scores: { "Queenstown Lakes": 6 } },
+      { labelKey: "spring", scores: { Canterbury: 4, Wellington: 2 } },
       {
-        label: "Flexible",
+        labelKey: "flexible",
         scores: {
           Auckland: 1,
           Wellington: 1,
@@ -111,45 +130,67 @@ const QUESTIONS: Question[] = [
   },
 ];
 
+// Message keys again, plus the region SLUG so the heading can be shown
+// through the vocabulary overlay (lib/i18n/vocab.ts). The record's own keys
+// are the scoring names used by the answers above.
 const DESTINATION_INFO: Record<
   string,
-  { season: string; work: string; note: string }
+  {
+    slug: string;
+    seasonKey: keyof QuizMessages["seasons"];
+    workKey: keyof QuizMessages["info"];
+    noteKey: keyof QuizMessages["info"];
+  }
 > = {
   Auckland: {
-    season: "Year-round",
-    work: "Hospitality · Retail",
-    note: "Compare rent and commuting costs.",
+    slug: "auckland",
+    seasonKey: "yearRound",
+    workKey: "aucklandWork",
+    noteKey: "aucklandNote",
   },
   Wellington: {
-    season: "Spring",
-    work: "Cafés · Events",
-    note: "Expect wind and a competitive rental market.",
+    slug: "wellington",
+    seasonKey: "spring",
+    workKey: "wellingtonWork",
+    noteKey: "wellingtonNote",
   },
   Canterbury: {
-    season: "Spring",
-    work: "Farm work · Warehousing",
-    note: "Transport helps for rural roles.",
+    slug: "canterbury",
+    seasonKey: "spring",
+    workKey: "canterburyWork",
+    noteKey: "canterburyNote",
   },
   "Bay of Plenty": {
-    season: "Autumn",
-    work: "Fruit picking · Packhouse",
-    note: "Hours can depend on weather.",
+    slug: "bay-of-plenty",
+    seasonKey: "autumn",
+    workKey: "bayOfPlentyWork",
+    noteKey: "bayOfPlentyNote",
   },
   "Queenstown Lakes": {
-    season: "Winter",
-    work: "Ski fields · Hospitality",
-    note: "Plan accommodation early.",
+    // Not a region row: Queenstown Lakes is a DISTRICT inside Otago, and
+    // this quiz is deliberately its own fixed vocabulary rather than the
+    // catalogue's (see the note above QUESTIONS). No slug, so the heading
+    // shows the name as written here.
+    slug: "",
+    seasonKey: "winter",
+    workKey: "queenstownWork",
+    noteKey: "queenstownNote",
   },
   "Central Otago": {
-    season: "Autumn",
-    work: "Vineyards · Orchards",
-    note: "Line up your next seasonal move.",
+    slug: "",
+    seasonKey: "autumn",
+    workKey: "centralOtagoWork",
+    noteKey: "centralOtagoNote",
   },
 };
 
 const DEFAULT_DESTINATION = "Auckland";
 
 export function DestinationQuiz() {
+  const t = useTranslations("home.quiz");
+  const tVocab = useTranslations("vocab");
+  const rawLocale = useLocale();
+  const locale = isLocale(rawLocale) ? rawLocale : "en";
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<(number | undefined)[]>([]);
 
@@ -185,6 +226,14 @@ export function DestinationQuiz() {
 
   const destination = isResult ? computeDestination() : null;
   const facts = destination ? DESTINATION_INFO[destination] : null;
+  const destinationLabel =
+    destination && facts && hasVocabOverlay(locale)
+      ? localizeVocabName(
+          "regions",
+          { slug: facts.slug, name: destination },
+          tVocab,
+        )
+      : destination;
 
   return (
     <div className="rounded-2xl border border-border-subtle bg-surface p-6 sm:p-8">
@@ -196,25 +245,27 @@ export function DestinationQuiz() {
           />
         </div>
         <span className="text-sm font-medium text-foreground/60">
-          {isResult ? "Your match" : `${step + 1} / ${QUESTIONS.length}`}
+          {isResult
+            ? t("yourMatch")
+            : t("progress", { step: step + 1, total: QUESTIONS.length })}
         </span>
       </div>
 
       {!isResult ? (
         <div>
           <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            {QUESTIONS[step].prompt}
+            {t(`questions.${QUESTIONS[step].promptKey}`)}
           </h3>
           <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {QUESTIONS[step].answers.map((answer, index) => (
               <button
-                key={answer.label}
+                key={answer.labelKey}
                 type="button"
                 data-testid="quiz-answer"
                 onClick={() => choose(index)}
                 className="min-h-[72px] rounded-xl border border-border-subtle bg-surface-muted p-4 text-left font-medium hover:border-accent hover:bg-surface"
               >
-                {answer.label}
+                {t(`answers.${answer.labelKey}`)}
               </button>
             ))}
           </div>
@@ -224,35 +275,43 @@ export function DestinationQuiz() {
               onClick={() => setStep((current) => current - 1)}
               className="mt-5 text-sm font-medium hover:underline"
             >
-              ← Back
+              {t("back")}
             </button>
           ) : null}
         </div>
       ) : (
         <div>
           <span className="text-xs font-semibold tracking-wide text-accent uppercase">
-            Your working holiday match
+            {t("resultKicker")}
           </span>
           <h3 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
-            {destination}
+            {destinationLabel}
           </h3>
           {facts ? (
             <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div className="rounded-lg bg-surface-muted p-3">
                 <span className="block text-xs text-foreground/60">
-                  Best season
+                  {t("bestSeason")}
                 </span>
-                <strong className="text-sm">{facts.season}</strong>
-              </div>
-              <div className="rounded-lg bg-surface-muted p-3">
-                <span className="block text-xs text-foreground/60">Work</span>
-                <strong className="text-sm">{facts.work}</strong>
+                <strong className="text-sm">
+                  {t(`seasons.${facts.seasonKey}`)}
+                </strong>
               </div>
               <div className="rounded-lg bg-surface-muted p-3">
                 <span className="block text-xs text-foreground/60">
-                  Practical note
+                  {t("work")}
                 </span>
-                <strong className="text-sm">{facts.note}</strong>
+                <strong className="text-sm">
+                  {t(`info.${facts.workKey}`)}
+                </strong>
+              </div>
+              <div className="rounded-lg bg-surface-muted p-3">
+                <span className="block text-xs text-foreground/60">
+                  {t("practicalNote")}
+                </span>
+                <strong className="text-sm">
+                  {t(`info.${facts.noteKey}`)}
+                </strong>
               </div>
             </div>
           ) : null}
@@ -261,14 +320,14 @@ export function DestinationQuiz() {
               href="#index"
               className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground hover:opacity-90"
             >
-              Explore stories
+              {t("exploreStories")}
             </Link>
             <button
               type="button"
               onClick={restart}
               className="rounded-md border border-border-subtle px-5 py-2.5 text-sm font-medium hover:bg-surface-muted"
             >
-              Try again
+              {t("tryAgain")}
             </button>
           </div>
         </div>

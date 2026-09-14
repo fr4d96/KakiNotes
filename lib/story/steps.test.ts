@@ -23,8 +23,8 @@ describe("missingStoryRequirements", () => {
         locationCount: 0,
         tagCount: 0,
         destination: "public",
-      }).map((r) => r.label),
-    ).toEqual(["at least one location", "at least one tag"]);
+      }).map((r) => r.labelKey),
+    ).toEqual(["location", "tag"]);
   });
 
   it("drops the location and tag requirements for a private story", () => {
@@ -51,8 +51,8 @@ describe("missingStoryRequirements", () => {
         title: "  ",
         hasContent: false,
         destination: "private",
-      }).map((r) => r.label),
-    ).toEqual(["a title", "your story"]);
+      }).map((r) => r.labelKey),
+    ).toEqual(["title", "content"]);
   });
 
   it("treats an unspecified destination as public", () => {
@@ -76,7 +76,7 @@ describe("missingStoryRequirements", () => {
 
   it("names a missing title and points at the Title step", () => {
     expect(missingStoryRequirements({ ...complete, title: "" })).toEqual([
-      { label: "a title", step: "title" },
+      { labelKey: "title", step: "title" },
     ]);
   });
 
@@ -85,14 +85,14 @@ describe("missingStoryRequirements", () => {
   // gate has to agree or it would wave through something the save rejects.
   it("treats a whitespace-only title as missing", () => {
     expect(missingStoryRequirements({ ...complete, title: "   " })).toEqual([
-      { label: "a title", step: "title" },
+      { labelKey: "title", step: "title" },
     ]);
   });
 
   it("names missing content and points at the Your story step", () => {
     expect(
       missingStoryRequirements({ ...complete, hasContent: false }),
-    ).toEqual([{ label: "your story", step: "story" }]);
+    ).toEqual([{ labelKey: "content", step: "story" }]);
   });
 
   // Locations and tags are separate requirements even though they share a
@@ -100,10 +100,10 @@ describe("missingStoryRequirements", () => {
   // two they actually left empty.
   it("distinguishes a missing location from a missing tag", () => {
     expect(missingStoryRequirements({ ...complete, locationCount: 0 })).toEqual(
-      [{ label: "at least one location", step: "places" }],
+      [{ labelKey: "location", step: "places" }],
     );
     expect(missingStoryRequirements({ ...complete, tagCount: 0 })).toEqual([
-      { label: "at least one tag", step: "places" },
+      { labelKey: "tag", step: "places" },
     ]);
   });
 
@@ -114,11 +114,11 @@ describe("missingStoryRequirements", () => {
       locationCount: 0,
       tagCount: 0,
     });
-    expect(missing.map((m) => m.label)).toEqual([
-      "a title",
-      "your story",
-      "at least one location",
-      "at least one tag",
+    expect(missing.map((m) => m.labelKey)).toEqual([
+      "title",
+      "content",
+      "location",
+      "tag",
     ]);
     // The preview page links its notice at missing[0].step, so the order
     // has to match the order the labels are read out in.

@@ -39,3 +39,31 @@ describe("SiteFooter", () => {
     );
   });
 });
+
+describe("SiteFooter in Simplified Chinese", () => {
+  // Proves the wiring end to end for a Server Component: the same render,
+  // the mocked request locale flipped to zh-CN, and the real
+  // messages/zh-CN.json file behind it.
+  it("renders the disclaimer and the legal links in Chinese", async () => {
+    const { withTestLocale } = await import("@/tests/support/i18n");
+    await withTestLocale("zh-CN", () => {
+      render(<SiteFooter />);
+    });
+
+    expect(
+      screen.getByText(/不提供移民、法律、就业、税务或财务建议/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "隐私" })).toHaveAttribute(
+      "href",
+      "/privacy",
+    );
+    expect(screen.getByRole("link", { name: "版权与移除" })).toHaveAttribute(
+      "href",
+      "/copyright",
+    );
+    expect(screen.getByRole("link", { name: "投稿人" })).toHaveAttribute(
+      "href",
+      "/contributors",
+    );
+  });
+});

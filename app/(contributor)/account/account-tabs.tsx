@@ -50,7 +50,15 @@ function readHash() {
   return window.location.hash.replace(/^#/, "");
 }
 
-export function AccountTabs({ tabs }: { tabs: AccountTab[] }) {
+export function AccountTabs({
+  tabs,
+  label,
+}: {
+  tabs: AccountTab[];
+  /** Accessible name for the tablist. Passed in, not hard-coded, so it is
+   *  translated by the page that owns the tab labels themselves. */
+  label?: string;
+}) {
   const hash = useSyncExternalStore(subscribeToHash, readHash, () => "");
   const tabRefs = useRef(new Map<string, HTMLButtonElement | null>());
 
@@ -99,7 +107,7 @@ export function AccountTabs({ tabs }: { tabs: AccountTab[] }) {
     <div className="mt-8 flex flex-col gap-8 md:flex-row md:gap-12">
       <div
         role="tablist"
-        aria-label="Account settings"
+        aria-label={label ?? "Account settings"}
         aria-orientation="vertical"
         className="-mx-4 flex shrink-0 gap-1 overflow-x-auto px-4 pb-1 md:mx-0 md:w-56 md:flex-col md:overflow-visible md:px-0 md:pb-0 md:self-start md:sticky md:top-24"
       >

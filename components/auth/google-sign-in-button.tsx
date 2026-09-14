@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -34,6 +35,8 @@ function GoogleGlyph() {
 }
 
 export function GoogleSignInButton({ next = "/account" }: { next?: string }) {
+  const t = useTranslations("auth.google");
+  const tCommon = useTranslations("common");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +66,7 @@ export function GoogleSignInButton({ next = "/account" }: { next?: string }) {
     <div>
       <div className="my-5 flex items-center gap-3 text-xs font-medium text-muted-foreground">
         <span className="h-px flex-1 bg-surface-muted" />
-        or
+        {tCommon("or")}
         <span className="h-px flex-1 bg-surface-muted" />
       </div>
 
@@ -74,7 +77,7 @@ export function GoogleSignInButton({ next = "/account" }: { next?: string }) {
         className="flex w-full items-center justify-center gap-2.5 rounded-md border border-border-subtle px-3 py-2 text-sm font-medium transition-colors hover:bg-surface-muted disabled:opacity-60"
       >
         <GoogleGlyph />
-        {pending ? "Redirecting…" : "Continue with Google"}
+        {pending ? t("redirecting") : t("continue")}
       </button>
 
       {error && (

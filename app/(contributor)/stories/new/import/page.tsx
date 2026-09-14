@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { PdfImportPicker } from "../pdf-import-picker";
 
-export const metadata: Metadata = {
-  title: "Import from PDF",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("pdfImport");
+  return { title: t("metaTitle") };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -18,18 +20,17 @@ export const dynamic = "force-dynamic";
  * links across to the other, so a contributor who lands on the wrong one
  * is a single click from the right one.
  */
-export default function NewStoryImportPage() {
+export default async function NewStoryImportPage() {
+  const t = await getTranslations("pdfImport");
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-        Import from PDF
+        {t("title")}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Upload a PDF (including one exported from a design tool) and pick the
-        pages to use as photos. Your story text is added afterwards in the
-        editor.{" "}
+        {t("intro")}{" "}
         <Link href="/stories/new" className="underline underline-offset-2">
-          Start a blank story instead
+          {t("blankInstead")}
         </Link>
         .
       </p>
