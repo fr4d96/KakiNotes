@@ -1,9 +1,11 @@
-# Versioning for the `release` branch, driven by release-please.
+# Versioning for the `release` branch, driven by release-please — with no
+# pull request left for a human to click.
 #
 # Every push to `release` re-runs this. release-please reads the Conventional
-# Commit messages since the last tag (feat → minor, fix → patch) and keeps a
-# single "chore(release): x.y.z" pull request up to date with the version bump
-# and CHANGELOG.md. Merging that PR creates the git tag and the GitHub Release.
+# Commit messages since the last tag (feat → minor, fix → patch) and prepares
+# a "chore(release): x.y.z" commit with the version bump and CHANGELOG.md. It
+# can only deliver that as a pull request, so this workflow merges the PR
+# itself straight away and then tags the result in the same run.
 # Hosting (Vercel) deploys from the branch itself; this workflow never deploys.
 # See docs/architecture.md#ci-and-releases.
 name: Release
@@ -24,11 +26,36 @@ concurrency:
 jobs:
   release-please:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
-      - name: Run release-please
+      # Pass 1: open or refresh the version-bump PR for any releasable
+      # commits since the last tag. (If a bump commit is already on the
+      # branch and untagged, this pass tags it too.)
+      - name: Prepare the version bump
+        id: bump
         uses: googleapis/release-please-action@v4
         with:
           target-branch: release
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      # Nobody reviews a version number: merge the bump immediately. A push
+      # made with GITHUB_TOKEN does not trigger workflows, so the tag has to
+      # be cut in this same run — that's pass 2.
+      - name: Merge the version bump into release
+        if: steps.bump.outputs.pr != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ fromJSON(steps.bump.outputs.pr).number }}
+        run: gh pr merge "$PR_NUMBER" --merge --repo "${{ github.repository }}"
+
+      # Pass 2: create the git tag and the GitHub Release for the bump that
+      # was just merged. skip-github-pull-request stops it opening a new PR.
+      - name: Tag and publish the release
+        if: steps.bump.outputs.pr != ''
+        uses: googleapis/release-please-action@v4
+        with:
+          target-branch: release
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          skip-github-pull-request: true

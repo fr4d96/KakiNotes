@@ -69,8 +69,12 @@ for now; it needs a seeded live project and a service-role key that don't exist 
 added, branch protection isn't on, the release PR runs with the default `GITHUB_TOKEN` so it gets
 no CI check of its own, and the first changelog will cover the whole commit history.
 
-**Next:** the one-time setup checklist in docs/architecture.md#ci-and-releases (create `release`,
-add secrets, wire up Vercel, turn on branch protection), then consider adding Playwright to CI.
+**Follow-ups the same day:** the pipeline is live — secrets added, `release` created, Vercel's
+production branch switched to `release`, `v0.2.0` and `v0.2.1` cut. `CHANGELOG.md` went into
+`.prettierignore` after `verify` rejected the generated file. `release.yml` now merges the bot's
+version-bump PR itself and tags in the same run, so releasing is just "push to `release`" with no
+PR to click. Still open: branch protection (must not require checks on `release`, see the gotchas
+in architecture.md) and Playwright in CI.
 
 **2026-09-15 (latest) — scrolling stopped stuttering: the blur budget, the fill mode, and the hero's four layers.**
 The landing page and story screens felt laggy on scroll. Measured in the browser rather than guessed
