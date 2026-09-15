@@ -85,8 +85,10 @@ no CI check of its own, and the first changelog will cover the whole commit hist
 production branch switched to `release`, `v0.2.0` and `v0.2.1` cut. `CHANGELOG.md` went into
 `.prettierignore` after `verify` rejected the generated file. `release.yml` now merges the bot's
 version-bump PR itself and tags in the same run, so releasing is just "push to `release`" with no
-PR to click. Still open: branch protection (must not require checks on `release`, see the gotchas
-in architecture.md) and Playwright in CI.
+PR to click. Branch rulesets landed on 2026-09-16: `protect-main` and `protect-release` block
+deletion and force-push on both branches, with no required status check — requiring one would also
+block the direct pushes this repo ships with, so CI reports but does not gate (architecture.md,
+"Branch rulesets"). Still open: Playwright in CI.
 
 **2026-09-15 (latest) — scrolling stopped stuttering: the blur budget, the fill mode, and the hero's four layers.**
 The landing page and story screens felt laggy on scroll. Measured in the browser rather than guessed
