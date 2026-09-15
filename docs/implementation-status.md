@@ -391,7 +391,7 @@ labels, locale })`, `slashCommands({ labels })`, the direct-to-Storage uploader 
   CHARACTER, so Latin text still renders in Avenir Next and only Chinese falls through. Without it,
   Chinese lands on whatever the OS picks last, which on Windows is a serif beside the app's sans.
 
-**Deliberately out of scope**, so nobody looks for them: staff areas and the dev-only `/index`
+**Deliberately out of scope**, so nobody looks for them: staff areas and the dev-only `/qa-index`
 route; story content, contributor bios, tags and typed place names (user data); `Accept-Language`
 sniffing (no cookie means English — worth adding, but it changes what a first-time visitor sees
 and deserves its own decision); a `name_zh_cn` column; and `app/global-error.tsx`, which stays
@@ -8364,7 +8364,7 @@ Twelve `loading.tsx` files now sit INSIDE their route groups, nested under
 each group's own layout. The chrome never unmounts; only `<main>` is
 replaced. Root `app/loading.tsx` survives as a genuine last resort — it is
 reached only when a navigation crosses INTO a different group (whose layout
-must be built from scratch) or lands on a group-less route like `/index` —
+must be built from scratch) or lands on a group-less route like `/qa-index` —
 and because there really is no header on screen in those cases, it now draws
 a placeholder bar at `min-h-[76px]` instead of collapsing the page.
 

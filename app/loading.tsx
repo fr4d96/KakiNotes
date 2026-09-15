@@ -18,7 +18,7 @@ import {
  * `loading.tsx` nested under its layout, which keeps the chrome on screen.
  * This one only shows when the navigation crosses INTO a different group
  * (whose layout therefore has to be built from scratch) or lands on a route
- * with no group, like /index.
+ * with no group, like /qa-index.
  *
  * Because there is genuinely no header on screen in those cases, it draws a
  * placeholder bar the height of one (min-h-[76px], matching SiteHeader and

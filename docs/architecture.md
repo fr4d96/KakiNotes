@@ -2464,7 +2464,7 @@ and deliberately keep calling the UNCACHED readers.
 **What is translated, and what is not.** Every reader- and contributor-facing
 screen is. Story text, titles, excerpts, contributor bios, tags and typed
 destination labels are user data and are never touched. Staff areas
-(moderation, editorial, admin, readiness) and the dev-only `/index` route stay
+(moderation, editorial, admin, readiness) and the dev-only `/qa-index` route stay
 English in this phase — staff can still flip the toggle, and the shared
 components they borrow (`StatusBadge`, `StoryEditForm`, the confirm dialog)
 follow it.
