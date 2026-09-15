@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { PreviewableMediaItem } from "@/lib/story/contributor-queries";
-import { mintPreviewUrlAction } from "@/app/(contributor)/stories/[id]/media-actions";
+import { getPreviewUrl } from "@/lib/story/preview-url-client";
 import { Spinner } from "@/components/ui/spinner";
 
 /**
@@ -14,6 +14,13 @@ import { Spinner } from "@/components/ui/spinner";
  * get_story_preview() (or, for a moderator, get_story_for_moderator's own
  * path-free media list — see PreviewableMediaItem) returns: media_id +
  * presentation fields only.
+ *
+ * All the ids are requested up front, in one pass, through
+ * lib/story/preview-url-client.ts, which folds them (together with whatever
+ * PreviewContentBody asks for in the same tick) into a single batched
+ * Server Action. The earlier `for … await` here meant one serial round
+ * trip per image, which on a photo-heavy story was the whole reason the
+ * review page felt like it was "still processing images".
  */
 export function PreviewGallery({ media }: { media: PreviewableMediaItem[] }) {
   const t = useTranslations("editor.images");
@@ -22,24 +29,23 @@ export function PreviewGallery({ media }: { media: PreviewableMediaItem[] }) {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      for (const item of media) {
-        if (
-          item.processingState === "pending_upload" ||
-          item.processingState === "uploaded" ||
-          item.processingState === "processing"
-        ) {
-          continue; // not ready to preview yet
-        }
-        const result = await mintPreviewUrlAction(item.mediaId);
+    for (const item of media) {
+      if (
+        item.processingState === "pending_upload" ||
+        item.processingState === "uploaded" ||
+        item.processingState === "processing"
+      ) {
+        continue; // not ready to preview yet
+      }
+      void getPreviewUrl(item.mediaId).then((result) => {
         if (cancelled) return;
         if ("url" in result) {
           setUrls((prev) => ({ ...prev, [item.mediaId]: result.url }));
         } else {
           setErrors((prev) => ({ ...prev, [item.mediaId]: result.error }));
         }
-      }
-    })();
+      });
+    }
     return () => {
       cancelled = true;
     };

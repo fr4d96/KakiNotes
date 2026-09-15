@@ -8362,6 +8362,50 @@ that would complain is switched off three lines above.
 
 `npm run verify` clean, 787/787.
 
+## 2026-09-16 — Review page images: one round trip, not one per photo
+
+Reported as "image processing takes a lot of time when a moderator reviews a
+story" (the Milford Sound coach-cruise submission). Nothing was being
+processed. The derivatives were made at upload time; what the page was
+waiting on was **signed URLs** for the private bucket.
+
+### The cause
+
+`PreviewGallery` and `PreviewContentBody` each ran `for … await
+mintPreviewUrlAction(id)` — one Server Action round trip per image, in
+series, and each trip did its own auth lookup, `authorize_story_media_preview`
+RPC, path RPC and storage sign. Both components mounted on the same page and
+asked for overlapping ids, so an inline photo was minted twice. Twelve
+inline photos ≈ twenty-four serial trips of spinner.
+
+### The fix
+
+- `mintPreviewUrlsAction(mediaIds[])` (app/(contributor)/stories/[id]/media-actions.ts):
+  the same two-step contract as the single-id action — authorize on the
+  caller's own RLS client **per id**, then mint — but one round trip with the
+  per-id work in `Promise.all`. Per-id errors stay per id; an unauthorized id
+  in a batch never leaks a URL and never fails the rest. Capped at
+  `MAX_PREVIEW_URLS_PER_BATCH` (lib/story/preview-url-batch.ts).
+- `lib/story/preview-url-client.ts`: `getPreviewUrl(id)` folds every call in
+  one tick into a single batched action, de-dupes in-flight ids across the
+  two components, and caches successes for 90 s (under the 120 s signed-URL
+  life). Errors are never cached.
+- Both preview components now fire all their requests at once through it.
+  The single-id `mintPreviewUrlAction` is untouched; the upload manager,
+  cover thumbnails and editor decorations still use it.
+
+Applies equally to the contributor `/stories/[id]/preview` page, which uses
+the same two components.
+
+### Not verified in a browser
+
+The in-app browser has no moderator session and credentials are not
+something the agent enters, so the proof is the unit tests (7 new: batching,
+de-dupe, TTL, error handling, and an RTL test that three ready images produce
+exactly one action call) plus `npm run verify` clean. A human check: open
+the review page with the network tab filtered to the Server Action POST —
+there should be one, not one per image.
+
 ## 2026-09-07 — Route changes stop blanking the window
 
 User report: "I do not like the 'Loading...' when going from 1 page to another."

@@ -6,7 +6,7 @@ import {
   type StoryContentBlock,
 } from "@/lib/validation/story";
 import type { PreviewableMediaItem } from "@/lib/story/contributor-queries";
-import { mintPreviewUrlAction } from "@/app/(contributor)/stories/[id]/media-actions";
+import { getPreviewUrl } from "@/lib/story/preview-url-client";
 import {
   ContentBlockRenderer,
   type ContentBlockMediaMap,
@@ -16,10 +16,14 @@ import {
  * Mints a short-lived signed URL per inline-image block, client-side --
  * same pattern and same reason as components/story/preview-gallery.tsx:
  * nothing server-rendered here ever receives a raw private-bucket storage
- * path (Rule 12/13); mintPreviewUrlAction independently re-checks
+ * path (Rule 12/13); the batched mint action independently re-checks
  * authorize_story_media_preview() before minting. `media` (already fetched
- * for PreviewGallery) supplies altText/decorative -- mintPreviewUrlAction
- * itself only returns a URL.
+ * for PreviewGallery) supplies altText/decorative -- the mint itself only
+ * returns a URL.
+ *
+ * Requests go through lib/story/preview-url-client.ts, which batches them
+ * into one Server Action and shares the result with PreviewGallery, so an
+ * image that is both inline and in the gallery is minted once, not twice.
  */
 export function PreviewContentBody({
   blocks,
@@ -39,17 +43,16 @@ export function PreviewContentBody({
     const mediaIds = imageBlockMediaIds(blocks);
     if (mediaIds.length === 0) return;
     let cancelled = false;
-    (async () => {
-      for (const mediaId of mediaIds) {
-        const result = await mintPreviewUrlAction(mediaId);
+    for (const mediaId of mediaIds) {
+      void getPreviewUrl(mediaId).then((result) => {
         if (cancelled) return;
         if ("url" in result) {
           setUrls((prev) => ({ ...prev, [mediaId]: result.url }));
         } else {
           setFailed((prev) => new Set(prev).add(mediaId));
         }
-      }
-    })();
+      });
+    }
     return () => {
       cancelled = true;
     };

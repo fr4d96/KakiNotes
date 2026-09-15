@@ -11,6 +11,7 @@ import {
   type RevisionMediaItem,
 } from "@/lib/story/contributor-queries";
 import { getErrorMessage } from "@/lib/errors";
+import { MAX_PREVIEW_URLS_PER_BATCH } from "@/lib/story/preview-url-batch";
 
 /**
  * Re-reads the current attached-media list (via get_story_preview — the
@@ -84,4 +85,73 @@ export async function mintPreviewUrlAction(
       error: getErrorMessage(error, tErr("loadImageFailed")),
     };
   }
+}
+
+export type PreviewUrlBatchResult = Record<
+  string,
+  { url: string } | { error: string }
+>;
+
+/**
+ * Batch sibling of mintPreviewUrlAction(): the SAME two-step contract per
+ * media id (authorize_story_media_preview() on the caller's own regular
+ * client first, then -- only for the ids that passed -- a signed URL from
+ * lib/story/image-pipeline.ts), but for a whole revision's images in one
+ * round trip, with the per-id work fanned out in parallel.
+ *
+ * Exists because the preview page and the moderation review page both used
+ * to mint one image at a time, sequentially, through mintPreviewUrlAction
+ * -- and each of those calls is its own Server Action round trip plus an
+ * auth lookup, an authorize RPC, a path RPC and a storage sign. On a story
+ * with a dozen inline photos that was a dozen serial trips (twice, since
+ * the gallery and the body each minted independently) and read to a
+ * moderator as "the images take forever to process". Nothing was being
+ * processed; it was waiting on URLs.
+ *
+ * Authorization is still per id and still the caller's own client: a batch
+ * containing one id the caller may not see returns an error entry for that
+ * id and URLs for the rest -- never all-or-nothing in either direction,
+ * and never a URL for an id that failed its own check.
+ */
+export async function mintPreviewUrlsAction(
+  mediaIds: string[],
+): Promise<PreviewUrlBatchResult | { error: string }> {
+  const [tErr, tCommon] = await Promise.all([
+    getTranslations("actionErrors"),
+    getTranslations("common"),
+  ]);
+  const user = await getCurrentUser();
+  if (!user) return { error: tCommon("mustBeSignedIn") };
+
+  const parsed = z
+    .array(z.uuid())
+    .max(MAX_PREVIEW_URLS_PER_BATCH)
+    .safeParse(mediaIds);
+  if (!parsed.success) return { error: tErr("invalidMedia") };
+
+  const uniqueIds = [...new Set(parsed.data)];
+  const supabase = await createClient();
+
+  const entries = await Promise.all(
+    uniqueIds.map(
+      async (mediaId): Promise<[string, PreviewUrlBatchResult[string]]> => {
+        const { error: authError } = await supabase.rpc(
+          "authorize_story_media_preview",
+          { p_media_id: mediaId },
+        );
+        if (authError)
+          return [mediaId, { error: tErr("previewNotAuthorized") }];
+        try {
+          return [mediaId, { url: await mintMediaPreviewSignedUrl(mediaId) }];
+        } catch (error) {
+          return [
+            mediaId,
+            { error: getErrorMessage(error, tErr("loadImageFailed")) },
+          ];
+        }
+      },
+    ),
+  );
+
+  return Object.fromEntries(entries);
 }
