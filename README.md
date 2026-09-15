@@ -1,134 +1,225 @@
-# Kakinotes
+<p align="center">
+  <img src="public/kakinotes-icon.png" alt="Kakinotes" width="96" height="96">
+</p>
 
-A public platform for detailed, written first-person stories from Working Holiday Visa travellers
-in New Zealand. See [docs/product-spec.md](docs/product-spec.md) for what this is and isn't.
+<h1 align="center">Kakinotes</h1>
 
-Start with [CLAUDE.md](CLAUDE.md) — product context, engineering rules, commands, and the
-Definition of Done — and [docs/implementation-status.md](docs/implementation-status.md) for what's
-actually built versus planned (or
-[docs/implementation-status-human.md](docs/implementation-status-human.md) for a plain-language
-version of the same thing).
+<p align="center">
+  Real, written, first-person stories from people who did a Working Holiday in New Zealand.<br>
+  No feed. No likes. No "top 10 tips". Just what actually happened, from someone who was there.
+</p>
+
+<p align="center">
+  <a href="https://kakinotes.vercel.app"><strong>kakinotes.vercel.app</strong></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/fr4d96/KakiNotes/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/fr4d96/KakiNotes/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/fr4d96/KakiNotes/releases"><img alt="Release" src="https://img.shields.io/github/v/release/fr4d96/KakiNotes?display_name=tag"></a>
+  <img alt="Node 24" src="https://img.shields.io/badge/node-24_LTS-339933?logo=node.js&logoColor=white">
+  <img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-000?logo=next.js&logoColor=white">
+  <img alt="Supabase" src="https://img.shields.io/badge/Supabase-Postgres_%2B_Auth_%2B_Storage-3ECF8E?logo=supabase&logoColor=white">
+</p>
+
+---
+
+## Why "Kaki"?
+
+In Malay, _kaki_ is your leg — the thing you walk on. In everyday slang it's also your **buddy**:
+the person you do a thing with. A _kaki bola_ plays football with you. A _kaki jalan_ is who you
+wander with.
+
+So: **Kakinotes** — notes from the kaki who walked it before you.
+
+The first stories come from Malaysian travellers, but nationality, destination and work type are
+just data in a database. Nothing about "Malaysia" or "New Zealand" is hard-coded anywhere.
+
+## What it is (and, more importantly, isn't)
+
+Kakinotes is a **stories-first** platform. Every story is a structured, searchable, human-reviewed
+written account with photos — the kind of thing you'd want to read before spending a year of your
+life on the other side of the planet.
+
+Every public story carries the same label: **personal experience, not advice.** It's someone's
+year. It is not your visa lawyer.
+
+Deliberately **not** on the roadmap:
+
+| We don't do                     | Because                                                              |
+| ------------------------------- | -------------------------------------------------------------------- |
+| Comments, likes, follows        | The moment there's a leaderboard, people write for the leaderboard.  |
+| Live job listings               | They'd be stale in a week; the stories about the jobs won't be.      |
+| Budget calculators              | Contributors report what they spent. You do the maths for your life. |
+| Visa / legal / tax advice       | See "not your visa lawyer".                                          |
+| Audio, video, maps, native apps | Words first. Everything else is a distraction until words work.      |
+
+## What's built
+
+- **Structured story editor** — headings, lists, quotes, links, images. Stored as a controlled
+  JSON schema of blocks, never raw HTML, so nothing sketchy ever renders.
+- **Image pipeline** — uploads land in a private bucket; only after approval are processed
+  derivatives published, with EXIF and GPS stripped. Your photo's location metadata is not part of
+  the story.
+- **Import from PDF** — editors can attach a contributor's existing write-up and its pages become
+  editable blocks. Written stories already existed before the site did; they had to come along.
+- **Drafts and revisions that can't leak** — an unapproved edit never replaces what the public
+  sees. Draft, private, rejected and archived content stays out of public queries, sitemaps and
+  URL-guessing.
+- **Two staff workflows, kept apart** — _editorial_ (import, attribution cleanup) and _moderation_
+  (approve / reject, with reasons and side-by-side revision diffs) are different roles with
+  different tables. Row Level Security is the source of truth; app code re-checks, never
+  substitutes.
+- **Browse and search** — by region, destination, work type, trip year, tags, reported cost band,
+  or plain text. A dedicated [/costs](https://kakinotes.vercel.app/costs) view for what a year
+  actually cost people.
+- **Contributor profiles** — display name of the contributor's choosing; only fields explicitly
+  marked public are ever public.
+- **Reader reports** — flag a story, staff triage it with private notes.
+- **Two languages** — English (en-NZ dates and numbers) and Simplified Chinese, switched by a
+  cookie, no URL gymnastics. Region, destination and category names are translated data, not
+  translated strings.
+- **Consent and image rights are recorded, not assumed.**
+
+## How a story travels
+
+```mermaid
+flowchart LR
+    A[Contributor drafts] --> B[Private preview]
+    B --> C[Submit for review]
+    C --> D{Moderator}
+    D -- approve --> E[Published revision]
+    D -- reject, with reason --> A
+    E -. later edit .-> F[New draft revision]
+    F --> C
+    E --> G[Public site, sitemap, search]
+    style E fill:#3ECF8E,color:#000
+```
+
+The public site only ever reads the **approved, published revision**. A rejected edit goes back
+to the contributor with a reason; the live story is untouched.
+
+## Stack
+
+| Layer      | Choice                                                                             |
+| ---------- | ---------------------------------------------------------------------------------- |
+| Framework  | [Next.js](https://nextjs.org) 16 (App Router, Server Components) · React 19        |
+| Data       | [Supabase](https://supabase.com) — Postgres with Row Level Security, Auth, Storage |
+| Styling    | Tailwind CSS 4                                                                     |
+| i18n       | next-intl                                                                          |
+| Images     | sharp                                                                              |
+| PDF        | pdfjs-dist (read) · pdfkit (export)                                                |
+| Validation | Zod at every trust boundary                                                        |
+| Tests      | Vitest + React Testing Library · Playwright                                        |
+| Hosting    | Vercel (production from the `release` branch)                                      |
+
+## By the numbers
+
+|                                                      |                                                                                                  |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| First commit                                         | 2 August 2026                                                                                    |
+| Unit tests                                           | 1,098 across 92 files                                                                            |
+| Browser (e2e) specs                                  | 62 across 13 files                                                                               |
+| Database migrations                                  | 119                                                                                              |
+| Lines of UI copy per language                        | 1,118                                                                                            |
+| Times the word "index" has been used as a route name | 1 — and never again ([it collides with `/`](https://github.com/fr4d96/KakiNotes/commit/aacd591)) |
 
 ## Getting started
 
+You need **Node 24** (there's an `.nvmrc`) and a Supabase project for development.
+
 ```bash
-cp .env.example .env.local   # fill in a Supabase development project's values
+cp .env.example .env.local   # fill in your Supabase DEVELOPMENT project's values
 npm install
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-See [docs/architecture.md](docs/architecture.md) for the full application, auth, and database
-workflow, including the local-vs-hosted Supabase development setup.
+`.env.example` lists the four variables. Three are public and browser-safe. The fourth,
+`SUPABASE_SERVICE_ROLE_KEY`, is server-only and used by exactly one thing (the image pipeline). It
+never goes near the browser, a client component, or CI.
 
-## Changelog
+### The one command that matters
 
-Plain-language summary of what's been built, prompt by prompt. Full technical detail lives in
-[docs/implementation-status.md](docs/implementation-status.md); the same summary in longer form
-lives in [docs/implementation-status-human.md](docs/implementation-status-human.md), which is
-updated after every prompt or sub-phase.
+```bash
+npm run verify
+```
 
-- **Prompt 0 — Foundations doc.** Baseline documentation (rules, architecture,
-  content-governance policy) written before any code existed.
-- **Prompt 1 — App skeleton.** Basic Next.js app shell, pages, layout, quality tooling, and
-  Supabase wiring. Blocked on one thing: no Docker on this machine, so the local Supabase test
-  stack has never been run — everything else works.
-- **Prompt 2 — Sign-in & accounts.** Sign up, sign in, password reset, automatic profiles, four
-  user roles (user/editor/moderator/admin), and a contributor identity separate from login
-  accounts. Live-tested against the real Supabase project; one real bug found and fixed
-  (deleting a linked user was broken).
-- **Prompt 3 — The story data model.** The full database structure for stories: drafts,
-  submissions, moderation decisions, publishing, images, consent records, reader reports.
-  Nobody — not even an admin — can read or write these tables directly; every action goes
-  through a guarded function that re-checks permissions. Live-tested end-to-end (23/23 tests);
-  3 real security bugs found and fixed, including one that would have let a stranger overwrite
-  someone else's private draft.
-- **Prompt 4 — Actual authoring (complete, all 5 stages done; merged to `main`).** Letting
-  contributors and editors write and publish stories with images.
-  - Stage 1 (done): story text now supports bold, italic, and links.
-  - Stage 2 (done): the full image-upload pipeline — private staging for in-progress uploads, a
-    processing step that strips personal metadata (GPS, etc.) and resizes photos, and a public
-    area only for approved images — plus the actual "publish a story" mechanism, designed so a
-    story can never go public with an unprocessed or unapproved image. Live-tested (25/25
-    tests); two real bugs found and fixed.
-  - Stage 3 (done): the actual screens — a real writing editor (bold/italic/links/headings/
-    lists/quotes, nothing else), image upload with captions and reordering, and a private
-    "see exactly what this will look like" preview page only the contributor (and staff) can
-    see. Verified with 112/112 automated tests, a manual mobile check of every new page, and a
-    real signed-in walkthrough (sign in, write a story, format it, save, preview) against the
-    live database. Two real bugs found this way and fixed: a missing way to read back a story's
-    chosen regions/work types/tags on page reload (now live), and a formatting bug where bolding
-    a word mid-sentence silently deleted the spaces around it (confirmed fixed by re-testing the
-    exact scenario live). A real image upload still wasn't tested end-to-end — no test image
-    file in this environment — left for the final testing stage.
-  - Stage 4 (done): the staff side. Editors can now prepare a story on someone else's behalf —
-    including pasting in existing text or HTML and having it automatically cleaned up and
-    reformatted to match the site's writing style — for the founding collection of
-    already-written stories. The person the story is actually about can then review it, approve
-    it, ask for changes, or turn it down from their own account. Also added: a proper audit
-    trail every time a writer's account gets linked to their identity record, and a "the terms
-    changed since you last agreed, please confirm again" safety check. Live-tested (33/33 tests)
-    against the real database, plus real end-to-end browser tests including an actual image
-    upload for the first time. Two real security bugs found and fixed after the first round of
-    testing: one where any signed-in visitor could have overwritten someone else's private
-    draft, and one where a database read was ambiguous in a way that broke access for assigned
-    editors — both confirmed live before and after the fix.
-  - Stage 5 (done): a new automated browser test signs in as one real account, starts a story,
-    then signs in as a **second, separate** real account and tries to open the first account's
-    story through the actual screens — the missing piece the earlier stages had flagged. It found
-    a real problem on the first try: visiting someone else's story-edit or preview page as an
-    unrelated signed-in account returned a normal-looking "200 OK" instead of a real "not found" —
-    the same shape of issue Stage 4 found and fixed for signed-out visitors to the editorial area,
-    just for a signed-in stranger with no connection to that specific story. No private content
-    was ever shown, just the wrong status code. Fixed the same way as before (moved the "are you
-    allowed to see this" check earlier, before any page content is prepared) across all three
-    affected screens; confirmed fixed by checking the real response codes again afterward, for
-    both the stranger (now correctly blocked) and the legitimate owner/editor (unaffected).
-  - **Prompt 4 is now fully done.** Next up: Prompt 5 (public browsing/search) and Prompt 6
-    (moderator review dashboard).
-- **Prompt 5 — Public browsing & search (complete; merged to `main`).** The actual public-facing
-  site: a homepage, a browsable/filterable story list (region, work type, tags, cost band, search),
-  individual story and contributor pages, and the search-engine plumbing (sitemap, robots.txt,
-  structured data) so the site can actually be found and indexed. Live-tested (44/44 database tests,
-  24/24 browser tests, 153/153 unit tests). Found and fixed three real things along the way: a gap
-  where anonymous visitors could read contributor records directly instead of through the intended
-  filtered view; a page that returned "200 OK" for a story or contributor page that didn't exist,
-  instead of a proper "not found" (the same category of bug found and fixed twice in Prompt 4, this
-  time on a public page); and a database bug that broke the very first real page that ever called a
-  particular search function (caught by the site failing to build, not silently).
-- **Prompt 6 — Editorial & moderation workspace (complete, all 3 stages plus live browser
-  verification; merged to `main`).** The staff tools for reviewing, approving, and moderating
-  stories, plus a proper reports-triage system for reader-submitted flags.
-  - **Stage 1 (backend):** the underlying rules and data — archiving a story now requires a written
-    reason, an editor can be reassigned to a different story with a recorded audit trail, and a
-    moderator resolving a reader's report on a serious issue (misinformation, harassment, unsafe
-    advice, copyright/privacy) must now leave a private note explaining the decision before closing
-    it. Also tightened: moderators used to be able to read raw contributor account records directly;
-    now they only see the attribution info actually needed for review. Live-tested (69/69 database
-    tests). One real bug caught and fixed before anything went live: a reassignment check that would
-    have silently let any editor hand an unclaimed story to someone else, when only an admin should
-    be able to do that.
-  - **Stage 2 (the actual screens):** real moderation and editorial dashboards, replacing the
-    placeholder pages that used to just say "not built yet." A moderator can now filter and page
-    through submitted stories (labeled as first submissions, replacements, or resubmissions),
-    open one to see exactly what was submitted — including a side-by-side comparison against
-    what's currently public, if this is a replacement — and approve, reject, or request changes,
-    each with its own required or optional reason. Approving a story now runs through a proper
-    multi-step process (start the approval, copy each new photo to public storage, then finalize)
-    designed so a failure partway through never leaves something half-published — it just leaves the
-    attempt safely resumable. Editors got a real filterable queue too, plus the ability to reassign a
-    story to a different editor.
-  - **Stage 3 (reports triage + polish):** a dedicated page for reviewing reader-submitted reports,
-    with filters, a private-notes system staff can use to record why a report was resolved (never
-    visible to the person who reported it), and a full written guide for moderators covering things
-    like misinformation, harassment, copyright, and when to escalate to an admin — plus a fix for a
-    subtle bug where a successful approve/archive action's confirmation message could get silently
-    replaced by the page refreshing before anyone saw it.
-  - **Then verified for real, in a real browser, against the real database** (not just automated
-    database checks): 12 out of 12 browser tests passed, and this caught two more genuine bugs no
-    amount of code review had caught — (1) an editor got a real error page just from visiting their
-    own story's edit screen, because a database function meant to also let editors see their own
-    prep history had accidentally been left moderator-only; and (2) the same "confirmation message
-    disappears before you can see it" bug from Stage 3, this time on the main approve/reject screen.
-    Both fixed and re-verified live before anything was merged.
+Format check → lint → typecheck → unit tests → production build. It's the same gate locally and in
+CI; if it's green, the change is done. `npm run verify:full` adds the Playwright suite.
+
+<details>
+<summary>All scripts</summary>
+
+| Script                                        | What it does                                       |
+| --------------------------------------------- | -------------------------------------------------- |
+| `npm run dev`                                 | Local dev server                                   |
+| `npm run build` / `npm run start`             | Production build / serve it                        |
+| `npm run lint` / `npm run typecheck`          | ESLint / `tsc --noEmit`                            |
+| `npm run format` / `npm run format:check`     | Prettier                                           |
+| `npm run test`                                | Vitest + React Testing Library                     |
+| `npm run test:e2e`                            | Build, then Playwright                             |
+| `npm run verify` / `npm run verify:full`      | The gate / the gate plus Playwright                |
+| `npm run supabase:start` / `:stop` / `:reset` | Local Supabase stack (needs Docker)                |
+| `npm run supabase:types` / `:types:linked`    | Regenerate `types/database.ts` from local / hosted |
+
+</details>
+
+## Shipping
+
+```
+feature branch ──► main ──► release ──► Vercel
+                    │          │
+                 CI runs    CI runs, then release-please bumps the version,
+                            writes CHANGELOG.md, tags vX.Y.Z and publishes
+                            a GitHub Release — no PR to click.
+```
+
+Commits follow [Conventional Commits](https://www.conventionalcommits.org): `feat:` bumps the
+minor version, `fix:` bumps the patch, and the commit message becomes the changelog line. Write
+it like someone will read it — someone will.
+
+## Project layout
+
+```
+app/            routes — (public) · (contributor) · (editor) · (moderation) · (auth)
+components/     UI, Server Components by default
+lib/            Supabase clients, validation, story model, image + PDF pipelines
+i18n/           locales, next-intl config, messages/{en,zh-CN}.json
+supabase/       migrations (schema, RLS, storage policies) · seed.sql (fictional only)
+tests/          Vitest configs · integration (RLS, against a real project) · e2e (Playwright)
+docs/           product spec · architecture · content governance · implementation status
+```
+
+## House rules
+
+The full list lives in [CLAUDE.md](CLAUDE.md) — 22 engineering rules that every change is held to.
+The spirit of them:
+
+1. **Never trust the client.** IDs, roles, ownership, publication state — re-derived on the server,
+   every mutation, every time.
+2. **RLS is the law.** Application checks are a second lock, never a replacement. Weakening a policy
+   to "fix" a bug is not a fix.
+3. **Drafts don't leak.** Not through queries, sitemaps, metadata, previews, or image URLs.
+4. **Some data is never collected.** Passport scans, visa documents, bank details, live location,
+   medical records — not in the schema, not in seed data, not ever.
+5. **Seed data is fiction.** Real contributor content is imported by editors, not committed to git.
+6. **Mobile first, keyboard always.** Verify at 375px before you admire it on a monitor.
+
+## Docs
+
+|                                                                            |                                                                     |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| [docs/product-spec.md](docs/product-spec.md)                               | What Kakinotes is, who it's for, what it refuses to be              |
+| [docs/architecture.md](docs/architecture.md)                               | Every layer, the auth model, the database, CI and releases          |
+| [docs/content-governance.md](docs/content-governance.md)                   | Consent, moderation, attribution — the human rules                  |
+| [docs/implementation-status.md](docs/implementation-status.md)             | The running log of what was built, what broke, and what was learned |
+| [docs/implementation-status-human.md](docs/implementation-status-human.md) | The same log, in plain language, for humans in a hurry              |
+| [CHANGELOG.md](CHANGELOG.md)                                               | Generated per release                                               |
+| [CLAUDE.md](CLAUDE.md)                                                     | Orientation for any engineer, human or otherwise                    |
+
+---
+
+<p align="center">
+  <sub>Personal experience, not advice. Every story on Kakinotes is one person's year — read it that way.</sub>
+</p>
