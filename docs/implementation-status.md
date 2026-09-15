@@ -3,11 +3,14 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-09-15 (scroll jank — the landing page's focus-pull blur no longer runs on
-large wrappers, reveal animations fill `backwards` so nothing holds a filter or transform after
-finishing, the hero keeps one GPU layer instead of four and pauses off-screen, backdrop blurs over
-moving content are gone, and public story images decode off the main thread; the reading-progress
-hairline is fixed to the viewport again; earlier: Chinese vocabulary phase 2 — region, destination and expense-category
+Last updated: 2026-09-15 (a CI + release pipeline: `ci.yml` runs `verify` on every PR and push to
+main/release, `release.yml` runs release-please against a new `release` branch to cut versioned
+GitHub Releases; documented in docs/architecture.md#ci-and-releases, no deploy performed; earlier
+the same day: scroll jank — the landing page's focus-pull blur no longer runs on large wrappers,
+reveal animations fill `backwards` so nothing holds a filter or transform after finishing, the hero
+keeps one GPU layer instead of four and pauses off-screen, backdrop blurs over moving content are
+gone, and public story images decode off the main thread; the reading-progress hairline is fixed
+to the viewport again; earlier: Chinese vocabulary phase 2 — region, destination and expense-category
 names are Chinese on story cards, story pages, the byline and /costs, via a `name_zh_cn` column
 rather than the phase-1 slug overlay; earlier the same day: four Playwright specs that had been failing since the editor became a
 stepped flow are green again — they now walk to the step they test, and read the step's label
@@ -43,57 +46,31 @@ earlier the same day: moderation review rebuild — empty submissions blocked at
 and review page rebuilt around who/when/what-is-wrong, and a consent check that had been false for
 every story since Prompt 3).
 
-**2026-09-10 (latest) — a contributor is the same avatar everywhere.**
-`20260910120000_story_cards_contributor_avatar.sql` adds `contributor_avatar_emoji` to
-`list_published_stories()` and `get_published_story()`, and
-`components/story/attribution-chip.tsx` renders it through the existing
-`components/contributor/contributor-avatar.tsx`. Before this, the same person was 🛶 on their
-byline page and "K" on their own story cards two inches below it, on the same screen — the
-contributor identity work had wired the emoji into the two CONTRIBUTOR RPCs but not the two STORY
-ones, and the chip had nothing to render but a first letter.
+**2026-09-15 (latest) — a CI + release pipeline, documented but not yet switched on.**
+Four new files: `.github/workflows/ci.yml`, `.github/workflows/release.yml`,
+`release-please-config.json`, `.release-please-manifest.json`. Plus a "CI and releases" section in
+`CLAUDE.md` and a matching `## CI and releases` section in `docs/architecture.md`. No code, no
+deploy — this is pipeline plumbing and its docs.
 
-- **No new join, which was the thing to check first** on the most performance-sensitive public
-  query in the app. Both functions already load the contributor row — `list_published_stories` has
-  `left join public.contributors c` for `contributor_slug`, `get_published_story` does
-  `select * into v_contributor` — so this reads one more column off a row already in hand. Checked
-  against the LIVE definitions via `pg_get_functiondef`, not against the oldest migration naming
-  the table.
-- **DROP + CREATE, grants re-applied**, because both gain an OUT column. Verified after applying:
-  both functions still carry `anon=X` and `authenticated=X`.
-- **The emoji is gated on two conditions, and the second is the one that matters.**
-  `public_status = 'public'` mirrors the gate `contributor_slug` already uses. But the emoji is
-  ALSO gated on the per-story CONSENT's `attribution_type` not being `anonymous` — not the
-  contributor's own default. The consent row decides how THIS story is attributed, and a
-  contributor can publish one story under their name and the next anonymously. A distinctive emoji
-  rendered beside the word "Anonymous" is a linkable fingerprint: the same 🛶 across three
-  anonymous stories re-identifies the author to anyone who then visits the directory. A cosmetic
-  change would have shipped a privacy leak.
+`ci.yml` runs `npm ci` then `npm run verify` on every PR into `main`/`release` and every push to
+either — the same single gate used locally, so CI can't drift from "done" on a laptop. `release.yml`
+runs release-please on every push to `release`, turning Conventional Commits into one running
+`chore(release): x.y.z` PR; merging it tags the release and cuts a GitHub Release.
 
-**Verified against real data, not only by tests.** `/contributors/kakitest` at 375px now shows 🛶
-in the profile header AND in the story card's attribution chip on the same screen, and the story
-page (`/stories/opotiki-trip-2f2754f0`) shows it too; no console errors on any of them.
-`list_published_stories()` returns 🛶 for the public contributor and null for every non-public one,
-matching `contributor_slug` exactly. The anonymous branch has no data to exercise it, so it was
-checked directly instead: evaluating the migration's CASE against the real contributor row across
-all four `attribution_type` values returns 🛶 for real_name/display_name/pseudonym and null for
-anonymous.
+**Decisions:** reused `verify` as the CI gate instead of separate steps. CI needs two secrets
+(`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, dev project, public/browser-safe)
+because `verify` builds, and the build prerenders `app/sitemap.ts` against live Supabase data;
+`SUPABASE_SERVICE_ROLE_KEY` is never set in CI (Engineering Rule 1). `release` is a new branch,
+separate from `main`, that Vercel deploys from, so a merge to `main` never ships by itself. No
+Vercel config files live in the repo — set up once in the dashboard. Playwright e2e stays out of CI
+for now; it needs a seeded live project and a service-role key that don't exist yet.
 
-**A transcription check worth reusing.** Copying ~200 lines of an existing function body into a
-DROP+CREATE migration is the kind of thing a diff review passes and a typo survives. Postgres
-stores plpgsql bodies verbatim, so `pg_get_functiondef`'s body was whitespace-stripped and hashed,
-and the migration's body was whitespace-stripped, had the one added CASE removed, and hashed —
-both matched. That is a proof rather than an eyeballing.
+**Open risks:** Vercel isn't configured, `release` doesn't exist yet, the two CI secrets aren't
+added, branch protection isn't on, the release PR runs with the default `GITHUB_TOKEN` so it gets
+no CI check of its own, and the first changelog will cover the whole commit history.
 
-**One thing left alone, pre-existing and outside this change:** `contributor_slug` is gated only on
-`public_status`, not on anonymity, so an anonymous contributor with a public profile still gets a
-byline link on their card — and it 404s, because `get_public_contributor()` excludes
-`attribution_type = 'anonymous'`. Worth its own look. — CLOSED the same day by
-20260910140000, which also found the much worse bug sitting behind it: see the latest entry.
-
-**Also fixed here:** the avatar's no-emoji fallback used `charAt(0)`, which indexes UTF-16 code
-units — a display name starting outside the BMP returned half a surrogate pair and rendered as the
-replacement glyph. Now `Array.from(...)[0]`. The component gained its first 12 tests alongside;
-`AttributionChip` gained 7 and `StoryCard` 2. 987 total, `npm run verify` exits 0.
+**Next:** the one-time setup checklist in docs/architecture.md#ci-and-releases (create `release`,
+add secrets, wire up Vercel, turn on branch protection), then consider adding Playwright to CI.
 
 **2026-09-15 (latest) — scrolling stopped stuttering: the blur budget, the fill mode, and the hero's four layers.**
 The landing page and story screens felt laggy on scroll. Measured in the browser rather than guessed
@@ -148,6 +125,58 @@ even though `story_media` stores them; adding them is a DROP+CREATE migration on
 separate change. (2) The four hero plates are still `w=2400` Unsplash hotlinks at every viewport.
 (3) `next dev` is materially slower than the production build; judge scroll feel on `npm run build
 && npm run start` (`kakinotes-prod`, port 3101) before chasing anything further.
+
+**2026-09-10 (latest) — a contributor is the same avatar everywhere.**
+`20260910120000_story_cards_contributor_avatar.sql` adds `contributor_avatar_emoji` to
+`list_published_stories()` and `get_published_story()`, and
+`components/story/attribution-chip.tsx` renders it through the existing
+`components/contributor/contributor-avatar.tsx`. Before this, the same person was 🛶 on their
+byline page and "K" on their own story cards two inches below it, on the same screen — the
+contributor identity work had wired the emoji into the two CONTRIBUTOR RPCs but not the two STORY
+ones, and the chip had nothing to render but a first letter.
+
+- **No new join, which was the thing to check first** on the most performance-sensitive public
+  query in the app. Both functions already load the contributor row — `list_published_stories` has
+  `left join public.contributors c` for `contributor_slug`, `get_published_story` does
+  `select * into v_contributor` — so this reads one more column off a row already in hand. Checked
+  against the LIVE definitions via `pg_get_functiondef`, not against the oldest migration naming
+  the table.
+- **DROP + CREATE, grants re-applied**, because both gain an OUT column. Verified after applying:
+  both functions still carry `anon=X` and `authenticated=X`.
+- **The emoji is gated on two conditions, and the second is the one that matters.**
+  `public_status = 'public'` mirrors the gate `contributor_slug` already uses. But the emoji is
+  ALSO gated on the per-story CONSENT's `attribution_type` not being `anonymous` — not the
+  contributor's own default. The consent row decides how THIS story is attributed, and a
+  contributor can publish one story under their name and the next anonymously. A distinctive emoji
+  rendered beside the word "Anonymous" is a linkable fingerprint: the same 🛶 across three
+  anonymous stories re-identifies the author to anyone who then visits the directory. A cosmetic
+  change would have shipped a privacy leak.
+
+**Verified against real data, not only by tests.** `/contributors/kakitest` at 375px now shows 🛶
+in the profile header AND in the story card's attribution chip on the same screen, and the story
+page (`/stories/opotiki-trip-2f2754f0`) shows it too; no console errors on any of them.
+`list_published_stories()` returns 🛶 for the public contributor and null for every non-public one,
+matching `contributor_slug` exactly. The anonymous branch has no data to exercise it, so it was
+checked directly instead: evaluating the migration's CASE against the real contributor row across
+all four `attribution_type` values returns 🛶 for real_name/display_name/pseudonym and null for
+anonymous.
+
+**A transcription check worth reusing.** Copying ~200 lines of an existing function body into a
+DROP+CREATE migration is the kind of thing a diff review passes and a typo survives. Postgres
+stores plpgsql bodies verbatim, so `pg_get_functiondef`'s body was whitespace-stripped and hashed,
+and the migration's body was whitespace-stripped, had the one added CASE removed, and hashed —
+both matched. That is a proof rather than an eyeballing.
+
+**One thing left alone, pre-existing and outside this change:** `contributor_slug` is gated only on
+`public_status`, not on anonymity, so an anonymous contributor with a public profile still gets a
+byline link on their card — and it 404s, because `get_public_contributor()` excludes
+`attribution_type = 'anonymous'`. Worth its own look. — CLOSED the same day by
+20260910140000, which also found the much worse bug sitting behind it: see the latest entry.
+
+**Also fixed here:** the avatar's no-emoji fallback used `charAt(0)`, which indexes UTF-16 code
+units — a display name starting outside the BMP returned half a surrogate pair and rendered as the
+replacement glyph. Now `Array.from(...)[0]`. The component gained its first 12 tests alongside;
+`AttributionChip` gained 7 and `StoryCard` 2. 987 total, `npm run verify` exits 0.
 
 **2026-09-14 — the vocabulary itself speaks Chinese (phase 2).**
 `20260914150000_vocab_name_zh_cn.sql` and `20260914150100_contributor_facts_regions_zh_cn.sql`,

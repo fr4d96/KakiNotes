@@ -116,6 +116,16 @@ A task is not complete until all of the following hold:
       next prompt.
 - [ ] No service-role key, secret, or real personal/contributor data introduced (Rules 1, 15, 22).
 
+## CI and releases
+
+- `.github/workflows/ci.yml` runs `npm run verify` on every PR and on pushes to `main`/`release`.
+  It needs two repository secrets pointing at the **development** Supabase project:
+  `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Never add the
+  service-role key to CI.
+- `release` is the production branch. Vercel deploys it; `.github/workflows/release.yml`
+  (release-please) turns Conventional Commits into a version bump, `CHANGELOG.md`, git tag and
+  GitHub Release. Details: [docs/architecture.md](docs/architecture.md#ci-and-releases).
+
 ## Before starting any task
 
 Read [docs/implementation-status.md](docs/implementation-status.md) first. It tracks what has actually

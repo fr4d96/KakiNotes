@@ -977,6 +977,94 @@ Rules, enforced by convention (no script does these automatically):
 - The project ref and any keys stay out of committed files — only in `.env.local` / your shell,
   never `.env.example`.
 
+## CI and releases
+
+### Branch model
+
+- `main` is the integration branch. Feature branches merge into it via PR.
+- `release` is the production branch. Ship by merging `main` into `release`.
+- Version tags (`v0.2.0` and so on) live on `release`, not `main`.
+
+### CI (`ci.yml`)
+
+Runs on every PR into `main`/`release`, and on every push to `main`/`release`. Concurrency is
+scoped per branch/PR, so a newer push cancels an older run in progress.
+
+The job runs `npm ci` then `npm run verify` — the exact same single gate used locally, so CI can
+never drift from what "done" means on your machine. Node version comes from `.nvmrc`, via
+`actions/setup-node`.
+
+Two repository secrets are required: `NEXT_PUBLIC_SUPABASE_URL` and
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Both must point at the **development** Supabase project.
+They're needed because `next build` (part of `verify`) prerenders `app/sitemap.ts`, which reads
+published stories and contributors from Supabase with no try/catch — an unreachable project fails
+the build. Both values are public and browser-safe. `SUPABASE_SERVICE_ROLE_KEY` is never set in CI
+(Engineering Rule 1) — nothing `verify` runs needs it. `NEXT_PUBLIC_SITE_URL` is hard-coded to
+`http://localhost:3000` in the workflow; it doesn't need to be a secret.
+
+Playwright e2e (`verify:full`) does **not** run in CI yet. It needs a seeded live project and that
+project's service-role key in secrets, which don't exist yet. Tracked as future work below.
+
+### Hosting (Vercel)
+
+There are no Vercel-specific files in this repo. Deployment is configured entirely in the Vercel
+dashboard, via its GitHub integration. One-time setup:
+
+1. Import the GitHub repo into Vercel.
+2. Set Production Branch to `release`.
+3. Add env vars in Vercel project settings, Production environment: `NEXT_PUBLIC_SUPABASE_URL`,
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SITE_URL` (the real public domain), and
+   `SUPABASE_SERVICE_ROLE_KEY` (production project, server-only — never expose this to the browser,
+   Engineering Rule 1).
+4. Optionally turn off preview deployments for other branches, if the per-branch preview URLs
+   aren't wanted.
+
+Every deploy gets its own immutable URL, and the project's fixed domain always points at whichever
+deploy is currently "production" — that's what makes one-click rollback in the Vercel dashboard
+work: rolling back just repoints the domain at an older immutable deploy.
+
+Vercel does **not** wait for GitHub checks before deploying. To gate deploys on CI, enable branch
+protection on `release` (and `main`) requiring the `verify` check to pass before merge.
+
+### Versioning (`release.yml`, release-please)
+
+On every push to `release`, `release.yml` runs [release-please](https://github.com/googleapis/release-please-action).
+It reads the Conventional Commit messages since the last tag — `feat:` bumps minor, `fix:` bumps
+patch, and (per `bump-minor-pre-major` in `release-please-config.json`) breaking changes bump minor
+too, while the version stays below 1.0. It keeps a single pull request open and up to date, titled
+like `chore(release): 0.2.0`, containing the `package.json`/`package-lock.json` version bump and an
+updated `CHANGELOG.md`.
+
+Merging that PR is what cuts the version: release-please then creates the git tag
+(`v0.2.0` — no component prefix, per `include-component-in-tag: false`) and a GitHub Release with
+notes. The current tracked version lives in `.release-please-manifest.json` (`0.1.0` right now).
+
+Two gotchas worth knowing:
+
+- The release PR is created with the default `GITHUB_TOKEN`, so GitHub does not run the CI workflow
+  on it. That's fine here — the PR only ever touches version fields and the changelog.
+- The version bump lands on `release`, not `main`. Merge `release` back into `main` after each
+  release (`git checkout main && git merge release`) to keep `package.json` in sync everywhere.
+
+Also: the very first run has no previous tag to read from, so the first changelog will list every
+Conventional Commit in the project's history, not just the ones since some earlier release.
+
+### Day-to-day flow
+
+1. Feature branch → PR → `main`. CI (`verify`) must pass before merge.
+2. When ready to ship, merge `main` into `release` and push. CI runs again; Vercel deploys.
+3. Merge the `chore(release): x.y.z` PR that release-please opened. This creates the tag and the
+   GitHub Release; Vercel deploys again.
+4. Merge `release` back into `main`.
+
+### One-time setup checklist
+
+- Create the `release` branch from `main`: `git checkout -b release main && git push -u origin release`.
+- Add the two CI secrets (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
+  pointing at the development project).
+- Set up Vercel as described above.
+- Enable branch protection on `main` and `release` requiring the `verify` check.
+
 ## Environment variables — who reads what
 
 - `npm run dev` / `build` / `start`: read `.env.local` (untracked), copied from `.env.example` and

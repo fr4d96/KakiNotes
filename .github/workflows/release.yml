@@ -1,0 +1,34 @@
+# Versioning for the `release` branch, driven by release-please.
+#
+# Every push to `release` re-runs this. release-please reads the Conventional
+# Commit messages since the last tag (feat → minor, fix → patch) and keeps a
+# single "chore(release): x.y.z" pull request up to date with the version bump
+# and CHANGELOG.md. Merging that PR creates the git tag and the GitHub Release.
+# Hosting (Vercel) deploys from the branch itself; this workflow never deploys.
+# See docs/architecture.md#ci-and-releases.
+name: Release
+
+on:
+  push:
+    branches: [release]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Never run two release-please jobs at once; they would race on the same PR.
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Run release-please
+        uses: googleapis/release-please-action@v4
+        with:
+          target-branch: release
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
