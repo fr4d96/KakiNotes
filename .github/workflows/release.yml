@@ -46,8 +46,13 @@ jobs:
         if: steps.bump.outputs.pr != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ fromJSON(steps.bump.outputs.pr).number }}
-        run: gh pr merge "$PR_NUMBER" --merge --repo "${{ github.repository }}"
+          # Raw JSON; parsed in the shell so an empty output (nothing to
+          # release) never reaches fromJSON, which GitHub evaluates even
+          # when the step's `if` is false.
+          PR_JSON: ${{ steps.bump.outputs.pr }}
+        run: |
+          pr_number="$(jq -r '.number' <<<"$PR_JSON")"
+          gh pr merge "$pr_number" --merge --repo "${{ github.repository }}"
 
       # Pass 2: create the git tag and the GitHub Release for the bump that
       # was just merged. skip-github-pull-request stops it opening a new PR.
