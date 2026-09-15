@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/fr4d96/NStoriesZ/compare/v0.2.0...v0.2.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* **qa:** move the QA index from /index to /qa-index ([aacd591](https://github.com/fr4d96/NStoriesZ/commit/aacd591d2071ac2efbd2c9804f3e984346d627e2))
+
 ## [0.2.0](https://github.com/fr4d96/NStoriesZ/compare/v0.1.0...v0.2.0) (2026-09-15)
 
 
