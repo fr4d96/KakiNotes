@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/fr4d96/KakiNotes/compare/v0.2.1...v0.2.2) (2026-09-15)
+
+
+### Performance Improvements
+
+* **preview:** mint image preview URLs in one batched round trip ([175b1aa](https://github.com/fr4d96/KakiNotes/commit/175b1aa00281cb6f3fb0a73f37ed05d7002bbbe5))
+
 ## [0.2.1](https://github.com/fr4d96/NStoriesZ/compare/v0.2.0...v0.2.1) (2026-09-15)
 
 
