@@ -111,15 +111,21 @@ export async function GET(
   // response to "let me keep a copy".
   const markdown = blocks ? storyContentText(blocks) : "";
 
+  // The PDF is read away from the site, so it carries the language the
+  // contributor was reading in when they asked for it -- including the
+  // place names, which is why the locale is resolved BEFORE the labels.
+  const [t, rawLocale] = await Promise.all([
+    getTranslations("pdf"),
+    getLocale(),
+  ]);
+  const locale = isLocale(rawLocale) ? rawLocale : "en";
+
   const selections = await getRevisionSelections(preview.revisionId);
-  const locations = await resolveLocationLabels(selections.locations);
+  const locations = await resolveLocationLabels(selections.locations, locale);
 
   const images = await collectImages(preview.media);
 
   const exportedAt = new Date();
-  // The PDF is read away from the site, so it carries the language the
-  // contributor was reading in when they asked for it.
-  const [t, locale] = await Promise.all([getTranslations("pdf"), getLocale()]);
   const statusKey = exportStatusLabel(
     preview.lifecycleStatus,
     preview.revisionStatus,
@@ -146,7 +152,7 @@ export async function GET(
     totalExpenseNzdCents: preview.totalExpenseNzdCents,
     statusLabel: t(`status.${statusKey}`),
     exportedAt,
-    locale: isLocale(locale) ? locale : "en",
+    locale,
     labels: {
       personalExperienceBy: (name) => t("personalExperienceBy", { name }),
       trip: t("trip"),

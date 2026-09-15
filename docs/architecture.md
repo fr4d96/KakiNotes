@@ -80,9 +80,9 @@ lib/
                                 # same function serves a Server Component, a Client Component
                                 # and a plain test. English output is byte-identical to the
                                 # hard-coded en-NZ it replaced.
-    vocab.ts                   # display-only zh-CN for the CLOSED vocabulary tables, keyed by
-                                # SLUG, falling back to the database name. See "Language" below
-                                # for exactly which surfaces have a slug to key off.
+    vocab.ts                   # picks a CLOSED vocabulary row's name in the visitor's language
+                                # from the row itself (name / name_zh_cn), falling back to the
+                                # English name. Also sorts by it. See "Language" below.
     set-locale-action.ts       # 'use server' — the ONLY writer of the language cookie; Zod-validated
   validation/
     issue-messages.ts         # turns the schemas' message KEYS into text at the trust boundary
@@ -2346,7 +2346,7 @@ flash of the wrong theme and a hydration mismatch. `components/theme-toggle.tsx`
 toggles the attribute and persists the choice; wired into `components/site-header.tsx` (both the
 desktop `<nav>` and the mobile-only control row) since it's a site-wide control, not homepage-only.
 
-## Language (Simplified Chinese, phase 1 — 2026-09-14)
+## Language (Simplified Chinese, phases 1–2 — 2026-09-14)
 
 English is the default. A visitor switches with the header toggle beside the
 theme toggle; the choice lives in the `NEXT_LOCALE` cookie, written by one
@@ -2379,18 +2379,38 @@ English in this phase — staff can still flip the toggle, and the shared
 components they borrow (`StatusBadge`, `StoryEditForm`, the confirm dialog)
 follow it.
 
-**Vocabulary tables.** `lib/i18n/vocab.ts` is a display-only overlay for the
-closed `regions` / `destinations` / `work_types` / `expense_categories`
-vocabularies, keyed by each row's SLUG and falling back to the database `name`.
-It needs a slug, so it reaches the surfaces that read those tables directly
-(the `/stories` filters, the authoring pickers, the quiz result). It does NOT
-reach the public RPCs: `list_published_stories()`, `get_published_story()`,
-`get_published_story_expenses()` and `get_expense_aggregates()` all build their
-JSON as `'region_name', reg.name` with no slug beside it, so story cards, the
-story page's place list, the contributor facts rows and `/costs`' by-region and
-by-category lists stay English. A `name_zh_cn` column on those four tables is
-the proper fix; the overlay is deliberately display-only so this phase carries
-no change to `list_published_stories()`.
+**Vocabulary tables.** The closed `regions` / `destinations` /
+`expense_categories` vocabularies carry a nullable `name_zh_cn` column beside
+`name` (20260914150000), and every public RPC emits BOTH names — prefixed
+inside the jsonb payloads (`region_name` + `region_name_zh_cn`,
+`destination_name` + `destination_name_zh_cn`) and plain on expense rows.
+`contributor_public_facts()`'s `regions` is jsonb of `{name, name_zh_cn}`
+objects for the same reason (20260914150100). `lib/i18n/vocab.ts` picks:
+`vocabName(row, locale)`, `prefixedVocabName(entry, prefix, locale)`, and
+`sortByLocalizedName(rows, locale)` — the last because the readers
+`.order("name")` in SQL, which is English A-Z; zh-CN re-sorts with
+`Intl.Collator`'s pinyin collation.
+
+The RPCs take **no locale parameter**, deliberately: their output is identical
+in either language, which is what lets `listPublishedStoriesCached` keep a
+cache key with no locale in it. A locale-keyed cache would double the entries
+and halve the hit rate on the most performance-sensitive public query for a
+difference of one string per row.
+
+A null `name_zh_cn` means "show the English name", never "translate it here".
+That is how a CONTRIBUTOR-TYPED label arrives: `destination_name` is
+`coalesce(dest.name, loc.custom_destination_label)` while the twin reads only
+the curated table, so a typed place or expense label always has a null beside
+it and renders exactly as its author wrote it. `tags` carry no translation at
+all, and `work_types` is untranslated because it was retired as a taxonomy on
+2026-08-16. A third language would be a second column and a re-run of this
+pattern — deliberately preferred over an untyped locale map.
+
+Phase 1's slug-keyed overlay in `messages/*.json` is gone, along with the
+`vocab` namespace. The one surface that genuinely cannot use the database is
+`components/home/destination-quiz.tsx`, which scores toward invented
+destinations ("Queenstown Lakes", "Central Otago") that are not region rows;
+it has its own `home.quiz.destinations` message keys.
 
 **Messages.** `messages/en.json` and `messages/zh-CN.json`, namespaced by area.
 `messages/messages.test.ts` holds them to identical key sets, identical ICU

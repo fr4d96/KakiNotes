@@ -176,39 +176,6 @@
       "notAPdf": "这个文件不是 PDF（文件头不匹配）。"
     }
   },
-  "vocab": {
-    "regions": {
-      "northland": "北地大区",
-      "auckland": "奥克兰",
-      "waikato": "怀卡托",
-      "bay-of-plenty": "丰盛湾",
-      "gisborne": "吉斯伯恩",
-      "hawkes-bay": "霍克斯湾",
-      "taranaki": "塔拉纳基",
-      "manawatu-whanganui": "马纳瓦图-旺加努伊",
-      "wellington": "惠灵顿",
-      "tasman": "塔斯曼",
-      "nelson": "尼尔森",
-      "marlborough": "马尔堡",
-      "west-coast": "西海岸",
-      "canterbury": "坎特伯雷",
-      "otago": "奥塔哥",
-      "southland": "南地大区"
-    },
-    "expenseCategories": {
-      "flights": "机票",
-      "visa-fee": "签证费",
-      "insurance": "保险",
-      "first-month-rent": "第一个月房租",
-      "bond": "押金",
-      "vehicle": "交通工具",
-      "gear": "装备",
-      "food": "饮食",
-      "transport": "交通",
-      "activities": "活动",
-      "other": "其他"
-    }
-  },
   "stories": {
     "metaTitle": "故事",
     "metaDescription": "浏览来自新西兰的真实第一人称打工度假签证（WHV）故事，可按地区、标签、出行年份、旅行方式和记录的花费筛选。",
@@ -316,7 +283,7 @@
     "perMonthUnit": "每月",
     "byRegionHeading": "按地区",
     "byCategoryHeading": "钱花在了哪里",
-    "halfReportedBetween": "这 {count} 篇故事中，有一半记录的金额在 <low>{low}</low> 到 <high>{high}</high> 之间。",
+    "halfReportedBetween": "这 {count} 篇故事中，有一半记录的金额在 <low>{lowValue}</low> 到 <high>{highValue}</high> 之间。",
     "storyCount": "{count} 篇故事",
     "notEnough": "已发表的故事还不够多，无法如实呈现{what}。当至少有五篇故事涉及同一项时，数字才会出现。",
     "notEnoughWhat": {
@@ -395,6 +362,14 @@
       "practicalNote": "实用提醒",
       "exploreStories": "去看故事",
       "tryAgain": "重新做一次",
+      "destinations": {
+        "auckland": "奥克兰",
+        "wellington": "惠灵顿",
+        "canterbury": "坎特伯雷",
+        "bayOfPlenty": "丰盛湾",
+        "queenstownLakes": "皇后镇湖区",
+        "centralOtago": "中奥塔哥"
+      },
       "questions": {
         "home": "哪种地方让你最自在？",
         "job": "你会想试试哪种工作？",

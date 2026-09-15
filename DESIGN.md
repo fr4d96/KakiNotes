@@ -463,9 +463,26 @@ filter axes. Never merge tags into the Work axis: it files "South Island" as a k
 ## Motion — the focus pull
 
 One authored idea, varied: content resolves from soft to sharp the way a lens pulls focus, matching
-the world's documentary-photography premise. `.nf-pull` (blur + rise, for section heads and large
-blocks) and `.nf-lift` (rise only, shorter throw, for repeated rows — twelve elements blurring at
-once reads as a broken page, not a focus pull). `.nf-hero-pull` runs the same grammar once on load.
+the world's documentary-photography premise. `.nf-pull` (rise + fade, for any block), `.nf-pull.nf-focus`
+(adds the blur — section heads only), and `.nf-lift` (rise only, shorter throw, for repeated rows —
+twelve elements blurring at once reads as a broken page, not a focus pull). `.nf-hero-pull` runs the
+full blur grammar once on load, on a clock, never on scroll.
+
+**The Blur Budget Rule.** `filter: blur()` is the one property in this grammar the compositor cannot
+animate for free: every frame it is in range, the element's whole subtree is drawn to an offscreen
+texture and blurred at device resolution, and `animation-fill-mode` keeps every not-yet-revealed
+wrapper sitting at its `from` blur as a live filter surface. Blurring the wrapper around five photo
+cards was the landing page's scroll jank. So the blur is only ever applied to small, text-only
+elements (`.nf-focus` on a section head), never to a wrapper holding cards, photos, forms, or a sticky
+box — those get plain `.nf-pull`.
+
+**The Fill-Mode Rule.** Reveal animations fill `backwards`, never `both`/`forwards`. A filled animation
+holds its _interpolated_ end value after it finishes — `blur(0px)` and `translateY(0)`, even when the
+keyframe says `none` — and a zero blur is still a filter surface, while any non-`none` transform on a
+wrapper becomes the containing block for its `position: fixed` descendants (the reading-progress
+hairline scrolled away with the page for exactly that reason). `backwards` keeps the invisible `from`
+state until the animation starts, which is all a reveal needs; afterwards the element's own style
+returns.
 
 **The CSS-Timeline Rule.** Scroll-linked motion uses CSS `animation-timeline` (`view()` / `scroll()`),
 never a JS IntersectionObserver or scroll listener. The whole block is gated behind
@@ -476,6 +493,13 @@ deleted; never reintroduce a reveal whose resting state is invisible.
 
 A `.nf-progress` reading hairline under the sticky header is driven by `animation-timeline:
 scroll(root block)` — same rule, no listener.
+
+What the rule does _not_ forbid is a threshold-crossing pause: the hero slideshow observes its own
+box with one `IntersectionObserver` and, while scrolled out of view, stops both its slide timer and
+the Ken Burns zoom (the same `is-paused` class the button sets). That fires once per crossing, not
+per frame, and is the same kind of pause as the existing `visibilitychange` handler — without it the
+browser was crossfading to a fresh 2400px plate every 6.5s underneath whatever the reader was
+scrolling. Only the plate that is animating carries `will-change`; the other three are not GPU layers.
 
 ## Loading — the focus pull, held
 

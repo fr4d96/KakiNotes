@@ -73,6 +73,8 @@ function MediaEmbed({
     // eslint-disable-next-line @next/next/no-img-element -- resolved.url is either a short-lived signed URL (draft preview) or a public-bucket URL (published); neither is a stable remote source worth Next/Image's remote-pattern config
     <img
       src={resolved.url}
+      loading="lazy"
+      decoding="async"
       alt={resolved.decorative ? "" : (resolved.altText ?? "")}
       style={dimensionStyle}
       className={frameClassName}

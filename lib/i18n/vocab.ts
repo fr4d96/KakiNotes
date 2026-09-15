@@ -1,67 +1,112 @@
 import type { Locale } from "@/i18n/locales";
 
 /**
- * Display-only Simplified Chinese for the CLOSED vocabulary tables --
- * `regions`, `destinations`, `work_types`, `expense_categories`. Their
- * `name` column is English and there is no `name_zh_cn` column yet; this
- * overlay keys off each row's SLUG (`vocab.regions.canterbury`) and falls
- * back to the database name whenever a translation is missing.
+ * Simplified Chinese for the CLOSED vocabulary tables -- `regions`,
+ * `destinations`, `expense_categories` -- picked from the row itself.
  *
- * Deliberately display-only, and deliberately no migration in phase 1:
- * adding a column would mean changing `list_published_stories()`, the most
- * performance-sensitive public query in the app, for a cosmetic gain. Once
- * vocabulary becomes editable in-app, `name_zh_cn` on those four tables is
- * the proper home and this overlay should be deleted -- see
- * docs/implementation-status.md (2026-09-14).
+ * Phase 1 (2026-09-14) keyed this off each row's SLUG against a map in
+ * messages/zh-CN.json, which only worked where a slug was in hand: the
+ * /stories filters and the authoring pickers, both of which read the tables
+ * directly. The public RPCs emitted `'region_name', reg.name` -- a bare
+ * display string -- so story cards, the story page's place list, the
+ * contributor byline's regions row and /costs stayed English. Migration
+ * 20260914150000 put `name_zh_cn` on the tables and surfaced it through
+ * every public RPC beside its English twin, and 20260914150100 did the same
+ * for the contributor facts, so the translation now travels WITH the name
+ * and that slug overlay is gone.
  *
- * WHERE IT CAN BE USED, and where it cannot. It needs a slug. The lookup
- * tables read directly (lib/story/active-lookups.ts, the public filter
- * readers) carry one, so the authoring pickers and the /stories filter bar
- * are covered. The PUBLIC RPCs do not: `list_published_stories()`,
- * `get_published_story()`, `get_published_story_expenses()` and
- * `get_expense_aggregates()` all build their JSON as `'region_name',
- * reg.name` -- a bare display string with no slug beside it (checked
- * against the migrations, not assumed). Those surfaces -- story cards, the
- * story page's place list, /costs' by-region and by-category rows -- stay
- * English in phase 1, and the `name_zh_cn` column is what fixes them.
+ * The row carries both languages and the caller picks. The RPCs take no
+ * locale parameter on purpose: their output is identical whichever language
+ * the visitor reads, which is what lets lib/story/public-queries.ts keep
+ * caching results under a key with no locale in it (see the 2026-09-14 ISR
+ * trade). A cache key per language would double the entries and halve the
+ * hit rate for a difference of one string per row.
  *
- * NEVER applied to `tags`, to `story_revision_locations.custom_destination_label`
- * or to an expense row's `custom_label`: those are user data (CLAUDE.md
- * product context), and translating what a contributor typed would be
- * putting words in their mouth.
+ * NULL means "show the English name", never "translate it here": a row
+ * seeded after the backfill, or -- the case that matters -- a
+ * CONTRIBUTOR-TYPED label. `destination_name` is
+ * `coalesce(dest.name, loc.custom_destination_label)` and an expense's
+ * `name` is `coalesce(ec.name, e.custom_label)`, while the `_zh_cn` twin
+ * reads only the curated table, so a typed label always arrives with null
+ * beside it and renders exactly as its author typed it. Translating what a
+ * contributor wrote would be putting words in their mouth (CLAUDE.md
+ * product context). The same goes for `tags`, which carry no translation at
+ * all.
+ *
+ * `work_types` is absent deliberately: retired as a taxonomy on 2026-08-16
+ * (20260816100100) and shown nowhere.
  */
 
-export type VocabKind =
-  "regions" | "destinations" | "workTypes" | "expenseCategories";
-
-/** Structural, so this module imports nothing from next-intl. */
-export type VocabTranslator = {
-  (key: never): string;
-  has(key: never): boolean;
+/** Any curated vocabulary row read straight off its table. */
+export type LocalizedVocabRow = {
+  name: string;
+  name_zh_cn?: string | null;
 };
 
-export type VocabRow = { slug?: string | null; name: string };
-
 /**
- * The row's name in the visitor's language, or its database name when this
- * overlay has nothing for it (a region seeded after these messages were
- * written, a row with no slug in hand, or English itself).
+ * The row's name in the visitor's language, falling back to the English
+ * `name` whenever there is no translation. Never returns an empty string
+ * for a row that has a name.
  */
-export function localizeVocabName(
-  kind: VocabKind,
-  row: VocabRow,
-  t: VocabTranslator,
+export function vocabName(
+  row: LocalizedVocabRow | null | undefined,
+  locale: Locale,
 ): string {
-  if (!row.slug) return row.name;
-  const key = `${kind}.${row.slug}` as never;
-  return t.has(key) ? t(key) : row.name;
+  if (!row) return "";
+  if (locale === "zh-CN") {
+    const zh = row.name_zh_cn?.trim();
+    if (zh) return zh;
+  }
+  return row.name;
 }
 
 /**
- * True when this locale has any vocabulary overlay at all. Lets a caller
- * skip the per-row work (and the `vocab` translator) entirely for English,
- * where every lookup would return the database name anyway.
+ * The same pick for a payload that carries its two names under PREFIXED
+ * keys rather than `name`/`name_zh_cn` -- how the RPCs shape their region
+ * entries (`region_name` + `region_name_zh_cn`, `destination_name` +
+ * `destination_name_zh_cn`). Returns null when the English key is missing
+ * or is not a string, so a malformed row renders nothing rather than
+ * "undefined".
  */
-export function hasVocabOverlay(locale: Locale): boolean {
-  return locale !== "en";
+export function prefixedVocabName(
+  entry: unknown,
+  prefix: string,
+  locale: Locale,
+): string | null {
+  if (!entry || typeof entry !== "object") return null;
+  const row = entry as Record<string, unknown>;
+  const english = row[`${prefix}_name`];
+  if (typeof english !== "string" || english.length === 0) return null;
+  if (locale === "zh-CN") {
+    const zh = row[`${prefix}_name_zh_cn`];
+    if (typeof zh === "string" && zh.trim().length > 0) return zh.trim();
+  }
+  return english;
+}
+
+/**
+ * Sorts curated vocabulary rows by the name the visitor actually sees.
+ *
+ * The readers order by the English `name` in SQL, which puts a Chinese list
+ * in an order with no relationship to anything on screen -- 奥克兰 sorting
+ * under "A" tells a Chinese reader nothing. Intl.Collator with the pinyin
+ * collation is the equivalent of A-Z for Simplified Chinese, and is what
+ * the Account country dropdown already uses (lib/i18n/format.ts). English
+ * keeps the database order untouched: re-sorting it client-side would
+ * change nothing but could reorder ties differently from Postgres.
+ *
+ * Returns a NEW array; the input is not mutated.
+ */
+export function sortByLocalizedName<T extends LocalizedVocabRow>(
+  rows: readonly T[],
+  locale: Locale,
+): T[] {
+  if (locale !== "zh-CN") return [...rows];
+  const collator = new Intl.Collator("zh-CN", {
+    collation: "pinyin",
+    sensitivity: "base",
+  });
+  return [...rows].sort((a, b) =>
+    collator.compare(vocabName(a, locale), vocabName(b, locale)),
+  );
 }

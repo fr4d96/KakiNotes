@@ -551,21 +551,24 @@ type FilterAxis = {
 
 function buildFilterAxes(
   stories: MyStoryWithCover[],
-  // The axis KEY is stable; only its label is translated. The OPTION values
-  // stay as list_my_stories() gives them -- region and destination names
-  // arrive without slugs, and a tag may be one the contributor typed.
+  // The axis KEY is stable; only its label is translated. Region and
+  // destination OPTION values are localized too, since 20260914150000 sends
+  // each name's Simplified Chinese twin along with it -- the filter list
+  // then matches the names printed on the cards beside it. Tags are NOT
+  // localized: a tag may be one the contributor typed.
   labels: Record<FilterAxis["key"], string>,
+  locale: Locale,
 ): FilterAxis[] {
   const defs: Array<Pick<FilterAxis, "key" | "label" | "read">> = [
     {
       key: "region",
       label: labels.region,
-      read: (s) => regionNames(s.regions),
+      read: (s) => regionNames(s.regions, locale),
     },
     {
       key: "destination",
       label: labels.destination,
-      read: (s) => destinationNames(s.regions),
+      read: (s) => destinationNames(s.regions, locale),
     },
     // list_my_stories()'s `tags` is already a flat array of resolved names
     // (20260907110000), each one either a `tags` lookup row's name or the
@@ -861,6 +864,8 @@ export function MyStoriesView({
   takedownRequests?: TakedownRequestRow[];
 }) {
   const t = useTranslations("myStories");
+  const rawViewLocale = useLocale();
+  const locale = isLocale(rawViewLocale) ? rawViewLocale : "en";
   // Keyed once here rather than scanned per row: the list pages twelve at a
   // time and every row asks this question.
   const takedownByStory = useMemo(
@@ -875,12 +880,16 @@ export function MyStoriesView({
 
   const axes = useMemo(
     () =>
-      buildFilterAxes(stories, {
-        region: t("filters.region"),
-        destination: t("filters.destination"),
-        tag: t("filters.tag"),
-      }),
-    [stories, t],
+      buildFilterAxes(
+        stories,
+        {
+          region: t("filters.region"),
+          destination: t("filters.destination"),
+          tag: t("filters.tag"),
+        },
+        locale,
+      ),
+    [stories, t, locale],
   );
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
     {},

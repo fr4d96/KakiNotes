@@ -7,12 +7,14 @@ const regions = [
     name: "Northland",
     slug: "northland",
     islandOrGrouping: "North Island",
+    name_zh_cn: null,
   },
   {
     id: "r-otago",
     name: "Otago",
     slug: "otago",
     islandOrGrouping: "South Island",
+    name_zh_cn: null,
   },
 ];
 const destinations = [
@@ -21,6 +23,7 @@ const destinations = [
     name: "Queenstown",
     slug: "queenstown",
     regionId: "r-otago",
+    name_zh_cn: null,
   },
 ];
 

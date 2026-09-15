@@ -39,6 +39,7 @@ export function StoryGallery({ images }: { images: GalleryImage[] }) {
               src={url}
               alt={image.decorative ? "" : (image.alt_text ?? "")}
               loading="lazy"
+              decoding="async"
               className="h-full w-full object-cover"
             />
             {image.caption ? (

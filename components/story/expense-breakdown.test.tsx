@@ -15,18 +15,21 @@ const categories: ActiveExpenseCategory[] = [
     name: "Flights",
     slug: "flights",
     description: "Flights to and from New Zealand.",
+    name_zh_cn: null,
   },
   {
     id: "22222222-2222-4222-8222-222222222222",
     name: "Vehicle",
     slug: "vehicle",
     description: null,
+    name_zh_cn: null,
   },
   {
     id: "33333333-3333-4333-8333-333333333333",
     name: "Other",
     slug: "other",
     description: null,
+    name_zh_cn: null,
   },
 ];
 

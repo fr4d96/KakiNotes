@@ -374,6 +374,7 @@ function IndexEntry({
               src={coverUrl}
               alt=""
               loading="lazy"
+              decoding="async"
               className="h-14 w-20 object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (

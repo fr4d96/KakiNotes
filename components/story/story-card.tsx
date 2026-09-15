@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { getPublicImageUrl } from "@/lib/story/public-image-url";
 import { firstRegionLabel, stringList } from "@/lib/story/card-fields";
 import { AttributionChip } from "@/components/story/attribution-chip";
+import { DEFAULT_LOCALE, isLocale } from "@/i18n/locales";
 import { StoryCoverFallback } from "@/components/story/story-cover-fallback";
 
 // AttributionChip can itself render a link to the contributor page; nesting
@@ -37,8 +38,15 @@ export type StoryCardData = {
  */
 export function StoryCard({ story }: { story: StoryCardData }) {
   const t = useTranslations("common");
+  // useLocale(), not the async getLocale(): this component is rendered by
+  // CLIENT components too (components/home/featured-story-stack.tsx and
+  // story-index.tsx), and a Client Component cannot render an async Server
+  // Component. The hook works in both, exactly as useTranslations above
+  // already does.
+  const rawLocale = useLocale();
+  const locale = isLocale(rawLocale) ? rawLocale : DEFAULT_LOCALE;
   const coverUrl = getPublicImageUrl(story.cover_image_path);
-  const regionLabel = firstRegionLabel(story.regions);
+  const regionLabel = firstRegionLabel(story.regions, locale);
   const badges = stringList(story.tags).slice(0, 3);
 
   return (
@@ -50,6 +58,7 @@ export function StoryCard({ story }: { story: StoryCardData }) {
             src={coverUrl}
             alt=""
             loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (

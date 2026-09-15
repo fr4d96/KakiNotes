@@ -1,5 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { vocabName } from "@/lib/i18n/vocab";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/locales";
 
 // Regions/destinations/tags all carry an `active` boolean
 // (supabase/migrations/... regions/destinations/tags tables) so an entry can
@@ -20,6 +22,7 @@ export type ActiveRegion = {
   name: string;
   slug: string;
   islandOrGrouping: string | null;
+  name_zh_cn: string | null;
 };
 
 export type ActiveDestination = {
@@ -27,6 +30,7 @@ export type ActiveDestination = {
   name: string;
   slug: string;
   regionId: string;
+  name_zh_cn: string | null;
 };
 
 export type ActiveTag = {
@@ -39,7 +43,7 @@ export async function listActiveRegions(): Promise<ActiveRegion[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("regions")
-    .select("id, name, slug, island_or_grouping")
+    .select("id, name, slug, island_or_grouping, name_zh_cn")
     .eq("active", true)
     .order("name");
   if (error) throw error;
@@ -48,6 +52,7 @@ export async function listActiveRegions(): Promise<ActiveRegion[]> {
     name: r.name,
     slug: r.slug,
     islandOrGrouping: r.island_or_grouping,
+    name_zh_cn: r.name_zh_cn,
   }));
 }
 
@@ -55,7 +60,7 @@ export async function listActiveDestinations(): Promise<ActiveDestination[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("destinations")
-    .select("id, name, slug, region_id")
+    .select("id, name, slug, region_id, name_zh_cn")
     .eq("active", true)
     .order("name");
   if (error) throw error;
@@ -64,6 +69,7 @@ export async function listActiveDestinations(): Promise<ActiveDestination[]> {
     name: d.name,
     slug: d.slug,
     regionId: d.region_id,
+    name_zh_cn: d.name_zh_cn,
   }));
 }
 
@@ -80,6 +86,7 @@ export type ActiveExpenseCategory = {
   name: string;
   slug: string;
   description: string | null;
+  name_zh_cn: string | null;
 };
 
 /**
@@ -93,7 +100,7 @@ export async function listActiveExpenseCategories(): Promise<
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("expense_categories")
-    .select("id, name, slug, description")
+    .select("id, name, slug, description, name_zh_cn")
     .eq("active", true)
     .order("sort_order")
     .order("name");
@@ -134,6 +141,7 @@ export async function resolveLocationLabels(
     customDestinationLabel: string | null;
     sortOrder: number;
   }[],
+  locale: Locale = DEFAULT_LOCALE,
 ): Promise<string[]> {
   if (locations.length === 0) return [];
   const supabase = await createClient();
@@ -148,22 +156,26 @@ export async function resolveLocationLabels(
   ];
 
   const [regions, destinations] = await Promise.all([
-    supabase.from("regions").select("id, name").in("id", regionIds),
+    supabase.from("regions").select("id, name, name_zh_cn").in("id", regionIds),
     destinationIds.length
       ? supabase
           .from("destinations")
-          .select("id, name")
+          .select("id, name, name_zh_cn")
           .in("id", destinationIds)
       : Promise.resolve({ data: [], error: null }),
   ]);
   if (regions.error) throw regions.error;
   if (destinations.error) throw destinations.error;
 
+  // The curated rows carry their Simplified Chinese twin (20260914150000),
+  // so a contributor reading in Chinese gets Chinese place names in their
+  // PDF. A contributor-TYPED destination label is passed through untouched
+  // below -- it is their own words, never translated.
   const regionName = new Map(
-    (regions.data ?? []).map((r) => [r.id, r.name] as const),
+    (regions.data ?? []).map((r) => [r.id, vocabName(r, locale)] as const),
   );
   const destinationName = new Map(
-    (destinations.data ?? []).map((d) => [d.id, d.name] as const),
+    (destinations.data ?? []).map((d) => [d.id, vocabName(d, locale)] as const),
   );
 
   return [...locations]
