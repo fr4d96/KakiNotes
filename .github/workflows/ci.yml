@@ -1,0 +1,49 @@
+# Runs the project's single verification gate (`npm run verify`) on every
+# pull request and every push to the integration (main) and production
+# (release) branches. See docs/architecture.md#ci-and-releases.
+name: CI
+
+on:
+  pull_request:
+    branches: [main, release]
+  push:
+    branches: [main, release]
+
+# One run per branch/PR at a time; a newer push cancels the older run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify (format, lint, typecheck, test, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # Public, browser-safe values only. `next build` prerenders app/sitemap.ts,
+      # which reads published stories from Supabase, so these must point at a
+      # reachable project — use the DEVELOPMENT project, never production.
+      # SUPABASE_SERVICE_ROLE_KEY is deliberately absent: nothing in
+      # `npm run verify` needs it (Engineering Rule 1).
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up Node (version from .nvmrc)
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify
+        run: npm run verify
