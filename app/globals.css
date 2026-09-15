@@ -624,15 +624,24 @@ body {
   background-size: cover;
   transform: scale(1.04);
   transition: opacity 1.35s ease;
-  will-change: transform, opacity;
+  /* No `will-change` here. It used to sit on every slide, which kept four
+     hero-sized GPU textures alive for the life of the page (each ~20MB at
+     2x on a 1440px viewport), three of them for plates at opacity 0. Only
+     the plate that is actually animating needs its own compositor layer;
+     the outgoing plate is promoted by the browser for exactly the length
+     of its opacity transition and released afterwards. */
 }
 .hero-slide.is-active {
   opacity: 1;
   animation: hero-ken-burns 7.4s cubic-bezier(0.2, 0.55, 0.3, 1) both;
+  will-change: transform, opacity;
 }
-/* Set on the slideshow root while paused -- freezes the Ken Burns zoom
-   mid-frame instead of just stopping future slide changes, so "Pause
-   motion" reads as an immediate, visible pause rather than a no-op. */
+/* Set on the slideshow root while paused -- by the "Pause motion" button,
+   or by hero-slideshow.tsx while the hero is scrolled out of view. Freezes
+   the Ken Burns zoom mid-frame instead of just stopping future slide
+   changes, so a manual pause reads as immediate rather than a no-op, and
+   an off-screen hero is not re-rasterising a 2400px plate every 6.5s
+   underneath the section the reader is actually scrolling. */
 .hero-slideshow.is-paused .hero-slide.is-active {
   animation-play-state: paused;
 }
@@ -688,7 +697,16 @@ body {
  * collapses this to effectively instant for anyone who's asked for that.
  */
 .journiq-page-transition {
-  animation: journiq-page-in 0.22s cubic-bezier(0.2, 0.75, 0.25, 1) both;
+  /* `backwards`, never `both`/`forwards`. Once a filled animation ends,
+     the wrapper would hold the INTERPOLATED end value -- `translateY(0)`,
+     even when the keyframe says `none`, because `none` is paired up as an
+     identity transform for the tween -- and any transform other than
+     `none` makes this wrapper the containing block for every
+     `position: fixed` descendant. The landing page's reading-progress
+     hairline was scrolling away with the page because of exactly that.
+     With `backwards`, the element's own (un-transformed) style returns
+     the moment the fade finishes. */
+  animation: journiq-page-in 0.22s cubic-bezier(0.2, 0.75, 0.25, 1) backwards;
 }
 @keyframes journiq-page-in {
   from {
@@ -697,7 +715,7 @@ body {
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
@@ -879,18 +897,44 @@ body {
  *   - nothing is observed, measured, or re-rendered on scroll.
  * The whole block is gated behind @supports AND prefers-reduced-motion, so
  * a reduced-motion visitor gets the static, already-correct page.
+ *
+ * WHERE THE BLUR IS ALLOWED TO RUN. `filter: blur()` is the one property in
+ * this grammar the compositor cannot animate for free: for every frame it
+ * is in range, the element's whole subtree is drawn to an offscreen texture
+ * and Gaussian-blurred at device resolution. Cheap for a two-line heading;
+ * ruinous for a wrapper holding five photo cards with shadows, transforms
+ * and their own backdrop filters. Worse, `animation-fill-mode: both` means
+ * every such wrapper below the fold SITS at the `from` blur, each one a
+ * live filter surface, until the reader scrolls to it. That was the
+ * landing page's scroll jank. So:
+ *   - `.nf-pull` on its own is rise + fade only (compositor-cheap; the same
+ *     grammar as `.nf-lift` with a longer throw) and is safe on anything;
+ *   - `.nf-pull.nf-focus` adds the blur and is reserved for small,
+ *     text-only elements -- the section heads;
+ *   - `.nf-hero-pull` keeps the blur because it runs once on load, on a
+ *     clock, never on scroll;
+ *   - every variant fills `backwards`, not `both`. A filled animation
+ *     holds its INTERPOLATED end value after it finishes -- `blur(0px)`
+ *     and `translateY(0)`, even when the keyframe says `none` -- and a
+ *     zero-radius blur is still a filter with its own render surface. With
+ *     `backwards` the invisible `from` state is still held until the
+ *     animation starts, which is all the reveal needs, and afterwards the
+ *     element's own filter-free style takes over.
  */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .nf-pull {
-      animation: nf-pull linear both;
+      animation: nf-pull linear backwards;
       animation-timeline: view();
       animation-range: entry 4% cover 30%;
+    }
+    .nf-pull.nf-focus {
+      animation-name: nf-focus-pull;
     }
     /* Rows/cards in a set: same idea, shorter throw, no blur -- a set of
        twelve blurring at once reads as a broken page, not a focus pull. */
     .nf-lift {
-      animation: nf-lift linear both;
+      animation: nf-lift linear backwards;
       animation-timeline: view();
       animation-range: entry 2% cover 22%;
     }
@@ -905,12 +949,24 @@ body {
 @keyframes nf-pull {
   from {
     opacity: 0;
-    filter: blur(12px);
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* --nf-blur lets the one-shot hero variant keep the full 12px throw while
+   the scroll-driven heads use a smaller radius (blur cost scales with it). */
+@keyframes nf-focus-pull {
+  from {
+    opacity: 0;
+    filter: blur(var(--nf-blur, 8px));
     transform: translateY(20px) scale(0.99);
   }
   to {
     opacity: 1;
-    filter: blur(0);
+    filter: none;
     transform: none;
   }
 }
@@ -934,9 +990,11 @@ body {
 }
 
 /* Hero headline resolves on load with the same focus-pull grammar the
-   scrolled sections use, instead of a generic fade-up. */
+   scrolled sections use, instead of a generic fade-up. Time-based and
+   one-shot, so its blur never costs a scroll frame. */
 .nf-hero-pull {
-  animation: nf-pull 1.1s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+  --nf-blur: 12px;
+  animation: nf-focus-pull 1.1s cubic-bezier(0.16, 0.84, 0.28, 1) backwards;
 }
 @media (prefers-reduced-motion: reduce) {
   .nf-hero-pull {

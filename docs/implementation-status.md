@@ -3,7 +3,11 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-09-14 (Chinese vocabulary phase 2 — region, destination and expense-category
+Last updated: 2026-09-15 (scroll jank — the landing page's focus-pull blur no longer runs on
+large wrappers, reveal animations fill `backwards` so nothing holds a filter or transform after
+finishing, the hero keeps one GPU layer instead of four and pauses off-screen, backdrop blurs over
+moving content are gone, and public story images decode off the main thread; the reading-progress
+hairline is fixed to the viewport again; earlier: Chinese vocabulary phase 2 — region, destination and expense-category
 names are Chinese on story cards, story pages, the byline and /costs, via a `name_zh_cn` column
 rather than the phase-1 slug overlay; earlier the same day: four Playwright specs that had been failing since the editor became a
 stepped flow are green again — they now walk to the step they test, and read the step's label
@@ -91,7 +95,61 @@ units — a display name starting outside the BMP returned half a surrogate pair
 replacement glyph. Now `Array.from(...)[0]`. The component gained its first 12 tests alongside;
 `AttributionChip` gained 7 and `StoryCard` 2. 987 total, `npm run verify` exits 0.
 
-**2026-09-14 (latest) — the vocabulary itself speaks Chinese (phase 2).**
+**2026-09-15 (latest) — scrolling stopped stuttering: the blur budget, the fill mode, and the hero's four layers.**
+The landing page and story screens felt laggy on scroll. Measured in the browser rather than guessed
+at: at rest the landing page held **seven** `.nf-pull` wrappers at `filter: blur(12px)` waiting below
+the fold (one wrapping the whole five-card featured stack — photos, `elevation-5` shadows, transforms
+and their own `backdrop-blur` chips — and one a `lg:sticky` sidebar), **four** hero slides each
+pinned as a hero-sized GPU layer by `will-change` (three of them at opacity 0), a `backdrop-blur`
+pause button sitting on top of the animating Ken Burns plate, and the Ken Burns zoom plus the 6.5s
+crossfade still running while the hero was scrolled off-screen. Story pages had none of that, but
+their body photos (up to 2000px) were plain `<img>`s with no `loading="lazy"` and no
+`decoding="async"`, so each one decoded on the main thread as it scrolled into view.
+
+- **Blur only where it is cheap.** `.nf-pull` is now rise + fade (compositor-only). The blur half of
+  the focus pull moved to a `.nf-focus` modifier applied ONLY to `SectionHead` — a two-line text
+  block — at 8px instead of 12px. `.nf-hero-pull` keeps the full 12px because it runs once on load,
+  on a clock. DESIGN.md gained a **Blur Budget Rule** saying so.
+- **Fill `backwards`, not `both`.** The first attempt — ending every keyframe at `filter: none` /
+  `transform: none` — did nothing, and the browser explained why: it pairs `none` up as `blur(0px)`
+  / `translateY(0)` for the tween and a filled animation then holds that INTERPOLATED end value
+  forever. So every hero text line kept a `blur(0px)` render surface, and the route-transition
+  wrapper (`components/page-transition.tsx`) kept an identity transform on the WHOLE page — which
+  makes it the containing block for `position: fixed` descendants, which is why the reading-progress
+  hairline had been scrolling away with the page since the transition shipped (`top: 153` at rest,
+  `top: -1047` after one scroll). `backwards` keeps the invisible `from` state until the animation
+  starts and hands back the element's own style afterwards. Hairline now reads `top: 76` at any
+  scroll position. DESIGN.md gained a **Fill-Mode Rule**.
+- **One hero layer, paused off-screen.** `will-change` moved from `.hero-slide` to
+  `.hero-slide.is-active`; the outgoing plate is promoted by the browser for the length of its own
+  opacity transition. `hero-slideshow.tsx` observes its box with one `IntersectionObserver` and,
+  while out of view, stops the slide timer AND freezes the zoom via the same `is-paused` class the
+  button sets — a threshold-crossing pause like the existing `visibilitychange` one, documented in
+  DESIGN.md as inside the CSS-Timeline Rule (no per-frame JS). Verified: `animationPlayState` is
+  `paused` at scrollY 1461 and `running` again at 0. Guarded for jsdom (no observer → stays in view).
+- **No backdrop filters over moving pixels.** The pause button (`bg-black/60`, was `/40` +
+  `backdrop-blur-sm`), the featured-slide chip (`bg-black/75`, was `/65` + `backdrop-blur`), and the
+  story editor's sticky toolbar (`bg-background`, was `/95` + `backdrop-blur` — a full-width bar
+  re-blurring everything that scrolled under it) are solid now. All three were ≥65% opaque already.
+- **Public images decode off the main thread.** `decoding="async"` on every public `<img>` (story
+  body, gallery, card, index row, featured slide); the story body's inline image also gains
+  `loading="lazy"`.
+
+**Verified in the browser** at 1024px and 375px: filters held at rest went from 10 to 3 (the three
+section heads below the fold), `will-change` layers 4 → 1, backdrop filters on the landing page
+1 → 0, and a revealed head ends at `filter: none / opacity 1`. A scripted 3s scroll dropped a frame
+in both runs of the old behaviour (max 33ms, 117ms) and none in both runs of the fix (max 17.8ms) —
+directional only, since `requestAnimationFrame` cannot see GPU-side blur cost, and the pane
+throttled to 1fps while hidden, which ruined the first measurement attempt.
+
+**Not done, deliberately.** (1) Story body images still have no reserved height — the page jumps as
+each one lands — because `get_published_story_media()` does not return `processed_width`/`_height`
+even though `story_media` stores them; adding them is a DROP+CREATE migration on a public RPC and a
+separate change. (2) The four hero plates are still `w=2400` Unsplash hotlinks at every viewport.
+(3) `next dev` is materially slower than the production build; judge scroll feel on `npm run build
+&& npm run start` (`kakinotes-prod`, port 3101) before chasing anything further.
+
+**2026-09-14 — the vocabulary itself speaks Chinese (phase 2).**
 `20260914150000_vocab_name_zh_cn.sql` and `20260914150100_contributor_facts_regions_zh_cn.sql`,
 both APPLIED to the linked project, `types/database.ts` regenerated. `lib/i18n/vocab.ts` is
 rewritten and the phase-1 slug overlay (and the whole `vocab` namespace in both message files)

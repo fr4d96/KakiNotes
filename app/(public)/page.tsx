@@ -72,9 +72,14 @@ function SectionHead({
   description?: string;
   className?: string;
 }) {
+  // `nf-focus` (the blur half of the focus pull) is deliberately ONLY here:
+  // a section head is a small, text-only block, so blurring it on the
+  // compositor is cheap. The larger wrappers below use plain `nf-pull`
+  // (rise + fade); see the "where the blur is allowed to run" note in
+  // app/globals.css.
   return (
     <div
-      className={`nf-pull grid gap-4 md:grid-cols-[1fr_420px] md:items-end md:gap-8 ${className}`}
+      className={`nf-pull nf-focus grid gap-4 md:grid-cols-[1fr_420px] md:items-end md:gap-8 ${className}`}
     >
       <h2 className="night-heading">{title}</h2>
       {description ? (

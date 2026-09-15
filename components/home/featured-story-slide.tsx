@@ -43,6 +43,7 @@ export function FeaturedStorySlide({
             alt=""
             draggable={false}
             loading={priority ? "eager" : "lazy"}
+            decoding="async"
             fetchPriority={priority ? "high" : undefined}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
@@ -50,7 +51,7 @@ export function FeaturedStorySlide({
           <StoryCoverFallback sizes="(min-width: 640px) 40vw, 100vw" />
         )}
         {regionLabel ? (
-          <span className="absolute top-3 left-3 rounded-full bg-black/65 px-2.5 py-1 text-xs font-medium text-white backdrop-blur">
+          <span className="absolute top-3 left-3 rounded-full bg-black/75 px-2.5 py-1 text-xs font-medium text-white">
             {regionLabel}
           </span>
         ) : null}

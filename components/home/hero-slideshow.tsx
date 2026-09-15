@@ -45,8 +45,33 @@ export function HeroSlideshow() {
   const t = useTranslations("home.slideshow");
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  // Whether any of the hero is on screen. Starts true so the first paint
+  // and any environment without IntersectionObserver (jsdom) behave exactly
+  // as before; the observer below only ever narrows it.
+  const [inView, setInView] = useState(true);
   const reduced = usePrefersReducedMotion();
   const timerRef = useRef<number | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  // Pause the whole show -- the slide timer AND the Ken Burns zoom (via the
+  // same `is-paused` class the button uses) -- while the hero is scrolled
+  // out of view. Without this, every 6.5s the browser was crossfading to a
+  // new plate and rasterising a fresh 2400px texture for it underneath
+  // whichever section the reader was actually scrolling, which showed up as
+  // a periodic hitch. This is a threshold-crossing observer on ONE element,
+  // not per-frame scroll work, so it is the same kind of pause as the
+  // `visibilitychange` handler below and stays inside DESIGN.md's
+  // CSS-Timeline Rule (no scroll-linked motion in JS).
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     function stop() {
@@ -56,7 +81,13 @@ export function HeroSlideshow() {
       }
     }
     function start() {
-      if (reduced || paused || document.hidden || timerRef.current !== null)
+      if (
+        reduced ||
+        paused ||
+        !inView ||
+        document.hidden ||
+        timerRef.current !== null
+      )
         return;
       timerRef.current = window.setInterval(() => {
         setIndex((current) => (current + 1) % SLIDES.length);
@@ -72,7 +103,7 @@ export function HeroSlideshow() {
       stop();
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [reduced, paused]);
+  }, [reduced, paused, inView]);
 
   const label = paused ? t("playAnimation") : t("pauseAnimation");
 
@@ -86,7 +117,8 @@ export function HeroSlideshow() {
           covers it for hit-testing even where that wrapper is visually
           transparent, so clicks never reached the button. */}
       <div
-        className={`hero-slideshow absolute inset-0 -z-10 overflow-hidden bg-[#05070a] ${paused ? "is-paused" : ""}`}
+        ref={rootRef}
+        className={`hero-slideshow absolute inset-0 -z-10 overflow-hidden bg-[#05070a] ${paused || !inView ? "is-paused" : ""}`}
       >
         {SLIDES.map((url, slideIndex) => (
           <div
@@ -123,7 +155,7 @@ export function HeroSlideshow() {
           aria-pressed={paused}
           aria-label={label}
           title={label}
-          className="absolute right-4 bottom-4 z-10 flex h-9 items-center gap-2 rounded-full border border-white/35 bg-black/40 px-3.5 text-xs font-semibold text-white backdrop-blur-sm transition-colors hover:border-white/70 hover:bg-black/60 sm:right-6 sm:bottom-6"
+          className="absolute right-4 bottom-4 z-10 flex h-9 items-center gap-2 rounded-full border border-white/35 bg-black/60 px-3.5 text-xs font-semibold text-white transition-colors hover:border-white/70 hover:bg-black/75 sm:right-6 sm:bottom-6"
         >
           {/* Drawn, not a Unicode glyph: ▶ and Ⅱ render at different
               optical weights across platforms and read as text to a
