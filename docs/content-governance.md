@@ -124,7 +124,7 @@ second, unaudited route.
 `promote_story_media()` referenced by earlier revisions of this document was dropped outright
 (`supabase/migrations/20260804090200_story_media_processing_functions.sql`) and never shipped with
 any grants — nothing should go looking for it. What actually ships and runs, live-verified
-end-to-end (including a real Storage byte round trip) by `e2e/editorial-upload.spec.ts`:
+end-to-end (including a real Storage byte round trip) by `tests/e2e/editorial-upload.spec.ts`:
 
 - `lib/story/image-pipeline.ts` decodes every upload with `sharp`, independently re-verifies the
   real magic bytes (never trusting the client's declared content type or the upload Route

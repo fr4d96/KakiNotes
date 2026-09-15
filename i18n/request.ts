@@ -24,7 +24,7 @@ export default getRequestConfig(async () => {
 
   return {
     locale,
-    messages: (await import(`../messages/${locale}.json`)).default,
+    messages: (await import(`./messages/${locale}.json`)).default,
     // The app's dates are New Zealand calendar dates. Pinning the time zone
     // keeps next-intl's own formatters (useFormatter/getFormatter) from
     // warning about an environment fallback and from disagreeing between

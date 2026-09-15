@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { STORY_STEPS, type StoryStepId } from "@/lib/story/steps";
-import en from "@/messages/en.json";
+import en from "@/i18n/messages/en.json";
 
 /**
  * Switch the story editor to one of its in-page steps and wait until that

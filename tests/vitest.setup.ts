@@ -90,7 +90,7 @@ if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
 vi.mock("next-intl", async (importOriginal) => {
   const actual = await importOriginal<typeof import("next-intl")>();
   const { getTestLocale, TEST_MESSAGES, TEST_TIME_ZONE } =
-    await import("./tests/support/i18n");
+    await import("./support/i18n");
   const translator = (namespace?: string) =>
     actual.createTranslator({
       locale: getTestLocale(),
@@ -119,7 +119,7 @@ vi.mock("next-intl/server", async () => {
   // jsdom; the client entry carries the same createTranslator/createFormatter.
   const actual = await vi.importActual<typeof import("next-intl")>("next-intl");
   const { getTestLocale, TEST_MESSAGES, TEST_TIME_ZONE } =
-    await import("./tests/support/i18n");
+    await import("./support/i18n");
   const translator = (locale: keyof typeof TEST_MESSAGES, namespace?: string) =>
     actual.createTranslator({
       locale,

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Fail-closed cleanup for e2e/editorial-upload.spec.ts,
-// e2e/content-import-body-size.spec.ts, and e2e/pdf-import.spec.ts's own
+// Fail-closed cleanup for tests/e2e/editorial-upload.spec.ts,
+// tests/e2e/content-import-body-size.spec.ts, and tests/e2e/pdf-import.spec.ts's own
 // fixture data on the hosted linked project -- no spec cleans up after
 // itself, since a failed
 // run's data is sometimes useful to inspect. Mirrors

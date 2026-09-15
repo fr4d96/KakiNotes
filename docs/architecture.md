@@ -19,8 +19,8 @@ i18n/                          # Simplified Chinese, phase 1 (2026-09-14)
                                 # validates it against LOCALES, falls back to English, loads
                                 # messages/<locale>.json. NO URL routing (see "Language" below).
   global.d.ts                  # types every t() key against messages/en.json
-messages/
-  en.json, zh-CN.json          # the whole UI copy, namespaced by area. messages.test.ts holds the
+  messages/
+    en.json, zh-CN.json        # the whole UI copy, namespaced by area. messages.test.ts holds the
                                 # two files to identical key sets, identical ICU arguments, no empty
                                 # values and no untranslated leftovers.
 app/
@@ -155,9 +155,10 @@ types/
 tests/integration/
   story-rls.integration.test.ts   # real Auth/PostgREST calls against the linked hosted dev project,
                                     # run via `npm run test:rls` — see "RLS integration test setup"
+  vitest.config.ts, vitest.rls.config.ts, vitest.setup.ts   # unit and RLS-integration runners
+  e2e/                         # Playwright specs + playwright.config.ts (run from the repo root)
 scripts/
   rls-test-cleanup.sql, run-rls-cleanup.mjs   # scoped, fail-closed dev-only cleanup for the above
-e2e/
   home.spec.ts                 # Playwright smoke test (public nav, staff-route 404s)
   locale.spec.ts               # the language toggle: <html lang>, cookie persistence, a
                                 # server-rendered page in Chinese, keyboard operability, 375px
@@ -178,7 +179,7 @@ real UI as of Prompt 7 — see "Content readiness, operational metrics, and laun
 below. New Prompt 7 modules not shown in the tree above: `app/(readiness)/readiness/` (layout,
 nav, page, actions, verify-form), `lib/story/readiness.ts`, `lib/validation/readiness.ts`,
 `lib/story/content-quality-checks.ts`, `components/story/whats-public-summary.tsx`,
-`components/sticky-visible.tsx`, `e2e/founding-story-workflow.spec.ts`.
+`components/sticky-visible.tsx`, `tests/e2e/founding-story-workflow.spec.ts`.
 
 ## Authentication boundaries
 
@@ -461,7 +462,7 @@ a real response status directly: `/editorial` and every sub-path (`/editorial/ne
 the middleware itself and return the identical flat `{ error: "Not Found" }` / 404 JSON body the
 `/moderation`/`/admin` Route Handlers already use, for both signed-out and
 signed-in-with-the-wrong-role requests — verified via `curl -i` after the fix, and covered by
-`e2e/home.spec.ts`'s pre-existing `"staff routes fail closed with a not-found response"` test
+`tests/e2e/home.spec.ts`'s pre-existing `"staff routes fail closed with a not-found response"` test
 (which already asserted `/editorial` specifically, now genuinely exercising the real HTTP status).
 The `layout.tsx` role check is kept as a defense-in-depth backstop, but the middleware check is
 what actually provides the guarantee — the general lesson (a page-based `notFound()`, even
@@ -888,7 +889,7 @@ are all set in `.env.test.local` (gitignored, separate variable namespace from t
 URL must contain the configured project ref; `SUPABASE_RLS_TEST_CONFIRM` must exactly equal
 `i-confirm-${ref}-is-a-disposable-dev-project` (forces typing the specific ref, so a stale
 confirm value can't be silently reused against a different project later). Runs serially
-(`vitest.rls.config.ts`, `fileParallelism: false`) since several scenarios deliberately share the
+(`tests/vitest.rls.config.ts`, `fileParallelism: false`) since several scenarios deliberately share the
 fixed accounts and the one-active-draft-per-story lock.
 
 **Fixed pool of five pre-created, pre-confirmed accounts** (owner, other, editor, moderator,
@@ -912,7 +913,7 @@ or ownership by one of the fixed `@whv-compass-test.example` test accounts. (The
 added the same day, after `/stories/new` stopped letting a caller's title reach
 `_generate_story_slug()` at creation time — see that migration's own note in the script — which broke
 the first signal for anything created through the real "New Story" page and renamed afterward, e.g.
-`e2e/cross-contributor-access.spec.ts`. Both signals only ever match disposable test data; no real
+`tests/e2e/cross-contributor-access.spec.ts`. Both signals only ever match disposable test data; no real
 contributor can own that email domain.) `package.json` wires that command as npm's `posttest:rls`
 hook, so a **successful** `npm run test:rls` tears itself down; a **failing** run does not (npm skips
 `post*` hooks on a non-zero exit), leaving the broken run's data in place for debugging. Running it by
@@ -1030,7 +1031,7 @@ protection on `release` (and `main`) requiring the `verify` check to pass before
 
 On every push to `release`, `release.yml` runs [release-please](https://github.com/googleapis/release-please-action).
 It reads the Conventional Commit messages since the last tag — `feat:` bumps minor, `fix:` bumps
-patch, and (per `bump-minor-pre-major` in `release-please-config.json`) breaking changes bump minor
+patch, and (per `bump-minor-pre-major` in `.github/release-please-config.json`) breaking changes bump minor
 too, while the version stays below 1.0. It prepares a `chore(release): x.y.z` commit containing
 the `package.json`/`package-lock.json` version bump and an updated `CHANGELOG.md`.
 
@@ -1039,7 +1040,7 @@ number, so the workflow merges the PR itself in the same run and then calls rele
 time (with `skip-github-pull-request`) to create the git tag (`v0.2.1` — no component prefix, per
 `include-component-in-tag: false`) and a GitHub Release with notes. From the outside there is no PR
 to click: push to `release`, and a minute later the tag and Release exist. The current tracked
-version lives in `.release-please-manifest.json`.
+version lives in `.github/.release-please-manifest.json`.
 
 Four gotchas worth knowing:
 
@@ -1084,7 +1085,7 @@ Conventional Commit in the project's history, not just the ones since some earli
   "Authentication boundaries" above), so it runs fine against whatever `.env.local` has — even
   well-formed placeholder values — without a live network call.
 - `tests/integration/*.integration.test.ts` (currently just the story-domain RLS suite): explicitly
-  named/tagged as integration tests, excluded from `vitest.config.ts`'s default include, run only via
+  named/tagged as integration tests, excluded from `tests/vitest.config.ts`'s default include, run only via
   `npm run test:rls` with its own `.env.test.local` — see "RLS integration test setup" above.
 
 ## Testing strategy
@@ -1098,17 +1099,17 @@ Conventional Commit in the project's history, not just the ones since some earli
   ownership scoping (`.eq("id", user.id)` always uses the _session's_ id, never a form field),
   generic auth error messages, and that `redirect()` only ever receives a `resolveSafeReturnTo()`-
   validated target.
-- Playwright: `e2e/home.spec.ts` (public nav, staff-route 404s for signed-out visitors) and
-  `e2e/auth.spec.ts` (sign-up/in/forgot/reset pages render; a signed-out visit to a protected
+- Playwright: `tests/e2e/home.spec.ts` (public nav, staff-route 404s for signed-out visitors) and
+  `tests/e2e/auth.spec.ts` (sign-up/in/forgot/reset pages render; a signed-out visit to a protected
   contributor route redirects to `/sign-in?next=<path>`; an invalid `/auth/callback` link redirects
   to a friendly sign-in error instead of crashing). The protected-route redirect test is the first
   Playwright spec to actually exercise `proxy.ts`'s Supabase call. `.env.local` now points at a real
   linked Supabase project (see below), so this call is a genuine round trip, not a DNS failure — it
   was originally confirmed fast/non-flaky against placeholder values too, before the project was
-  linked. `e2e/editorial-upload.spec.ts` and `e2e/content-import-body-size.spec.ts` (Prompt 4
+  linked. `tests/e2e/editorial-upload.spec.ts` and `tests/e2e/content-import-body-size.spec.ts` (Prompt 4
   Sub-phase 4) sign in as the real fixed `editor` test account and exercise the real multipart
   upload Route Handler and Server Action body-size margin end-to-end, against the linked hosted
-  project. `e2e/cross-contributor-access.spec.ts` (Prompt 4 Sub-phase 5) signs in as two
+  project. `tests/e2e/cross-contributor-access.spec.ts` (Prompt 4 Sub-phase 5) signs in as two
   independent, fixed test accounts (`owner`/`other`, plus a spot-check using `editor`) in two fully
   separate browser contexts and proves one contributor's session cannot read, preview, or upload to
   another contributor's story through the real pages — this is the UI-level counterpart to
@@ -1137,7 +1138,7 @@ Conventional Commit in the project's history, not just the ones since some earli
   its own module identifier instead of a filesystem path (full account in
   [docs/implementation-status.md](implementation-status.md), "2026-08-18 — PDF import:
   Turbopack fix"). Playwright is the only layer here that runs the real production build, so it is
-  the only layer that can catch this class of bug. `e2e/pdf-import.spec.ts` is the pattern to copy:
+  the only layer that can catch this class of bug. `tests/e2e/pdf-import.spec.ts` is the pattern to copy:
   it asserts a real `200` and real rendered bytes from the route, and it was verified to fail when
   the fix is reverted. The packages this applies to today are `pdfjs-dist`, `@napi-rs/canvas`, and
   `sharp` (see `next.config.ts`'s `serverExternalPackages`).
@@ -1164,7 +1165,7 @@ including the real bug the RLS integration suite's live run surfaced in
 `scripts/rls-test-cleanup.sql` (the new attempt/copy-attempt tables' `on delete restrict` foreign
 keys needed a cleanup-order fix). **Live-verified as of Sub-phase 4:** a full round trip through
 actual Storage bytes (upload → `sharp` processing → public-bucket copy) is now exercised for real,
-end-to-end, by `e2e/editorial-upload.spec.ts` — the gap this section previously deferred to
+end-to-end, by `tests/e2e/editorial-upload.spec.ts` — the gap this section previously deferred to
 Sub-phase 5 is closed.
 
 ### Storage buckets
@@ -1612,8 +1613,8 @@ auth.uid() is null` together — the only trigger-firing context in this schema 
   16.2.12's own shipped type declarations that this config key is still nested under `experimental`
   in this version, not promoted to top-level.
 - **Testing** — `tests/integration/fixtures/tiny.png` (new, committed — a genuinely tiny valid PNG
-  generated once via `sharp`) backs a new `e2e/editorial-upload.spec.ts` exercising the real
-  multipart upload Route Handler as a signed-in editor, and `e2e/content-import-body-size.spec.ts`
+  generated once via `sharp`) backs a new `tests/e2e/editorial-upload.spec.ts` exercising the real
+  multipart upload Route Handler as a signed-in editor, and `tests/e2e/content-import-body-size.spec.ts`
   proves the three-tier body-size behavior above. Both skip themselves (not a hard failure) when
   `.env.test.local`'s editor credentials aren't present; both depend on
   `get_my_story_with_draft()` authorizing the assigned editor
@@ -2080,7 +2081,7 @@ and never re-validates at render time. No other field this stage's review page r
 never throws, same convention as `lib/validation/discovery.test.ts`; Zod schema edge cases for the
 required-reason fields). `lib/story/publish-orchestration.test.ts` (the approve-flow partial-failure
 contract above, fully unit-tested with injected fakes — no real Supabase/storage involved).
-`e2e/moderation.spec.ts` added, following `tests/integration/story-rls.integration.test.ts`'s own
+`tests/e2e/moderation.spec.ts` added, following `tests/integration/story-rls.integration.test.ts`'s own
 fixture-creation pattern (direct RPC calls through a signed-in client) for speed/reliability rather
 than a slower, more brittle UI-driven fixture flow — **not run this session**, since this stage's two
 new migrations are unpushed (same live-migration precondition every other Prompt-6-touching e2e spec
@@ -2236,7 +2237,7 @@ never-throws convention as the other two queue parsers), `resolveReportSchema`, 
 `reportNoteRequired()` pure helper across every serious/non-serious × reviewing/resolved/dismissed
 combination. No new RPC was added, so `tests/integration/story-rls.integration.test.ts` needed no
 changes — Stage 1's own report-note/resolution coverage already exercises every RPC this stage's UI
-calls. `e2e/reports-triage.spec.ts` added, following `e2e/moderation.spec.ts`'s own fixture pattern
+calls. `tests/e2e/reports-triage.spec.ts` added, following `tests/e2e/moderation.spec.ts`'s own fixture pattern
 (direct RPC calls through a signed-in client) — **not run this session**: unlike Stage 1/2, this
 spec needs no unpushed migration to become runnable, but it still needs the same live-project
 `SUPABASE_RLS_TEST_*` credential pool every other real e2e spec in this repo requires, and this
@@ -2334,7 +2335,7 @@ omitted by convention.
 
 ### A real bug found and fixed via live e2e testing: the confirmation that vanishes
 
-Building `e2e/founding-story-workflow.spec.ts` (below) reproduced, live, the exact bug class Prompt
+Building `tests/e2e/founding-story-workflow.spec.ts` (below) reproduced, live, the exact bug class Prompt
 6 Stage 3 already found and fixed twice (`review-controls.tsx`, `resolve-form.tsx`): a Server
 Component page conditionally renders `{someServerComputedBoolean && <ClientPanel/>}`; the panel's
 own successful Server Action call triggers `revalidatePath()`, which flips that boolean on the very
@@ -2353,7 +2354,7 @@ client component whose mount decision is taken once, from the initial `show` pro
 would have unmounted the panel instead leaves it (and whatever it's currently showing) alone.
 `preview/page.tsx`'s three previously-inline `{cond && <div>...}` blocks (the "what's public"
 summary, `ContributorReviewPanel`, `SubmitConsentPanel`) are now all wrapped in
-`<StickyVisible show={cond}>`. Confirmed live: `e2e/founding-story-workflow.spec.ts` failed with
+`<StickyVisible show={cond}>`. Confirmed live: `tests/e2e/founding-story-workflow.spec.ts` failed with
 this exact symptom (the confirmation `getByRole("status")` never appearing) before the fix, and
 passes after it — the full 37-spec Playwright suite was re-run afterward with zero regressions.
 
@@ -2381,13 +2382,13 @@ explicitly instructed to live outside this repository — it will hold real cont
 `lib/story/content-quality-checks.test.ts` (13 cases, one per heuristic plus a clean-story
 baseline), `components/story/whats-public-summary.test.tsx` (4 cases), `lib/validation/readiness.test.ts`
 (search-param parser + the launch-verification Zod schema), `lib/story/no-bulk-publication.test.ts`
-(the structural regression test above). `e2e/founding-story-workflow.spec.ts` — the "critical
+(the structural regression test above). `tests/e2e/founding-story-workflow.spec.ts` — the "critical
 Playwright founding-story workflow" acceptance criterion: signs in as the fixed `editor`/`owner`/
 `moderator` test accounts, drives the real UI through editor import → save → "Mark ready for
 contributor review" → the linked contributor's own "Approve & submit for moderation" → moderator
 "Approve and publish" → confirms the finished story appears correctly in `/readiness` with
 consent/editorial-review both checked. **Run and passing live** (`--workers=1`, same shared-queue
-reasoning as `e2e/moderation.spec.ts`), including surfacing and proving the fix for the
+reasoning as `tests/e2e/moderation.spec.ts`), including surfacing and proving the fix for the
 "vanishing confirmation" bug above. `npm run test:rls` re-run afterward: still 69/69, unaffected
 (this prompt's only SQL changes are additive/read-only). `npm run verify`: 212/212 unit tests (up
 from 182), 33-route build (up from 32).
@@ -2502,14 +2503,14 @@ all, and `work_types` is untranslated because it was retired as a taxonomy on
 2026-08-16. A third language would be a second column and a re-run of this
 pattern — deliberately preferred over an untyped locale map.
 
-Phase 1's slug-keyed overlay in `messages/*.json` is gone, along with the
+Phase 1's slug-keyed overlay in `i18n/messages/*.json` is gone, along with the
 `vocab` namespace. The one surface that genuinely cannot use the database is
 `components/home/destination-quiz.tsx`, which scores toward invented
 destinations ("Queenstown Lakes", "Central Otago") that are not region rows;
 it has its own `home.quiz.destinations` message keys.
 
-**Messages.** `messages/en.json` and `messages/zh-CN.json`, namespaced by area.
-`messages/messages.test.ts` holds them to identical key sets, identical ICU
+**Messages.** `i18n/messages/en.json` and `i18n/messages/zh-CN.json`, namespaced by area.
+`i18n/messages/messages.test.ts` holds them to identical key sets, identical ICU
 arguments and no empty values, and fails on a zh-CN value left identical to its
 English one unless it is on a short, commented allowlist (a brand name, two
 numerals, a lowercase-ASCII example value). `i18n/global.d.ts` types every
@@ -2557,7 +2558,7 @@ native-speaker review before launch.
 - **Prompt 7 — complete.** Content readiness dashboard (`/readiness`), operational metrics,
   advisory content-quality checks, same-story duplicate-image warnings, an explicit "what's public"
   contributor summary, and three founding-catalogue runbook docs. 2 migrations pushed and
-  live-verified (`test:rls` 69/69, unchanged). `e2e/founding-story-workflow.spec.ts` run live,
+  live-verified (`test:rls` 69/69, unchanged). `tests/e2e/founding-story-workflow.spec.ts` run live,
   found and fixed a real "vanishing confirmation" bug (`components/sticky-visible.tsx`) — see
   "Content readiness, operational metrics, and launch tooling (Prompt 7)" above.
 

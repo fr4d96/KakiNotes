@@ -98,7 +98,8 @@ Key rules:
 - `supabase/migrations/` — versioned SQL migrations (source of truth for schema + RLS + storage policies).
 - `supabase/seed.sql` — fictional seed data only.
 - `types/database.ts` — generated, never hand-edited.
-- `tests/` or co-located `*.test.ts(x)` — Vitest/RTL; `e2e/` — Playwright specs.
+- `tests/` or co-located `*.test.ts(x)` — Vitest/RTL (runner configs live in `tests/`);
+  `tests/e2e/` — Playwright specs and config. `i18n/messages/` — UI copy per locale.
 
 ## Definition of Done
 

@@ -6,13 +6,13 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "."),
+      "@": path.resolve(__dirname, ".."),
     },
   },
   test: {
     environment: "jsdom",
     globals: true,
-    setupFiles: ["./vitest.setup.ts"],
+    setupFiles: [path.resolve(__dirname, "vitest.setup.ts")],
     include: ["**/*.test.{ts,tsx}"],
     // tests/integration/** hits a real Supabase project and is intentionally
     // excluded from the default run — see `npm run test:rls`.
@@ -25,7 +25,7 @@ export default defineConfig({
       "node_modules/**",
       ".next/**",
       ".claude/**",
-      "e2e/**",
+      "tests/e2e/**",
       "tests/integration/**",
     ],
     // Vitest's default is 5000ms, which was never a deliberate choice here and

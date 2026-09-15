@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createTranslator } from "next-intl";
-import en from "@/messages/en.json";
-import zhCN from "@/messages/zh-CN.json";
+import en from "@/i18n/messages/en.json";
+import zhCN from "@/i18n/messages/zh-CN.json";
 import {
   firstIssueMessage,
   translateFieldErrors,

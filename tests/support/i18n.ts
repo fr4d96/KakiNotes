@@ -1,5 +1,5 @@
-import en from "@/messages/en.json";
-import zhCN from "@/messages/zh-CN.json";
+import en from "@/i18n/messages/en.json";
+import zhCN from "@/i18n/messages/zh-CN.json";
 import { DEFAULT_LOCALE, type Locale } from "@/i18n/locales";
 
 /**

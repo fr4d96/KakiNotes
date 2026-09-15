@@ -46,7 +46,19 @@ earlier the same day: moderation review rebuild — empty submissions blocked at
 and review page rebuilt around who/when/what-is-wrong, and a consent check that had been false for
 every story since Prompt 3).
 
-**2026-09-15 (latest) — a CI + release pipeline, documented but not yet switched on.**
+**2026-09-15 (latest) — root housekeeping: 38 → 30 top-level entries, nothing renamed in code.**
+Tooling config that does not have to sit at the root was moved: `vitest.config.ts`,
+`vitest.rls.config.ts`, `vitest.setup.ts` → `tests/`; `e2e/` and `playwright.config.ts` →
+`tests/e2e/` (one `tests/` tree instead of two); `messages/` → `i18n/messages/`; the two
+release-please files → `.github/`; `.prettierrc.json` folded into `package.json`'s `"prettier"`
+key. npm scripts pass `--config` explicitly; Playwright's `testDir`/`outputDir`/`webServer.cwd`
+are pinned so artifacts and the dev server still use the repo root. Kept at the root on purpose:
+`DESIGN.md`, `PRODUCT.md`, `.impeccable/` (read there by the design skill), `assets/fonts`
+(traced into the PDF export by `next.config.ts`), `types/`, `CHANGELOG.md`. Also that day: the
+GitHub repo was renamed `NStoriesZ` → `KakiNotes` (old URLs redirect) and `supabase/config.toml`'s
+local `project_id` followed. `verify` green after the moves.
+
+**2026-09-15 — a CI + release pipeline, documented but not yet switched on.**
 Four new files: `.github/workflows/ci.yml`, `.github/workflows/release.yml`,
 `release-please-config.json`, `.release-please-manifest.json`. Plus a "CI and releases" section in
 `CLAUDE.md` and a matching `## CI and releases` section in `docs/architecture.md`. No code, no

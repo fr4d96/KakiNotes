@@ -15,8 +15,8 @@ vi.mock("next-intl/server", () => ({
 }));
 
 import requestConfig from "@/i18n/request";
-import en from "@/messages/en.json";
-import zhCN from "@/messages/zh-CN.json";
+import en from "@/i18n/messages/en.json";
+import zhCN from "@/i18n/messages/zh-CN.json";
 
 type Config = { locale: string; messages: unknown; timeZone: string };
 const resolve = () => (requestConfig as unknown as () => Promise<Config>)();
