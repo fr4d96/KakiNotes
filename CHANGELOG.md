@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/fr4d96/KakiNotes/compare/v0.5.0...v0.6.0) (2026-09-16)
+
+
+### Features
+
+* **home:** close the page on the night field, not a stock photo ([04d40f1](https://github.com/fr4d96/KakiNotes/commit/04d40f1bbe05c1882375bf76299dff3642f4e659))
+
 ## [0.5.0](https://github.com/fr4d96/KakiNotes/compare/v0.4.0...v0.5.0) (2026-09-16)
 
 ### What's new for everyone
