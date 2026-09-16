@@ -25,7 +25,7 @@ import type {
   CompletionResult,
 } from "@codemirror/autocomplete";
 
-import { insertTable } from "./markdown-commands";
+import { insertOutline, insertTable } from "./markdown-commands";
 
 export type SlashCommandOptions = {
   /**
@@ -36,6 +36,14 @@ export type SlashCommandOptions = {
    * it.
    */
   onRequestImages?: () => void;
+  /**
+   * Rendered Markdown for the "Outline" entry (nine `##` headings, see
+   * lib/story/story-starters.ts#outlineMarkdown), supplied by the caller
+   * because the headings are per-locale content. The entry only exists
+   * when this is given, and only acts on a blank document -- see
+   * insertOutline.
+   */
+  outline?: string;
   /**
    * `key -> { label, detail }`, supplied by the caller so this module holds
    * no prose: it is imported by CodeMirror setup code, not by a component,
@@ -150,6 +158,27 @@ export function slashCommands(
       },
     },
   ];
+
+  if (options.outline) {
+    const outline = options.outline;
+    commands.push({
+      key: "outline",
+      ...text(
+        "outline",
+        "Outline",
+        "Start an empty story from section headings",
+      ),
+      aliases: ["template", "sections", "structure"],
+      apply: (view, from, to) => {
+        // On a non-blank document this is a no-op apart from removing the
+        // typed trigger; the starter card above the editor already hides
+        // its outline offer once anything is typed, so the two agree.
+        if (!insertOutline(view, outline, { from, to })) {
+          clearTrigger(view, from, to);
+        }
+      },
+    });
+  }
 
   if (options.onRequestImages) {
     const onRequestImages = options.onRequestImages;

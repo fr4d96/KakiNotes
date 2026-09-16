@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   revisionInputSchema,
   travelStyles,
@@ -12,6 +12,10 @@ import {
   type StoryContentBlock,
 } from "@/lib/validation/story";
 import { removeMediaEmbeds } from "@/lib/story/markdown-media";
+import { markdownWordCount } from "@/lib/story/markdown-text";
+import { getStoryStarters, outlineMarkdown } from "@/lib/story/story-starters";
+import { StoryStartersCard } from "@/components/story/story-starters-card";
+import type { Locale } from "@/i18n/locales";
 import {
   expensePerMonth,
   formatMonths,
@@ -1032,6 +1036,15 @@ export function StoryEditForm({
   // complain about this". Photos and Trip are genuinely optional: they tick
   // when filled, but their absence never blocks anything.
   const contentFilled = Boolean(storyContentText(content).trim());
+  // The starter card (below) wants the same "is there anything here yet"
+  // answer plus a word count, both from the same `content` state the tick
+  // uses, so the card and the tick can never disagree about emptiness.
+  const contentWordCount = markdownWordCount(storyContentText(content));
+  const locale = useLocale() as Locale;
+  const outline = useMemo(
+    () => outlineMarkdown(getStoryStarters(locale).outline),
+    [locale],
+  );
   // Dates OR any money: a contributor who filled in a full budget but no
   // dates was previously shown an unticked Trip step, which reads as "you
   // haven't done this" about a step they had just done. Both halves of the
@@ -1253,9 +1266,24 @@ export function StoryEditForm({
                 Story
                 <RequiredMark />
               </span>
+              {/* Above the editor, never beside it: on a phone there is no
+                  beside. Hides itself past 50 words or on "Hide" -- see the
+                  component. */}
+              <StoryStartersCard
+                storyId={storyId}
+                wordCount={contentWordCount}
+                bodyIsEmpty={!contentFilled}
+                onWriteAbout={(heading) =>
+                  richTextEditorRef.current?.insertHeading(heading)
+                }
+                onInsertOutline={() =>
+                  richTextEditorRef.current?.insertOutline()
+                }
+              />
               <div className="mt-1">
                 <StoryContentEditor
                   ref={richTextEditorRef}
+                  outline={outline}
                   initialContent={initialContentJson}
                   onChange={(blocks) => {
                     setContent(blocks);

@@ -854,7 +854,17 @@
       "photo": "照片",
       "photoDetail": "前往图片面板上传并放置照片",
       "todo": "任务清单",
-      "todoDetail": "可勾选的条目"
+      "todoDetail": "可勾选的条目",
+      "outline": "大纲",
+      "outlineDetail": "用九个章节标题开始一篇空白故事"
+    },
+    "starters": {
+      "title": "不知道从哪里开始？",
+      "writeAbout": "写这个",
+      "another": "换一个",
+      "hide": "隐藏",
+      "outlineLead": "已经想好结构了？",
+      "outlineAction": "从大纲开始"
     }
   },
   "publish": {

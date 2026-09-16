@@ -25,6 +25,9 @@ export type StoryContentEditorProps = {
    * still lives entirely in image-upload-manager.tsx.
    */
   onRequestImages?: () => void;
+  /** Rendered outline Markdown for `/outline` and insertOutline -- see
+   * MarkdownEditorProps.outline. */
+  outline?: string;
 };
 
 /**
@@ -40,6 +43,9 @@ export type StoryContentEditorHandle = {
   /** Inserts an already-uploaded image's embed token at the cursor -- see
    * MarkdownEditorHandle.insertMedia's own comment. */
   insertMedia: (mediaId: string, width?: number) => void;
+  /** See MarkdownEditorHandle.insertHeading / insertOutline. */
+  insertHeading: (heading: string) => void;
+  insertOutline: () => boolean;
 };
 
 /**
@@ -57,7 +63,14 @@ export const StoryContentEditor = forwardRef<
   StoryContentEditorHandle,
   StoryContentEditorProps
 >(function StoryContentEditor(
-  { initialContent, onChange, editable = true, ariaLabel, onRequestImages },
+  {
+    initialContent,
+    onChange,
+    editable = true,
+    ariaLabel,
+    onRequestImages,
+    outline,
+  },
   ref,
 ) {
   const t = useTranslations("editor.fields");
@@ -72,6 +85,10 @@ export const StoryContentEditor = forwardRef<
       insertMedia: (mediaId: string, width?: number) => {
         editorRef.current?.insertMedia(mediaId, width);
       },
+      insertHeading: (heading: string) => {
+        editorRef.current?.insertHeading(heading);
+      },
+      insertOutline: () => editorRef.current?.insertOutline() ?? false,
     }),
     [],
   );
@@ -93,6 +110,7 @@ export const StoryContentEditor = forwardRef<
         editable={editable}
         ariaLabel={ariaLabel ?? t("storyContent")}
         onRequestImages={onRequestImages}
+        outline={outline}
       />
     </div>
   );
