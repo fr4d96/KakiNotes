@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/fr4d96/KakiNotes/compare/v0.3.0...v0.4.0) (2026-09-16)
+
+
+### Features
+
+* **theme:** move the dark ground onto Tailwind's slate hue ([3031d18](https://github.com/fr4d96/KakiNotes/commit/3031d180d7f364f8b3b95cc533f9c18cd37d85b5))
+
 ## [0.3.0](https://github.com/fr4d96/KakiNotes/compare/v0.2.2...v0.3.0) (2026-09-16)
 
 ### What's new for contributors
