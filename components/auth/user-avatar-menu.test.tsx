@@ -7,6 +7,17 @@ vi.mock("@/app/(auth)/actions", () => ({
   signOutAction: vi.fn(),
 }));
 
+// The theme and language rows: LocaleToggle refreshes the route after it
+// writes the language cookie, and its Server Action reads next/headers'
+// cookies() -- neither has a home under jsdom (same mocks as
+// components/site-header.test.tsx).
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+vi.mock("@/lib/i18n/set-locale-action", () => ({
+  setLocaleAction: vi.fn(async () => ({ ok: true })),
+}));
+
 import { UserAvatarMenu } from "./user-avatar-menu";
 
 function openMenu() {
@@ -27,6 +38,17 @@ describe("UserAvatarMenu", () => {
     );
     expect(screen.getByRole("menuitem", { name: "Account" })).toBeVisible();
     expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
+  });
+
+  it("holds the theme and language switches, so the header need not", () => {
+    render(<UserAvatarMenu emoji="🥝" role="user" />);
+    openMenu();
+    expect(
+      screen.getByRole("menuitem", { name: /Switch to dark mode/ }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("menuitem", { name: /Switch to Chinese/ }),
+    ).toBeVisible();
   });
 
   // A staff account reviews other people's stories rather than writing its

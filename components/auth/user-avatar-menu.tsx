@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { signOutAction } from "@/app/(auth)/actions";
 import { ContributorIcon } from "@/components/icons";
+import { LocaleToggle } from "@/components/locale-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { controlToneClasses } from "@/components/ui-tone";
 import type { AppRole } from "@/lib/auth/staff-guard";
 import { staffMenuItemsForRole } from "@/lib/auth/staff-menu";
@@ -177,6 +179,15 @@ export function UserAvatarMenu({
               {t(item.key)}
             </Link>
           ))}
+          {/* Theme and language live here rather than as two more round
+              buttons in the header: they are settings, not destinations,
+              and the header was getting crowded on a phone. Signed-out
+              visitors have no menu, so the header keeps the icon form for
+              them (site-header.tsx). */}
+          <div className="my-1 border-t border-border-subtle" />
+          <ThemeToggle variant="menuItem" />
+          <LocaleToggle variant="menuItem" />
+          <div className="my-1 border-t border-border-subtle" />
           <form action={signOutAction}>
             <button
               type="submit"

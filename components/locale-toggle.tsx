@@ -26,7 +26,15 @@ import { setLocaleAction } from "@/lib/i18n/set-locale-action";
  * The accessible name says the same thing in words, in the CURRENT language,
  * because that is the language the screen reader is speaking right now.
  */
-export function LocaleToggle({ inverted = false }: { inverted?: boolean }) {
+export function LocaleToggle({
+  inverted = false,
+  variant = "icon",
+}: {
+  inverted?: boolean;
+  /** See ThemeToggle's `variant`: "icon" in the header when signed out,
+   * "menuItem" inside the profile dropdown when signed in. */
+  variant?: "icon" | "menuItem";
+}) {
   const t = useTranslations("common.localeToggle");
   const current = useLocale();
   const router = useRouter();
@@ -42,6 +50,24 @@ export function LocaleToggle({ inverted = false }: { inverted?: boolean }) {
       const result = await setLocaleAction(next);
       if (result.ok) router.refresh();
     });
+  }
+
+  if (variant === "menuItem") {
+    return (
+      <button
+        type="button"
+        role="menuitem"
+        onClick={handleClick}
+        disabled={isPending}
+        aria-busy={isPending || undefined}
+        className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-surface-muted disabled:opacity-60"
+      >
+        <span>{label}</span>
+        <span aria-hidden="true" lang={next}>
+          {next === "zh-CN" ? "中" : "EN"}
+        </span>
+      </button>
+    );
   }
 
   return (

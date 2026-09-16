@@ -185,8 +185,6 @@ export function SiteHeader() {
           </div>
 
           <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <LocaleToggle />
             {signedIn ? (
               <>
                 <NotificationBell />
@@ -194,6 +192,11 @@ export function SiteHeader() {
               </>
             ) : (
               <>
+                {/* Signed out there is no profile menu to hold these, so
+                    they stay as header icons; signed in they move into
+                    UserAvatarMenu. */}
+                <ThemeToggle />
+                <LocaleToggle />
                 <button
                   type="button"
                   onClick={() => setAuthModal("sign-in")}
@@ -214,8 +217,12 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 md:hidden">
-          <ThemeToggle />
-          <LocaleToggle />
+          {!signedIn && (
+            <>
+              <ThemeToggle />
+              <LocaleToggle />
+            </>
+          )}
           {signedIn ? (
             // Replaces the hamburger entirely on mobile once signed in --
             // its dropdown carries the primary nav links too (extraItems),

@@ -1,7 +1,5 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { LocaleToggle } from "@/components/locale-toggle";
 import { UserAvatarMenu } from "@/components/auth/user-avatar-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ContributorNavLinks } from "@/components/contributor-nav-links";
@@ -43,8 +41,6 @@ export async function ContributorNav() {
         <ContributorNavLinks className="ml-auto hidden md:flex" />
 
         <div className="ml-auto flex items-center gap-2 md:ml-0">
-          <ThemeToggle />
-          <LocaleToggle />
           <NotificationBell />
           <UserAvatarMenu emoji={avatarEmoji} role={role} />
         </div>

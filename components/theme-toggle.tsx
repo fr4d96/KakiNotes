@@ -39,12 +39,38 @@ function setTheme(next: Theme) {
   listeners.forEach((listener) => listener());
 }
 
-export function ThemeToggle({ inverted = false }: { inverted?: boolean }) {
+export function ThemeToggle({
+  inverted = false,
+  variant = "icon",
+}: {
+  inverted?: boolean;
+  /**
+   * "icon" is the round header button (signed-out visitors, who have no
+   * profile menu to hold it). "menuItem" is a full-width row for the
+   * profile dropdown (components/auth/user-avatar-menu.tsx), where the
+   * toggle lives once someone is signed in.
+   */
+  variant?: "icon" | "menuItem";
+}) {
   const t = useTranslations("common.themeToggle");
   const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const isDark = theme === "dark";
   const label = isDark ? t("switchToLight") : t("switchToDark");
   const toneClasses = controlToneClasses(inverted);
+
+  if (variant === "menuItem") {
+    return (
+      <button
+        type="button"
+        role="menuitem"
+        onClick={() => setTheme(isDark ? "light" : "dark")}
+        className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-surface-muted"
+      >
+        <span>{label}</span>
+        <span aria-hidden="true">{isDark ? "☀" : "☾"}</span>
+      </button>
+    );
+  }
 
   return (
     <button
