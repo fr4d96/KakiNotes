@@ -1,4 +1,4 @@
-# Architecture — Journiq
+# Architecture — Kakinotes
 
 Prompts 1–3 (application foundation; authentication/profiles/roles/contributor identity; core story
 schema, lifecycle, and RLS) are implemented — see

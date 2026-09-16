@@ -1,6 +1,6 @@
 # Build Prompt — Interactive Landing Page with Featured-Story Carousel
 
-**Use this prompt to implement the landing page inside the Journiq repo.** It is written for an
+**Use this prompt to implement the landing page inside the Kakinotes repo.** It is written for an
 engineer/agent working in this codebase, and it assumes you have already read `CLAUDE.md` and
 `docs/implementation-status.md`. A separate, context-free design brief exists at
 `docs/landing-page-story-carousel-brief.md` — that one is for an external design tool. **This**
@@ -22,7 +22,7 @@ server; only the carousel _mechanics_ become a Client Component.
 
 ## 2. Product guardrails (non-negotiable)
 
-Journiq is a public archive of first-person written Working Holiday Visa (WHV) stories from New
+Kakinotes is a public archive of first-person written Working Holiday Visa (WHV) stories from New
 Zealand. Tone: **trustworthy, warm, editorial/documentary, calm confidence.** Not a booking site,
 not a social feed, not an advice platform.
 

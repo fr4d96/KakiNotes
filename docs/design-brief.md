@@ -1,4 +1,4 @@
-# UI Design Brief — Journiq
+# UI Design Brief — Kakinotes
 
 This brief is written for an AI design tool ("Claude Design") with no prior context on this
 project. It should be self-contained: read this document alone and you should have everything
@@ -6,7 +6,7 @@ needed to propose a modern, polished UI for three pages of a Next.js web app.
 
 ## 1. Product & audience
 
-**Journiq** is a public website of real, first-person written stories from people who
+**Kakinotes** is a public website of real, first-person written stories from people who
 have completed or are completing a Working Holiday Visa (WHV) in New Zealand. Readers are
 people considering or preparing for the same trip — initially concentrated among Malaysian
 travellers, but the product must not read as built for one nationality only. Contributors are

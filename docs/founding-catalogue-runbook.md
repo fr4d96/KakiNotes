@@ -1,7 +1,7 @@
-# Founding Catalogue Runbook — Journiq
+# Founding Catalogue Runbook — Kakinotes
 
 This is an operational runbook for editors bringing the platform's first real contributor
-stories onto Journiq. It is **not legal advice** — see
+stories onto Kakinotes. It is **not legal advice** — see
 [docs/content-governance.md](content-governance.md) for the actual consent/rights rules this
 runbook exists to satisfy, and [docs/moderation-guidelines.md](moderation-guidelines.md) for how
 a moderator ultimately reviews the result.

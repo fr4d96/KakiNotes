@@ -5,7 +5,7 @@ you should have everything needed to build one interactive React/Next.js landing
 
 ## 1. What this is
 
-**Journiq** is a public website of real, first-person written stories from people who have
+**Kakinotes** is a public website of real, first-person written stories from people who have
 completed or are completing a Working Holiday Visa (WHV) in New Zealand. Readers are people
 considering or preparing for the same trip. Contributors are past/current WHV travellers who
 write and publish stories under a name, first-name-plus-initial, or pseudonym of their choosing.
