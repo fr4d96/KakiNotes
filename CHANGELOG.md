@@ -2,6 +2,22 @@
 
 ## [0.3.0](https://github.com/fr4d96/KakiNotes/compare/v0.2.2...v0.3.0) (2026-09-16)
 
+### What's new for contributors
+
+**A first question instead of a blank page.** When you start a new story, the Story step now shows a small "Not sure where to start?" card above the editor with one question at a time — things like *"Who did you share a kitchen with, and what did they cook?"* Press **Write about this** and a matching section heading is added to your story with the cursor ready under it. **Show me another** cycles through 32 questions; **Hide** puts the card away for that story. Once you've written about 50 words the card leaves on its own.
+
+**Start from an outline.** On the same card (or by typing `/outline` in the editor) you can drop in nine ready-made section headings — *Why New Zealand, Before I left, The first weeks, Finding work, Where I lived, What it cost, The best of it, The hard parts, What I'd tell myself* — and rename or delete any of them. It only works on an empty story, so it can never overwrite what you've written.
+
+Every question is phrased around what happened to *you*, never as advice, so what you write stays on the right side of the "personal experience, not advice" rule. The questions are available in English and Chinese.
+
+### What's new for everyone
+
+**A tidier header.** When you're signed in, the light/dark switch and the English/中文 switch have moved out of the header and into the menu under your profile icon, just above *Sign out*. Signed-out visitors still see the two buttons in the header.
+
+### Housekeeping
+
+* The moderation guidelines no longer refer to the product by its old name.
+
 
 ### Features
 
