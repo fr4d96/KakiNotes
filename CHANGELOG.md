@@ -2,6 +2,12 @@
 
 ## [0.5.0](https://github.com/fr4d96/KakiNotes/compare/v0.4.0...v0.5.0) (2026-09-16)
 
+### What's new for everyone
+
+**The home page opens on the stories, not a stock photo.** The photo slideshow at the top of the home page is gone. In its place is a dark field of faint dots that reacts to you: move your mouse or finger across it and the dots nearby bend toward you and light up. Every published story sits in that field as a brighter point — hover over one, tap it, or reach it with the Tab key to see the story's title and its record (place, kind of work, year), then click to read it. Nothing moves on its own, so there is no pause button any more and nothing plays while you read.
+
+**Places in your language.** The short list of regions at the bottom of the hero now shows Chinese names when the site is set to Chinese. It was always English before.
+
 
 ### Features
 
