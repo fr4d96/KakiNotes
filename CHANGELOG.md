@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/fr4d96/KakiNotes/compare/v0.4.0...v0.5.0) (2026-09-16)
+
+
+### Features
+
+* **home:** replace the hero photo slideshow with the night field ([35a9b61](https://github.com/fr4d96/KakiNotes/commit/35a9b61f2a721fb05441a6b2a416a559ca71dfc7))
+
 ## [0.4.0](https://github.com/fr4d96/KakiNotes/compare/v0.3.0...v0.4.0) (2026-09-16)
 
 ### What's new for everyone
