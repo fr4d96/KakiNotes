@@ -3,7 +3,9 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-09-15 (a CI + release pipeline: `ci.yml` runs `verify` on every PR and push to
+Last updated: 2026-09-16 (story starters — a quiet "Not sure where to start?" card and a
+`/outline` command on the Story step, with the prompt copy as per-locale data; see the entry
+below; earlier, 2026-09-15: a CI + release pipeline: `ci.yml` runs `verify` on every PR and push to
 main/release, `release.yml` runs release-please against a new `release` branch to cut versioned
 GitHub Releases; documented in docs/architecture.md#ci-and-releases, no deploy performed; earlier
 the same day: scroll jank — the landing page's focus-pull blur no longer runs on large wrappers,
@@ -46,7 +48,32 @@ earlier the same day: moderation review rebuild — empty submissions blocked at
 and review page rebuilt around who/when/what-is-wrong, and a consent check that had been false for
 every story since Prompt 3).
 
-**2026-09-15 (latest) — root housekeeping: 38 → 30 top-level entries, nothing renamed in code.**
+**2026-09-16 (latest) — story starters: a first sentence to answer instead of a blank page.**
+Research in [docs/story-starters-research.md](story-starters-research.md) (follows item 7 of the
+editor competitive research, which had stopped at "needs a product decision" because the prompt
+copy sits next to the "personal experience, not advice" line). Built: a small card above the body
+editor on the Story step showing ONE question at a time (`components/story/story-starters-card.tsx`)
+— _Write about this_ appends a `## heading` and focuses under it, _Show me another_ cycles,
+_Hide_ is remembered per story in `localStorage`; the card hides itself at 50 words. "Start from an
+outline" (on the card while the body is empty, and `/outline` in the slash menu) inserts nine `##`
+headings into a BLANK body only (`insertOutline` refuses anything else). The 32 prompts and the
+outline live as data in `i18n/prompts/story-starters.<locale>.json`, validated by Zod in
+`lib/story/story-starters.ts`, because they are editorial content that must clear the same
+moderation boundary as a story and get reviewed like content.
+
+**Decisions:** per-locale JSON rather than a `story_prompts` table for v1 (no migration, reviewable
+in a PR; the table is the documented next step if editors need to change prompts without a
+deploy). Hide at 50 words, not the 150-word quality-check threshold — the card's job is the first
+sentence. Quiet by design (the owner's instruction: "not too distracting"): recessed surface,
+bordered primary, no animation, no icons. Nothing inserted at the cursor: headings always append,
+so a prompt can never split a paragraph someone is mid-way through.
+
+**Open risks:** the Chinese prompt copy is a model draft and needs a native-speaker read before it
+is trusted; the English copy has not yet had an editorial pass against moderation-guidelines.md;
+`tests/e2e/story-starters.spec.ts` is written but not run (Playwright still needs a seeded live
+project). The idle nudge (Layer 3) is not built.
+
+**2026-09-15 — root housekeeping: 38 → 30 top-level entries, nothing renamed in code.**
 Tooling config that does not have to sit at the root was moved: `vitest.config.ts`,
 `vitest.rls.config.ts`, `vitest.setup.ts` → `tests/`; `e2e/` and `playwright.config.ts` →
 `tests/e2e/` (one `tests/` tree instead of two); `messages/` → `i18n/messages/`; the two

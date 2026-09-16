@@ -1,0 +1,234 @@
+{
+  "outline": [
+    {
+      "topic": "why-nz",
+      "heading": "为什么选择新西兰"
+    },
+    {
+      "topic": "before-i-left",
+      "heading": "出发前"
+    },
+    {
+      "topic": "first-weeks",
+      "heading": "最初的几周"
+    },
+    {
+      "topic": "finding-work",
+      "heading": "找工作"
+    },
+    {
+      "topic": "where-i-lived",
+      "heading": "住过的地方"
+    },
+    {
+      "topic": "what-it-cost",
+      "heading": "花费"
+    },
+    {
+      "topic": "best-of-it",
+      "heading": "最美好的部分"
+    },
+    {
+      "topic": "hard-parts",
+      "heading": "最难熬的部分"
+    },
+    {
+      "topic": "tell-myself",
+      "heading": "想对自己说的话"
+    }
+  ],
+  "prompts": [
+    {
+      "id": "why-nz-1",
+      "topic": "why-nz",
+      "heading": "为什么选择新西兰",
+      "question": "你真正决定申请的那一刻是什么样的————你当时在哪里，第一个告诉了谁？"
+    },
+    {
+      "id": "why-nz-2",
+      "topic": "why-nz",
+      "heading": "为什么选择新西兰",
+      "question": "你告诉家人朋友要去新西兰时，他们说了什么？"
+    },
+    {
+      "id": "why-nz-3",
+      "topic": "why-nz",
+      "heading": "为什么选择新西兰",
+      "question": "出发前你想象中的新西兰是什么样的————后来发现哪里完全不是那么回事？"
+    },
+    {
+      "id": "before-i-left-1",
+      "topic": "before-i-left",
+      "heading": "出发前",
+      "question": "从申请到拿到签证之间的等待是什么感觉？你做了些什么来打发时间？"
+    },
+    {
+      "id": "before-i-left-2",
+      "topic": "before-i-left",
+      "heading": "出发前",
+      "question": "你带了却一次都没用上的东西是什么？后悔没带的又是什么？"
+    },
+    {
+      "id": "before-i-left-3",
+      "topic": "before-i-left",
+      "heading": "出发前",
+      "question": "出发前在家吃的最后一餐是什么？"
+    },
+    {
+      "id": "first-weeks-1",
+      "topic": "first-weeks",
+      "heading": "我的最初几周",
+      "question": "你在新西兰住的第一个地方是什么样子？"
+    },
+    {
+      "id": "first-weeks-2",
+      "topic": "first-weeks",
+      "heading": "我的最初几周",
+      "question": "落地之后，第一件让你感到困惑的事情是什么？"
+    },
+    {
+      "id": "first-weeks-3",
+      "topic": "first-weeks",
+      "heading": "我的最初几周",
+      "question": "说说你的第一周————在找到工作之前，普通的一天是怎么过的？"
+    },
+    {
+      "id": "first-weeks-4",
+      "topic": "first-weeks",
+      "heading": "我的最初几周",
+      "question": "你买的第一样东西是什么？和家乡比起来，价格让你有什么感觉？"
+    },
+    {
+      "id": "finding-work-1",
+      "topic": "finding-work",
+      "heading": "找工作",
+      "question": "你是怎么找到第一份工作的？谁帮了你，花了多长时间？"
+    },
+    {
+      "id": "finding-work-2",
+      "topic": "finding-work",
+      "heading": "找工作",
+      "question": "上班第一天是什么样的————他们让你做什么，那天晚上你的身体感觉如何？"
+    },
+    {
+      "id": "finding-work-3",
+      "topic": "finding-work",
+      "heading": "找工作",
+      "question": "工作第一周，你做错过什么事？"
+    },
+    {
+      "id": "finding-work-4",
+      "topic": "finding-work",
+      "heading": "找工作",
+      "question": "和你一起工作的人是什么样的————他们来自哪里，你们平时聊些什么？"
+    },
+    {
+      "id": "finding-work-5",
+      "topic": "finding-work",
+      "heading": "找工作",
+      "question": "发薪日是什么感觉————第一次看到那个数字的时候？"
+    },
+    {
+      "id": "where-i-lived-1",
+      "topic": "where-i-lived",
+      "heading": "住过的地方",
+      "question": "描述一下你住得最久的房间。夜里能听到什么声音？"
+    },
+    {
+      "id": "where-i-lived-2",
+      "topic": "where-i-lived",
+      "heading": "住过的地方",
+      "question": "你和谁共用过厨房？他们平时做什么菜？"
+    },
+    {
+      "id": "where-i-lived-3",
+      "topic": "where-i-lived",
+      "heading": "住过的地方",
+      "question": "你住过最差的地方是哪里？为什么还是留下来了？"
+    },
+    {
+      "id": "where-i-lived-4",
+      "topic": "where-i-lived",
+      "heading": "住过的地方",
+      "question": "你平时怎么出行？因为没有车，你走过最远的一段路是多远？"
+    },
+    {
+      "id": "what-it-cost-1",
+      "topic": "what-it-cost",
+      "heading": "花费",
+      "question": "什么东西的价格最让你意外？"
+    },
+    {
+      "id": "what-it-cost-2",
+      "topic": "what-it-cost",
+      "heading": "花费",
+      "question": "你在这里花钱买过什么，是你在家乡绝不会买的？"
+    },
+    {
+      "id": "what-it-cost-3",
+      "topic": "what-it-cost",
+      "heading": "花费",
+      "question": "你最接近钱花光的时候是什么时候？那时你怎么做的？"
+    },
+    {
+      "id": "what-it-cost-4",
+      "topic": "what-it-cost",
+      "heading": "花费",
+      "question": "你在哪方面省钱是别人没想到的？这样做值得吗？"
+    },
+    {
+      "id": "best-of-it-1",
+      "topic": "best-of-it",
+      "heading": "最美好的部分",
+      "question": "如果能重新过一天，你会选哪一天？"
+    },
+    {
+      "id": "best-of-it-2",
+      "topic": "best-of-it",
+      "heading": "最美好的部分",
+      "question": "有哪个地方是你没想到自己会这么喜欢的？"
+    },
+    {
+      "id": "best-of-it-3",
+      "topic": "best-of-it",
+      "heading": "最美好的部分",
+      "question": "说说一个陌生人帮助过你的故事。"
+    },
+    {
+      "id": "best-of-it-4",
+      "topic": "best-of-it",
+      "heading": "最美好的部分",
+      "question": "你吃过什么东西，至今还惦记着？"
+    },
+    {
+      "id": "hard-parts-1",
+      "topic": "hard-parts",
+      "heading": "最难熬的部分",
+      "question": "你最想回家的时候是什么时候————是什么让你留了下来？"
+    },
+    {
+      "id": "hard-parts-2",
+      "topic": "hard-parts",
+      "heading": "最难熬的部分",
+      "question": "最孤独的一段时间是怎样的？后来又是怎么过去的？"
+    },
+    {
+      "id": "hard-parts-3",
+      "topic": "hard-parts",
+      "heading": "最难熬的部分",
+      "question": "有什么事当时觉得糟糕，现在想起来却觉得好笑？"
+    },
+    {
+      "id": "tell-myself-1",
+      "topic": "tell-myself",
+      "heading": "想对自己说的话",
+      "question": "如果能给出发前一晚的自己捎一句话，你会说什么？"
+    },
+    {
+      "id": "tell-myself-2",
+      "topic": "tell-myself",
+      "heading": "想对自己说的话",
+      "question": "现在你想念什么？又庆幸自己已经熬过了什么？"
+    }
+  ]
+}

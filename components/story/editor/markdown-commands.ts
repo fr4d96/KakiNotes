@@ -109,3 +109,71 @@ export function insertMediaToken(
   });
   view.focus();
 }
+
+/**
+ * Whether the document is blank -- nothing but whitespace, optionally
+ * ignoring one range (the `/outline` trigger the contributor just typed,
+ * which is about to be replaced).
+ */
+export function isBlankDoc(
+  view: EditorView,
+  ignore?: { from: number; to: number },
+): boolean {
+  const doc = view.state.doc.toString();
+  const text = ignore ? doc.slice(0, ignore.from) + doc.slice(ignore.to) : doc;
+  return text.trim().length === 0;
+}
+
+/**
+ * Appends a `## heading` at the END of the document (not at the cursor:
+ * the starter card sits outside the editor, and "write about this" means
+ * "start a new section", never "split whatever I was in the middle of")
+ * and leaves the cursor on the empty line below it, ready to type. A blank
+ * line before, on the same reasoning as insertMediaToken above.
+ */
+export function insertSectionHeading(view: EditorView, heading: string) {
+  const end = view.state.doc.length;
+  const before = view.state.sliceDoc(Math.max(0, end - 2), end);
+  const leading =
+    end === 0 || isBlankDoc(view)
+      ? ""
+      : before.endsWith("\n\n")
+        ? ""
+        : before.endsWith("\n")
+          ? "\n"
+          : "\n\n";
+  const from = isBlankDoc(view) ? 0 : end;
+  const to = end;
+  const insert = `${leading}## ${heading.trim()}\n\n`;
+  view.dispatch({
+    changes: { from, to, insert },
+    selection: { anchor: from + insert.length },
+    scrollIntoView: true,
+  });
+  view.focus();
+}
+
+/**
+ * Replaces a BLANK document with the outline (already-rendered Markdown,
+ * see lib/story/story-starters.ts#outlineMarkdown) and puts the cursor on
+ * the line under the first heading. Returns false and changes nothing when
+ * the document has any text: an outline dropped into a story someone has
+ * started would either clobber it or land nine headings under their
+ * paragraph, and neither is what "start from an outline" means.
+ */
+export function insertOutline(
+  view: EditorView,
+  outline: string,
+  ignore?: { from: number; to: number },
+): boolean {
+  if (!isBlankDoc(view, ignore)) return false;
+  const firstLineEnd = outline.indexOf("\n");
+  const anchor = firstLineEnd === -1 ? outline.length : firstLineEnd + 1;
+  view.dispatch({
+    changes: { from: 0, to: view.state.doc.length, insert: outline },
+    selection: { anchor },
+    scrollIntoView: true,
+  });
+  view.focus();
+  return true;
+}

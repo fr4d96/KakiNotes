@@ -169,3 +169,37 @@ describe("slash command apply()", () => {
     );
   });
 });
+
+describe("outline command", () => {
+  const outline = "## A\n";
+
+  it("only exists when an outline is supplied", () => {
+    expect(slashCommands({}).some((c) => c.key === "outline")).toBe(false);
+    const command = slashCommands({ outline }).find((c) => c.key === "outline");
+    expect(command).toBeDefined();
+    expect(command?.label).toBe("Outline");
+  });
+
+  it("is matched by its alias when filtering", () => {
+    const commands = slashCommands({ outline });
+    expect(filterSlashCommands(commands, "temp").map((c) => c.key)).toEqual([
+      "outline",
+    ]);
+  });
+
+  it("replaces a document that is only the trigger with the outline", () => {
+    const view = viewWithDoc("/outline", 8);
+    const command = slashCommands({ outline }).find((c) => c.key === "outline");
+    command?.apply(view, 0, 8);
+    expect(view.state.doc.toString()).toBe(outline);
+    view.destroy();
+  });
+
+  it("removes the trigger and inserts nothing else on non-blank text", () => {
+    const view = viewWithDoc("Some text\n/outline", 18);
+    const command = slashCommands({ outline }).find((c) => c.key === "outline");
+    command?.apply(view, 10, 18);
+    expect(view.state.doc.toString()).toBe("Some text\n");
+    view.destroy();
+  });
+});

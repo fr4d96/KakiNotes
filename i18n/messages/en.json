@@ -854,7 +854,17 @@
       "photo": "Photo",
       "photoDetail": "Go to the Images panel to upload and place a photo",
       "todo": "Checklist",
-      "todoDetail": "Tick-box items"
+      "todoDetail": "Tick-box items",
+      "outline": "Outline",
+      "outlineDetail": "Start an empty story from nine section headings"
+    },
+    "starters": {
+      "title": "Not sure where to start?",
+      "writeAbout": "Write about this",
+      "another": "Show me another",
+      "hide": "Hide",
+      "outlineLead": "Know the shape already?",
+      "outlineAction": "Start from an outline"
     }
   },
   "publish": {

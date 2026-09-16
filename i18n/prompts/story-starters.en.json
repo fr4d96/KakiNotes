@@ -1,0 +1,207 @@
+{
+  "outline": [
+    { "topic": "why-nz", "heading": "Why New Zealand" },
+    { "topic": "before-i-left", "heading": "Before I left" },
+    { "topic": "first-weeks", "heading": "The first weeks" },
+    { "topic": "finding-work", "heading": "Finding work" },
+    { "topic": "where-i-lived", "heading": "Where I lived" },
+    { "topic": "what-it-cost", "heading": "What it cost" },
+    { "topic": "best-of-it", "heading": "The best of it" },
+    { "topic": "hard-parts", "heading": "The hard parts" },
+    { "topic": "tell-myself", "heading": "What I'd tell myself" }
+  ],
+  "prompts": [
+    {
+      "id": "why-nz-1",
+      "topic": "why-nz",
+      "heading": "Why New Zealand",
+      "question": "What was the moment you decided to actually apply — where were you, who did you tell first?"
+    },
+    {
+      "id": "why-nz-2",
+      "topic": "why-nz",
+      "heading": "Why New Zealand",
+      "question": "What did people at home say when you told them you were going?"
+    },
+    {
+      "id": "why-nz-3",
+      "topic": "why-nz",
+      "heading": "Why New Zealand",
+      "question": "What did you imagine New Zealand would be like before you went — and what turned out to be nothing like that?"
+    },
+    {
+      "id": "before-i-left-1",
+      "topic": "before-i-left",
+      "heading": "Before I left",
+      "question": "What was the waiting like between applying and getting your visa? What did you do to pass the time?"
+    },
+    {
+      "id": "before-i-left-2",
+      "topic": "before-i-left",
+      "heading": "Before I left",
+      "question": "What was the one thing you packed that you never used — and the one thing you wished you'd brought?"
+    },
+    {
+      "id": "before-i-left-3",
+      "topic": "before-i-left",
+      "heading": "Before I left",
+      "question": "What was the last meal at home before you flew?"
+    },
+    {
+      "id": "first-weeks-1",
+      "topic": "first-weeks",
+      "heading": "My first weeks",
+      "question": "What did the first place you slept in New Zealand look like?"
+    },
+    {
+      "id": "first-weeks-2",
+      "topic": "first-weeks",
+      "heading": "My first weeks",
+      "question": "What was the first thing that confused you after landing?"
+    },
+    {
+      "id": "first-weeks-3",
+      "topic": "first-weeks",
+      "heading": "My first weeks",
+      "question": "Tell the story of your first week — what did a normal day look like before you had a job?"
+    },
+    {
+      "id": "first-weeks-4",
+      "topic": "first-weeks",
+      "heading": "My first weeks",
+      "question": "What was the first thing you bought, and what did it cost compared to home?"
+    },
+    {
+      "id": "finding-work-1",
+      "topic": "finding-work",
+      "heading": "Finding work",
+      "question": "How did you find your first job? Who helped, and how long did it take?"
+    },
+    {
+      "id": "finding-work-2",
+      "topic": "finding-work",
+      "heading": "Finding work",
+      "question": "What was your first day of work like — what did they get you doing, and how did your body feel that night?"
+    },
+    {
+      "id": "finding-work-3",
+      "topic": "finding-work",
+      "heading": "Finding work",
+      "question": "What did you get wrong in the first week on the job?"
+    },
+    {
+      "id": "finding-work-4",
+      "topic": "finding-work",
+      "heading": "Finding work",
+      "question": "What did the people you worked alongside look like — where were they from, what did you talk about?"
+    },
+    {
+      "id": "finding-work-5",
+      "topic": "finding-work",
+      "heading": "Finding work",
+      "question": "What was payday like — the first time you saw the number?"
+    },
+    {
+      "id": "where-i-lived-1",
+      "topic": "where-i-lived",
+      "heading": "Where I lived",
+      "question": "Describe the room you stayed in longest. What could you hear at night?"
+    },
+    {
+      "id": "where-i-lived-2",
+      "topic": "where-i-lived",
+      "heading": "Where I lived",
+      "question": "Who did you share a kitchen with, and what did they cook?"
+    },
+    {
+      "id": "where-i-lived-3",
+      "topic": "where-i-lived",
+      "heading": "Where I lived",
+      "question": "What was the worst place you stayed, and why did you stay anyway?"
+    },
+    {
+      "id": "where-i-lived-4",
+      "topic": "where-i-lived",
+      "heading": "Where I lived",
+      "question": "How did you get around — and what was the longest you ever walked because you had no car?"
+    },
+    {
+      "id": "what-it-cost-1",
+      "topic": "what-it-cost",
+      "heading": "What it cost",
+      "question": "What surprised you most about what things cost?"
+    },
+    {
+      "id": "what-it-cost-2",
+      "topic": "what-it-cost",
+      "heading": "What it cost",
+      "question": "What did you spend money on that you'd never spend on at home?"
+    },
+    {
+      "id": "what-it-cost-3",
+      "topic": "what-it-cost",
+      "heading": "What it cost",
+      "question": "When were you closest to running out of money, and what did you do?"
+    },
+    {
+      "id": "what-it-cost-4",
+      "topic": "what-it-cost",
+      "heading": "What it cost",
+      "question": "What did you save on that other people didn't, and was it worth it?"
+    },
+    {
+      "id": "best-of-it-1",
+      "topic": "best-of-it",
+      "heading": "The best of it",
+      "question": "What is the one day you'd relive if you could?"
+    },
+    {
+      "id": "best-of-it-2",
+      "topic": "best-of-it",
+      "heading": "The best of it",
+      "question": "Which place did you not expect to love?"
+    },
+    {
+      "id": "best-of-it-3",
+      "topic": "best-of-it",
+      "heading": "The best of it",
+      "question": "Tell about a time a stranger helped you."
+    },
+    {
+      "id": "best-of-it-4",
+      "topic": "best-of-it",
+      "heading": "The best of it",
+      "question": "What did you eat that you still think about?"
+    },
+    {
+      "id": "hard-parts-1",
+      "topic": "hard-parts",
+      "heading": "The hard parts",
+      "question": "When did you most want to go home — and what kept you there?"
+    },
+    {
+      "id": "hard-parts-2",
+      "topic": "hard-parts",
+      "heading": "The hard parts",
+      "question": "What was the loneliest stretch, and how did it end?"
+    },
+    {
+      "id": "hard-parts-3",
+      "topic": "hard-parts",
+      "heading": "The hard parts",
+      "question": "What went wrong that you can laugh about now?"
+    },
+    {
+      "id": "tell-myself-1",
+      "topic": "tell-myself",
+      "heading": "What I'd tell myself",
+      "question": "If you could send one message back to yourself the night before you flew, what would it say?"
+    },
+    {
+      "id": "tell-myself-2",
+      "topic": "tell-myself",
+      "heading": "What I'd tell myself",
+      "question": "What do you miss now, and what are you glad to be done with?"
+    }
+  ]
+}

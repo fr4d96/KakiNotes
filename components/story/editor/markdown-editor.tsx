@@ -19,6 +19,8 @@ import {
 import { createMarkdownLiveExtensions } from "./markdown-live-decorations";
 import {
   insertMediaToken,
+  insertOutline,
+  insertSectionHeading,
   insertTable,
   toggleLinePrefix,
   wrapSelection,
@@ -47,6 +49,17 @@ export type MarkdownEditorHandle = {
    * StoryContentEditorHandle from story-edit-form.tsx.
    */
   insertMedia: (mediaId: string, width?: number) => void;
+  /**
+   * Appends a `## heading` section at the end of the document and puts
+   * the cursor under it. Called by the starter card
+   * (components/story/story-starters-card.tsx) via StoryContentEditorHandle.
+   */
+  insertHeading: (heading: string) => void;
+  /**
+   * Replaces a BLANK document with the `outline` prop; returns false and
+   * does nothing when the document already has text. Same caller.
+   */
+  insertOutline: () => boolean;
 };
 
 export type MarkdownEditorProps = {
@@ -61,6 +74,12 @@ export type MarkdownEditorProps = {
    * duplicating the upload flow.
    */
   onRequestImages?: () => void;
+  /**
+   * Rendered Markdown for the "Outline" slash entry and the handle's
+   * insertOutline -- see SlashCommandOptions.outline. Omitted in view-only
+   * contexts and tests, which then have no such entry.
+   */
+  outline?: string;
 };
 
 // --- Paste ----------------------------------------------------------------
@@ -273,7 +292,14 @@ export const MarkdownEditor = React.forwardRef<
   MarkdownEditorHandle,
   MarkdownEditorProps
 >(function MarkdownEditor(
-  { initialValue, onChange, editable = true, ariaLabel, onRequestImages },
+  {
+    initialValue,
+    onChange,
+    editable = true,
+    ariaLabel,
+    onRequestImages,
+    outline,
+  },
   ref,
 ) {
   const t = useTranslations("editor.toolbar");
@@ -295,6 +321,7 @@ export const MarkdownEditor = React.forwardRef<
             "link",
             "table",
             "photo",
+            "outline",
           ] as const
         ).map((key) => [
           key,
@@ -346,8 +373,17 @@ export const MarkdownEditor = React.forwardRef<
         const view = getView();
         if (view) insertMediaToken(view, mediaId, width ?? DEFAULT_EMBED_WIDTH);
       },
+      insertHeading: (heading: string) => {
+        const view = getView();
+        if (view) insertSectionHeading(view, heading);
+      },
+      insertOutline: () => {
+        const view = getView();
+        if (!view || !outline) return false;
+        return insertOutline(view, outline);
+      },
     }),
-    [getView],
+    [getView, outline],
   );
 
   // Split in two on purpose. Everything that must never be rebuilt lives in
@@ -409,12 +445,14 @@ export const MarkdownEditor = React.forwardRef<
     () => [
       ...stableExtensions,
       autocompletion({
-        override: [createSlashCommandSource({ onRequestImages, labels })],
+        override: [
+          createSlashCommandSource({ onRequestImages, outline, labels }),
+        ],
         // No type icons: this is a prose menu, not a code completion list.
         icons: false,
       }),
     ],
-    [stableExtensions, onRequestImages, labels],
+    [stableExtensions, onRequestImages, outline, labels],
   );
 
   const words = markdownWordCount(text);

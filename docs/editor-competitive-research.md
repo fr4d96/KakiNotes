@@ -232,21 +232,21 @@ Each of these was verified against the code or a headless CodeMirror run, not as
 Scored contributor value (how much easier writing gets) against implementation cost, within the
 additive-only, keep-CodeMirror, keep-the-Markdown-model constraints.
 
-| #   | Recommendation                                                                         | Value         | Cost       | Status                                     |
-| --- | -------------------------------------------------------------------------------------- | ------------- | ---------- | ------------------------------------------ |
-| 1   | Rich paste: convert pasted HTML to our Markdown through a controlled, tested transform | Very high     | Medium     | **Built**                                  |
-| 2   | Slash-command menu (`/`) for headings, lists, quote, checklist, table, link            | High          | Low–Medium | **Built**                                  |
-| 3   | Word count + reading time under the editor                                             | High          | Low        | **Built**                                  |
-| 4   | Keyboard shortcuts: Cmd/Ctrl-B, -I, -K                                                 | High          | Low        | **Built**                                  |
-| 5   | Sticky toolbar so formatting stays reachable on mobile                                 | High (mobile) | Low        | **Built**                                  |
-| 6   | Alt text + caption editable for images already placed in the story                     | High          | Medium     | **Built**                                  |
-| 7   | Writing prompts / outline starter for a blank story                                    | Very high     | Medium     | **Recommended — needs a product decision** |
-| 8   | Drag-and-drop / paste an image straight into the story body                            | High          | High       | **Recommended**                            |
-| 9   | Completeness nudge in the editor ("still needed: a location, a tag")                   | Medium        | Low–Medium | **Recommended**                            |
-| 10  | Replace the per-save toast with a quiet "Saved · 2 min ago"                            | Medium        | Low        | **Recommended**                            |
-| 11  | Focus / distraction-free mode                                                          | Medium        | Medium     | **Recommended**                            |
-| 12  | Turn `closeBrackets()` off for prose                                                   | Low           | Very low   | **Recommended**                            |
-| 13  | Block/card editor, embeds, layout grids, version history in the editor                 | —             | —          | **Rejected**                               |
+| #   | Recommendation                                                                         | Value         | Cost       | Status                                                |
+| --- | -------------------------------------------------------------------------------------- | ------------- | ---------- | ----------------------------------------------------- |
+| 1   | Rich paste: convert pasted HTML to our Markdown through a controlled, tested transform | Very high     | Medium     | **Built**                                             |
+| 2   | Slash-command menu (`/`) for headings, lists, quote, checklist, table, link            | High          | Low–Medium | **Built**                                             |
+| 3   | Word count + reading time under the editor                                             | High          | Low        | **Built**                                             |
+| 4   | Keyboard shortcuts: Cmd/Ctrl-B, -I, -K                                                 | High          | Low        | **Built**                                             |
+| 5   | Sticky toolbar so formatting stays reachable on mobile                                 | High (mobile) | Low        | **Built**                                             |
+| 6   | Alt text + caption editable for images already placed in the story                     | High          | Medium     | **Built**                                             |
+| 7   | Writing prompts / outline starter for a blank story                                    | Very high     | Medium     | **Built 2026-09-16** — see story-starters-research.md |
+| 8   | Drag-and-drop / paste an image straight into the story body                            | High          | High       | **Recommended**                                       |
+| 9   | Completeness nudge in the editor ("still needed: a location, a tag")                   | Medium        | Low–Medium | **Recommended**                                       |
+| 10  | Replace the per-save toast with a quiet "Saved · 2 min ago"                            | Medium        | Low        | **Recommended**                                       |
+| 11  | Focus / distraction-free mode                                                          | Medium        | Medium     | **Recommended**                                       |
+| 12  | Turn `closeBrackets()` off for prose                                                   | Low           | Very low   | **Recommended**                                       |
+| 13  | Block/card editor, embeds, layout grids, version history in the editor                 | —             | —          | **Rejected**                                          |
 
 ### Reasoning for the top items
 
