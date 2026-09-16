@@ -118,7 +118,7 @@ export function HeroSlideshow() {
           transparent, so clicks never reached the button. */}
       <div
         ref={rootRef}
-        className={`hero-slideshow absolute inset-0 -z-10 overflow-hidden bg-[#05070a] ${paused || !inView ? "is-paused" : ""}`}
+        className={`hero-slideshow absolute inset-0 -z-10 overflow-hidden bg-[#020617] ${paused || !inView ? "is-paused" : ""}`}
       >
         {SLIDES.map((url, slideIndex) => (
           <div

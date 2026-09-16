@@ -18,7 +18,7 @@ export function SiteFooter() {
     // Reading the ordinary surface tokens ends the page on the same paper it
     // started on, and leaves .journiq-share as the page's single dark band,
     // which is what makes the contribute CTA the emphatic beat it is meant to
-    // be. Dark mode is unaffected in character: --surface there is #0d1218.
+    // be. Dark mode is unaffected in character: --surface there is #0b1222.
     <footer
       id="about"
       className="border-t border-border-subtle bg-surface text-foreground"

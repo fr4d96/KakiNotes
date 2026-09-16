@@ -17,7 +17,9 @@
 /*
  * NIGHT FIELD -- the app-wide palette.
  *
- * Near-black cinematic ground, cool off-white ink, and one saturated cyan
+ * Near-black cinematic ground on Tailwind's blue-tinted slate hue (slate-950
+ * page, slate-900 recesses -- the same ground as sindresorhus.com, adopted
+ * 2026-09-16), cool off-white ink, and one saturated cyan
  * accent held for state and emphasis. This began as a scoped exception on
  * the landing page (`.night-field`) and was promoted here to cover every
  * route; the warm paper/forest/terracotta "Field Journal" palette it
@@ -36,8 +38,8 @@
  * WHERE DEPTH COMES FROM -- the two renditions do not agree here, and an
  * earlier version of this file wrongly assumed they did.
  *
- * Dark expresses elevation with FILLS. #05070a -> #0d1218 is only 1.07:1 by
- * WCAG, but it is a 2.8x jump in relative luminance (0.21% -> 0.58%), and
+ * Dark expresses elevation with FILLS. #020617 -> #0b1222 is only 1.07:1 by
+ * WCAG, but it is a 3.2x jump in relative luminance (0.21% -> 0.67%), and
  * dark-adapted vision reads ratios at low luminance easily, so a raised card
  * separates from the ground on fill alone.
  *
@@ -109,7 +111,7 @@
      carries the MOST contrast against its own ground: darkest in light,
      brightest in dark. Validated (single hue, monotone lightness, adjacent
      step gaps, near-surface end >= 2:1) against this rendition's --surface
-     (#fffefc light / #0d1218 dark). Not a second accent: it is one hue,
+     (#fffefc light / #0b1222 dark). Not a second accent: it is one hue,
      and it never appears on a public route. */
   --chart-1: #63bcb2;
   --chart-2: #17968b;
@@ -247,17 +249,17 @@
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --background: #05070a;
+    --background: #020617;
     --foreground: #f4f6f5;
-    --surface: #0d1218;
-    --surface-muted: #10161d;
-    --border-subtle: rgba(244, 246, 245, 0.14);
+    --surface: #0b1222;
+    --surface-muted: #0f172a;
+    --border-subtle: rgba(226, 232, 240, 0.14);
     --accent: #35d0c4;
-    --accent-foreground: #05070a;
+    --accent-foreground: #020617;
     --tag-background: rgba(53, 208, 196, 0.14);
     --tag-foreground: #8fe6da;
     --fern: #35d0c4;
-    --header-solid: #05070a;
+    --header-solid: #020617;
     --muted: var(--surface-muted);
     --muted-foreground: #98a6a5;
     --popover: var(--surface);
@@ -270,7 +272,7 @@
     --secondary: var(--surface-muted);
     --secondary-foreground: var(--foreground);
     --destructive: #ff6b6b;
-    --destructive-foreground: #05070a;
+    --destructive-foreground: #020617;
     --brand: var(--accent);
     --chart-1: #24685f;
     --chart-2: #2f9086;
@@ -297,7 +299,7 @@
     --expense-5: #4a90dd;
     --expense-6: #d55f7d;
     /* Dark's counterpart. Depth here already comes from the surface fills
-     (#05070a -> #0d1218 is a 2.8x luminance jump, which dark-adapted vision
+     (#020617 -> #0b1222 is a 3.2x luminance jump, which dark-adapted vision
      reads clearly), so these stay near-invisible -- they exist only to keep a
      raised surface from fusing with the ground at its edge, and to give the
      modals/popovers that share these utilities the same geometry in both
@@ -387,17 +389,17 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --background: #05070a;
+  --background: #020617;
   --foreground: #f4f6f5;
-  --surface: #0d1218;
-  --surface-muted: #10161d;
-  --border-subtle: rgba(244, 246, 245, 0.14);
+  --surface: #0b1222;
+  --surface-muted: #0f172a;
+  --border-subtle: rgba(226, 232, 240, 0.14);
   --accent: #35d0c4;
-  --accent-foreground: #05070a;
+  --accent-foreground: #020617;
   --tag-background: rgba(53, 208, 196, 0.14);
   --tag-foreground: #8fe6da;
   --fern: #35d0c4;
-  --header-solid: #05070a;
+  --header-solid: #020617;
   --muted: var(--surface-muted);
   --muted-foreground: #98a6a5;
   --popover: var(--surface);
@@ -410,7 +412,7 @@
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--foreground);
   --destructive: #ff6b6b;
-  --destructive-foreground: #05070a;
+  --destructive-foreground: #020617;
   --brand: var(--accent);
   --chart-1: #24685f;
   --chart-2: #2f9086;
@@ -437,7 +439,7 @@
   --expense-5: #4a90dd;
   --expense-6: #d55f7d;
   /* Dark's counterpart. Depth here already comes from the surface fills
-     (#05070a -> #0d1218 is a 2.8x luminance jump, which dark-adapted vision
+     (#020617 -> #0b1222 is a 3.2x luminance jump, which dark-adapted vision
      reads clearly), so these stay near-invisible -- they exist only to keep a
      raised surface from fusing with the ground at its edge, and to give the
      modals/popovers that share these utilities the same geometry in both
@@ -825,9 +827,9 @@ body {
 .nf-dark-band {
   --foreground: #f4f6f5;
   --accent: #35d0c4;
-  --accent-foreground: #05070a;
+  --accent-foreground: #020617;
   --muted-foreground: #98a6a5;
-  --border-subtle: rgba(244, 246, 245, 0.14);
+  --border-subtle: rgba(226, 232, 240, 0.14);
 }
 
 /*
@@ -835,7 +837,7 @@ body {
  * ink from --foreground:
  *
  *   1. Always-dark photographic bands that do not flip with the theme --
- *      the landing hero (bg #05070a) and the .journiq-share band. Both set
+ *      the landing hero (bg #020617) and the .journiq-share band. Both set
  *      `text-white` on the section itself.
  *   2. The ordinary themed ground -- the featured story cards (--surface)
  *      and the index's "Browse the full catalogue" CTA.

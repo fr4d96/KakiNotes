@@ -9,7 +9,7 @@
  *   stories actually carry, so the record itself is the proof. It refuses
  *   the category default of three photo-card grids showing the same stories
  *   three different ways.
- * OWN-WORLD: near-black ground (#05070a), raised dark surfaces (#0d1218),
+ * OWN-WORLD: near-black ground (#020617), raised dark surfaces (#0b1222),
  *   one cyan accent (#35d0c4) held for state and emphasis; heavy sans for
  *   display, Geist Mono for every numeral, column label, and index field.
  *   No serif, no terracotta, no kicker labels, no glyph icons.
@@ -140,7 +140,7 @@ export default async function HomePage() {
         phone and does not become a canyon on a tall desktop.
       */}
       <section className="px-4 pt-5 sm:px-6 sm:pt-6 lg:px-8">
-        <div className="nf-dark-band relative isolate mx-auto flex h-[74svh] max-h-[780px] min-h-[520px] w-full max-w-[1440px] overflow-hidden rounded-[20px] bg-[#05070a] text-white shadow-2xl sm:rounded-[28px]">
+        <div className="nf-dark-band relative isolate mx-auto flex h-[74svh] max-h-[780px] min-h-[520px] w-full max-w-[1440px] overflow-hidden rounded-[20px] bg-[#020617] text-white shadow-2xl sm:rounded-[28px]">
           <HeroSlideshow />
           <div className="relative flex w-full flex-col justify-end px-6 pb-7 sm:px-10 sm:pb-9 lg:px-14">
             <div className="max-w-3xl">

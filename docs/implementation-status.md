@@ -8560,3 +8560,24 @@ decline" before you try, and the two actions are worded as what they do
 rather than approve/reject.
 
 `npm run verify` clean, 787/787.
+
+## 2026-09-16 — Dark ground moves onto the slate hue
+
+The dark rendition's neutrals now sit on Tailwind's blue-tinted slate scale,
+the same ground as sindresorhus.com: page `#05070a` → `#020617` (slate-950),
+surface `#0d1218` → `#0b1222`, surface-muted `#10161d` → `#0f172a`
+(slate-900), `--border-subtle` retinted from off-white to slate-200 at the
+same 14% alpha. `--accent-foreground` / `--destructive-foreground` follow the
+ground (they are ink-on-accent, always the page colour). Light rendition,
+the cyan accent, and the two chart palettes are untouched.
+
+The elevation model is deliberately NOT copied from that site (its cards are
+`black/20`, darker than the page). Kakinotes keeps raised = lighter, so
+nothing else had to move; only the hue changed. The ground → surface step is
+now a 3.2× luminance jump (was 2.8×), still 1.07:1 by WCAG. Comments in
+`app/globals.css` and `DESIGN.md` updated to match, plus the two landing-page
+call sites that hard-code the ground (`app/(public)/page.tsx`,
+`components/home/hero-slideshow.tsx`) and `.impeccable/design.json`.
+
+Checked in the dev server at desktop and 375px: body resolves to
+`rgb(2, 6, 23)` in dark, no console errors. `npm run verify` PASS.

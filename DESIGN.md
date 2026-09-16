@@ -5,13 +5,13 @@ colors:
   # "Night Field" -- the app-wide palette. Values below are the dark
   # rendition (the signature one). The light counterpart is listed under
   # light-* and lives in :root / [data-theme="light"] in app/globals.css.
-  background: "#05070a"
+  background: "#020617"
   foreground: "#f4f6f5"
-  surface: "#0d1218"
-  surface-muted: "#10161d"
-  border-subtle: "rgba(244, 246, 245, 0.14)"
+  surface: "#0b1222"
+  surface-muted: "#0f172a"
+  border-subtle: "rgba(226, 232, 240, 0.14)"
   accent: "#35d0c4"
-  accent-foreground: "#05070a"
+  accent-foreground: "#020617"
   forest: "#0d1a20"
   fern: "#35d0c4"
   tag-background: "rgba(53, 208, 196, 0.14)"
@@ -127,21 +127,21 @@ not a return to the retired Field Journal paper/terracotta world.
   near-black ground but only ~1.9:1 on a near-white one, so light mode uses a deepened rendition of
   the same hue (187°), which clears 4.5:1 as text on the page ground, on raised surfaces, and on
   `--surface-muted` (its tightest pairing at 4.53:1), as well as under white text as a fill
-  (`--accent-foreground` is `#05070a` dark / `#ffffff` light).
+  (`--accent-foreground` is `#020617` dark / `#ffffff` light).
 
 ### Neutral
 
-- **Void** (`#05070a` dark / `#f1ede8` light): page ground. Near-black rather than pure black; the
+- **Void** (`#020617` dark / `#f1ede8` light): page ground. Near-black rather than pure black; the
   light counterpart is a warm off-white (~L 0.97 OKLCH at hue 78), never stark `#fff` — a pure-white
   ground under near-black ink glared and read clinical, which is what this rendition replaced.
 - **Ink** (`#f4f6f5` dark / `#1b1612` light): body text. 16.2:1 on its own ground.
-- **Surface** (`#0d1218` dark / `#fffefc` light): raised surfaces — cards, panels, popovers. The
+- **Surface** (`#0b1222` dark / `#fffefc` light): raised surfaces — cards, panels, popovers. The
   light value is a warm near-white one step above the ground, never `#ffffff`.
-- **Surface Muted** (`#10161d` dark / `#e8e2db` light): image placeholders, muted fills, inset
+- **Surface Muted** (`#0f172a` dark / `#e8e2db` light): image placeholders, muted fills, inset
   wells.
 - **Muted Ink** (`#98a6a5` dark / `#6a635c` light): secondary and supporting copy. Both clear
   4.5:1 on their own ground — never dim body text with an opacity below ~60% instead.
-- **Fog** (`rgba(244, 246, 245, 0.14)` dark / `rgba(27, 22, 18, 0.22)` light): the only border
+- **Fog** (`rgba(226, 232, 240, 0.14)` dark / `rgba(27, 22, 18, 0.22)` light): the only border
   colour in the system — the ink at low opacity, never a gray.
 - **Destructive** (`#ff6b6b` dark / `#c0392b` light): errors and destructive actions only.
 - **Shadow ink** (`rgba(27, 22, 18, 0.13)` soft / `rgba(27, 22, 18, 0.55)` deep): shadows are the
@@ -243,8 +243,8 @@ mobile shape is `[numeral | stacked content]`, and from `md` up an inner wrapper
 
 **The two renditions do not express depth the same way, and they must not be asked to.**
 
-Dark expresses elevation with **fills**. `#05070a` → `#0d1218` is only 1.07:1 by WCAG, but it is a
-2.8× jump in relative luminance (0.21% → 0.58%), and dark-adapted vision reads ratios at low
+Dark expresses elevation with **fills**. `#020617` → `#0b1222` is only 1.07:1 by WCAG, but it is a
+3.2× jump in relative luminance (0.21% → 0.67%), and dark-adapted vision reads ratios at low
 luminance easily. A raised card separates from the ground on fill alone, and shadow does almost no
 work.
 

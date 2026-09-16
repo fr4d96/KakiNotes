@@ -7,11 +7,11 @@
       "background": {
         "role": "neutral",
         "displayName": "Void",
-        "canonical": "#05070a",
+        "canonical": "#020617",
         "tonalRamp": [
-          "#05070a",
-          "#0d1218",
-          "#10161d",
+          "#020617",
+          "#0b1222",
+          "#0f172a",
           "#1b242c",
           "#2b3740",
           "#4a5658",
