@@ -494,12 +494,16 @@ deleted; never reintroduce a reveal whose resting state is invisible.
 A `.nf-progress` reading hairline under the sticky header is driven by `animation-timeline:
 scroll(root block)` — same rule, no listener.
 
-What the rule does _not_ forbid is a threshold-crossing pause: the hero slideshow observes its own
-box with one `IntersectionObserver` and, while scrolled out of view, stops both its slide timer and
-the Ken Burns zoom (the same `is-paused` class the button sets). That fires once per crossing, not
-per frame, and is the same kind of pause as the existing `visibilitychange` handler — without it the
-browser was crossfading to a fresh 2400px plate every 6.5s underneath whatever the reader was
-scrolling. Only the plate that is animating carries `will-change`; the other three are not GPU layers.
+What the rule does _not_ forbid is input-driven motion or a threshold-crossing pause. The hero's
+night field (`components/home/hero-field.tsx`) is a canvas lattice that only moves when the reader
+moves it — a pointer, a touch, or focus landing on a story point bends and brightens the dots
+nearby, and the loop stops on its own the moment the lens settles. Nothing in it autoplays, so
+there is no pause control and no 2.2.2 obligation. It observes its own box with one
+`IntersectionObserver` and skips frames while scrolled out of view; that fires once per crossing,
+not per frame, and is the same kind of pause as the existing `visibilitychange` handler. The lattice
+is white at rest and turns cyan only under the lens — the accent marking a state, per The One
+Accent Rule — and every lit point is a published story, so the first viewport is made of the record
+rather than of stock photography.
 
 ## Loading — the focus pull, held
 

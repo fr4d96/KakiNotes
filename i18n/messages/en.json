@@ -321,11 +321,8 @@
     "shareBody": "Share the honest version of your working holiday — the wins, mistakes, practical lessons, and moments you will always remember.",
     "shareCta": "Share your story",
     "shareSecondary": "See writing tips",
-    "slideshow": {
-      "playAnimation": "Play hero animation",
-      "pauseAnimation": "Pause hero animation",
-      "playMotion": "Play motion",
-      "pauseMotion": "Pause motion"
+    "field": {
+      "listLabel": "Published stories in this archive"
     },
     "index": {
       "place": "Place",

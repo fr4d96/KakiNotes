@@ -321,11 +321,8 @@
     "shareBody": "写下你打工度假最真实的版本 — 顺利的、走过弯路的、实用的经验，还有那些你永远记得的瞬间。",
     "shareCta": "分享你的故事",
     "shareSecondary": "查看写作建议",
-    "slideshow": {
-      "playAnimation": "播放首屏动画",
-      "pauseAnimation": "暂停首屏动画",
-      "playMotion": "播放动画",
-      "pauseMotion": "暂停动画"
+    "field": {
+      "listLabel": "本档案中已发布的故事"
     },
     "index": {
       "place": "地点",

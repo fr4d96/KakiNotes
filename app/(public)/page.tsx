@@ -17,12 +17,14 @@
  *   lead shows what a story looks like, the index proves there is a real
  *   body of them and lets the reader narrow by place and work, the model is
  *   explained, and the page closes on one contribute CTA.
- * FIRST VIEWPORT: an inset slideshow PLATE (rounded, elevated, inside the
- *   page gutter -- not full-bleed; see The Mounted Plate Rule in DESIGN.md),
- *   heavy scrim, bottom-left headline with one cyan word, ghost-outline
- *   primary CTA plus a quiet text link, and a live numbered slide index
- *   tracking the actual active photo. The header sits solid above it rather
- *   than dissolving into it.
+ * FIRST VIEWPORT: an inset PLATE (rounded, elevated, inside the page
+ *   gutter -- not full-bleed; see The Mounted Plate Rule in DESIGN.md) that
+ *   is the night field itself: a lattice of faint points the pointer bends
+ *   like a lens, with every published story lit in it as a point you can
+ *   hover, tap or tab to (components/home/hero-field.tsx). No photography
+ *   -- the plate is made of the record. Bottom-left headline with one cyan
+ *   word, ghost-outline primary CTA plus a quiet text link. The header sits
+ *   solid above it rather than dissolving into it.
  * FORM: archive index. The Night Field palette this page introduced is now
  *   the app-wide token set (app/globals.css), so this page no longer scopes
  *   its own. Motion is one authored idea (a lens focus pull) expressed in
@@ -36,13 +38,18 @@
  */
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { listPublishedStoriesCached } from "@/lib/story/public-queries";
-import { HeroSlideshow } from "@/components/home/hero-slideshow";
+import { HeroField, type HeroRecord } from "@/components/home/hero-field";
 import { FeaturedStoryStack } from "@/components/home/featured-story-stack";
 import { StoryIndex } from "@/components/home/story-index";
 import { DestinationQuiz } from "@/components/home/destination-quiz";
-import { regionNames } from "@/lib/story/card-fields";
+import {
+  firstRegionLabel,
+  regionNames,
+  stringList,
+} from "@/lib/story/card-fields";
+import type { Locale } from "@/i18n/locales";
 import { ArrowRightIcon } from "@/components/icons";
 
 // No `export const revalidate` any more (it was 60). The root layout reads
@@ -90,11 +97,29 @@ function SectionHead({
 }
 
 export default async function HomePage() {
-  const [stories, t] = await Promise.all([
+  const [stories, t, rawLocale] = await Promise.all([
     listPublishedStoriesCached({ limit: 24 }).catch(() => []),
     getTranslations("home"),
+    getLocale(),
   ]);
+  const locale = rawLocale as Locale;
   const hasStories = stories.length > 0;
+
+  // The field's points: one per published story, carrying only the fields
+  // that story actually has (a missing one is omitted, never a dash), in
+  // the reader's language. Same three fields as an index row, so the hero
+  // and the index agree about what a record looks like.
+  const heroRecords: HeroRecord[] = stories.map((story) => ({
+    slug: story.slug,
+    title: story.title,
+    record: [
+      firstRegionLabel(story.regions, locale),
+      stringList(story.tags)[0],
+      story.trip_year ? String(story.trip_year) : null,
+    ]
+      .filter((value): value is string => Boolean(value))
+      .join(" · "),
+  }));
 
   // Distinct regions actually present in the published catalogue, in order of
   // how many stories carry them, capped so the rail stays one calm line
@@ -103,7 +128,7 @@ export default async function HomePage() {
   // the moment the catalogue changed and would be a claim rather than a fact.
   const regionCounts = new Map<string, number>();
   for (const story of stories) {
-    for (const name of new Set(regionNames(story.regions))) {
+    for (const name of new Set(regionNames(story.regions, locale))) {
       regionCounts.set(name, (regionCounts.get(name) ?? 0) + 1);
     }
   }
@@ -134,14 +159,15 @@ export default async function HomePage() {
         it read as a photograph ON the page in both renditions, which is also
         truer to the archive thesis: an archive shows you a mounted plate.
 
-        `overflow-hidden` + `isolate` keep the Ken Burns zoom clipped to the
-        rounded box. svh rather than vh so a mobile URL bar collapsing does not
-        resize the hero mid-scroll; clamped so it stays cinematic on a short
-        phone and does not become a canyon on a tall desktop.
+        `overflow-hidden` + `isolate` keep the field's canvas and its story
+        points clipped to the rounded box. svh rather than vh so a mobile URL
+        bar collapsing does not resize the hero mid-scroll; clamped so it
+        stays cinematic on a short phone and does not become a canyon on a
+        tall desktop.
       */}
       <section className="px-4 pt-5 sm:px-6 sm:pt-6 lg:px-8">
         <div className="nf-dark-band relative isolate mx-auto flex h-[74svh] max-h-[780px] min-h-[520px] w-full max-w-[1440px] overflow-hidden rounded-[20px] bg-[#020617] text-white shadow-2xl sm:rounded-[28px]">
-          <HeroSlideshow />
+          <HeroField records={heroRecords} listLabel={t("field.listLabel")} />
           <div className="relative flex w-full flex-col justify-end px-6 pb-7 sm:px-10 sm:pb-9 lg:px-14">
             <div className="max-w-3xl">
               {/* Display caps at 6rem. The previous 6.8rem broke the world's
@@ -192,12 +218,7 @@ export default async function HomePage() {
                 className="nf-hero-pull mt-10 border-t border-white/15 pt-4 sm:mt-14"
                 style={{ animationDelay: "380ms" }}
               >
-                {/* Right padding clears the slideshow's pause control, which
-                    is absolutely positioned over this same corner. Without
-                    it the last region scrolls underneath the button and is
-                    unreadable -- caught at 375px, where the two collide
-                    first. */}
-                <ul className="nf-scroll-x -mx-6 flex items-center gap-x-6 overflow-x-auto pr-28 pl-6 sm:mx-0 sm:flex-wrap sm:gap-x-7 sm:gap-y-2 sm:pr-36 sm:pl-0">
+                <ul className="nf-scroll-x -mx-6 flex items-center gap-x-6 overflow-x-auto px-6 sm:mx-0 sm:flex-wrap sm:gap-x-7 sm:gap-y-2 sm:px-0">
                   {heroRegions.map((region) => (
                     <li
                       key={region}

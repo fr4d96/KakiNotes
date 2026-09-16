@@ -613,66 +613,118 @@ body {
 }
 
 /*
- * Hero photo slideshow (components/home/hero-slideshow.tsx), ported from
- * journiq_landing_page_card_stack.html's .hero-slide/.hero-overlay. Text
- * over the photo is always white regardless of theme (a photo backdrop
- * needs a fixed dark scrim either way), unlike the rest of the page.
+ * Hero night field (components/home/hero-field.tsx). The canvas paints the
+ * lattice; these rules cover the scrim under the headline and the story
+ * points -- real links laid over the canvas. Text over the plate is always
+ * white regardless of theme: the plate is an always-dark band.
  */
-.hero-slide {
-  position: absolute;
-  inset: -3%;
-  opacity: 0;
-  background-position: center;
-  background-size: cover;
-  transform: scale(1.04);
-  transition: opacity 1.35s ease;
-  /* No `will-change` here. It used to sit on every slide, which kept four
-     hero-sized GPU textures alive for the life of the page (each ~20MB at
-     2x on a 1440px viewport), three of them for plates at opacity 0. Only
-     the plate that is actually animating needs its own compositor layer;
-     the outgoing plate is promoted by the browser for exactly the length
-     of its opacity transition and released afterwards. */
-}
-.hero-slide.is-active {
-  opacity: 1;
-  animation: hero-ken-burns 7.4s cubic-bezier(0.2, 0.55, 0.3, 1) both;
-  will-change: transform, opacity;
-}
-/* Set on the slideshow root while paused -- by the "Pause motion" button,
-   or by hero-slideshow.tsx while the hero is scrolled out of view. Freezes
-   the Ken Burns zoom mid-frame instead of just stopping future slide
-   changes, so a manual pause reads as immediate rather than a no-op, and
-   an off-screen hero is not re-rasterising a 2400px plate every 6.5s
-   underneath the section the reader is actually scrolling. */
-.hero-slideshow.is-paused .hero-slide.is-active {
-  animation-play-state: paused;
-}
-@keyframes hero-ken-burns {
-  0% {
-    transform: scale(1.04) translate3d(0, 0, 0);
-  }
-  100% {
-    transform: scale(1.13) translate3d(-1.5%, 1.2%, 0);
-  }
-}
-.hero-overlay {
+.hero-field-scrim {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(
-      90deg,
-      rgba(2, 4, 6, 0.94),
-      rgba(2, 4, 6, 0.5) 58%,
-      rgba(2, 4, 6, 0.12)
-    ),
-    linear-gradient(0deg, rgba(2, 4, 6, 0.88), transparent 52%);
+  pointer-events: none;
+  background: linear-gradient(0deg, rgba(2, 6, 23, 0.92), transparent 58%);
+}
+
+/* A story point: a lit dot with its record beside it. The dot is the hit
+   target (invisible padding: 32px on a phone, where the band is short and
+   the points sit close, 44px from `sm` up), the label only shows on
+   hover / focus so 24 points read as a constellation, not a wall of text. */
+.hero-point {
+  --hero-point-size: 32px;
+  position: relative;
+  display: block;
+  width: var(--hero-point-size);
+  height: var(--hero-point-size);
+  margin: calc(var(--hero-point-size) / -2) 0 0
+    calc(var(--hero-point-size) / -2);
+  border-radius: 9999px;
+  outline-offset: -6px;
+  animation: hero-point-in 0.9s cubic-bezier(0.16, 0.84, 0.28, 1) backwards;
+}
+.hero-point-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 9999px;
+  background: var(--accent);
+  box-shadow:
+    0 0 0 3px rgba(53, 208, 196, 0.16),
+    0 0 14px 2px rgba(53, 208, 196, 0.45);
+  transition:
+    transform 0.28s cubic-bezier(0.16, 0.84, 0.28, 1),
+    box-shadow 0.28s ease;
+}
+/* The hovered point stacks above its neighbours so its label is never
+   crossed by another point's dot. */
+.hero-point:hover,
+.hero-point:focus-visible {
+  z-index: 1;
+}
+.hero-point:hover .hero-point-dot,
+.hero-point:focus-visible .hero-point-dot {
+  transform: scale(1.5);
+  box-shadow:
+    0 0 0 5px rgba(53, 208, 196, 0.22),
+    0 0 22px 4px rgba(53, 208, 196, 0.6);
+}
+.hero-point-label {
+  position: absolute;
+  top: 50%;
+  left: calc(50% + 14px);
+  width: max-content;
+  max-width: min(18rem, 60vw);
+  padding: 0.5rem 0.7rem;
+  border-radius: 10px;
+  /* A solid caption ground, not a backdrop blur (the lattice under it is
+     moving content; see The Blur Budget Rule). */
+  background: rgba(2, 6, 23, 0.86);
+  border: 1px solid var(--border-subtle);
+  transform: translateY(-50%) translateX(-4px);
+  opacity: 0;
+  pointer-events: none;
+  text-align: left;
+  transition:
+    opacity 0.22s ease,
+    transform 0.28s cubic-bezier(0.16, 0.84, 0.28, 1);
+}
+/* Points in the right third open their label to the left so it never runs
+   off the plate. */
+[data-side="end"] .hero-point-label {
+  left: auto;
+  right: calc(50% + 14px);
+  text-align: right;
+  transform: translateY(-50%) translateX(4px);
+}
+.hero-point:hover .hero-point-label,
+.hero-point:focus-visible .hero-point-label {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+@media (min-width: 640px) {
+  .hero-point {
+    --hero-point-size: 44px;
+  }
+}
+@keyframes hero-point-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero-slide {
-    transition: none;
-  }
-  .hero-slide.is-active {
+  .hero-point {
     animation: none;
+  }
+  .hero-point-dot,
+  .hero-point-label {
+    transition: none;
   }
 }
 

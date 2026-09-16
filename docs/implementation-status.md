@@ -3,9 +3,10 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-09-16 (story starters — a quiet "Not sure where to start?" card and a
-`/outline` command on the Story step, with the prompt copy as per-locale data; see the entry
-below; earlier, 2026-09-15: a CI + release pipeline: `ci.yml` runs `verify` on every PR and push to
+Last updated: 2026-09-16 (landing hero — the stock-photo slideshow is gone; the plate is now a
+pointer-reactive "night field" with every published story lit in it as a point; see the entry
+below; earlier the same day: story starters — a quiet "Not sure where to start?" card and a
+`/outline` command on the Story step, with the prompt copy as per-locale data; earlier, 2026-09-15: a CI + release pipeline: `ci.yml` runs `verify` on every PR and push to
 main/release, `release.yml` runs release-please against a new `release` branch to cut versioned
 GitHub Releases; documented in docs/architecture.md#ci-and-releases, no deploy performed; earlier
 the same day: scroll jank — the landing page's focus-pull blur no longer runs on large wrappers,
@@ -48,7 +49,44 @@ earlier the same day: moderation review rebuild — empty submissions blocked at
 and review page rebuilt around who/when/what-is-wrong, and a consent check that had been false for
 every story since Prompt 3).
 
-**2026-09-16 (latest) — story starters: a first sentence to answer instead of a blank page.**
+**2026-09-16 (latest) — landing hero: the night field replaces the photo slideshow.**
+The owner's read: the Ken Burns Unsplash slideshow "does not blend with the Kakinotes whole
+aesthetic". It was also the one element on a page whose thesis is "the record is the proof" that
+was not made of the record, and the only remaining hotlinked stock photography in the first
+viewport. Built: `components/home/hero-field.tsx` — a canvas lattice of faint points (white at
+rest) that the pointer bends and brightens like a lens (cyan under the lens only, per The One
+Accent Rule), with every published story from the same 24-row query the index uses laid over it
+as a lit point. Hover / focus reveals the story's title and its index record
+(`Region · Work · Year`, only the fields it has, in the request locale), click opens it. Points
+are real `<a>`s in a labelled `<ul>` (`home.field.listLabel`), so keyboard and screen-reader
+readers get the same list; tabbing to one moves the lens onto it. Positions are a jittered grid
+assigned by the RANK of each slug's hash (`layoutPoints`), not by array index — the public query
+does not promise a stable order and a story must not wander between visits. The point band is
+24% of the plate at every width (measured at 375×812 and 1024×700 — the display size and the
+plate height both scale with the viewport, so the free strip above the headline is roughly a
+quarter everywhere). Nothing moves on its own: no autoplay, so the pause control, its four i18n
+keys, the numbered slide index and `hero-slideshow.tsx` are deleted; the rAF loop stops itself
+once the lens settles and skips frames off-screen and in hidden tabs. `prefers-reduced-motion`
+skips the load settle and snaps the lens. Unit test: `components/home/hero-field.test.tsx`.
+In passing: the hero's region rail now passes the request locale, so it is Chinese under zh-CN
+(it was always English before). DESIGN.md's motion section updated.
+
+**Decisions:** no photography at all, rather than local processed plates — the page's own
+direction contract says the record is the proof, and a field of the record beats a picture of a
+place none of the stories are necessarily about. Not a map: positions are hashes, and interactive
+maps are an MVP non-goal. Touch: a tap on a point navigates directly (no tap-to-peek), because a
+two-tap pattern is unfamiliar and the index below is the real browse surface on a phone; hit
+targets are 32px on phones (WCAG 2.5.8 minimum is 24), 44px from `sm` up.
+
+**Open risks:** with a catalogue much larger than 24, the hero still shows only the 24 the page
+fetches, which is the same truth the index tells; if the count grows past ~40 the band gets
+dense and the column count or band height should become responsive. The `.journiq-share` band
+at the foot of the page still hotlinks one Unsplash photo — out of scope here, same reasoning
+applies. The other session's dev server wedged once on HMR full reload during verification
+(streamed Suspense content never revealed); a fresh tab loaded fine, and a production build does
+not go through HMR.
+
+**2026-09-16 — story starters: a first sentence to answer instead of a blank page.**
 Research in [docs/story-starters-research.md](story-starters-research.md) (follows item 7 of the
 editor competitive research, which had stopped at "needs a product decision" because the prompt
 copy sits next to the "personal experience, not advice" line). Built: a small card above the body
