@@ -2,6 +2,10 @@
 
 ## [0.4.0](https://github.com/fr4d96/KakiNotes/compare/v0.3.0...v0.4.0) (2026-09-16)
 
+### What's new for everyone
+
+**A bluer, deeper dark mode.** The dark theme's background has shifted from a near-neutral black to a deep navy — the same slate tone used by sites like sindresorhus.com. Cards, panels, search wells and the thin lines around them all follow, so the whole page reads as one cool, night-sky ground instead of a grey-black one. The cyan accent, the text colours and light mode are exactly as they were, and nothing has moved — only the colour underneath changed.
+
 
 ### Features
 
