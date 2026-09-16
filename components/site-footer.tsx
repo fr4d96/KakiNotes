@@ -9,8 +9,8 @@ export function SiteFooter() {
     // The footer FLIPS with the theme; it is not an always-dark band.
     //
     // It used to be `bg-forest text-white` in both renditions. Two problems in
-    // light mode: it sat directly under the .journiq-share band (itself a dark
-    // scrimmed photo), so the page ended on ~1400px of unbroken dark after a
+    // light mode: it sat directly under the .journiq-share band (itself
+    // always dark), so the page ended on ~1400px of unbroken dark after a
     // warm off-white body; and light `--forest` was #17110d, a warm brown-black
     // left over from the retired Field Journal palette, butting against
     // .journiq-share's cool rgba(2, 4, 6) -- two different blacks touching.

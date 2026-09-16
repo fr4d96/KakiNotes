@@ -71,6 +71,12 @@ skips the load settle and snaps the lens. Unit test: `components/home/hero-field
 In passing: the hero's region rail now passes the request locale, so it is Chinese under zh-CN
 (it was always English before). DESIGN.md's motion section updated.
 
+**Follow-up the same day:** the `.journiq-share` band at the foot of the page — the last
+hotlinked Unsplash photo in the app — now carries the same field with no points
+(`<HeroField records={[]} scrim="band" />`), so the page closes on the empty field a new story
+would be added to. `listLabel` became optional and a `scrim` prop picks a left-hand gradient for
+band text. No stock photography remains anywhere in `app/` or `components/`.
+
 **Decisions:** no photography at all, rather than local processed plates — the page's own
 direction contract says the record is the proof, and a field of the record beats a picture of a
 place none of the stories are necessarily about. Not a map: positions are hashes, and interactive
@@ -80,9 +86,7 @@ targets are 32px on phones (WCAG 2.5.8 minimum is 24), 44px from `sm` up.
 
 **Open risks:** with a catalogue much larger than 24, the hero still shows only the 24 the page
 fetches, which is the same truth the index tells; if the count grows past ~40 the band gets
-dense and the column count or band height should become responsive. The `.journiq-share` band
-at the foot of the page still hotlinks one Unsplash photo — out of scope here, same reasoning
-applies. The other session's dev server wedged once on HMR full reload during verification
+dense and the column count or band height should become responsive. The other session's dev server wedged once on HMR full reload during verification
 (streamed Suspense content never revealed); a fresh tab loaded fine, and a production build does
 not go through HMR.
 

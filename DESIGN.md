@@ -170,8 +170,8 @@ an inversion of the other. Before adding a literal colour, check it against both
 only works on one, it needs a token with two values, not a `dark:` override.
 
 **The Always-Dark Band Rule.** A couple of surfaces are permanently dark in BOTH themes because
-they are photography under a scrim: the landing hero plate and the `.journiq-share` contribute
-band. The footer used to be a third (`--forest`, the "Deep Ink Band"); it is not any more — see
+they are the night field on its own near-black ground: the landing hero plate and the
+`.journiq-share` contribute band (the same field, without story points). The footer used to be a third (`--forest`, the "Deep Ink Band"); it is not any more — see
 The One Dark Band Rule below.
 Tokens still flip underneath them, so anything token-driven inside one resolves to the _light_
 rendition against a near-black photo — which is how the hero's CTA once rendered as near-black ink

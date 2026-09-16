@@ -342,11 +342,16 @@ export default async function HomePage() {
         </section>
       ) : null}
 
+      {/* The page closes on the same field it opened on, with no points:
+          the empty field a new story would be added to. `relative isolate
+          overflow-hidden` is what HeroField's -z-10 canvas needs to sit
+          behind this section's text rather than behind the page. */}
       <section
         id="share"
-        className="nf-dark-band journiq-share scroll-mt-24 py-16 text-white sm:py-24 lg:py-28"
+        className="nf-dark-band journiq-share relative isolate scroll-mt-24 overflow-hidden py-16 text-white sm:py-24 lg:py-28"
       >
-        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
+        <HeroField records={[]} scrim="band" />
+        <div className="relative mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
           <div className="nf-pull max-w-3xl">
             <h2 className="night-heading text-white">{t("shareHeading")}</h2>
             <p className="mt-5 max-w-2xl text-white/75">{t("shareBody")}</p>

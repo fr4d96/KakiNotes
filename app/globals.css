@@ -598,18 +598,15 @@ body {
 }
 
 /*
- * The closing contribute band. The photo behind it used to be a red sandstone
- * canyon road -- unmistakably the American southwest, closing a page whose
- * whole subject is Aotearoa. Nobody had looked at it; it was inherited from an
- * early HTML mockup. Replaced with layered ridgeline haze, which reads as
- * backcountry without claiming a specific landmark, sits dark enough for the
- * scrim to carry white text, and does not contradict the page around it.
+ * The closing contribute band. It used to be a hotlinked Unsplash ridgeline
+ * under a scrim -- the last stock photograph on the page once the hero's
+ * slideshow went. It is now the same night field the page opens on
+ * (components/home/hero-field.tsx, with no story points), so the page
+ * closes where it began: on the field a new story would be added to. The
+ * ground colour is all this rule sets; the field paints the rest.
  */
 .journiq-share {
-  background:
-    linear-gradient(90deg, rgba(2, 4, 6, 0.95), rgba(2, 4, 6, 0.45)),
-    url("https://images.unsplash.com/photo-1444927714506-8492d94b4e3d?auto=format&fit=crop&w=1800&q=85")
-      center/cover;
+  background: #020617;
 }
 
 /*
@@ -623,6 +620,13 @@ body {
   inset: 0;
   pointer-events: none;
   background: linear-gradient(0deg, rgba(2, 6, 23, 0.92), transparent 58%);
+}
+/* The share band's text sits at the left, not the bottom. */
+.hero-field-scrim--band {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(2, 6, 23, 0.9), transparent 64%);
 }
 
 /* A story point: a lit dot with its record beside it. The dot is the hit
@@ -861,13 +865,12 @@ body {
 /*
  * Always-dark bands.
  *
- * A few surfaces are permanently dark in BOTH themes because they are
- * full-bleed photography with a scrim over it: the landing hero and the
+ * A few surfaces are permanently dark in BOTH themes because they are the
+ * night field on its own near-black ground: the landing hero plate and the
  * .journiq-share contribute band. The page's tokens still flip underneath
  * them, so in light mode every token-driven colour inside was resolving to
- * its light rendition against a near-black photo -- the accent word
- * "Aotearoa" and the active slide numeral came out as the deep teal
- * (#006f68 ≈ 2.4:1 on the scrimmed photo) instead of the signature cyan.
+ * its light rendition against near-black -- the accent word "Aotearoa"
+ * came out as the deep teal (#006f68 ≈ 2.4:1) instead of the signature cyan.
  *
  * Pinning the handful of tokens that actually appear inside these bands to
  * their dark rendition makes the band behave exactly as it does in dark

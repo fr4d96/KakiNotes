@@ -122,9 +122,16 @@ function smoothstep(t: number): number {
 export function HeroField({
   records,
   listLabel,
+  scrim = "plate",
 }: {
   records: HeroRecord[];
-  listLabel: string;
+  /** Accessible name for the list of story points. Required when there are
+   *  records; unused for a field with none. */
+  listLabel?: string;
+  /** Where the text this field sits under lives: bottom-left of the hero
+   *  plate ("plate"), or the left of a full-width band ("band"). Picks the
+   *  scrim that keeps that text calm. */
+  scrim?: "plate" | "band";
 }) {
   const reduced = usePrefersReducedMotion();
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -319,7 +326,11 @@ export function HeroField({
         aria-hidden="true"
       >
         <canvas ref={canvasRef} className="block h-full w-full" />
-        <div className="hero-field-scrim" />
+        <div
+          className={
+            scrim === "band" ? "hero-field-scrim--band" : "hero-field-scrim"
+          }
+        />
       </div>
       {records.length > 0 ? (
         // Above the text wrapper for hit-testing (it is a later sibling
