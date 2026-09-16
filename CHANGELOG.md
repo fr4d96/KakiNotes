@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/fr4d96/KakiNotes/compare/v0.2.2...v0.3.0) (2026-09-16)
+
+
+### Features
+
+* **editor:** story starters — a first question to answer instead of a blank page ([dbcecbb](https://github.com/fr4d96/KakiNotes/commit/dbcecbb904e8392b8236a7925e2f901ddbe75118))
+* **nav:** move the theme and language switches into the profile menu ([e8aee48](https://github.com/fr4d96/KakiNotes/commit/e8aee48ce4b7a9437cbf47326b0836125c284026))
+
 ## [0.2.2](https://github.com/fr4d96/KakiNotes/compare/v0.2.1...v0.2.2) (2026-09-15)
 
 
