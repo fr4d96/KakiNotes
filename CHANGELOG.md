@@ -2,6 +2,9 @@
 
 ## [0.6.0](https://github.com/fr4d96/KakiNotes/compare/v0.5.0...v0.6.0) (2026-09-16)
 
+### What's new for everyone
+
+**The page now ends where it began.** The dark "Share your story" band at the bottom of the home page used to sit on a stock photograph of a hillside. It now carries the same field of faint dots the page opens on — move across it and the dots nearby light up — but with no stories in it yet: the empty field your story would be added to. With this change there is no stock photography left anywhere on the site; every picture you see was taken by a contributor.
 
 ### Features
 
