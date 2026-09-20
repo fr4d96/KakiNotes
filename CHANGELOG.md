@@ -2,6 +2,14 @@
 
 ## [0.7.0](https://github.com/fr4d96/KakiNotes/compare/v0.6.0...v0.7.0) (2026-09-20)
 
+### What's new for contributors
+
+**You can keep editing a story that's under review.** Until now, once you sent a story for review it was locked until a moderator got to it. Now there's an **Edit anyway** button on the story's preview page, on your My Stories list, and on the editor screen that used to say "not editable". Press it and the story comes out of the review queue and reopens in the editor with everything you wrote, exactly as it was. When you're done, you send it for review again the same way as before. If the story was already published, the version readers can see stays up, unchanged, the whole time — nothing half-edited ever goes live. The button always asks first, so you can't take a story out of review by accident.
+
+### What's new for everyone
+
+**The dead "Destinations" link is gone.** The header and footer had a "Destinations" link that only worked from the home page and did nothing anywhere else. It's been removed; the destination quiz on the home page is still there.
+
 
 ### Features
 
