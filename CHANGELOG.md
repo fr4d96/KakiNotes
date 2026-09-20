@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.0](https://github.com/fr4d96/KakiNotes/compare/v0.8.0...v0.9.0) (2026-09-20)
+
+### What's new for everyone
+
+**Tap any photo to see it big.** Photos in a story used to be stuck at the size of the reading column — there was no way to look closer. Now every photo on a story page is tappable. Tap one and it opens on its own, filling the screen on a black background, with a close button in the corner. Tap the black area, press Escape, or hit the ✕ to go back to where you were reading.
+
+**Flick through all the photos in one go.** If a story has more than one photo, the viewer shows "Photo 3 of 12" at the top and lets you move to the next or previous one — with the arrow buttons on either side, the ← and → keys, or by swiping left and right on a phone. It goes through the photos in the story text first, then the ones in the gallery at the bottom, and loops back to the start when you reach the end.
+
+### What's new for contributors
+
+**The same viewer on your preview page.** When you're checking a draft before sending it for review, your photos open in the same full-screen viewer, so you can see exactly what readers will see. Moderators get it on the review page too.
+
+
+### Features
+
+* **photos:** tap any story photo to view it full-screen, with next/previous ([be8d4e0](https://github.com/fr4d96/KakiNotes/commit/be8d4e0ab7a0a5063153f3e0c45d0c31a8a17009))
+
 ## [0.8.0](https://github.com/fr4d96/KakiNotes/compare/v0.7.0...v0.8.0) (2026-09-20)
 
 ### What's new for everyone
