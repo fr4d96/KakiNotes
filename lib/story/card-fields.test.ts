@@ -83,7 +83,7 @@ describe("destinationNames", () => {
 });
 
 // --------------------------------------------------------------------------
-// Simplified Chinese (20260914150000 put name_zh_cn on the vocabulary tables
+// Simplified Chinese (20260914092322 put name_zh_cn on the vocabulary tables
 // and the RPCs now emit it beside every English name). Every helper above
 // defaults to English, which is why none of the assertions in this file
 // needed changing when the locale argument was added.

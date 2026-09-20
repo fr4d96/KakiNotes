@@ -2442,6 +2442,10 @@ export type Database = {
         };
         Returns: undefined;
       };
+      reopen_submission_for_editing: {
+        Args: { p_story_id: string };
+        Returns: string;
+      };
       reorder_story_media: {
         Args: {
           p_expected_version: number;

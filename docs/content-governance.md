@@ -260,6 +260,24 @@ now names them as empty and suggests request-changes with a pre-filled reason, r
 a rendering error. The queue itself flags them ("No story content") so they need not be opened at
 all.
 
+### Editing a story that is under review
+
+A submitted revision is never unfrozen — the trigger above stays absolute, so a moderator is never
+reviewing a moving target. "Edit while under review" instead means: pull the submission back and
+start a new draft, in one step. **Implemented 2026-09-20:**
+`reopen_submission_for_editing()` calls `withdraw_unstarted_submission()` (the submitted revision
+becomes `withdrawn` — a terminal state, not editable — and leaves the moderation queue) and
+`create_next_draft_revision()` (copies it into a fresh `draft`) atomically. Leaving the queue also
+marks the moderators' `story_submitted` notification read, through the same cascade that already
+does this for any other revision that stops being `submitted`. The contributor keeps everything they
+wrote and submits again through the ordinary consent path — a fresh `story_publication_consents` row,
+because consent is bound to the specific revision id being published (see "Publication consent"
+above), and the withdrawn revision's old grant no longer matches anything. A published story stays
+`published` throughout (Engineering Rule 11) — this only ever affects the in-review submission, never
+what readers currently see. It only works on a revision still genuinely `submitted`; once a moderator
+has acted on it, it is no longer `submitted` and the contributor instead gets the normal
+"changes requested → start a new draft" path (`request_editorial_changes()`/`create_next_draft_revision()`).
+
 ## Reporting
 
 - Any reader can report a published story or image for review (e.g. suspected impersonation, rights

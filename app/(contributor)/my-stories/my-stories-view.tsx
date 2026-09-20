@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ALL, FilterRow } from "@/components/story/filter-row";
 import { StartRevisionButton } from "@/components/story/start-revision-button";
+import { ReopenForEditingButton } from "@/components/story/reopen-for-editing-button";
 import {
   destinationNames,
   regionNames,
@@ -174,8 +175,11 @@ const SECTIONS: { key: StorySection }[] = [
  * (_revision_is_editable() excludes this lifecycle status), and the same
  * is true while a submitted revision is pending_review -- an "Edit" link
  * in either case would lead to a save that always fails. Show a "Review"
- * CTA for the former, and hide "Edit" entirely for the latter, so a
- * contributor can only ever reach an edit that would actually work.
+ * CTA for the former. For the latter, plain "Edit" is still hidden, but it
+ * is not a dead end: ReopenForEditingButton (canReopen below) offers to pull
+ * the submitted revision back out of the queue and reopen it as an editable
+ * draft, so a contributor can only ever reach an edit that would actually
+ * work, without being stuck until a moderator gets to it.
  */
 function storyStatusFlags(story: MyStoryWithCover) {
   const awaitingApproval =
@@ -235,12 +239,21 @@ function storyStatusFlags(story: MyStoryWithCover) {
   const updateInFlight =
     story.published_revision_id !== null &&
     Boolean(story.current_draft_revision_id);
+  // The other side of `editable` being false while `inReview` is true: the
+  // in-flight revision is submitted and sitting with a moderator, not yet
+  // acted on. Mirrors reopen_submission_for_editing()'s own precondition
+  // (supabase/migrations -- the RPC refuses anything but a `submitted`
+  // revision), so this can never offer a reopen the RPC would reject just
+  // because the story moved on since the page loaded; the RPC re-checks
+  // regardless (Engineering Rule 2).
+  const canReopen = story.draftRevisionStatus === "submitted";
   return {
     awaitingApproval,
     editable,
     deletable,
     withdrawable,
     canStartRevision,
+    canReopen,
     inReview,
     updateInFlight,
   };
@@ -552,7 +565,7 @@ type FilterAxis = {
 function buildFilterAxes(
   stories: MyStoryWithCover[],
   // The axis KEY is stable; only its label is translated. Region and
-  // destination OPTION values are localized too, since 20260914150000 sends
+  // destination OPTION values are localized too, since 20260914092322 sends
   // each name's Simplified Chinese twin along with it -- the filter list
   // then matches the names printed on the cards beside it. Tags are NOT
   // localized: a tag may be one the contributor typed.
@@ -619,6 +632,7 @@ function StoryGrid({
           deletable,
           withdrawable,
           canStartRevision,
+          canReopen,
           inReview,
           updateInFlight,
         } = storyStatusFlags(story);
@@ -674,6 +688,15 @@ function StoryGrid({
                     storyId={story.id}
                     storyTitle={title}
                     isPublished={story.lifecycle_status === "published"}
+                    variant="icon"
+                    className={`${ACTION_ICON_CLASS} text-accent`}
+                  />
+                )}
+                {canReopen && (
+                  <ReopenForEditingButton
+                    storyId={story.id}
+                    storyTitle={title}
+                    isPublished={story.published_revision_id !== null}
                     variant="icon"
                     className={`${ACTION_ICON_CLASS} text-accent`}
                   />
@@ -743,6 +766,7 @@ function StoryList({
           deletable,
           withdrawable,
           canStartRevision,
+          canReopen,
           inReview,
           updateInFlight,
         } = storyStatusFlags(story);
@@ -815,6 +839,15 @@ function StoryList({
                       storyId={story.id}
                       storyTitle={title}
                       isPublished={story.lifecycle_status === "published"}
+                      variant="icon"
+                      className={`${ACTION_ICON_CLASS} text-accent`}
+                    />
+                  )}
+                  {canReopen && (
+                    <ReopenForEditingButton
+                      storyId={story.id}
+                      storyTitle={title}
+                      isPublished={story.published_revision_id !== null}
                       variant="icon"
                       className={`${ACTION_ICON_CLASS} text-accent`}
                     />

@@ -2,7 +2,7 @@ import { prefixedVocabName } from "@/lib/i18n/vocab";
 import { DEFAULT_LOCALE, type Locale } from "@/i18n/locales";
 
 /**
- * Region entries as the public RPCs emit them. Since 20260914150000 each
+ * Region entries as the public RPCs emit them. Since 20260914092322 each
  * carries the Simplified Chinese twin beside the English name; a
  * contributor-typed destination label arrives with a null twin and renders
  * as typed (see lib/i18n/vocab.ts).

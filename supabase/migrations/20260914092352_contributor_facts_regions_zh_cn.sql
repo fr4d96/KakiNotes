@@ -3,7 +3,7 @@
 -- contributor_public_facts() returned `regions text[]` -- bare English names,
 -- ordered A-Z -- and both public RPCs passed that column straight through,
 -- so /contributors and /contributors/[slug] were the one reader-facing
--- surface 20260914150000 could not reach. `regions` becomes jsonb,
+-- surface 20260914092322 could not reach. `regions` becomes jsonb,
 -- `[{"name": "Auckland", "name_zh_cn": "奥克兰"}, ...]`, the same
 -- name-plus-translation shape every other public payload now carries, so
 -- one TypeScript helper picks the language everywhere.
@@ -105,7 +105,7 @@ as $$
 $$;
 
 comment on function public.contributor_public_facts(uuid) is
-  'The single definition of "what is publicly true about this contributor" -- published story count plus regions/trip years/tags derived from ONLY their public, published, approved, consent-granted revisions (Engineering Rules 10 and 12). Regions are jsonb objects carrying name and name_zh_cn (20260914150100). Tags resolve a curated tag name OR the contributor-typed custom_label, per the LEFT-JOIN-and-coalesce rule public reads have used since 20260812110000. Internal: no grants, reachable only from the SECURITY DEFINER public RPCs.';
+  'The single definition of "what is publicly true about this contributor" -- published story count plus regions/trip years/tags derived from ONLY their public, published, approved, consent-granted revisions (Engineering Rules 10 and 12). Regions are jsonb objects carrying name and name_zh_cn (20260914092352). Tags resolve a curated tag name OR the contributor-typed custom_label, per the LEFT-JOIN-and-coalesce rule public reads have used since 20260812110000. Internal: no grants, reachable only from the SECURITY DEFINER public RPCs.';
 
 revoke all on function public.contributor_public_facts(uuid) from public, anon, authenticated;
 

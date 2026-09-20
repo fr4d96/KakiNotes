@@ -633,7 +633,7 @@ describe("MyStoriesView", () => {
     expect(startStoryRevisionAction).not.toHaveBeenCalled();
   });
 
-  it("hides Edit while a published story's update is with a moderator, and says so", () => {
+  it("swaps plain Edit for a reopen-for-review button while a published story's update is with a moderator, and says so", () => {
     render(
       <MyStoriesView
         stories={[
@@ -653,12 +653,23 @@ describe("MyStoriesView", () => {
     const row = screen.getByRole("listitem");
     expect(within(row).getByText("Published")).toBeInTheDocument();
     expect(screen.getByText("Update in review")).toBeInTheDocument();
+    // A plain Edit link/button would save straight into a frozen revision, so
+    // neither is offered...
     expect(
       screen.queryByRole("link", { name: /^Edit/ }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /^Edit/ }),
+      screen.queryByRole("button", {
+        name: "Edit Picking apples in Hawke's Bay",
+      }),
     ).not.toBeInTheDocument();
+    // ...but the story is not stuck: ReopenForEditingButton offers to pull
+    // the submitted revision back out of the queue.
+    expect(
+      screen.getByRole("button", {
+        name: "Edit Picking apples in Hawke's Bay anyway",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("keeps Edit available on a published story's unsubmitted update", () => {
@@ -727,6 +738,14 @@ describe("MyStoriesView", () => {
     ).toBeInTheDocument();
     expect(
       within(section("In review")).getByText("With a moderator"),
+    ).toBeInTheDocument();
+    // A first submission sitting with a moderator is not a dead end either:
+    // the reopen-for-editing icon button is offered right there in the
+    // section, same as it is for a published story's in-flight update.
+    expect(
+      within(section("In review")).getByRole("button", {
+        name: "Edit With a moderator anyway",
+      }),
     ).toBeInTheDocument();
     expect(
       within(section("Published")).getByText("Live one"),

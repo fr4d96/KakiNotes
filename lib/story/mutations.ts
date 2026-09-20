@@ -207,6 +207,25 @@ export async function withdrawUnstartedSubmission(storyId: string) {
 }
 
 /**
+ * "Edit anyway" on a story that is under review, via
+ * reopen_submission_for_editing()
+ * (supabase/migrations/20260920100000_reopen_submission_for_editing.sql):
+ * withdraws the submitted revision and copies it into a fresh draft in one
+ * transaction. The RPC (through its two callees) is the real boundary --
+ * owner or assigned editor only, revision must still be `submitted`, and no
+ * moderator may have acted on it yet. Returns the new draft revision id.
+ */
+export async function reopenSubmissionForEditing(storyId: string) {
+  await requireUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("reopen_submission_for_editing", {
+    p_story_id: storyId,
+  });
+  if (error) throw error;
+  return data;
+}
+
+/**
  * Permanently deletes a self-service story, via delete_draft_story()
  * (supabase/migrations/20260819090000_delete_draft_story.sql). The RPC
  * itself enforces the real safety boundary — only a story that has never

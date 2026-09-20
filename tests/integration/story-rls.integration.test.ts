@@ -640,6 +640,141 @@ describe("withdrawal freezes the replacement without touching the publication", 
   }, 30000);
 });
 
+describe("reopen_submission_for_editing (20260920100000)", () => {
+  it("owner reopens a submitted, never-published story into a fresh editable draft", async () => {
+    const { data: created } = await owner.client.rpc(
+      "create_self_service_draft",
+      {
+        p_title: slug("reopen-base"),
+        p_content_json: [{ type: "paragraph", text: "Draft one." }],
+      },
+    );
+    const storyId = created![0].story_id;
+    const firstRevisionId = created![0].revision_id;
+
+    const submittedTitle = slug("reopen-base-submitted");
+    await owner.client.rpc("save_revision_draft", {
+      p_revision_id: firstRevisionId,
+      p_expected_version: 1,
+      p_title: submittedTitle,
+      p_content_json: [{ type: "paragraph", text: "Ready to submit." }],
+    });
+
+    const { data: beforeSubmit } = await owner.client.rpc(
+      "get_my_story_with_draft",
+      { p_story_id: storyId },
+    );
+    await owner.client.rpc("submit_revision_with_consent", {
+      p_revision_id: firstRevisionId,
+      p_expected_version: beforeSubmit![0].version,
+      p_confirmation_method: "account",
+      p_publication_confirmed: true,
+      p_expected_terms_version: currentTermsVersion,
+    });
+
+    const { data: newRevisionId, error } = await owner.client.rpc(
+      "reopen_submission_for_editing",
+      { p_story_id: storyId },
+    );
+    expect(error).toBeNull();
+    expect(newRevisionId).toBeTruthy();
+
+    const { data: after } = await owner.client.rpc("get_my_story_with_draft", {
+      p_story_id: storyId,
+    });
+    expect(after![0].revision_id).toBe(newRevisionId);
+    expect(after![0].revision_status).toBe("draft");
+    expect(after![0].title).toBe(submittedTitle);
+    expect(after![0].lifecycle_status).toBe("draft");
+
+    // The old (submitted) revision is now withdrawn, not just superseded --
+    // get_story_for_moderator() reads any revision by id regardless of its
+    // current status, which is how a moderator/admin can see it here.
+    const { data: oldRevision } = await moderator.client.rpc(
+      "get_story_for_moderator",
+      { p_revision_id: firstRevisionId },
+    );
+    expect(oldRevision?.[0]?.revision_status).toBe("withdrawn");
+
+    // The new draft is genuinely editable.
+    const { error: saveError } = await owner.client.rpc("save_revision_draft", {
+      p_revision_id: newRevisionId as unknown as string,
+      p_expected_version: after![0].version,
+      p_title: submittedTitle + "-edited",
+      p_content_json: [{ type: "paragraph", text: "Editing again." }],
+    });
+    expect(saveError).toBeNull();
+  }, 30000);
+
+  it("cannot reopen a story that is not currently submitted", async () => {
+    const { data: created } = await owner.client.rpc(
+      "create_self_service_draft",
+      {
+        p_title: slug("reopen-plain-draft"),
+        p_content_json: [{ type: "paragraph", text: "Never submitted." }],
+      },
+    );
+    const storyId = created![0].story_id;
+
+    const { error } = await owner.client.rpc("reopen_submission_for_editing", {
+      p_story_id: storyId,
+    });
+    expect(error).not.toBeNull();
+    expect(error!.message).toMatch(/not currently submitted/i);
+  });
+
+  it("another account cannot reopen the owner's submitted story", async () => {
+    const { data: created } = await owner.client.rpc(
+      "create_self_service_draft",
+      {
+        p_title: slug("reopen-not-yours"),
+        p_content_json: [{ type: "paragraph", text: "Mine, not theirs." }],
+      },
+    );
+    const storyId = created![0].story_id;
+    const revisionId = created![0].revision_id;
+    await owner.client.rpc("submit_revision_with_consent", {
+      p_revision_id: revisionId,
+      p_expected_version: 1,
+      p_confirmation_method: "account",
+      p_publication_confirmed: true,
+      p_expected_terms_version: currentTermsVersion,
+    });
+
+    const { error } = await other.client.rpc("reopen_submission_for_editing", {
+      p_story_id: storyId,
+    });
+    expect(error).not.toBeNull();
+    expect(error!.message).toMatch(/owner or assigned editor/i);
+  });
+
+  it("anon cannot execute the function at all", async () => {
+    const { data: created } = await owner.client.rpc(
+      "create_self_service_draft",
+      {
+        p_title: slug("reopen-anon"),
+        p_content_json: [
+          { type: "paragraph", text: "Anon should not touch this." },
+        ],
+      },
+    );
+    const storyId = created![0].story_id;
+    const revisionId = created![0].revision_id;
+    await owner.client.rpc("submit_revision_with_consent", {
+      p_revision_id: revisionId,
+      p_expected_version: 1,
+      p_confirmation_method: "account",
+      p_publication_confirmed: true,
+      p_expected_terms_version: currentTermsVersion,
+    });
+
+    const { error } = await anon.rpc("reopen_submission_for_editing", {
+      p_story_id: storyId,
+    });
+    expect(error).not.toBeNull();
+  });
+});
+
 describe("destination/region and cross-story media integrity", () => {
   it("rejects a destination that does not belong to the given region", async () => {
     // Lookup tables have real RLS grants; seed two disjoint region/destination

@@ -17,6 +17,7 @@ import { StickyVisible } from "@/components/sticky-visible";
 import { StoryStepProgress } from "@/components/story/story-steps";
 import { DownloadIcon } from "@/components/icons";
 import { StartRevisionButton } from "@/components/story/start-revision-button";
+import { ReopenForEditingButton } from "@/components/story/reopen-for-editing-button";
 import {
   EDITING_STORY_STEPS,
   missingStoryRequirements,
@@ -127,6 +128,20 @@ export default async function StoryPreviewPage({
     preview.revisionStatus === "approved" &&
     preview.lifecycleStatus === "published";
 
+  // The revision on screen is frozen for a moderator right now, but the
+  // owner/contributor can still pull it back out with ReopenForEditingButton
+  // (reopen_submission_for_editing()) -- the sibling case to canStartRevision
+  // above: there IS something in flight, it's just not editable as-is. Not
+  // gated on lifecycleStatus the way canStartRevision is, because "submitted"
+  // covers both a first submission (lifecycleStatus "pending_review") and an
+  // edit to an already-published story (lifecycleStatus stays "published"
+  // throughout, per Engineering Rule 11). The RPC re-checks ownership and the
+  // revision's real status regardless.
+  const canReopen =
+    (preview.viewerRelationship === "owner" ||
+      preview.viewerRelationship === "linked_contributor") &&
+    preview.revisionStatus === "submitted";
+
   // Required-before-submit gate: Title/Story content already have their own
   // stricter server-side enforcement (revisionInputSchema rejects an empty
   // title or content on every save), but this is the one place a story
@@ -223,6 +238,14 @@ export default async function StoryPreviewPage({
           >
             ← Back to editing
           </Link>
+        ) : canReopen ? (
+          <ReopenForEditingButton
+            storyId={preview.storyId}
+            storyTitle={preview.title}
+            isPublished={preview.lifecycleStatus === "published"}
+            variant="button"
+            className="text-accent underline underline-offset-2"
+          />
         ) : (
           <span />
         )}

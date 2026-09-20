@@ -167,7 +167,7 @@ export async function resolveLocationLabels(
   if (regions.error) throw regions.error;
   if (destinations.error) throw destinations.error;
 
-  // The curated rows carry their Simplified Chinese twin (20260914150000),
+  // The curated rows carry their Simplified Chinese twin (20260914092322),
   // so a contributor reading in Chinese gets Chinese place names in their
   // PDF. A contributor-TYPED destination label is passed through untouched
   // below -- it is their own words, never translated.

@@ -927,6 +927,15 @@
     "editTitle": "编辑《{title}》",
     "publishedBody": "《{title}》已经发布。你的修改会先交给审核人 — 在新版本通过之前，大家现在读到的版本会保持不变，继续在线。",
     "draftBody": "你会从上次停下的地方继续写《{title}》，完成后再提交审核。"
+  "reopenForEditing": {
+    "edit": "仍要编辑",
+    "editTitle": "仍要编辑《{title}》",
+    "publishedTitle": "要把这次更新撤出审核吗？",
+    "draftTitle": "要把这篇故事撤出审核吗？",
+    "confirm": "好，继续编辑",
+    "publishedBody": "《{title}》会从审核队列中撤回，方便你继续修改。你写的内容不会丢失，改完后再重新提交审核。现在读者看到的版本会一直保持不变，照常在线。",
+    "draftBody": "《{title}》会从审核队列中撤回，方便你继续修改。你写的内容不会丢失，改完后再重新提交审核。"
+  },
   },
   "preview": {
     "metaTitle": "预览",
@@ -1054,7 +1063,9 @@
   "editStory": {
     "notEditableTitle": "目前无法编辑",
     "notEditableBody": "这篇故事当前的版本状态是「{status}」，无法在此页面编辑。",
-    "viewPreview": "查看预览"
+    "viewPreview": "查看预览",
+    "underReviewTitle": "这篇故事正在审核中",
+    "underReviewBody": "有审核人员正在查看这篇故事。你仍然可以编辑它 — 这样做会把它从审核队列中撤下来，等你改完后再重新提交审核。"
   },
   "pdf": {
     "personalExperienceBy": "个人经历，并非建议 — 由 {name} 分享",

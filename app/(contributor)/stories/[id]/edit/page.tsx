@@ -14,6 +14,7 @@ import {
   listActiveExpenseCategories,
 } from "@/lib/story/active-lookups";
 import { StoryEditForm } from "@/components/story/story-edit-form";
+import { ReopenForEditingButton } from "@/components/story/reopen-for-editing-button";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
 import { STORY_STEPS, type StoryStepId } from "@/lib/story/steps";
 
@@ -66,6 +67,40 @@ export default async function EditStoryPage({
   ]);
   const draft = await getEditableStoryWithDraft(id);
   if (!draft) notFound();
+
+  if (draft.revision_status === "submitted") {
+    // Under review, but not stuck there: a contributor can pull the
+    // revision back out with ReopenForEditingButton (reopen_submission_for_
+    // editing()), so this gets its own screen ahead of the generic
+    // not-editable one below rather than just another status word in that
+    // one's body. isPublished only affects the confirm dialog's
+    // reassurance -- get_my_story_with_draft() doesn't expose
+    // published_revision_id, so lifecycle_status is the signal here, same
+    // as list_my_stories()'s callers use it (Engineering Rule 11).
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          {t("underReviewTitle")}
+        </h1>
+        <p className="mt-2 text-muted-foreground">{t("underReviewBody")}</p>
+        <div className="mt-6 flex flex-wrap items-center gap-4">
+          <ReopenForEditingButton
+            storyId={id}
+            storyTitle={draft.title ?? ""}
+            isPublished={draft.lifecycle_status === "published"}
+            variant="button"
+            className="journiq-button inline-flex shrink-0 items-center gap-2 bg-accent text-accent-foreground"
+          />
+          <Link
+            href={`/stories/${id}/preview`}
+            className="underline underline-offset-2"
+          >
+            {t("viewPreview")}
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (draft.revision_status !== "draft") {
     return (

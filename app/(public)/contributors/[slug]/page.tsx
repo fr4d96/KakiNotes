@@ -47,7 +47,7 @@ export async function generateMetadata({
  * is to never compute this set anywhere else.
  */
 /**
- * contributor.regions is jsonb since 20260914150100: an array of
+ * contributor.regions is jsonb since 20260914092352: an array of
  * `{name, name_zh_cn}` objects (Json), not the bare string[] it used to be.
  * Narrowed defensively -- a malformed entry renders nothing rather than
  * "[object Object]" or "undefined".

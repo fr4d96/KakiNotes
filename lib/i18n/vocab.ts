@@ -10,8 +10,8 @@ import type { Locale } from "@/i18n/locales";
  * directly. The public RPCs emitted `'region_name', reg.name` -- a bare
  * display string -- so story cards, the story page's place list, the
  * contributor byline's regions row and /costs stayed English. Migration
- * 20260914150000 put `name_zh_cn` on the tables and surfaced it through
- * every public RPC beside its English twin, and 20260914150100 did the same
+ * 20260914092322 put `name_zh_cn` on the tables and surfaced it through
+ * every public RPC beside its English twin, and 20260914092352 did the same
  * for the contributor facts, so the translation now travels WITH the name
  * and that slug overlay is gone.
  *

@@ -3,7 +3,10 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-09-16 (landing hero — the stock-photo slideshow is gone; the plate is now a
+Last updated: 2026-09-20 (a contributor can now keep editing a story that is under review, via
+`reopen_submission_for_editing()` — withdraw + fresh draft in one transaction, never an unfrozen
+submitted revision; see the entry below); earlier, 2026-09-16: landing hero — the stock-photo
+slideshow is gone; the plate is now a
 pointer-reactive "night field" with every published story lit in it as a point; see the entry
 below; earlier the same day: story starters — a quiet "Not sure where to start?" card and a
 `/outline` command on the Story step, with the prompt copy as per-locale data; earlier, 2026-09-15: a CI + release pipeline: `ci.yml` runs `verify` on every PR and push to
@@ -266,7 +269,7 @@ replacement glyph. Now `Array.from(...)[0]`. The component gained its first 12 t
 `AttributionChip` gained 7 and `StoryCard` 2. 987 total, `npm run verify` exits 0.
 
 **2026-09-14 — the vocabulary itself speaks Chinese (phase 2).**
-`20260914150000_vocab_name_zh_cn.sql` and `20260914150100_contributor_facts_regions_zh_cn.sql`,
+`20260914092322_vocab_name_zh_cn.sql` and `20260914092352_contributor_facts_regions_zh_cn.sql`,
 both APPLIED to the linked project, `types/database.ts` regenerated. `lib/i18n/vocab.ts` is
 rewritten and the phase-1 slug overlay (and the whole `vocab` namespace in both message files)
 is deleted.
@@ -8623,3 +8626,45 @@ call sites that hard-code the ground (`app/(public)/page.tsx`,
 
 Checked in the dev server at desktop and 375px: body resolves to
 `rgb(2, 6, 23)` in dark, no console errors. `npm run verify` PASS.
+
+## 2026-09-20 — Editing a story while it's under review
+
+A contributor asking to fix something in a submitted story previously had no way back to editing
+short of waiting for a moderator to reject it. `supabase/migrations/20260920100000_reopen_submission_for_editing.sql`
+adds `reopen_submission_for_editing(p_story_id)`: it composes `withdraw_unstarted_submission()`
+(submitted revision → `withdrawn`, leaves the moderation queue) and `create_next_draft_revision()`
+(copies it into a fresh `draft`) in one transaction, and returns the new draft revision id. App
+side: `reopenSubmissionForEditing()` in `lib/story/mutations.ts`, `reopenForEditingAction()` in
+`app/(contributor)/stories/[id]/preview/actions.ts`, and a `ReopenForEditingButton` surfaced on the
+editor's not-editable screen, the preview page, and My Stories.
+
+**Decision:** withdraw + new draft, not unfreezing the submitted revision. Unfreezing would let a
+moderator review a moving target, which `story_revisions_protect_immutable_content()` exists
+specifically to prevent (docs/content-governance.md, "Editing a story that is under review"). Both
+callees already re-derive the caller and re-check ownership/status, so the new function adds no
+authorization logic of its own (Engineering Rule 2) — see docs/architecture.md "Editing while under
+review (2026-09-20)".
+
+**Migration rename:** pushing it hit the same MCP-vs-`db push` timestamp drift documented under
+"migration-history gap" in docs/architecture.md — `20260914092322_vocab_name_zh_cn` and
+`20260914092352_contributor_facts_regions_zh_cn` were applied live via the MCP under those
+timestamps while the local files were still named `150000`/`150100`; renamed locally to match after
+confirming the remote names.
+
+**Test coverage:** `tests/integration/story-rls.integration.test.ts`, new
+`describe("reopen_submission_for_editing (20260920100000)")` — owner reopen → fresh editable
+draft (old revision `withdrawn`, story stays `draft` pre-publication, `save_revision_draft` works
+on the new revision); reopening a non-submitted story fails `/not currently submitted/i`; another
+account is refused with the withdraw-side ownership error; anon cannot call it at all. `npm run
+test:rls`: **PASS, 123/123** (all pre-existing scenarios plus the 4 new ones), against the real
+linked hosted dev project.
+
+**Open risks:** none identified by the test run above, but the `ReopenForEditingButton` component
+itself was being built in parallel and is not covered here — it needs its own component/E2E
+coverage once it lands. The rename above is the second time this drift has recurred; still worth
+picking one migration path (`db push` or MCP) per project, per the existing note.
+
+**Next:** cover `ReopenForEditingButton` with a Vitest/RTL test once merged, and confirm the
+moderators' `story_submitted` notification is actually marked read by the reopen (the existing
+notification-cascade trigger should already cover it, per the migration's header comment, but it
+is not independently asserted above).

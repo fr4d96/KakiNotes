@@ -18,6 +18,7 @@ import {
   requestEditorialChanges,
   declineEditorialPublication,
   createNextDraftRevision,
+  reopenSubmissionForEditing,
 } from "@/lib/story/mutations";
 import { getErrorMessage } from "@/lib/errors";
 import { firstIssueMessage } from "@/lib/validation/issue-messages";
@@ -263,6 +264,51 @@ export async function startStoryRevisionAction(
     return {
       ok: false,
       error: getErrorMessage(error, "Could not start editing this story."),
+    };
+  }
+}
+
+export type ReopenForEditingResult =
+  { ok: true; revisionId: string } | { ok: false; error: string };
+
+/**
+ * Backs "Edit anyway" on a story that is UNDER REVIEW -- from the editor's
+ * not-editable screen, the preview page, and My Stories. The sibling of
+ * startStoryRevisionAction() above, for the one case that one refuses: the
+ * story already has an in-flight revision, but it is `submitted` and
+ * frozen, not an editable draft.
+ *
+ * reopen_submission_for_editing() (via lib/story/mutations.ts) withdraws the
+ * submitted revision -- it leaves the moderation queue, frozen forever as
+ * `withdrawn` -- and copies it into a brand-new draft, atomically. The
+ * contributor submits again, with fresh consent, when they are done. A
+ * published story stays published throughout (Engineering Rule 11).
+ *
+ * The RPC is the real boundary: it re-derives the caller, refuses anyone
+ * but the owner or assigned editor, refuses a revision that is no longer
+ * `submitted`, and refuses one a moderator has already acted on.
+ */
+export async function reopenForEditingAction(
+  storyId: string,
+): Promise<ReopenForEditingResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "You must be signed in." };
+  }
+  const parsed = z.uuid().safeParse(storyId);
+  if (!parsed.success) {
+    return { ok: false, error: "Invalid story." };
+  }
+
+  try {
+    const revisionId = await reopenSubmissionForEditing(parsed.data);
+    revalidatePath(`/stories/${parsed.data}/preview`);
+    revalidatePath("/my-stories");
+    return { ok: true, revisionId };
+  } catch (error) {
+    return {
+      ok: false,
+      error: getErrorMessage(error, "Could not reopen this story for editing."),
     };
   }
 }

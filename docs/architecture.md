@@ -417,7 +417,10 @@ was named `20260908090000`. The two conventions drift apart whenever both paths 
 was proven identical (md5 of the live `list_my_stories()` body against the local file's: 1890
 bytes, `30387ac25293abc53a0eec4747925e6e`), so the local file was renamed to match the deployed
 version rather than repairing remote history. **Prefer one path or the other for a given project;
-mixing `db push` and MCP `apply_migration` is what creates this.**
+mixing `db push` and MCP `apply_migration` is what creates this.** On 2026-09-20 the same drift
+recurred for `20260914092322_vocab_name_zh_cn` and `20260914092352_contributor_facts_regions_zh_cn`
+(local files were named `150000`/`150100`; renamed to the MCP-applied versions after confirming the
+remote names matched) before `20260920100000` could be pushed.
 
 ## Staff routes (Editorial / Moderation / Admin) — role-gated, still fail closed
 
@@ -809,6 +812,23 @@ their statuses explicitly, so `private` falls outside every one.
 public predicate's independent conditions on its own: `visibility` is `private`, `lifecycle_status`
 is `private`, and there is no `granted` consent row to join. The correct change to a public query
 here is no change.
+
+### Editing while under review (2026-09-20)
+
+`_revision_is_editable()` was never touched for this one — a `submitted` revision stays frozen,
+full stop; `story_revisions_protect_immutable_content()` still needs that to hold for a moderator to
+trust what they're reviewing. What contributors actually wanted when they asked to "edit a
+submitted story" was a way back to a draft without losing their moderation slot on the resubmit, so
+`reopen_submission_for_editing(p_story_id)` composes the two RPCs that already exist for exactly
+that shape of problem: `withdraw_unstarted_submission()` (submitted → `withdrawn`, out of the
+queue) then `create_next_draft_revision()` (copies the withdrawn revision into a fresh `draft`).
+Two functions, one transaction — plpgsql runs the whole body under the caller's transaction, so a
+failure partway through leaves the story exactly as it was rather than withdrawn with nothing to
+show for it. Both callees already re-derive the caller from `auth.uid()` and re-check ownership and
+status themselves (Engineering Rule 2), so `reopen_submission_for_editing()` adds no authorization
+logic of its own — the UI only ever decides whether to _show_ the button; the RPC is what actually
+enforces who may use it. The `ReopenForEditingButton` component surfaces it in three places: the
+editor's not-editable screen for a submitted story, the preview page, and My Stories.
 
 ### Public reads
 
@@ -2509,11 +2529,11 @@ follow it.
 
 **Vocabulary tables.** The closed `regions` / `destinations` /
 `expense_categories` vocabularies carry a nullable `name_zh_cn` column beside
-`name` (20260914150000), and every public RPC emits BOTH names — prefixed
+`name` (20260914092322), and every public RPC emits BOTH names — prefixed
 inside the jsonb payloads (`region_name` + `region_name_zh_cn`,
 `destination_name` + `destination_name_zh_cn`) and plain on expense rows.
 `contributor_public_facts()`'s `regions` is jsonb of `{name, name_zh_cn}`
-objects for the same reason (20260914150100). `lib/i18n/vocab.ts` picks:
+objects for the same reason (20260914092352). `lib/i18n/vocab.ts` picks:
 `vocabName(row, locale)`, `prefixedVocabName(entry, prefix, locale)`, and
 `sortByLocalizedName(rows, locale)` — the last because the readers
 `.order("name")` in SQL, which is English A-Z; zh-CN re-sorts with

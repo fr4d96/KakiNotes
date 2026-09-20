@@ -927,6 +927,15 @@
     "editTitle": "Edit {title}",
     "publishedBody": "\"{title}\" is published. Your changes go to a moderator first — the version people can read now stays up, unchanged, until the new one is approved.",
     "draftBody": "You'll pick up \"{title}\" where you left off, and send it back for review when you're done."
+  "reopenForEditing": {
+    "edit": "Edit anyway",
+    "editTitle": "Edit {title} anyway",
+    "publishedTitle": "Take this update out of review?",
+    "draftTitle": "Take this out of review?",
+    "confirm": "Yes, keep editing",
+    "publishedBody": "\"{title}\" comes out of the review queue so you can keep changing it. Nothing you've written is lost, and you send it for review again when you're done. The version readers see right now stays up, unchanged, the whole time.",
+    "draftBody": "\"{title}\" comes out of the review queue so you can keep changing it. Nothing you've written is lost, and you send it for review again when you're done."
+  },
   },
   "preview": {
     "metaTitle": "Preview",
@@ -1054,7 +1063,9 @@
   "editStory": {
     "notEditableTitle": "Not editable right now",
     "notEditableBody": "This story's current revision is {status} and can't be edited from this page.",
-    "viewPreview": "View preview"
+    "viewPreview": "View preview",
+    "underReviewTitle": "This story is under review",
+    "underReviewBody": "A moderator is looking at it right now. You can still edit it — that takes it out of the queue, and you send it for review again when you're done."
   },
   "pdf": {
     "personalExperienceBy": "Personal experience, not advice — shared by {name}",
