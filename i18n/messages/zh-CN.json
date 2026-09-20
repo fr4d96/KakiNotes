@@ -45,7 +45,6 @@
     "contributor": "投稿人导航",
     "stories": "故事",
     "contributors": "投稿人",
-    "destinations": "目的地",
     "about": "关于",
     "signIn": "登录",
     "shareYourStory": "分享你的故事",
@@ -927,6 +926,7 @@
     "editTitle": "编辑《{title}》",
     "publishedBody": "《{title}》已经发布。你的修改会先交给审核人 — 在新版本通过之前，大家现在读到的版本会保持不变，继续在线。",
     "draftBody": "你会从上次停下的地方继续写《{title}》，完成后再提交审核。"
+  },
   "reopenForEditing": {
     "edit": "仍要编辑",
     "editTitle": "仍要编辑《{title}》",
@@ -935,7 +935,6 @@
     "confirm": "好，继续编辑",
     "publishedBody": "《{title}》会从审核队列中撤回，方便你继续修改。你写的内容不会丢失，改完后再重新提交审核。现在读者看到的版本会一直保持不变，照常在线。",
     "draftBody": "《{title}》会从审核队列中撤回，方便你继续修改。你写的内容不会丢失，改完后再重新提交审核。"
-  },
   },
   "preview": {
     "metaTitle": "预览",

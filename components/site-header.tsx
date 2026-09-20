@@ -15,14 +15,13 @@ import { NotificationBell } from "@/components/notifications/notification-bell";
 import { createClient } from "@/lib/supabase/client";
 import type { AppRole } from "@/lib/auth/staff-guard";
 
-// "Destinations" is a home-page anchor and must match the section id in
-// app/(public)/page.tsx. "Stories" and "Contributors" link to their own
-// real browsing pages rather than sections on the home page. Labels are
-// message keys under `nav`, resolved inside the component.
+// Every item links to a real browsing page, never to a section on the home
+// page -- the old "Destinations" entry was a /#match anchor that did nothing
+// useful from most routes. Labels are message keys under `nav`, resolved
+// inside the component.
 const primaryNav = [
   { href: "/stories", key: "stories" },
   { href: "/contributors", key: "contributors" },
-  { href: "/#match", key: "destinations" },
   { href: "/about", key: "about" },
 ] as const;
 

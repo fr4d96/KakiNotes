@@ -45,7 +45,6 @@
     "contributor": "Contributor",
     "stories": "Stories",
     "contributors": "Contributors",
-    "destinations": "Destinations",
     "about": "About",
     "signIn": "Sign in",
     "shareYourStory": "Share your story",
@@ -927,6 +926,7 @@
     "editTitle": "Edit {title}",
     "publishedBody": "\"{title}\" is published. Your changes go to a moderator first — the version people can read now stays up, unchanged, until the new one is approved.",
     "draftBody": "You'll pick up \"{title}\" where you left off, and send it back for review when you're done."
+  },
   "reopenForEditing": {
     "edit": "Edit anyway",
     "editTitle": "Edit {title} anyway",
@@ -935,7 +935,6 @@
     "confirm": "Yes, keep editing",
     "publishedBody": "\"{title}\" comes out of the review queue so you can keep changing it. Nothing you've written is lost, and you send it for review again when you're done. The version readers see right now stays up, unchanged, the whole time.",
     "draftBody": "\"{title}\" comes out of the review queue so you can keep changing it. Nothing you've written is lost, and you send it for review again when you're done."
-  },
   },
   "preview": {
     "metaTitle": "Preview",

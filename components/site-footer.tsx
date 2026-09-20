@@ -44,10 +44,6 @@ export function SiteFooter() {
             <strong>{t("explore")}</strong>
             <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
               <Link href="/stories">{tNav("stories")}</Link>
-              {/* The landing page's region tiles were folded into the index's
-                  Place filter axis; "Destinations" now opens the match quiz,
-                  which is what still asks the reader about place. */}
-              <Link href="/#match">{tNav("destinations")}</Link>
             </div>
           </div>
           <div>
