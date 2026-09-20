@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.8.0](https://github.com/fr4d96/KakiNotes/compare/v0.7.0...v0.8.0) (2026-09-20)
+
+### What's new for everyone
+
+**Light mode finally looks like the same site as dark mode.** If you use Kakinotes in light mode, the page used to be a warm beige with brown-black text, while dark mode is a deep blue-black with a teal glow. The two didn't match: the dark banner at the top of the home page and the "Share your story" band at the bottom looked pasted in from somewhere else, and the rest of the page came out looking a bit muddy. Light mode now uses the same cool blue-grey family as dark — a soft off-white page, clean white cards, dark blue-black text — so switching between the two feels like the same place in daylight rather than a different website. Text is a touch easier to read too.
+
+**Cards actually look like cards now.** In light mode, the white cards used to sit on an almost-white page with no visible edge, so the stack of featured stories on the home page looked like loose strips instead of a pile. Every card, panel and menu now has a fine outline and a soft shadow underneath it.
+
+**More photo on the featured story.** The big featured story on the home page now gives the photo half the card instead of about a third, so you see more of the picture and less empty space. This applies in both light and dark mode.
+
+**The "where to start reading" answers look clickable.** In light mode the answer boxes in the home-page quiz were flat grey, which looked like disabled buttons. They're now white tiles that lift slightly when you hover over them.
+
+
+### Features
+
+* **theme:** light mode re-tuned to slate neutrals with real depth ([a8ba2f0](https://github.com/fr4d96/KakiNotes/commit/a8ba2f053c8e5fcd7dd1b47ffe114d2ce6b86459))
+
 ## [0.7.0](https://github.com/fr4d96/KakiNotes/compare/v0.6.0...v0.7.0) (2026-09-20)
 
 ### What's new for contributors
