@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/fr4d96/KakiNotes/compare/v0.8.0...v0.9.0) (2026-09-20)
+
+
+### Features
+
+* **photos:** tap any story photo to view it full-screen, with next/previous ([be8d4e0](https://github.com/fr4d96/KakiNotes/commit/be8d4e0ab7a0a5063153f3e0c45d0c31a8a17009))
+
 ## [0.8.0](https://github.com/fr4d96/KakiNotes/compare/v0.7.0...v0.8.0) (2026-09-20)
 
 ### What's new for everyone
