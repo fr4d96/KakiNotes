@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/fr4d96/KakiNotes/compare/v0.7.0...v0.8.0) (2026-09-20)
+
+
+### Features
+
+* **theme:** light mode re-tuned to slate neutrals with real depth ([a8ba2f0](https://github.com/fr4d96/KakiNotes/commit/a8ba2f053c8e5fcd7dd1b47ffe114d2ce6b86459))
+
 ## [0.7.0](https://github.com/fr4d96/KakiNotes/compare/v0.6.0...v0.7.0) (2026-09-20)
 
 ### What's new for contributors
