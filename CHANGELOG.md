@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/fr4d96/KakiNotes/compare/v0.6.0...v0.7.0) (2026-09-20)
+
+
+### Features
+
+* **stories:** contributors can keep editing a story that is under review ([1550499](https://github.com/fr4d96/KakiNotes/commit/15504996888dfd39e951a255c15dfc0d7606b301))
+
+
+### Bug Fixes
+
+* **nav:** remove the Destinations link that went nowhere ([834f56d](https://github.com/fr4d96/KakiNotes/commit/834f56d80941290365ff1a656ea8a3bc202b15c4))
+
 ## [0.6.0](https://github.com/fr4d96/KakiNotes/compare/v0.5.0...v0.6.0) (2026-09-16)
 
 ### What's new for everyone
