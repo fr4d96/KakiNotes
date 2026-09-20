@@ -622,6 +622,53 @@ body {
 }
 
 /*
+ * The photo viewer (components/ui/photo-lightbox.tsx). Same open/close
+ * choreography as .journiq-modal but opacity only: it fills the viewport,
+ * so the modal's slide-and-scale would show the page peeking past its
+ * edges for the first frames. Controls are fixed-contrast on a black
+ * ground in both themes -- the viewer is deliberately theme-independent.
+ */
+.journiq-lightbox {
+  opacity: 0;
+  transition:
+    opacity 0.2s ease,
+    overlay 0.2s ease allow-discrete,
+    display 0.2s ease allow-discrete;
+}
+.journiq-lightbox[open] {
+  opacity: 1;
+}
+@starting-style {
+  .journiq-lightbox[open] {
+    opacity: 0;
+  }
+}
+.journiq-lightbox-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  color: #fff;
+  background: rgb(255 255 255 / 0.12);
+  transition: background-color 0.15s ease;
+}
+.journiq-lightbox-control:hover {
+  background: rgb(255 255 255 / 0.24);
+}
+.journiq-lightbox-control:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .journiq-lightbox,
+  .journiq-lightbox-control {
+    transition: none;
+  }
+}
+
+/*
  * The closing contribute band. It used to be a hotlinked Unsplash ridgeline
  * under a scrim -- the last stock photograph on the page once the hero's
  * slideshow went. It is now the same night field the page opens on

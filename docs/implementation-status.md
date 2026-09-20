@@ -3,8 +3,10 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-09-20 (light mode's neutrals retuned from warm to the same slate hue family as
-dark — see the entry at the end of this file); earlier the same day: a contributor can now keep editing a story that is under review, via
+Last updated: 2026-09-20 (a site-wide photo viewer: tapping any story photo opens it full-screen,
+with next/previous, arrow keys and swipe when there is more than one — see the entry at the end of
+this file); earlier the same day: light mode's neutrals retuned from warm to the same slate hue
+family as dark; earlier the same day: a contributor can now keep editing a story that is under review, via
 `reopen_submission_for_editing()` — withdraw + fresh draft in one transaction, never an unfrozen
 submitted revision; see the entry below); earlier, 2026-09-16: landing hero — the stock-photo
 slideshow is gone; the plate is now a
@@ -8700,3 +8702,49 @@ light (`bg-surface shadow-sm`, dark keeps `bg-surface-muted` via `dark:`) instea
 that read as disabled buttons.
 
 **Next:** none required.
+
+## 2026-09-20 — Photo viewer: tap any story photo to see it large
+
+**What:** `components/ui/photo-lightbox.tsx` — `PhotoLightboxProvider` (mounted once in
+`app/layout.tsx`, inside `ToastProvider`) owns a single native `<dialog>` photo viewer;
+`LightboxPhoto` wraps an `<img>` in a button that opens it. Wired into every place a story photo
+renders: inline body embeds (`content-block-renderer.tsx`, so public, contributor-preview and
+moderation pages all get it), the public gallery (`story-gallery.tsx`) and the preview gallery
+(`preview-gallery.tsx`). With more than one photo on the page the viewer shows "Photo n of N",
+prev/next buttons, ← / → keys and a horizontal swipe (48px threshold), wrapping at both ends.
+Escape, the close button, or a click on the black ground closes it. Copy under
+`common.photoLightbox` in both locales. Tests: `components/ui/photo-lightbox.test.tsx` (8 cases).
+
+**Why:** photos are half the point of a story, and the reading column caps them at 32rem; there
+was no way to look closer.
+
+**Decisions:**
+
+- Photos register themselves with the provider and the viewer sorts them by DOM position
+  (`compareDocumentPosition`) at open time, so body photos come before gallery photos without
+  passing arrays through react-markdown. One provider for the whole site rather than one per page.
+- Native `<dialog>` again (same as `confirm-dialog.tsx`), no lightbox dependency: `showModal()`
+  gives focus trapping and Escape for free. `.journiq-lightbox` in `globals.css` is the
+  `.journiq-modal` choreography minus the scale, since the viewer fills the viewport.
+- Solid black ground, not translucent: `bg-black/95` visibly let the page bleed through in the
+  in-app browser.
+- The viewer re-uses the URL the page's own `<img>` already loaded (public bucket, or the same
+  short-lived signed URL on preview pages); it never mints a new one.
+- Story cards, the featured slide and the landing index are links to the story, so their cover
+  images still navigate rather than open the viewer. The editor's upload-manager tiles were left
+  alone too — that tile's click already means "edit this photo's details".
+- The image sizing that used to sit on the `<img>` (stored embed width) now sits on the wrapper
+  button; with no provider mounted, `LightboxPhoto` renders the same sized `<span>` so
+  component tests and layout behave identically either way.
+
+**Risks:** on a preview page, a signed URL that has expired between the thumbnail loading and
+the viewer opening would show a broken image in the viewer (the thumbnail itself is served from
+browser cache). Not seen in practice; the mint window is longer than a reading session of one
+page.
+
+**Verified:** in the in-app browser at 375px and 1280px on a public story with 12 gallery
+photos — open at the tapped photo, counter, next/prev (real tap and keyboard), swipe, ground
+click, Escape, scroll lock and release. Note for anyone verifying in this pane: after a hot
+reload the story page sometimes never finishes hydrating on a direct load (same on a clean
+tree — a dev-server quirk, not this change); restarting the dev server or waiting ~15s for the
+hosted DB fixes it.

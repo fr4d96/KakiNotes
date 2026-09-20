@@ -1,4 +1,5 @@
 import { getPublicImageUrl } from "@/lib/story/public-image-url";
+import { LightboxPhoto } from "@/components/ui/photo-lightbox";
 
 type GalleryImage = {
   media_id: string;
@@ -34,14 +35,21 @@ export function StoryGallery({ images }: { images: GalleryImage[] }) {
             key={image.media_id}
             className="overflow-hidden rounded-lg border border-border-subtle bg-surface-muted"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element -- public bucket URLs are content-addressed, not a Next.js image-optimizable source list */}
-            <img
-              src={url}
+            <LightboxPhoto
+              url={url}
               alt={image.decorative ? "" : (image.alt_text ?? "")}
-              loading="lazy"
-              decoding="async"
-              className="h-full w-full object-cover"
-            />
+              caption={image.caption}
+              className="block w-full"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- public bucket URLs are content-addressed, not a Next.js image-optimizable source list */}
+              <img
+                src={url}
+                alt={image.decorative ? "" : (image.alt_text ?? "")}
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover"
+              />
+            </LightboxPhoto>
             {image.caption ? (
               <figcaption className="p-2 text-xs text-foreground/60">
                 {image.caption}

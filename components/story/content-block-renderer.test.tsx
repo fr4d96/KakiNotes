@@ -73,8 +73,10 @@ describe("ContentBlockRenderer", () => {
       />,
     );
 
+    // The stored width sizes the photo's wrapper (the LightboxPhoto trigger,
+    // which is the element that occupies the layout slot); the <img> fills it.
     const img = screen.getByRole("img");
-    expect(img).toHaveStyle({ width: "480px", maxWidth: "100%" });
+    expect(img.parentElement).toHaveStyle({ width: "480px", maxWidth: "100%" });
   });
 
   it("renders nothing for an embed whose mediaId isn't in the media map (e.g. detached after save)", () => {

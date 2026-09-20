@@ -38,7 +38,14 @@
     "confirm": "确认",
     "cancel": "取消",
     "working": "处理中…",
-    "requiredSuffix": "（必填）"
+    "requiredSuffix": "（必填）",
+    "photoLightbox": {
+      "open": "查看大图",
+      "close": "关闭图片查看器",
+      "previous": "上一张",
+      "next": "下一张",
+      "counter": "第 {current} 张，共 {total} 张"
+    }
   },
   "nav": {
     "primary": "主导航",

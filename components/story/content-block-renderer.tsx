@@ -5,6 +5,7 @@ import type { StoryContentBlock } from "@/lib/validation/story";
 import { storyContentText } from "@/lib/validation/story";
 import { remarkMediaEmbed } from "@/lib/story/remark-media-embed";
 import { Spinner } from "@/components/ui/spinner";
+import { LightboxPhoto } from "@/components/ui/photo-lightbox";
 
 /**
  * Renders the story's single Markdown block as real React elements — never
@@ -69,16 +70,32 @@ function MediaEmbed({
   // that exact size, capped to the container so it's never wider than the
   // reading column on a narrow screen; no stored width falls back to the
   // original "fill the column" behavior.
+  //
+  // The sizing lives on the LightboxPhoto button (the element that now
+  // occupies the layout slot); the <img> just fills it. Decorative images
+  // still open the viewer -- they're real photos, just ones the author
+  // chose not to describe.
+  const alt = resolved.decorative ? "" : (resolved.altText ?? "");
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- resolved.url is either a short-lived signed URL (draft preview) or a public-bucket URL (published); neither is a stable remote source worth Next/Image's remote-pattern config
-    <img
-      src={resolved.url}
-      loading="lazy"
-      decoding="async"
-      alt={resolved.decorative ? "" : (resolved.altText ?? "")}
+    <LightboxPhoto
+      url={resolved.url}
+      alt={alt}
       style={dimensionStyle}
-      className={frameClassName}
-    />
+      className={width ? "my-4 inline-block max-w-full" : "my-4 block w-full"}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element -- resolved.url is either a short-lived signed URL (draft preview) or a public-bucket URL (published); neither is a stable remote source worth Next/Image's remote-pattern config */}
+      <img
+        src={resolved.url}
+        loading="lazy"
+        decoding="async"
+        alt={alt}
+        className={
+          width
+            ? "h-auto w-full rounded-md border border-border-subtle object-contain"
+            : "block max-h-[32rem] w-full rounded-md border border-border-subtle object-contain"
+        }
+      />
+    </LightboxPhoto>
   );
 }
 

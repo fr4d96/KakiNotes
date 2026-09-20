@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { PreviewableMediaItem } from "@/lib/story/contributor-queries";
 import { getPreviewUrl } from "@/lib/story/preview-url-client";
 import { Spinner } from "@/components/ui/spinner";
+import { LightboxPhoto } from "@/components/ui/photo-lightbox";
 
 /**
  * Mints a short-lived signed URL per image, client-side, only after the
@@ -61,12 +62,19 @@ export function PreviewGallery({ media }: { media: PreviewableMediaItem[] }) {
         <li key={item.mediaId} className="space-y-1">
           <div className="aspect-square overflow-hidden rounded-md border border-border-subtle bg-surface-muted">
             {urls[item.mediaId] ? (
-              // eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL
-              <img
-                src={urls[item.mediaId]}
+              <LightboxPhoto
+                url={urls[item.mediaId]}
                 alt={item.altText ?? ""}
-                className="h-full w-full object-cover"
-              />
+                caption={item.caption}
+                className="block h-full w-full"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL */}
+                <img
+                  src={urls[item.mediaId]}
+                  alt={item.altText ?? ""}
+                  className="h-full w-full object-cover"
+                />
+              </LightboxPhoto>
             ) : errors[item.mediaId] ? (
               <div className="flex h-full w-full items-center justify-center p-2 text-center text-xs text-muted-foreground">
                 {errors[item.mediaId]}

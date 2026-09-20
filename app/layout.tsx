@@ -3,6 +3,7 @@ import { Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ToastProvider } from "@/components/ui/toast";
+import { PhotoLightboxProvider } from "@/components/ui/photo-lightbox";
 import "./globals.css";
 
 // The app's default (sans) typeface is Avenir Next, declared globally via
@@ -91,7 +92,11 @@ export default async function RootLayout({
             messages and time zone from i18n/request.ts, and hands them to
             every Client Component that calls useTranslations(). */}
         <NextIntlClientProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            {/* One photo viewer for the whole site: any LightboxPhoto on the
+                current page opens it, and it pages through all of them. */}
+            <PhotoLightboxProvider>{children}</PhotoLightboxProvider>
+          </ToastProvider>
         </NextIntlClientProvider>
       </body>
     </html>

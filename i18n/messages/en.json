@@ -38,7 +38,14 @@
     "confirm": "Confirm",
     "cancel": "Cancel",
     "working": "Working…",
-    "requiredSuffix": " required"
+    "requiredSuffix": " required",
+    "photoLightbox": {
+      "open": "View photo larger",
+      "close": "Close photo viewer",
+      "previous": "Previous photo",
+      "next": "Next photo",
+      "counter": "Photo {current} of {total}"
+    }
   },
   "nav": {
     "primary": "Primary",
