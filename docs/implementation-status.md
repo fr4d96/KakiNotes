@@ -3,7 +3,8 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-09-20 (a contributor can now keep editing a story that is under review, via
+Last updated: 2026-09-20 (light mode's neutrals retuned from warm to the same slate hue family as
+dark — see the entry at the end of this file); earlier the same day: a contributor can now keep editing a story that is under review, via
 `reopen_submission_for_editing()` — withdraw + fresh draft in one transaction, never an unfrozen
 submitted revision; see the entry below); earlier, 2026-09-16: landing hero — the stock-photo
 slideshow is gone; the plate is now a
@@ -8668,3 +8669,34 @@ picking one migration path (`db push` or MCP) per project, per the existing note
 moderators' `story_submitted` notification is actually marked read by the reopen (the existing
 notification-cascade trigger should already cover it, per the migration's header comment, but it
 is not independently asserted above).
+
+## 2026-09-20 — Light mode re-tuned to slate neutrals
+
+**What:** `app/globals.css` light tokens moved from warm neutrals to the same slate hue family as
+dark: background/header-solid `#f1ede8`→`#eef2f7`, foreground `#1b1612`→`#0b1222` (dark's own
+`--surface`), surface `#fffefc`→`#ffffff`, surface-muted `#e8e2db`→`#e3e8ef`, border-subtle and
+shadow ink retinted from warm rgba(27,22,18,…) to slate rgba(11,18,34,…), muted-foreground
+`#6a635c`→`#56617a`, tag-background alpha 0.11→0.1. Accent, destructive, and both chart/expense
+ramps unchanged. DESIGN.md's palette section, contrast numbers, and shadow-ink rules updated to
+match.
+
+**Why:** warm neutrals fought the cool dark palette and the always-dark bands (`.nf-dark-band`:
+landing hero, contribute band), which looked pasted in from another site; beige-on-tan also read
+muddy next to dark.
+
+**Decisions:** accent stays `#006f68` (already the deepened teal, unaffected); surfaces are plain
+white now, not a warm near-white, because the tinted ground is what prevents glare, not the card;
+the elevation-in-shadow rule for light is unchanged, only the ink hue moved.
+
+**Risks:** staff tools lean on many `dark:` utilities — token-driven so they flip automatically,
+but not every staff screen was eyeballed after the retint.
+
+**Follow-up (same day):** the retint alone still read flat next to dark — the problem was depth,
+not hue. Light elevation tokens now carry a 1px slate ring plus stronger ambient shadow (so white
+cards on the near-white ground have an edge and the featured deck reads as a stack), the ground
+dropped one shade to `#eef2f7`, the featured card gives the photo half the width instead of 40%
+(`sm:grid-cols-2`, both themes), and the destination-quiz answer tiles are white raised tiles in
+light (`bg-surface shadow-sm`, dark keeps `bg-surface-muted` via `dark:`) instead of grey recesses
+that read as disabled buttons.
+
+**Next:** none required.

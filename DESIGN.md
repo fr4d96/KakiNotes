@@ -18,23 +18,24 @@ colors:
   tag-foreground: "#8fe6da"
   muted-foreground: "#98a6a5"
   destructive: "#ff6b6b"
-  light-background: "#f1ede8"
-  light-foreground: "#1b1612"
-  light-surface: "#fffefc"
-  light-surface-muted: "#e8e2db"
-  light-border-subtle: "rgba(27, 22, 18, 0.22)"
+  light-background: "#eef2f7"
+  light-foreground: "#0b1222"
+  light-surface: "#ffffff"
+  light-surface-muted: "#e3e8ef"
+  light-border-subtle: "rgba(11, 18, 34, 0.14)"
   light-accent: "#006f68"
   light-accent-foreground: "#ffffff"
-  light-tag-background: "rgba(0, 111, 104, 0.11)"
+  light-tag-background: "rgba(0, 111, 104, 0.1)"
   light-tag-foreground: "#005d57"
-  light-forest: "#17110d"
-  light-muted-foreground: "#6a635c"
+  light-forest: "#0b1222"
+  light-muted-foreground: "#56617a"
   light-destructive: "#c0392b"
-  # Shadow ink. Light uses the warm foreground at low alpha, never neutral
-  # black: a black shadow on the warm ground reads as a cold gray smudge.
-  # Dark uses neutral black -- there is no warm ground to tint against, and
-  # shadow does almost no work there anyway. See Elevation & Depth.
-  shadow-ink-light: "rgba(27, 22, 18, 0.04-0.13)"
+  # Shadow ink. Light uses the same slate-tinted ink as the page ink, at low
+  # alpha, never neutral black: a black shadow on the cool ground reads as a
+  # flat gray smudge. Dark uses neutral black -- there is no tinted ground to
+  # cast against there, and shadow does almost no work in dark anyway. See
+  # Elevation & Depth.
+  shadow-ink-light: "rgba(11, 18, 34, 0.06-0.18)"
   shadow-ink-dark: "rgba(0, 0, 0, 0.3-0.55)"
 typography:
   display:
@@ -110,14 +111,17 @@ still uses it.
 
 ## Colors
 
-A near-black ground and a cool off-white ink in the signature dark rendition; a **warm** off-white
-ground and warm ink in its light counterpart — the same archive seen in daylight rather than in a
-darkened room, not a different world. Exactly one saturated accent in both. Values below are written
-`dark / light`.
+A near-black ground and a cool off-white ink in the signature dark rendition; a **cool**,
+slate-tinted off-white ground and slate ink in its light counterpart — the same archive seen in
+daylight rather than in a darkened room, not a different world. Both renditions share one hue
+family; the only warm hues anywhere in the app are the expense-donut identities. Exactly one
+saturated accent in both. Values below are written `dark / light`.
 
-Warmth lives ONLY in the neutrals. The accent stays cool teal in both renditions, so light mode is a
-warm ground against a cool signal — not the warm-ground-plus-warm-primary (cream + brown) cliché, and
-not a return to the retired Field Journal paper/terracotta world.
+An earlier light rendition (2026-09, retired 2026-09-20) used warm neutrals — beige ground, warm
+ink, tan recesses — against this cool dark palette. It clashed with the always-dark bands
+(`.nf-dark-band`, the always-dark hero and contribute band) and read muddy, so it was retired in
+favour of the same slate hue family dark already uses. The accent stays cool teal in both
+renditions, unaffected by this change.
 
 ### Primary
 
@@ -125,28 +129,33 @@ not a return to the retired Field Journal paper/terracotta world.
   the active headline word, active filter chips, the live slide index, focus rings (`--ring`),
   progress fills. This is the one token that cannot simply invert: `#35d0c4` reads at ~10:1 on the
   near-black ground but only ~1.9:1 on a near-white one, so light mode uses a deepened rendition of
-  the same hue (187°), which clears 4.5:1 as text on the page ground, on raised surfaces, and on
-  `--surface-muted` (its tightest pairing at 4.53:1), as well as under white text as a fill
+  the same hue (187°), which clears 5.5:1 on the page ground, 6.05:1 on raised (white) surfaces,
+  and 4.9:1 on `--surface-muted` (its tightest pairing), as well as under white text as a fill
   (`--accent-foreground` is `#020617` dark / `#ffffff` light).
 
 ### Neutral
 
-- **Void** (`#020617` dark / `#f1ede8` light): page ground. Near-black rather than pure black; the
-  light counterpart is a warm off-white (~L 0.97 OKLCH at hue 78), never stark `#fff` — a pure-white
-  ground under near-black ink glared and read clinical, which is what this rendition replaced.
-- **Ink** (`#f4f6f5` dark / `#1b1612` light): body text. 16.2:1 on its own ground.
-- **Surface** (`#0b1222` dark / `#fffefc` light): raised surfaces — cards, panels, popovers. The
-  light value is a warm near-white one step above the ground, never `#ffffff`.
-- **Surface Muted** (`#0f172a` dark / `#e8e2db` light): image placeholders, muted fills, inset
+- **Void** (`#020617` dark / `#eef2f7` light): page ground. Near-black rather than pure black; the
+  light counterpart is a cool, slate-tinted off-white (one step below Tailwind's slate-100, the
+  same hue family as dark), never stark `#fff`: a pure-white ground under near-black ink glares
+  and reads clinical.
+- **Ink** (`#f4f6f5` dark / `#0b1222` light): body text. Light's ink is literally dark's own
+  `--surface` value. 17.2:1 on its own ground.
+- **Surface** (`#0b1222` dark / `#ffffff` light): raised surfaces — cards, panels, popovers. Light
+  is now plain white; the tinted ground, not the card, is what keeps the page from glaring.
+- **Surface Muted** (`#0f172a` dark / `#e3e8ef` light): image placeholders, muted fills, inset
   wells.
-- **Muted Ink** (`#98a6a5` dark / `#6a635c` light): secondary and supporting copy. Both clear
-  4.5:1 on their own ground — never dim body text with an opacity below ~60% instead.
-- **Fog** (`rgba(226, 232, 240, 0.14)` dark / `rgba(27, 22, 18, 0.22)` light): the only border
+- **Muted Ink** (`#98a6a5` dark / `#56617a` light): secondary and supporting copy. Light's muted
+  ink clears 5.7:1 on the ground, 6.2:1 on white, and 5.05:1 on `--surface-muted` — never dim body
+  text with an opacity below ~60% instead.
+- **Fog** (`rgba(226, 232, 240, 0.14)` dark / `rgba(11, 18, 34, 0.14)` light): the only border
   colour in the system — the ink at low opacity, never a gray.
 - **Destructive** (`#ff6b6b` dark / `#c0392b` light): errors and destructive actions only.
-- **Shadow ink** (`rgba(27, 22, 18, 0.13)` soft / `rgba(27, 22, 18, 0.55)` deep): shadows are the
-  warm foreground at low alpha, never neutral black — a black shadow on the warm ground reads as a
-  cold gray smudge. Same geometry and alpha as before, only the hue is pulled onto the palette.
+- **Shadow ink** (`rgba(0, 0, 0, 0.3-0.55)` dark / `rgba(11, 18, 34, 0.06-0.18)` light): light
+  shadows are the theme's own slate ink at low alpha, never neutral black — a black shadow on the
+  cool ground reads as a flat gray smudge. Same geometry and alpha as before, only the hue now
+  matches the slate-tinted ink instead of the retired warm one; dark keeps neutral black, since
+  there is no tinted ground there to smudge against.
 
 ### Staff chart ramp
 
@@ -268,10 +277,13 @@ site:
 | `--elevation-4` | `shadow-lg` / `shadow-xl`  | card hover, primary-button hover                 |
 | `--elevation-5` | `shadow-2xl`               | the story-card stack, the destination-quiz panel |
 
-Light renders each as two layers — a tight contact shadow plus a wide ambient one — in **warm ink**
-(`rgba(27, 22, 18, …)` at 0.04–0.13), never neutral black, which reads as a cold grey smudge on the
-warm ground. Dark renders the same geometry in neutral black at low alpha, near-invisible by
-design: it exists only to stop a raised surface fusing with the ground at its edge.
+Light renders each as three layers — a 1px ring at 0.06 (the edge: a white card on a near-white
+ground has no fill contrast, and without the ring the featured deck's stacked cards read as loose
+strips rather than a stack), a tight contact shadow, and a wide ambient one — in the theme's own
+**slate ink** (`rgba(11, 18, 34, …)` at 0.06–0.18), never neutral black, which reads as a flat
+grey smudge on the cool ground. Dark renders the same geometry in neutral black at low alpha,
+near-invisible by design: it exists only to stop a raised surface fusing with the ground at its
+edge.
 
 `@theme inline` (not plain `@theme`) is required — it emits `var(--elevation-N)` into the utility
 instead of snapshotting the value at build time, so the shadow re-resolves when `data-theme` flips.
@@ -289,8 +301,8 @@ lighter inputs — elevation upside-down.)
 wrong in the other — which is how `0 28px 78px rgba(27,22,18,0.55)` on the story-card stack and
 `0 22px 70px rgba(0,0,0,.4)` on the quiz panel both became grey smudges in light mode.
 
-**The Warm-Ink Rule.** If a shadow ever must be written literally, tint it with the palette's warm
-foreground in light. Never neutral black.
+**The Ink-Tinted Shadow Rule.** If a shadow ever must be written literally, tint it with the
+palette's own foreground ink in light (now slate, `rgba(11, 18, 34, …)`). Never neutral black.
 
 **The One Dark Band Rule.** The light rendition gets exactly ONE full-width dark band: the
 `.journiq-share` contribute CTA. Everything else that used to be dark is either an inset plate (the

@@ -253,7 +253,7 @@ export function DestinationQuiz() {
                 type="button"
                 data-testid="quiz-answer"
                 onClick={() => choose(index)}
-                className="min-h-[72px] rounded-xl border border-border-subtle bg-surface-muted p-4 text-left font-medium hover:border-accent hover:bg-surface"
+                className="min-h-[72px] rounded-xl border border-border-subtle bg-surface p-4 text-left font-medium shadow-sm transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:border-accent hover:shadow-md dark:bg-surface-muted dark:shadow-none dark:hover:bg-surface"
               >
                 {t(`answers.${answer.labelKey}`)}
               </button>

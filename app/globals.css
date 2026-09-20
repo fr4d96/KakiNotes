@@ -27,13 +27,21 @@
  *
  * Both themes speak the same language: dark is the signature rendition,
  * light is its counterpart -- the same archive seen in daylight rather than
- * a darkened room. The light ground is a warm off-white (#f1ede8) and raised
- * surfaces are a warm near-white (#fffefc), never stark #ffffff: a pure-white
- * ground under a near-black ink glared and read clinical, which is what this
- * rendition was rewritten to fix. Warmth lives ONLY in the neutrals -- the
- * accent stays cool teal, so the pairing is a warm ground against a cool
- * signal, not the warm-on-warm (cream + brown) cliché, and not a return to
- * the retired Field Journal paper/terracotta world.
+ * a darkened room. That means the SAME hue family, not a different one: the
+ * light neutrals are slate-tinted like dark's (ground #eef2f7, a cool
+ * off-white a touch below slate-100; ink #0b1222, which is dark's own
+ * --surface; recess #e3e8ef ~ slate-200; borders and shadows cast in the
+ * same slate ink at low alpha). Raised surfaces are plain #ffffff because
+ * the tinted ground, not the card, is what keeps the page from glaring.
+ *
+ * An earlier light rendition (2026-09, retired 2026-09-20) used WARM
+ * neutrals -- beige #f1ede8 ground, brown-black #1b1612 ink, tan #e8e2db
+ * recesses -- against this cool palette. It failed for two reasons that
+ * matter here: the always-dark bands (.nf-dark-band: the landing hero and
+ * the contribute band stay slate-950 in both themes) looked pasted in from
+ * another site, and beige-on-tan-on-beige had no crispness, so the whole
+ * page read as muddy next to dark. Do not reintroduce warm neutrals; the
+ * only warm hues in the app are the expense-donut identities.
  *
  * WHERE DEPTH COMES FROM -- the two renditions do not agree here, and an
  * earlier version of this file wrongly assumed they did.
@@ -59,10 +67,10 @@
  * The accent is the one token that cannot simply invert -- cyan #35d0c4
  * reads at ~10:1 on the near-black ground but only ~1.9:1 on a near-white
  * one, so light mode uses a deepened rendition of the same hue (#006f68,
- * hue 187 preserved), which clears 4.5:1 as text on the page ground (5.2:1),
- * on raised surfaces (6.0:1), AND on --surface-muted (its tightest pairing,
- * 4.70:1), as well as under white text as a fill (6.05:1). It was #00756e
- * until --surface-muted deepened above, which pulled that value to 4.33:1.
+ * hue 187 preserved), which clears 4.5:1 as text on the page ground (5.4:1),
+ * on raised surfaces (6.05:1), AND on --surface-muted (its tightest pairing,
+ * 4.9:1), as well as under white text as a fill (6.05:1). Muted ink #56617a
+ * clears 5.0:1 on every one of those grounds too.
  *
  * Theme selection: `data-theme="light"|"dark"` on <html>, set by a blocking
  * inline script in app/layout.tsx before paint (reads localStorage, falls
@@ -76,24 +84,24 @@
  */
 :root {
   color-scheme: light;
-  --background: #f1ede8;
-  --foreground: #1b1612;
-  --surface: #fffefc;
-  --surface-muted: #e8e2db;
-  --border-subtle: rgba(27, 22, 18, 0.22);
+  --background: #eef2f7;
+  --foreground: #0b1222;
+  --surface: #ffffff;
+  --surface-muted: #e3e8ef;
+  --border-subtle: rgba(11, 18, 34, 0.14);
   --accent: #006f68;
   --accent-foreground: #ffffff;
-  --tag-background: rgba(0, 111, 104, 0.11);
+  --tag-background: rgba(0, 111, 104, 0.1);
   --tag-foreground: #005d57;
   --fern: #006f68;
-  --header-solid: #f1ede8;
+  --header-solid: #eef2f7;
   /* shadcn/ui + Plate registry component tokens -- deliberately mapped onto
      the palette above rather than shadcn's default gray/blue scale, so
      components pulled from the Plate registry (components/story/editor/*,
      components/ui/*) match this site's look instead of the generic shadcn
      demo look. */
   --muted: var(--surface-muted);
-  --muted-foreground: #6a635c;
+  --muted-foreground: #56617a;
   --popover: var(--surface);
   --popover-foreground: var(--foreground);
   --border: var(--border-subtle);
@@ -111,7 +119,7 @@
      carries the MOST contrast against its own ground: darkest in light,
      brightest in dark. Validated (single hue, monotone lightness, adjacent
      step gaps, near-surface end >= 2:1) against this rendition's --surface
-     (#fffefc light / #0b1222 dark). Not a second accent: it is one hue,
+     (#ffffff light / #0b1222 dark). Not a second accent: it is one hue,
      and it never appears on a public route. */
   --chart-1: #63bcb2;
   --chart-2: #17968b;
@@ -139,22 +147,30 @@
   --expense-6: #a83250;
   /* Elevation. Light mode cannot express depth with fills -- see the note at
      the top of this file -- so it carries the whole hierarchy in these
-     shadows: warm ink (never neutral black, which reads as a cold smudge on
-     this ground), low alpha, two layers each (a tight contact shadow plus a
-     wide ambient one) so a raised surface reads as lifted rather than
+     shadows: slate ink (#0b1222, the same hue as every other neutral here,
+     so a shadow never looks like a grey smudge from a different palette),
+     low alpha, three layers each: a 1px ring (the EDGE -- on a
+     near-white ground a white card has no fill contrast to speak of, and
+     without the ring the featured deck's stacked cards read as loose
+     strips rather than a stack), a tight contact shadow, and a wide
+     ambient one, so a raised surface reads as lifted rather than
      airbrushed. These feed Tailwind's own shadow-sm/md/lg/xl/2xl scale via
      the @theme inline block, so every `shadow-*` utility in the app is
      theme-aware without touching its call site. */
   --elevation-1:
-    0 1px 2px rgba(27, 22, 18, 0.05), 0 1px 3px rgba(27, 22, 18, 0.04);
+    0 0 0 1px rgba(11, 18, 34, 0.06), 0 1px 2px rgba(11, 18, 34, 0.06);
   --elevation-2:
-    0 1px 2px rgba(27, 22, 18, 0.05), 0 4px 10px rgba(27, 22, 18, 0.07);
+    0 0 0 1px rgba(11, 18, 34, 0.06), 0 1px 2px rgba(11, 18, 34, 0.06),
+    0 4px 12px rgba(11, 18, 34, 0.08);
   --elevation-3:
-    0 2px 4px rgba(27, 22, 18, 0.05), 0 10px 24px rgba(27, 22, 18, 0.09);
+    0 0 0 1px rgba(11, 18, 34, 0.06), 0 2px 4px rgba(11, 18, 34, 0.06),
+    0 12px 28px rgba(11, 18, 34, 0.1);
   --elevation-4:
-    0 4px 8px rgba(27, 22, 18, 0.05), 0 20px 44px rgba(27, 22, 18, 0.11);
+    0 0 0 1px rgba(11, 18, 34, 0.06), 0 4px 8px rgba(11, 18, 34, 0.06),
+    0 24px 48px rgba(11, 18, 34, 0.14);
   --elevation-5:
-    0 8px 16px rgba(27, 22, 18, 0.06), 0 32px 64px rgba(27, 22, 18, 0.13);
+    0 0 0 1px rgba(11, 18, 34, 0.06), 0 8px 16px rgba(11, 18, 34, 0.08),
+    0 40px 80px rgba(11, 18, 34, 0.18);
   --radius: 0.5rem;
 }
 
@@ -318,19 +334,19 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --background: #f1ede8;
-  --foreground: #1b1612;
-  --surface: #fffefc;
-  --surface-muted: #e8e2db;
-  --border-subtle: rgba(27, 22, 18, 0.22);
+  --background: #eef2f7;
+  --foreground: #0b1222;
+  --surface: #ffffff;
+  --surface-muted: #e3e8ef;
+  --border-subtle: rgba(11, 18, 34, 0.14);
   --accent: #006f68;
   --accent-foreground: #ffffff;
-  --tag-background: rgba(0, 111, 104, 0.11);
+  --tag-background: rgba(0, 111, 104, 0.1);
   --tag-foreground: #005d57;
   --fern: #006f68;
-  --header-solid: #f1ede8;
+  --header-solid: #eef2f7;
   --muted: var(--surface-muted);
-  --muted-foreground: #6a635c;
+  --muted-foreground: #56617a;
   --popover: var(--surface);
   --popover-foreground: var(--foreground);
   --border: var(--border-subtle);
@@ -369,22 +385,30 @@
   --expense-6: #a83250;
   /* Elevation. Light mode cannot express depth with fills -- see the note at
      the top of this file -- so it carries the whole hierarchy in these
-     shadows: warm ink (never neutral black, which reads as a cold smudge on
-     this ground), low alpha, two layers each (a tight contact shadow plus a
-     wide ambient one) so a raised surface reads as lifted rather than
+     shadows: slate ink (#0b1222, the same hue as every other neutral here,
+     so a shadow never looks like a grey smudge from a different palette),
+     low alpha, three layers each: a 1px ring (the EDGE -- on a
+     near-white ground a white card has no fill contrast to speak of, and
+     without the ring the featured deck's stacked cards read as loose
+     strips rather than a stack), a tight contact shadow, and a wide
+     ambient one, so a raised surface reads as lifted rather than
      airbrushed. These feed Tailwind's own shadow-sm/md/lg/xl/2xl scale via
      the @theme inline block, so every `shadow-*` utility in the app is
      theme-aware without touching its call site. */
   --elevation-1:
-    0 1px 2px rgba(27, 22, 18, 0.05), 0 1px 3px rgba(27, 22, 18, 0.04);
+    0 0 0 1px rgba(11, 18, 34, 0.06), 0 1px 2px rgba(11, 18, 34, 0.06);
   --elevation-2:
-    0 1px 2px rgba(27, 22, 18, 0.05), 0 4px 10px rgba(27, 22, 18, 0.07);
+    0 0 0 1px rgba(11, 18, 34, 0.06), 0 1px 2px rgba(11, 18, 34, 0.06),
+    0 4px 12px rgba(11, 18, 34, 0.08);
   --elevation-3:
-    0 2px 4px rgba(27, 22, 18, 0.05), 0 10px 24px rgba(27, 22, 18, 0.09);
+    0 0 0 1px rgba(11, 18, 34, 0.06), 0 2px 4px rgba(11, 18, 34, 0.06),
+    0 12px 28px rgba(11, 18, 34, 0.1);
   --elevation-4:
-    0 4px 8px rgba(27, 22, 18, 0.05), 0 20px 44px rgba(27, 22, 18, 0.11);
+    0 0 0 1px rgba(11, 18, 34, 0.06), 0 4px 8px rgba(11, 18, 34, 0.06),
+    0 24px 48px rgba(11, 18, 34, 0.14);
   --elevation-5:
-    0 8px 16px rgba(27, 22, 18, 0.06), 0 32px 64px rgba(27, 22, 18, 0.13);
+    0 0 0 1px rgba(11, 18, 34, 0.06), 0 8px 16px rgba(11, 18, 34, 0.08),
+    0 40px 80px rgba(11, 18, 34, 0.18);
 }
 
 :root[data-theme="dark"] {
