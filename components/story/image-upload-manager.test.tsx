@@ -5,6 +5,8 @@ import { createRef } from "react";
 
 import { MutationQueue } from "@/lib/story/mutation-queue";
 import type { RevisionMediaItem } from "@/lib/story/contributor-queries";
+import { PhotoLightboxProvider } from "@/components/ui/photo-lightbox";
+import { mintPreviewUrlAction } from "@/app/(contributor)/stories/[id]/media-actions";
 
 // Every Server Action and the browser Supabase client are stubbed: this file
 // tests the panel's own rendering rules, not the upload pipeline (which is
@@ -155,5 +157,39 @@ describe("ImageUploadManager — the photo library", () => {
     expect(
       screen.getByText("1 photo still needs a description"),
     ).toBeInTheDocument();
+  });
+
+  it("opens the lightbox on a tile's thumbnail once it has a signed URL", async () => {
+    vi.mocked(mintPreviewUrlAction).mockResolvedValue({
+      url: "https://example.com/thumb.jpg",
+    });
+    const versionRef = createRef<number>() as { current: number };
+    versionRef.current = 1;
+    render(
+      <PhotoLightboxProvider>
+        <ImageUploadManager
+          storyId="story-1"
+          revisionId="revision-1"
+          initialMedia={[mediaItem(PLACED_ID, 0), mediaItem(UNPLACED_ID, 1)]}
+          versionRef={versionRef}
+          queue={new MutationQueue()}
+          onVersionBumped={() => {}}
+          inlineMediaIds={new Set()}
+          onInsertIntoEditor={onInsertIntoEditor}
+        />
+      </PhotoLightboxProvider>,
+    );
+
+    const trigger = await screen.findAllByRole("button", {
+      name: /^View photo larger/,
+    });
+    await userEvent.click(trigger[0]);
+
+    const dialog = document.querySelector("dialog");
+    expect(dialog).toHaveAttribute("open");
+    expect(dialog?.querySelector("img")).toHaveAttribute(
+      "src",
+      "https://example.com/thumb.jpg",
+    );
   });
 });

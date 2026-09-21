@@ -15,6 +15,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { DEFAULT_EMBED_WIDTH } from "@/lib/story/markdown-media";
 import { useToast } from "@/components/ui/toast";
 import { Spinner } from "@/components/ui/spinner";
+import { LightboxPhoto } from "@/components/ui/photo-lightbox";
 import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client";
 import {
   reorderMediaAction,
@@ -723,13 +724,20 @@ export function ImageUploadManager({
               const thumb = (
                 <div className="js-image-thumb relative aspect-square overflow-hidden rounded-md border border-border-subtle bg-surface-muted">
                   {thumbnails[item.mediaId] ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL, not an optimizable static asset
-                    <img
-                      src={thumbnails[item.mediaId]}
+                    <LightboxPhoto
+                      url={thumbnails[item.mediaId]}
                       alt={item.altText ?? ""}
-                      className="h-full w-full object-cover"
-                      onError={() => retryThumbnail(item.mediaId)}
-                    />
+                      caption={item.caption}
+                      className="block h-full w-full"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL, not an optimizable static asset */}
+                      <img
+                        src={thumbnails[item.mediaId]}
+                        alt={item.altText ?? ""}
+                        className="h-full w-full object-cover"
+                        onError={() => retryThumbnail(item.mediaId)}
+                      />
+                    </LightboxPhoto>
                   ) : item.processingState === "failed" ? (
                     <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
                       {processingLabel(item.processingState)}

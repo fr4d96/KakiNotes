@@ -8731,8 +8731,12 @@ was no way to look closer.
 - The viewer re-uses the URL the page's own `<img>` already loaded (public bucket, or the same
   short-lived signed URL on preview pages); it never mints a new one.
 - Story cards, the featured slide and the landing index are links to the story, so their cover
-  images still navigate rather than open the viewer. The editor's upload-manager tiles were left
-  alone too — that tile's click already means "edit this photo's details".
+  images still navigate rather than open the viewer.
+- **2026-09-21:** the editor's upload-manager tiles (`image-upload-manager.tsx`) open the
+  viewer too. The tile image had no click handler of its own — "Details / Describe" is a
+  separate button under it — so wrapping the `<img>` adds nothing nested-interactive; the
+  `js-image-thumb` div, badge overlay and `onError` retry are untouched. Covered by a test in
+  `image-upload-manager.test.tsx`.
 - The image sizing that used to sit on the `<img>` (stored embed width) now sits on the wrapper
   button; with no provider mounted, `LightboxPhoto` renders the same sized `<span>` so
   component tests and layout behave identically either way.
