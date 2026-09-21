@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.10.0](https://github.com/fr4d96/KakiNotes/compare/v0.9.0...v0.10.0) (2026-09-21)
+
+### What's new for contributors
+
+**Tap a photo in the editor to see it big.** The photo tiles in the story editor's Images section used to be small squares you couldn't look at properly. Tap any tile now and the photo opens full-screen — the same viewer readers get on the story page — and you can flick through all your uploaded photos with the arrows, the ← and → keys, or a swipe. The "Details" and "Describe" buttons under each tile work exactly as before.
+
+
+### Features
+
+* **editor:** photo tiles in the story editor open the full-screen viewer ([c0e9561](https://github.com/fr4d96/KakiNotes/commit/c0e9561c8df87845426dfd9c3ed149608cc903f3))
+
 ## [0.9.0](https://github.com/fr4d96/KakiNotes/compare/v0.8.0...v0.9.0) (2026-09-20)
 
 ### What's new for everyone
