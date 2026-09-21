@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/fr4d96/KakiNotes/compare/v0.9.0...v0.10.0) (2026-09-21)
+
+
+### Features
+
+* **editor:** photo tiles in the story editor open the full-screen viewer ([c0e9561](https://github.com/fr4d96/KakiNotes/commit/c0e9561c8df87845426dfd9c3ed149608cc903f3))
+
 ## [0.9.0](https://github.com/fr4d96/KakiNotes/compare/v0.8.0...v0.9.0) (2026-09-20)
 
 ### What's new for everyone
