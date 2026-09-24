@@ -487,6 +487,35 @@ export async function recordHeicTranscodedOriginal(
 }
 
 /**
+ * The story's current authoring version, for the one caller that needs it:
+ * finalizeMediaUploadAction's stale-version retry (see its own comment for
+ * why that retry is safe). Read through the ordinary user-scoped client, so
+ * RLS decides whether this user may see the row at all — and the finalize
+ * RPC re-authorizes the media id independently regardless of what this
+ * returns. Returns null when there is nothing readable to report, which the
+ * caller treats as "cannot retry", never as version 0.
+ */
+export async function storyVersionForMedia(
+  mediaId: string,
+): Promise<number | null> {
+  await requireUser();
+  const supabase = await createClient();
+  const { data: media, error: mediaError } = await supabase
+    .from("story_media")
+    .select("story_id")
+    .eq("id", mediaId)
+    .maybeSingle();
+  if (mediaError || !media?.story_id) return null;
+  const { data: story, error: storyError } = await supabase
+    .from("stories")
+    .select("version")
+    .eq("id", media.story_id)
+    .maybeSingle();
+  if (storyError) return null;
+  return story?.version ?? null;
+}
+
+/**
  * Verifies the reserved object actually exists in storage and creates the
  * revision-media join, bumping the authoring version exactly once. Safely
  * retryable after a stale-version error without re-uploading bytes.
