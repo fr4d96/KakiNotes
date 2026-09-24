@@ -3,9 +3,13 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-09-20 (a site-wide photo viewer: tapping any story photo opens it full-screen,
-with next/previous, arrow keys and swipe when there is more than one — see the entry at the end of
-this file); earlier the same day: light mode's neutrals retuned from warm to the same slate hue
+Last updated: 2026-09-24 (shipped as 1.0.0: story editor fixes — bold/italic toggle off, a
+"free" travel style, line breaks kept on the review screen, uploads no longer lost to a
+version clash, Markdown symbols shown only where you are editing, no iOS zoom on form fields,
+caption "Done" keeps your place, and no hydration mismatch from the story-starters card; see
+the entries at the end of this file); earlier, 2026-09-20: a site-wide photo viewer: tapping any story
+photo opens it full-screen, with next/previous, arrow keys and swipe when there is more than one;
+earlier the same day: light mode's neutrals retuned from warm to the same slate hue
 family as dark; earlier the same day: a contributor can now keep editing a story that is under review, via
 `reopen_submission_for_editing()` — withdraw + fresh draft in one transaction, never an unfrozen
 submitted revision; see the entry below); earlier, 2026-09-16: landing hero — the stock-photo
@@ -8752,3 +8756,233 @@ click, Escape, scroll lock and release. Note for anyone verifying in this pane: 
 reload the story page sometimes never finishes hydrating on a direct load (same on a clean
 tree — a dev-server quirk, not this change); restarting the dev server or waiting ~15s for the
 hosted DB fixes it.
+
+## Editor fixes: emphasis toggling, a "free" travel style, line breaks on the review screen, and text lost on upload
+
+**Status:** shipped in 1.0.0. Four separate bugs reported together.
+
+**1 — Bold/italic/strikethrough wouldn't turn off.**
+`wrapSelection()` in `components/story/editor/markdown-commands.ts` only ever wrapped. Clicking B a
+second time on the same word produced `****word****`, which CommonMark reads as bold-inside-bold —
+so the word looked _more_ bold, never less. It is now a real toggle: it strips the markers when they
+are already there, whether the contributor's selection includes them (`**word**` selected) or sits
+between them (select a word, click B, click B again). Bold and italic stack properly rather than
+cannibalising each other — italic on `**word**` gives `***word***`, and toggling either one back off
+peels off only its own share of the run. The link button is asymmetric (`[` / `](https://)`) and
+stays wrap-only, since there is no reliable "already a link" shape to detect once the URL is edited.
+
+**2 — Travel style had no "free" option.** Added to `travelStyles` in `lib/validation/story.ts`,
+first in the list (the presets are ordered by spend). Working for board, house-sitting and hitching
+are ordinary WHV patterns and "budget" overstated them. No migration: `travel_style` is a plain
+`text` column with no enum or CHECK, and the public filter list is built from a `DISTINCT` query, so
+the new value shows up in filters on its own once a story uses it. The existing "Other (type your
+own)" free-text option is unchanged.
+
+**3 — The review screen clumped the story into one wrapped blob.** CodeMirror shows every `\n` as
+its own line; CommonMark collapses a single newline inside a paragraph into a space. So a
+contributor who pressed Enter once between sentences saw them stacked while writing and glued
+together on review. New `lib/story/remark-soft-breaks.ts` (a small local remark plugin — no new npm
+dependency, `unist-util-visit` was already in use by `remark-media-embed`) turns a single newline
+into a `<br>`, wired into `components/story/content-block-renderer.tsx`. Code blocks and lists are
+untouched.
+
+**4 — Text sometimes disappeared after uploading an image.** `finalizeMediaUploadAction` was the
+only version-bumping mutation on the authoring form called as a bare `await`, outside the shared
+`MutationQueue` — the other four in `image-upload-manager.tsx` (reorder, cover, detach, caption) all
+go through it. Since it takes an `expectedVersion`, and so does the 600 ms debounced autosave,
+uploading a photo shortly after typing sent both concurrently with the same version. Whichever
+landed second was rejected with "Stale version", and when the loser was the text save, the words
+just written were never persisted. Finalize now runs on the queue like its siblings, so the version
+is only ever read inside a serialized callback.
+
+**Decisions:**
+
+- Fix 3 lives in the renderer, not in a save-time rewrite of the stored Markdown. `content_json` is
+  immutable once a revision leaves draft (Engineering Rule 11), so a save-time fix could never have
+  reached revisions that already exist — and the contributor's text stays exactly as they typed it.
+- Fix 1 deliberately does **not** use a `run >= markerLength` test when deciding whether emphasis is
+  already applied. `*` is a prefix of `**`, so a loose check would let the italic button quietly
+  downgrade bold text to italic. Only an exact-length run, or the shared `***bold italic***` run,
+  counts.
+
+**Risk:** fix 3 changes how _already-published_ stories render, not just new ones — any existing
+story written with single newlines will now show those as line breaks instead of reflowed prose.
+That is the intended reading in every case found, but it is a visible change to live content.
+
+**Verified:** `npm run verify`. New unit tests cover all nine emphasis-toggle cases (including the
+bold/italic stacking) in `components/story/editor/markdown-commands.test.ts`, and four rendering
+cases in `components/story/content-block-renderer.test.tsx`.
+
+---
+
+## Editor fixes: uploads surviving a version clash, and Word-like syntax hiding
+
+**Status:** shipped in 1.0.0. Two reported problems.
+
+**1 — An upload could be thrown away by a version clash.**
+`finalize_story_media_upload` takes an `expectedVersion`, and so does the editor's 600 ms debounced
+autosave. The previous entry above put finalize on the shared `MutationQueue`, which stops those two
+racing _within a tab_. This entry fixes what happened when a clash got through anyway:
+`finalizeMediaUploadAction` treated **every** error as fatal and called
+`cancelPendingStoryMediaUpload`, deleting the reservation — so a recoverable stale version did not
+merely fail, it destroyed an upload whose bytes were already sitting in Storage, and the contributor
+had to pick the file again.
+
+That is the opposite of what the RPC was built for. Its own comment says it is "retryable after a
+stale-version error without re-uploading bytes": the existence, access and state checks all run
+_before_ the version comparison, and a repeat call after the row has left `pending_upload` is a
+no-op. So the action now re-reads the live version (new `storyVersionForMedia()` in
+`lib/story/mutations.ts`) and retries finalize exactly once before giving up. The reservation is
+only cancelled when that retry also fails.
+
+This does **not** weaken optimistic concurrency (Engineering Rule 21). The version guard exists to
+stop one writer silently overwriting another's work; finalize overwrites nothing — it inserts a
+join row and bumps the version — so retrying it against the current version cannot clobber a
+concurrent edit. Exactly one retry, so a genuinely broken upload still fails rather than looping.
+
+Two smaller fixes alongside it:
+
+- `finalizeMediaUploadAction` now **returns the server's own post-bump version**, and the browser
+  sets its counter from it instead of assuming `+= 1`. After a retry the bump can start from a
+  version this tab never held, and an assumed increment would leave the browser one behind and fail
+  the contributor's very next save — trading one bug for a subtler one.
+- `refresh()` moved out of the upload's `try` block. It only re-reads the tile list, and it ran
+  _after_ the photo was already uploaded, finalized and attached — so a failure there painted a
+  finished upload as a failed one.
+
+**2 — The editor showed every Markdown symbol on the line you were editing.**
+`markdown-live-decorations.ts` concealed syntax everywhere except the line the caret was on. Click
+into an ordinary sentence with two emphasised words and a row of asterisks appeared at once, which
+is what made the editor read as a Markdown source file rather than a word processor. Reveal is now
+per **construct**: `**bold**` shows its stars only while the selection touches that run, and
+everything else on the line stays clean. Line-leading markers (`## `, `> `, `- `, `- [ ] `) reveal
+only when the selection touches the marker itself, so clicking mid-heading no longer shows `##`,
+while Home-then-Backspace still shows what is about to be deleted.
+
+**Decisions:**
+
+- The construct test is inclusive at both ends, so a caret resting immediately after a closing `**`
+  still counts as touching it. Exclusive bounds would make the markers you just typed vanish out
+  from under you mid-word.
+- Reveal is keyed on the whole match, not on the individual delimiter, so a construct's opening and
+  closing markers always appear and disappear together.
+- Images (`![[mediaId]]`) remain the one construct that never reveals its raw syntax, unchanged.
+
+**Risk:** the reveal rule is the editor's core feel and it now changes on every caret move rather
+than every line change, so it is exercised far more often. The decoration set was already rebuilt
+on `update.selectionSet`, so there is no new work per keystroke — but any glitch in it will be
+much more visible than before. Worth writing in for a few minutes before shipping.
+
+**Not addressed:** leaving the edit page entirely (Preview, "Back to My Stories", browser Back)
+while an upload is in flight still kills it — the browser cancels the request and the component
+unmounts. Confirmed with the contributor that this is not the reported case; the reservation left
+behind is swept by `scripts/cleanup-abandoned-media-uploads.mjs`.
+
+---
+
+## Mobile fixes: iOS zoom in the editor, and the caption panel jumping to the page bottom
+
+**Status:** shipped in 1.0.0; verified in a real browser at a 375x812 viewport.
+
+**1 — The story editor opened zoomed in on an iPhone.**
+iOS Safari zooms the whole page in the moment you focus a text field whose font-size is under 16px,
+and it never zooms back out. The editor's fields are deliberately compact — `text-sm` on the title,
+tags, location, dates and travel style, `text-xs` in the expense rows — which reads well on a
+desktop, where nothing zooms. On a phone, one tap on any of them left the contributor magnified for
+the rest of the session.
+
+Fixed in `app/globals.css` with a single rule raising form controls to a 16px floor under
+`@media (pointer: coarse)`. Nothing about the desktop sizing changes, and the rule covers every
+field on every page rather than the thirteen that happen to exist today.
+
+Explicitly NOT fixed with `maximum-scale=1` / `user-scalable=no` on the viewport: that takes
+pinch-zoom away from everyone permanently, fails WCAG 1.4.4, and is the kind of
+disable-the-browser workaround Engineering Rule 19 rules out. The viewport meta itself was never
+the problem — Next.js injects `width=device-width, initial-scale=1` by default and that is what the
+page was serving (confirmed in the browser, not assumed).
+
+`pointer: coarse` rather than a max-width breakpoint because an iPhone 15 in landscape is 852px
+wide, so any sensible width query would miss it; `max(16px, 1rem)` rather than a flat 16px so a
+contributor who has RAISED their browser's base font size keeps their larger text.
+
+**2 — "Done" on a photo caption threw the contributor to the bottom of the page.**
+Two causes at once, both needed:
+
+- The Done button lives _inside_ the details panel it closes, so clicking it removes the focused
+  element from the document. Focus fell back to `<body>`.
+- The tile collapses from a full-width `col-span-2` panel back to one small grid cell. Measured
+  live: the page goes from 2162px to 1766px in a single frame. Anyone scrolled down to reach the
+  caption field then has a scroll offset past the new bottom, and the browser clamps it — landing
+  exactly at the end of the page.
+
+`image-upload-manager.tsx` now returns focus to the Details button that replaces it and scrolls
+that button into view. Returning focus is also simply correct for a disclosure widget: collapsing a
+panel puts you back on the control that opened it.
+
+**Decisions:**
+
+- `scroll-mt-[15rem]`, not the `scroll-mt-[12rem]` the Images panel uses in `story-edit-form.tsx`.
+  The two stacked sticky bars (site header at `top-0`, editor bar at `top-[76px]`) were _measured_
+  together at 215px on a 375px viewport, so 12rem (192px) parks the target 23px behind them. The
+  existing 12rem elsewhere on this page has the same flaw and is worth revisiting.
+- `behavior: "instant"` on that scrollIntoView, opting out of the global `scroll-behavior: smooth`
+  in globals.css — this is correcting a jump, not performing one, and animating the correction
+  would only draw the eye to it.
+- The ref callback that registers each Details button uses a braced body on purpose: React 19
+  treats a ref callback's return value as a cleanup function, and `Map.set` returns the Map.
+
+**Verified in the browser**, at 375x812, against the running dev server:
+
+- Touch: a `text-sm` input computes to 16px and a `text-xs` input to 16px. Desktop: still 14px and
+  12px. On the real editor page every text field now reports 16px; the only two under 16px are
+  `sr-only` radio buttons, which iOS does not zoom for.
+- Before the fix, clicking Done left `document.activeElement` as `BODY` and `scrollY` at 955 with a
+  maximum of 954 — pinned to the very bottom, reproducing the report exactly. After, focus is on
+  "Details photo 1", `scrollY` is 500 of a possible 954, and the button sits at y=240 against a
+  sticky chrome bottom of 215.
+
+**Found but NOT fixed (separate, pre-existing):** the edit page throws a React hydration mismatch on
+every load. `components/story/story-starters-card.tsx:119` renders a randomly chosen starter prompt,
+so the server and client disagree and React discards and rebuilds the entire tree — the editor
+flashes and briefly ignores clicks on load. Unrelated to these two fixes; raised as its own task.
+_(Since fixed — see the next entry.)_
+
+## 2026-09-24 — Story editor: hydration mismatch from the story-starters card
+
+**Status:** done locally; covered by a Vitest test that server-renders the card and hydrates it;
+`npm run verify` passes. Shipped in 1.0.0.
+
+**The bug.** Every load of `/stories/[id]/edit` threw "Hydration failed because the server rendered
+text didn't match the client". The story-starters card picked its prompt order with
+`shuffleStarters(prompts)`, whose default random source is `Math.random`, inside a `useState`
+initializer. That initializer runs twice for a server-rendered client component — once on the
+server, once in the browser while hydrating — so the two passes shuffled differently and showed a
+different first question. React then threw away the whole server-rendered tree and rebuilt it in
+the browser: the editor flashed on load, briefly ignored clicks, and logged the error every time.
+
+**The fix.** `lib/story/story-starters.ts` gains `seededRandom(seed)` — a tiny deterministic
+generator (FNV-1a hash of the seed feeding mulberry32). The card now shuffles with
+`seededRandom(storyId)`, so the server and the browser compute the identical order.
+
+**Decisions:**
+
+- Seeded by story id, rather than a random seed picked on the server and passed down as a prop.
+  The design goal in docs/story-starters-research.md is "two contributors don't see the same first
+  prompt", and different stories already get different orders. A server seed would have needed
+  plumbing through the edit page and `story-edit-form.tsx` for no real gain.
+- Not "shuffle after mount" (`useEffect` / a `useSyncExternalStore` client snapshot). That makes the
+  first render match, but the question then visibly swaps a moment after load, and because the
+  element is `aria-live="polite"`, screen readers would announce that swap.
+- Trade-off, accepted: reloading the same story opens on the same first prompt. "Show me another"
+  still cycles through the whole library exactly as before, so the rotating-prompts behaviour is
+  unchanged. Both locales share prompt ids in the same order, so a story opens on the same prompt
+  in English and Chinese.
+- `shuffleStarters` keeps its `Math.random` default (it is a generic helper), but its doc comment
+  now says anything that renders on the server must pass a seeded source.
+
+**Tests:** `lib/story/story-starters.test.ts` covers `seededRandom` (same seed gives the same
+sequence, values stay in [0, 1), different seeds give different first prompts).
+`components/story/story-starters-card.test.tsx` adds a hydration test: `renderToString`, then
+`hydrateRoot` on that HTML with `Math.random` forced to a different value for each pass, asserting
+no recoverable errors and the same question text. With the old code this test fails with the same
+"Hydration failed…" error seen in the browser.
