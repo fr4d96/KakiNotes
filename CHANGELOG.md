@@ -2,6 +2,28 @@
 
 ## [1.0.0](https://github.com/fr4d96/KakiNotes/compare/v0.10.0...v1.0.0) (2026-09-24)
 
+### What's new for everyone
+
+**Stories keep their line breaks.** If a writer pressed Enter once between lines, the published story used to join those lines into one long paragraph. Stories now keep their line breaks exactly as the writer saw them in the editor. This applies to stories that are already published too, so some older stories will now show line breaks where they used to run together.
+
+### What's new for contributors
+
+**Bold and italic switch off again.** Clicking Bold on a word that's already bold now takes the bold off. Before, a second click added more formatting instead of removing it, so the word stayed bold no matter how often you clicked. Italic and strikethrough work the same way, and making bold text italic now gives you bold and italic together.
+
+**The editor looks more like a normal document.** The formatting symbols (the stars around a bold word, the # in front of a heading, the - in front of a bullet point) now stay hidden unless your cursor is right inside that bit of formatting. Before, clicking anywhere on a line showed every symbol on that line at once.
+
+**The review screen matches what you wrote.** The line breaks you type in the editor now show up on the review screen before you submit, instead of everything being squashed into one block.
+
+**A "Free" travel style.** If you travelled by working for your food and bed, house-sitting or hitchhiking, you can now choose "Free" as your travel style, next to the existing options.
+
+**Adding photos no longer loses your writing.** Uploading a photo and going straight back to your story could make the upload fail, or quietly lose the words you had just typed. The photo and your text now save one after the other instead of at the same moment, and if they still happen to clash, the upload tries again instead of giving up.
+
+**No more stuck zoom on iPhone.** Tapping a text box in the story editor on an iPhone used to zoom the whole page in and leave it zoomed. Text boxes are now big enough that iPhones don't zoom. You can still pinch to zoom whenever you want.
+
+**Pressing Done on a photo keeps your place.** On a phone, closing a photo's details after writing its caption used to throw you to the bottom of the page. You now land back on the photo you were describing.
+
+**The editor opens cleanly.** Opening a story to edit it used to make the page flash and ignore your taps for a moment while it rebuilt itself. It now loads in one go.
+
 
 ### Bug Fixes
 
