@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.0.0](https://github.com/fr4d96/KakiNotes/compare/v0.10.0...v1.0.0) (2026-09-24)
+
+
+### Bug Fixes
+
+* **editor:** formatting toggles off, line breaks survive review, Word-like syntax hiding ([0a816d9](https://github.com/fr4d96/KakiNotes/commit/0a816d9ba7fdb2ec965a2fd27bd71f6c03e23f8b))
+* **editor:** stop the story-starters card causing a hydration mismatch ([0540504](https://github.com/fr4d96/KakiNotes/commit/0540504110a99ade43edc46c18fdc4ee8aacd39e))
+* **mobile:** stop iOS Safari zooming the editor on form fields ([d986830](https://github.com/fr4d96/KakiNotes/commit/d986830c8683ba35ad9d00fe2e6a67647c815fb7))
+* **photos:** uploads survive a version clash; caption "Done" keeps your place ([92ec800](https://github.com/fr4d96/KakiNotes/commit/92ec800a473a9d39b6c78ffedf4fb4a930d0e40a))
+
+
+### Documentation
+
+* **status:** record the 1.0.0 editor and mobile fixes ([33d92a5](https://github.com/fr4d96/KakiNotes/commit/33d92a5ab74e8b037be6097da396a031e1f93bbe))
+
 ## [0.10.0](https://github.com/fr4d96/KakiNotes/compare/v0.9.0...v0.10.0) (2026-09-21)
 
 ### What's new for contributors
