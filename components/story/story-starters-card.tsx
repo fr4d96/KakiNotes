@@ -2,7 +2,11 @@
 
 import { useId, useState, useSyncExternalStore } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { getStoryStarters, shuffleStarters } from "@/lib/story/story-starters";
+import {
+  getStoryStarters,
+  seededRandom,
+  shuffleStarters,
+} from "@/lib/story/story-starters";
 
 /**
  * Past this many words the person is writing and the card gets out of the
@@ -67,8 +71,12 @@ export function StoryStartersCard({
   const locale = useLocale() as "en" | "zh-CN";
   const titleId = useId();
 
+  // Seeded from the story id, not Math.random: this initializer runs once on
+  // the server and again in the browser during hydration, and both passes
+  // must land on the same first prompt or React throws away the whole
+  // server-rendered tree. Different stories still get different orders.
   const [prompts] = useState(() =>
-    shuffleStarters(getStoryStarters(locale).prompts),
+    shuffleStarters(getStoryStarters(locale).prompts, seededRandom(storyId)),
   );
   const [index, setIndex] = useState(0);
   const [dismissedLocally, setDismissedLocally] = useState(false);

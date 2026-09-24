@@ -93,9 +93,32 @@ export function outlineMarkdown(outline: StoryStarters["outline"]): string {
 }
 
 /**
+ * A deterministic `() => number` in [0, 1) derived from `seed` (FNV-1a hash
+ * feeding a mulberry32 generator). The same seed always yields the same
+ * sequence -- on the server and in the browser -- which is what lets the
+ * editor shuffle the starters without a hydration mismatch. Not for
+ * anything security-related.
+ */
+export function seededRandom(seed: string): () => number {
+  let state = 0x811c9dc5;
+  for (let i = 0; i < seed.length; i++) {
+    state ^= seed.charCodeAt(i);
+    state = Math.imul(state, 0x01000193);
+  }
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
  * Fisher-Yates shuffle. Returns a new array and never mutates `items`, so
  * callers can shuffle the prompt library once per session without
- * disturbing the original order.
+ * disturbing the original order. Anything rendered on the server must pass
+ * a `seededRandom(...)` here, never the `Math.random` default.
  */
 export function shuffleStarters<T>(
   items: readonly T[],

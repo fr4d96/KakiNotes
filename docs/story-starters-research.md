@@ -259,11 +259,12 @@ Layers 1 and 2, additive only — no migration, no change to the content model.
 - `i18n/prompts/story-starters.en.json` / `.zh-CN.json` — the nine outline headings and 32 prompts
   above, as data. `lib/story/story-starters.ts` validates them with Zod at first use (a bad file
   fails tests and the build, not the card), and exposes `getStoryStarters`, `outlineMarkdown`,
-  `shuffleStarters`. The Chinese copy is a first draft and still needs a native-speaker read.
+  `shuffleStarters`, `seededRandom`. The Chinese copy is a first draft and still needs a native-speaker read.
 - `components/story/story-starters-card.tsx` — the "Not sure where to start?" card, rendered above
   the body editor on the Story step. One question at a time; _Write about this_ appends
   `## <heading>` at the end of the body and focuses the line under it; _Show me another_ cycles a
-  per-mount shuffle; _Hide_ is remembered per story in `localStorage`. The card hides itself at
+  shuffle seeded by the story id (`seededRandom`) — deterministic so the server render and the
+  browser's hydration agree, still a different order per story; _Hide_ is remembered per story in `localStorage`. The card hides itself at
   **50 words** (not 150 as first proposed — once someone has 50 words down they're writing, and the
   card's job is the first sentence). Styling is deliberately quiet: recessed surface, bordered
   (not filled) primary button, no motion, no icons.
