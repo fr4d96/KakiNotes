@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.0.0](https://github.com/fr4d96/KakiNotes/compare/v0.10.0...v1.0.0) (2026-09-24)
+
+### What's new for everyone
+
+**Stories keep their line breaks.** If a writer pressed Enter once between lines, the published story used to join those lines into one long paragraph. Stories now keep their line breaks exactly as the writer saw them in the editor. This applies to stories that are already published too, so some older stories will now show line breaks where they used to run together.
+
+### What's new for contributors
+
+**Bold and italic switch off again.** Clicking Bold on a word that's already bold now takes the bold off. Before, a second click added more formatting instead of removing it, so the word stayed bold no matter how often you clicked. Italic and strikethrough work the same way, and making bold text italic now gives you bold and italic together.
+
+**The editor looks more like a normal document.** The formatting symbols (the stars around a bold word, the # in front of a heading, the - in front of a bullet point) now stay hidden unless your cursor is right inside that bit of formatting. Before, clicking anywhere on a line showed every symbol on that line at once.
+
+**The review screen matches what you wrote.** The line breaks you type in the editor now show up on the review screen before you submit, instead of everything being squashed into one block.
+
+**A "Free" travel style.** If you travelled by working for your food and bed, house-sitting or hitchhiking, you can now choose "Free" as your travel style, next to the existing options.
+
+**Adding photos no longer loses your writing.** Uploading a photo and going straight back to your story could make the upload fail, or quietly lose the words you had just typed. The photo and your text now save one after the other instead of at the same moment, and if they still happen to clash, the upload tries again instead of giving up.
+
+**No more stuck zoom on iPhone.** Tapping a text box in the story editor on an iPhone used to zoom the whole page in and leave it zoomed. Text boxes are now big enough that iPhones don't zoom. You can still pinch to zoom whenever you want.
+
+**Pressing Done on a photo keeps your place.** On a phone, closing a photo's details after writing its caption used to throw you to the bottom of the page. You now land back on the photo you were describing.
+
+**The editor opens cleanly.** Opening a story to edit it used to make the page flash and ignore your taps for a moment while it rebuilt itself. It now loads in one go.
+
+
+### Bug Fixes
+
+* **editor:** formatting toggles off, line breaks survive review, Word-like syntax hiding ([0a816d9](https://github.com/fr4d96/KakiNotes/commit/0a816d9ba7fdb2ec965a2fd27bd71f6c03e23f8b))
+* **editor:** stop the story-starters card causing a hydration mismatch ([0540504](https://github.com/fr4d96/KakiNotes/commit/0540504110a99ade43edc46c18fdc4ee8aacd39e))
+* **mobile:** stop iOS Safari zooming the editor on form fields ([d986830](https://github.com/fr4d96/KakiNotes/commit/d986830c8683ba35ad9d00fe2e6a67647c815fb7))
+* **photos:** uploads survive a version clash; caption "Done" keeps your place ([92ec800](https://github.com/fr4d96/KakiNotes/commit/92ec800a473a9d39b6c78ffedf4fb4a930d0e40a))
+
+
+### Documentation
+
+* **status:** record the 1.0.0 editor and mobile fixes ([33d92a5](https://github.com/fr4d96/KakiNotes/commit/33d92a5ab74e8b037be6097da396a031e1f93bbe))
+
 ## [0.10.0](https://github.com/fr4d96/KakiNotes/compare/v0.9.0...v0.10.0) (2026-09-21)
 
 ### What's new for contributors
