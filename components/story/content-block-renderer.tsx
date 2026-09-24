@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import type { StoryContentBlock } from "@/lib/validation/story";
 import { storyContentText } from "@/lib/validation/story";
 import { remarkMediaEmbed } from "@/lib/story/remark-media-embed";
+import { remarkSoftBreaks } from "@/lib/story/remark-soft-breaks";
 import { Spinner } from "@/components/ui/spinner";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
 
@@ -234,7 +235,10 @@ export function ContentBlockRenderer({
   return (
     <div className="space-y-4">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMediaEmbed]}
+        // remarkSoftBreaks runs last: by then the `![[mediaId]]` tokens have
+        // already been lifted out into their own nodes, so it only ever sees
+        // real prose text.
+        remarkPlugins={[remarkGfm, remarkMediaEmbed, remarkSoftBreaks]}
         components={buildComponents(media)}
       >
         {text}

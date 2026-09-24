@@ -143,4 +143,60 @@ describe("ContentBlockRenderer", () => {
     const link = screen.getByRole("link", { name: "click me" });
     expect(link).toHaveAttribute("href", "https://example.com");
   });
+
+  // Regression coverage for remark-soft-breaks: CodeMirror shows every `\n`
+  // as its own line, but CommonMark collapses a single newline inside a
+  // paragraph into a space. Without the plugin, "Line one\nLine two" used to
+  // render as one glued-together line with no <br>.
+  it("renders a single newline inside a paragraph as a <br>, not a collapsed space", () => {
+    const blocks = markdownToStoryContent("Line one\nLine two");
+
+    render(<ContentBlockRenderer blocks={blocks} />);
+
+    const paragraph = screen.getByText((_, node) => {
+      if (!node || node.tagName !== "P") return false;
+      return node.textContent === "Line one\nLine two";
+    });
+    expect(paragraph.querySelector("br")).toBeInTheDocument();
+    expect(paragraph.textContent).toContain("Line one");
+    expect(paragraph.textContent).toContain("Line two");
+  });
+
+  it("still renders a blank line between paragraphs as two separate <p> elements", () => {
+    const blocks = markdownToStoryContent("Paragraph one\n\nParagraph two");
+
+    render(<ContentBlockRenderer blocks={blocks} />);
+
+    const paraOne = screen.getByText("Paragraph one").closest("p");
+    const paraTwo = screen.getByText("Paragraph two").closest("p");
+    expect(paraOne).toBeInTheDocument();
+    expect(paraTwo).toBeInTheDocument();
+    expect(paraOne).not.toBe(paraTwo);
+    expect(paraOne?.querySelector("br")).not.toBeInTheDocument();
+    expect(paraTwo?.querySelector("br")).not.toBeInTheDocument();
+  });
+
+  it("does not convert newlines inside a fenced code block to <br>", () => {
+    const blocks = markdownToStoryContent(
+      ["```", "line one", "line two", "```"].join("\n"),
+    );
+
+    render(<ContentBlockRenderer blocks={blocks} />);
+
+    const code = document.querySelector("pre code");
+    expect(code).toBeInTheDocument();
+    expect(code?.querySelector("br")).not.toBeInTheDocument();
+    expect(code?.textContent).toBe("line one\nline two\n");
+  });
+
+  it("leaves list items unaffected -- a two-item list stays two <li>, no stray <br>", () => {
+    const blocks = markdownToStoryContent(["- a", "- b"].join("\n"));
+
+    render(<ContentBlockRenderer blocks={blocks} />);
+
+    const items = screen.getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    expect(items[0].querySelector("br")).not.toBeInTheDocument();
+    expect(items[1].querySelector("br")).not.toBeInTheDocument();
+  });
 });

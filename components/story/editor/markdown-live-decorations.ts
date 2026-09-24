@@ -57,17 +57,23 @@ function buildSpinner(): SVGSVGElement {
  * CodeMirror decorations are a view-layer overlay only, so what's actually
  * stored/typed is always plain Markdown. Delimiter runs (`**`, `#`, `>`,
  * list markers, etc.) are fully CONCEALED (Decoration.replace with no
- * widget -- rendered as nothing, not just faded) everywhere EXCEPT the line
- * the cursor/selection currently touches, where the raw syntax is shown in
- * full so you can see what you're editing. This is the same technique
- * Obsidian/Typora's "live preview" mode uses, and is safer than deleting
- * the characters from the document (which would fight the user's cursor
- * mid-edit): concealed text is still real text at real document positions,
- * just zero-width on screen.
+ * widget -- rendered as nothing, not just faded) everywhere EXCEPT in the
+ * one construct the cursor/selection is actually touching, where the raw
+ * syntax is shown in full so you can see what you're editing. This is the
+ * same technique Obsidian/Typora's "live preview" mode uses, and is safer
+ * than deleting the characters from the document (which would fight the
+ * user's cursor mid-edit): concealed text is still real text at real
+ * document positions, just zero-width on screen.
  *
- * Image embeds (`![[mediaId]]`) are the one exception to "conceal only off
- * the active line": Bear never shows raw image markup at all, cursor or not
- * -- you interact with the image itself. See MediaImageWidget below.
+ * The reveal used to be per LINE -- the caret anywhere on a line showed
+ * every marker on it. That made an ordinary sentence with two emphasised
+ * words flash a row of asterisks the moment you clicked into it, and it is
+ * the reason the editor read as a Markdown source file rather than a word
+ * processor. It is now per construct: see `touches` in buildDecorations.
+ *
+ * Image embeds (`![[mediaId]]`) are the one exception to revealing anything
+ * at all: Bear never shows raw image markup, cursor or not -- you interact
+ * with the image itself. See MediaImageWidget below.
  */
 
 class GlyphWidget extends WidgetType {
@@ -558,7 +564,11 @@ function computeFencedLines(doc: {
 function collectInlineRanges(
   text: string,
   lineFrom: number,
-  active: boolean,
+  /**
+   * Whether the selection touches an absolute document range -- the reveal
+   * test, applied PER CONSTRUCT rather than per line. See buildDecorations.
+   */
+  touches: (from: number, to: number) => boolean,
   cache: MediaUrlCache,
 ): Range<Decoration>[] {
   const claimed = new Array<boolean>(text.length).fill(false);
@@ -571,11 +581,16 @@ function collectInlineRanges(
     for (let i = s; i < e; i++) if (claimed[i]) return false;
     return true;
   };
-  // Conceals a delimiter run entirely (not just dimmed) when this isn't the
-  // active line -- the raw characters are still in the document, just
-  // rendered with zero width.
-  const conceal = (s: number, e: number) => {
-    if (!active && e > s) {
+  /** Is the cursor in (or up against) this whole construct, `**word**` and
+   *  both its delimiters included? Asking about the WHOLE match, not the
+   *  delimiter alone, is what keeps a construct's opening and closing
+   *  markers appearing and disappearing together. */
+  const revealed = (s: number, e: number) =>
+    touches(lineFrom + s, lineFrom + e);
+  // Conceals a delimiter run entirely (not just dimmed) -- the raw
+  // characters are still in the document, just rendered with zero width.
+  const conceal = (s: number, e: number, show: boolean) => {
+    if (!show && e > s) {
       out.push(Decoration.replace({}).range(lineFrom + s, lineFrom + e));
     }
   };
@@ -586,9 +601,8 @@ function collectInlineRanges(
       );
   };
 
-  // Always rendered as an image widget, active line or not -- see the
-  // module comment for why images are the one exception to "reveal raw
-  // syntax on the active line."
+  // Always rendered as an image widget, cursor on it or not -- see the
+  // module comment for why images never reveal their raw syntax.
   for (const m of text.matchAll(new RegExp(MEDIA_EMBED_REGEX))) {
     const s = m.index ?? 0;
     const e = s + m[0].length;
@@ -608,8 +622,9 @@ function collectInlineRanges(
     const e = s + m[0].length;
     if (!isFree(s, e)) continue;
     claim(s, e);
-    conceal(s, s + 1);
-    conceal(e - 1, e);
+    const show = revealed(s, e);
+    conceal(s, s + 1, show);
+    conceal(e - 1, e, show);
     style(s + 1, e - 1, "cm-md-code");
   }
 
@@ -620,8 +635,9 @@ function collectInlineRanges(
     claim(s, e);
     const textStart = s + 1;
     const textEnd = textStart + m[1].length;
-    conceal(s, textStart);
-    conceal(textEnd, e);
+    const show = revealed(s, e);
+    conceal(s, textStart, show);
+    conceal(textEnd, e, show);
     style(textStart, textEnd, "cm-md-link");
   }
 
@@ -630,8 +646,9 @@ function collectInlineRanges(
     const e = s + m[0].length;
     if (!isFree(s, e)) continue;
     claim(s, e);
-    conceal(s, s + 2);
-    conceal(e - 2, e);
+    const show = revealed(s, e);
+    conceal(s, s + 2, show);
+    conceal(e - 2, e, show);
     style(s + 2, e - 2, "cm-md-bold");
   }
 
@@ -640,8 +657,9 @@ function collectInlineRanges(
     const e = s + m[0].length;
     if (!isFree(s, e)) continue;
     claim(s, e);
-    conceal(s, s + 2);
-    conceal(e - 2, e);
+    const show = revealed(s, e);
+    conceal(s, s + 2, show);
+    conceal(e - 2, e, show);
     style(s + 2, e - 2, "cm-md-strike");
   }
 
@@ -650,8 +668,9 @@ function collectInlineRanges(
     const e = s + m[0].length;
     if (!isFree(s, e)) continue;
     claim(s, e);
-    conceal(s, s + 1);
-    conceal(e - 1, e);
+    const show = revealed(s, e);
+    conceal(s, s + 1, show);
+    conceal(e - 1, e, show);
     style(s + 1, e - 1, "cm-md-italic");
   }
 
@@ -666,15 +685,29 @@ function buildDecorations(
   const doc = view.state.doc;
   const fencedLines = computeFencedLines(doc);
   const selRanges = view.state.selection.ranges;
-  const isActiveLine = (line: { from: number; to: number }) =>
-    selRanges.some((r) => r.from <= line.to && r.to >= line.from);
+  // Reveal is per CONSTRUCT, not per line. It used to be per line: putting
+  // the caret anywhere on a line popped every marker on that line into view
+  // at once, which is what made the editor feel like a Markdown source file
+  // rather than a word processor. Now a `**bold**` run shows its stars only
+  // while the caret is actually in it, and the rest of the line stays clean.
+  //
+  // Inclusive at both ends on purpose -- a caret resting immediately after
+  // the closing `**` still counts as touching it, so the markers you just
+  // typed do not vanish out from under you mid-word.
+  const touches = (from: number, to: number) =>
+    selRanges.some((r) => r.from <= to && r.to >= from);
 
   for (const { from, to } of view.visibleRanges) {
     let pos = from;
     while (pos <= to) {
       const line = doc.lineAt(pos);
-      const active = isActiveLine(line);
       const text = line.text;
+      /** A line-leading marker (`## `, `> `, `- `) reveals itself only when
+       *  the caret is in the marker or at the very start of the line's text
+       *  -- so clicking into the middle of a heading no longer shows `##`,
+       *  but Home-then-Backspace still shows you what you are deleting. */
+      const marking = (length: number) =>
+        touches(line.from, line.from + length);
 
       if (fencedLines.has(line.number)) {
         ranges.push(
@@ -698,7 +731,7 @@ function buildDecorations(
             attributes: { class: `cm-md-heading cm-md-h${level}` },
           }).range(line.from),
         );
-        if (!active) {
+        if (!marking(headingMatch[0].length)) {
           ranges.push(
             Decoration.replace({}).range(
               line.from,
@@ -712,7 +745,7 @@ function buildDecorations(
             line.from,
           ),
         );
-        if (!active) {
+        if (!marking(quoteMatch[0].length)) {
           ranges.push(
             Decoration.replace({}).range(
               line.from,
@@ -733,7 +766,7 @@ function buildDecorations(
         );
         const markerStart = line.from + checklistMatch[1].length;
         const markerEnd = line.from + checklistMatch[0].length;
-        if (!active) {
+        if (!marking(checklistMatch[0].length)) {
           ranges.push(
             Decoration.replace({
               widget: new GlyphWidget(
@@ -761,7 +794,7 @@ function buildDecorations(
         const markerEnd = line.from + listMatch[0].length;
         // Ordered markers ("1.") stay visible (they carry real information
         // -- the sequence number) but bulleted markers ("-"/"*"/"+") become
-        // a real bullet glyph off the active line, matching Bear.
+        // a real bullet glyph unless the caret is in the marker, matching Bear.
         if (/\d/.test(marker)) {
           ranges.push(
             Decoration.mark({ class: "cm-md-list-marker" }).range(
@@ -769,7 +802,7 @@ function buildDecorations(
               markerEnd,
             ),
           );
-        } else if (!active) {
+        } else if (!marking(listMatch[0].length)) {
           ranges.push(
             Decoration.replace({
               widget: new GlyphWidget("•", "cm-md-bullet-glyph"),
@@ -793,7 +826,7 @@ function buildDecorations(
       for (const r of collectInlineRanges(
         text.slice(bodyStart),
         line.from + bodyStart,
-        active,
+        touches,
         cache,
       )) {
         ranges.push(r);
