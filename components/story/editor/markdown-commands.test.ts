@@ -6,6 +6,7 @@ import {
   isBlankDoc,
   insertSectionHeading,
   insertOutline,
+  wrapSelection,
 } from "./markdown-commands";
 
 // Headless: same "closed-loop, no DOM" approach as markdown-editor.test.ts --
@@ -107,6 +108,95 @@ describe("insertOutline", () => {
     const result = insertOutline(view, outline, { from: 0, to: 8 });
     expect(result).toBe(true);
     expect(view.state.doc.toString()).toBe(outline);
+    view.destroy();
+  });
+});
+
+// wrapSelection is a TOGGLE: clicking the same emphasis button twice on the
+// same words must take the markers back off, not double them up
+// (`****word****`, the reported bug -- see markdown-commands.ts).
+describe("wrapSelection", () => {
+  function selectedText(view: EditorView) {
+    const { from, to } = view.state.selection.main;
+    return view.state.sliceDoc(from, to);
+  }
+
+  it("wraps a plain selection and selects the wrapped text", () => {
+    const view = viewWithDoc("word", 0, 4);
+    wrapSelection(view, "**", "**", "bold text");
+    expect(view.state.doc.toString()).toBe("**word**");
+    expect(selectedText(view)).toBe("word");
+    view.destroy();
+  });
+
+  it("un-wraps when called again on the resulting selection", () => {
+    const view = viewWithDoc("word", 0, 4);
+    wrapSelection(view, "**", "**", "bold text");
+    wrapSelection(view, "**", "**", "bold text");
+    expect(view.state.doc.toString()).toBe("word");
+    expect(selectedText(view)).toBe("word");
+    view.destroy();
+  });
+
+  it("un-wraps when the selection includes the markers themselves", () => {
+    const view = viewWithDoc("**word**", 0, 8);
+    wrapSelection(view, "**", "**", "bold text");
+    expect(view.state.doc.toString()).toBe("word");
+    expect(selectedText(view)).toBe("word");
+    view.destroy();
+  });
+
+  it("does not downgrade bold to italic -- stacks to bold+italic instead", () => {
+    const view = viewWithDoc("**word**", 2, 6);
+    wrapSelection(view, "*", "*", "italic text");
+    expect(view.state.doc.toString()).toBe("***word***");
+    expect(selectedText(view)).toBe("word");
+    view.destroy();
+  });
+
+  it("italic toggle off bold+italic peels one marker off each side, leaving bold", () => {
+    const view = viewWithDoc("***word***", 3, 7);
+    wrapSelection(view, "*", "*", "italic text");
+    expect(view.state.doc.toString()).toBe("**word**");
+    expect(selectedText(view)).toBe("word");
+    view.destroy();
+  });
+
+  it("bold toggle off bold+italic peels two markers off each side, leaving italic", () => {
+    const view = viewWithDoc("***word***", 3, 7);
+    wrapSelection(view, "**", "**", "bold text");
+    expect(view.state.doc.toString()).toBe("*word*");
+    expect(selectedText(view)).toBe("word");
+    view.destroy();
+  });
+
+  it("strikethrough round-trips the same way as bold", () => {
+    const view = viewWithDoc("word", 0, 4);
+    wrapSelection(view, "~~", "~~", "struck text");
+    expect(view.state.doc.toString()).toBe("~~word~~");
+    wrapSelection(view, "~~", "~~", "struck text");
+    expect(view.state.doc.toString()).toBe("word");
+    view.destroy();
+  });
+
+  it("inserts the placeholder, wrapped, for an empty selection", () => {
+    const view = viewWithDoc("", 0);
+    wrapSelection(view, "**", "**", "bold text");
+    expect(view.state.doc.toString()).toBe("**bold text**");
+    expect(selectedText(view)).toBe("bold text");
+    view.destroy();
+  });
+
+  it("link markers are asymmetric and only ever wrap, never unwrap", () => {
+    const view = viewWithDoc("word", 0, 4);
+    wrapSelection(view, "[", "](https://)", "link text");
+    expect(view.state.doc.toString()).toBe("[word](https://)");
+    expect(selectedText(view)).toBe("word");
+
+    // Calling it again on the same (now link-wrapped) selection must wrap
+    // again, not strip the brackets back off.
+    wrapSelection(view, "[", "](https://)", "link text");
+    expect(view.state.doc.toString()).toBe("[[word](https://)](https://)");
     view.destroy();
   });
 });

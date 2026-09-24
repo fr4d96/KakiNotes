@@ -10,7 +10,12 @@ import {
   cancelPendingStoryMediaUpload,
   finalizeStoryMediaUpload,
   recordHeicTranscodedOriginal,
+  storyVersionForMedia,
 } from "@/lib/story/mutations";
+// The one place the "Stale version for ..." message is recognised, shared
+// with the client-side mutation queue rather than re-written here — the
+// message shape is the RPC's, and two copies of that regex would drift.
+import { isStaleVersionConflict } from "@/lib/story/mutation-queue";
 import {
   processStoryMedia,
   transcodeStagedHeicUpload,
@@ -119,7 +124,12 @@ export async function transcodeHeicUploadAction(
 export async function finalizeMediaUploadAction(
   mediaId: string,
   expectedVersion: number,
-): Promise<{ mediaId: string } | { error: string }> {
+  // The server's own version after the bump, so the browser can SET its
+  // counter rather than assume "+1" — the retry below can bump from a
+  // version the browser never saw, and an assumed increment would leave it
+  // one behind and fail the contributor's very next save. Same reasoning,
+  // and the same shape, as saveRevisionFieldsAction's `version`.
+): Promise<{ mediaId: string; version: number | null } | { error: string }> {
   const [tErr, tCommon] = await Promise.all([
     getTranslations("actionErrors"),
     getTranslations("common"),
@@ -136,13 +146,46 @@ export async function finalizeMediaUploadAction(
   try {
     await finalizeStoryMediaUpload(parsedMediaId.data, expectedVersion);
   } catch (error) {
-    // Abandoned reservations are swept by
-    // scripts/cleanup-abandoned-media-uploads.mjs — no inline storage
-    // cleanup needed here, matching that script's existing role.
-    await cancelPendingStoryMediaUpload(parsedMediaId.data).catch(() => {});
-    return {
-      error: getErrorMessage(error, tErr("finalizeUploadFailed")),
-    };
+    // A stale version is NOT a failed upload, and it used to be treated as
+    // one: the bytes are already in storage, and every other error path here
+    // cancels the reservation, so a version that moved on between the
+    // browser reading it and this call landing threw the whole upload away
+    // and made the contributor pick the file again.
+    //
+    // finalize_story_media_upload is explicitly built to survive this — its
+    // existence, access and state checks all run BEFORE the version
+    // comparison, and a repeat call after the row has moved past
+    // pending_upload is a no-op (see 20260804090100_story_media_upload_
+    // functions.sql). So re-read the live version and try once more.
+    //
+    // This does not weaken optimistic concurrency (Engineering Rule 21).
+    // The version guard exists to stop one writer silently overwriting
+    // another's work; finalize overwrites nothing — it inserts a join row
+    // and bumps the version — so retrying it against the current version
+    // cannot clobber a concurrent edit. Exactly one retry, so a genuinely
+    // broken upload still fails instead of looping.
+    let recovered = false;
+    if (isStaleVersionConflict(error)) {
+      const currentVersion = await storyVersionForMedia(parsedMediaId.data);
+      if (currentVersion !== null && currentVersion !== expectedVersion) {
+        try {
+          await finalizeStoryMediaUpload(parsedMediaId.data, currentVersion);
+          recovered = true;
+        } catch {
+          recovered = false;
+        }
+      }
+    }
+
+    if (!recovered) {
+      // Abandoned reservations are swept by
+      // scripts/cleanup-abandoned-media-uploads.mjs — no inline storage
+      // cleanup needed here, matching that script's existing role.
+      await cancelPendingStoryMediaUpload(parsedMediaId.data).catch(() => {});
+      return {
+        error: getErrorMessage(error, tErr("finalizeUploadFailed")),
+      };
+    }
   }
 
   // Processing failures are recorded to the DB by processStoryMedia itself
@@ -156,5 +199,11 @@ export async function finalizeMediaUploadAction(
     // Already recorded server-side; nothing further to do here.
   }
 
-  return { mediaId: parsedMediaId.data };
+  // Read after the bump, not computed from expectedVersion: the retry above
+  // may have finalized against a version this browser never held. Null only
+  // when the row is unreadable, which the caller treats as "leave my counter
+  // alone" rather than guessing.
+  const version = await storyVersionForMedia(parsedMediaId.data);
+
+  return { mediaId: parsedMediaId.data, version };
 }

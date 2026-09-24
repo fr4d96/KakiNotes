@@ -487,6 +487,34 @@ body {
   font-family: var(--font-sans);
 }
 
+/* iOS Safari zooms the whole page in the moment you focus a text field whose
+   font-size is under 16px -- and it never zooms back out. The story editor's
+   fields are deliberately compact (text-sm, and text-xs in the expense rows),
+   which reads well on a desktop where nothing zooms, but on a phone one tap
+   on any of them leaves the contributor stuck in a magnified editor for the
+   rest of the session. That is the "it always defaults to zoomed view" the
+   editor was reported for.
+
+   Raising the floor to 16px on touch devices is the fix. The usual shortcut
+   -- `maximum-scale=1` / `user-scalable=no` on the viewport meta -- is not an
+   option here: it takes pinch-zoom away from everyone permanently, which
+   fails WCAG 1.4.4 and is exactly the kind of workaround Engineering Rule 19
+   rules out. Nothing about the desktop sizing changes.
+
+   `pointer: coarse` rather than a max-width: an iPhone 15 in landscape is
+   852px wide, so any sensible width breakpoint would miss it, and it is
+   touch input -- not screen size -- that this is actually about.
+
+   max() rather than a flat 16px so someone who has RAISED their browser's
+   base font size keeps their larger text; this only ever sets a floor. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: max(16px, 1rem);
+  }
+}
+
 /* The app's ONE focus ring. Deliberately not restated anywhere else: a
    later, more specific `a:focus-visible` rule would win and silently change
    the ring's width app-wide, which is exactly what happened when the

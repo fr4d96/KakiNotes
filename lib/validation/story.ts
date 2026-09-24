@@ -210,7 +210,11 @@ export const draftContentSchema = z.preprocess(
 // constraints — duplicated deliberately for fast/friendly form errors; the
 // DB constraints (and the immutability trigger) are the non-bypassable
 // source of truth per Engineering Rule 3.
-export const travelStyles = ["budget", "midRange", "comfort"] as const;
+// Ordered by spend, cheapest first. "free" is a real WHV pattern, not a
+// rounding-down of "budget": working for board (WWOOF/HelpX), house-sitting
+// and hitching cost essentially nothing, and a contributor who travelled
+// that way had no option here that described it.
+export const travelStyles = ["free", "budget", "midRange", "comfort"] as const;
 
 // travel_style is a loosely-typed `text` column with no DB enum/CHECK
 // (confirmed by reading supabase/migrations/20260803090200_story_revisions.sql

@@ -294,6 +294,43 @@ export function ImageUploadManager({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
 
+  // "Done" closing a photo's details panel used to throw the contributor to
+  // the bottom of the page on a phone. Two things happened at once, and both
+  // needed fixing:
+  //
+  //   1. The Done button lives INSIDE the panel it closes, so clicking it
+  //      removes the focused element from the document. Focus falls back to
+  //      <body>, and Safari is free to scroll wherever it likes.
+  //   2. The tile collapses from a full-width `col-span-2` panel back to one
+  //      small grid cell, so the page gets several hundred pixels shorter in
+  //      the same frame. Anyone who had scrolled down to read the caption
+  //      field now has a scroll offset past the new bottom, and the browser
+  //      clamps it -- landing exactly at the end of the page.
+  //
+  // Putting focus back on the Details button that replaces it fixes (1) and
+  // is also simply the correct behaviour for a disclosure widget: collapsing
+  // a panel returns you to the control that opened it. Scrolling that same
+  // button into view fixes (2), and puts the contributor back on the photo
+  // they were just captioning rather than wherever the clamp dropped them.
+  const detailsToggleRefs = useRef(new Map<string, HTMLButtonElement>());
+  const refocusToggleIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const mediaId = refocusToggleIdRef.current;
+    if (openMediaId !== null || !mediaId) return;
+    refocusToggleIdRef.current = null;
+    const toggle = detailsToggleRefs.current.get(mediaId);
+    if (!toggle) return;
+    // preventScroll, then an explicit scroll: focus() on its own jumps the
+    // tile to the top of the viewport on iOS, which is its own kind of
+    // disorienting. "nearest" moves the page only as far as it has to, and
+    // "instant" opts out of the global `scroll-behavior: smooth` in
+    // app/globals.css -- this is correcting a jump, not performing one, and
+    // animating the correction would just draw the eye to it.
+    toggle.focus({ preventScroll: true });
+    toggle.scrollIntoView({ block: "nearest", behavior: "instant" });
+  }, [openMediaId]);
+
   // Revokes every local preview URL this component ever created (including
   // ones for errored items that never leave `uploading`, since those have
   // no other removal point) once the panel itself unmounts.
@@ -459,23 +496,51 @@ export function ImageUploadManager({
           if ("error" in transcoded) throw new Error(transcoded.error);
         }
 
-        const finalized = await finalizeMediaUploadAction(
-          mediaId,
-          versionRef.current,
-        );
+        // On the shared mutation queue, exactly like this panel's four other
+        // version-bumping mutations below (reorder, cover, detach, caption).
+        //
+        // It used to be a bare `await` outside the queue, and that was a
+        // real data-loss bug: finalize_story_media_upload takes an
+        // expectedVersion, and so does the editor's 600ms-debounced autosave.
+        // Upload a photo just after typing and the two went out
+        // CONCURRENTLY carrying the same version -- whichever landed second
+        // was rejected with "Stale version", and when the loser was the text
+        // save, the words the contributor had just written were simply never
+        // persisted. Queueing it means the version is only ever read inside a
+        // serialized callback, so the autosave that runs next reads the
+        // version this upload produced instead of racing it.
+        const finalized = await new Promise<
+          Awaited<ReturnType<typeof finalizeMediaUploadAction>>
+        >((resolve) => {
+          queue.enqueue(`media-finalize:${mediaId}`, async () => {
+            const result = await finalizeMediaUploadAction(
+              mediaId,
+              versionRef.current,
+            );
+            if (!("error" in result)) {
+              // The server's own post-bump version, not an assumed "+1":
+              // finalizeMediaUploadAction retries a stale version against
+              // the live one, so the bump can start from a number this tab
+              // never held. Null means it could not be read — leave the
+              // counter alone rather than guess it wrong.
+              if (result.version !== null) versionRef.current = result.version;
+              onVersionBumped();
+            }
+            resolve(result);
+          });
+        });
         if ("error" in finalized) throw new Error(finalized.error);
-
-        // finalize_story_media_upload bumped the authoring version by
-        // exactly one on success (see the migration's own guarantee).
-        versionRef.current += 1;
-        onVersionBumped();
         if (previewUrl) {
           URL.revokeObjectURL(previewUrl);
           previewUrlsRef.current.delete(previewUrl);
         }
         setUploading((prev) => prev.filter((u) => u.key !== key));
-        await refresh();
         showToast(t("errors.uploadedToast", { fileName: file.name }));
+        // Deliberately AFTER the success toast and outside the try: by this
+        // point the photo is uploaded, finalized and attached. refresh() only
+        // re-reads the tile list, so letting it throw in here would have
+        // painted a finished upload as a failed one.
+        await refresh().catch(() => {});
       } catch (error) {
         const message = getErrorMessage(error, t("errors.uploadFailed"));
         setUploading((prev) =>
@@ -898,7 +963,12 @@ export function ImageUploadManager({
                         </TileAction>
                         <button
                           type="button"
-                          onClick={() => setOpenMediaId(null)}
+                          onClick={() => {
+                            // Hand the collapse a target to land on -- see
+                            // the refocusToggleIdRef effect above.
+                            refocusToggleIdRef.current = item.mediaId;
+                            setOpenMediaId(null);
+                          }}
                           className="ml-auto rounded-md border border-border-subtle px-3 py-1.5 text-xs font-medium"
                         >
                           {t("done")}
@@ -936,6 +1006,16 @@ export function ImageUploadManager({
                           2-column phone grid. */}
                       <button
                         type="button"
+                        // Registered so closing the panel can put focus back
+                        // here (see the refocusToggleIdRef effect above).
+                        // Braces, not a concise arrow body: React 19 treats a
+                        // ref callback's return value as a cleanup function,
+                        // and Map.set returns the Map.
+                        ref={(node) => {
+                          const map = detailsToggleRefs.current;
+                          if (node) map.set(item.mediaId, node);
+                          else map.delete(item.mediaId);
+                        }}
                         onClick={() => setOpenMediaId(item.mediaId)}
                         aria-expanded={false}
                         aria-controls={detailsId}
@@ -951,7 +1031,19 @@ export function ImageUploadManager({
                             ? t("describeLabel", { name })
                             : t("detailsLabel", { name })
                         }
-                        className={`shrink-0 rounded-md border px-2 py-1.5 text-xs font-medium ${
+                        // scroll-mt clears the two stacked sticky bars above
+                        // (the site header at top-0 and the editor's own bar
+                        // at top-[76px]); without it the scrollIntoView above
+                        // parks this button at y=0, underneath both of them,
+                        // and the contributor lands looking at the header.
+                        //
+                        // 15rem (240px), not the 12rem the Images panel uses
+                        // in story-edit-form.tsx: those two bars were measured
+                        // together at 215px on a 375px-wide viewport, so 12rem
+                        // (192px) actually lands 23px BEHIND them. The extra
+                        // room also absorbs the step-progress row wrapping to
+                        // a second line on a narrower phone.
+                        className={`shrink-0 scroll-mt-[15rem] rounded-md border px-2 py-1.5 text-xs font-medium ${
                           isPlaced ? "w-full" : ""
                         } ${
                           needsAltText

@@ -1,6 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   STARTERS_HIDE_THRESHOLD_WORDS,
   StoryStartersCard,
@@ -58,6 +60,10 @@ describe("StoryStartersCard", () => {
       configurable: true,
       writable: true,
     });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("renders title, a question, and the three buttons at wordCount 0", () => {
@@ -166,5 +172,45 @@ describe("StoryStartersCard", () => {
     expect(
       screen.queryByRole("button", { name: "Start from an outline" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("hydrates server HTML without a mismatch, even if Math.random differs", async () => {
+    // The real bug: the server and the browser each shuffled with their own
+    // Math.random, so the server-rendered question never matched the one the
+    // client hydrated with. Force the two passes to disagree -- the card must
+    // not care, because its order comes from the story id.
+    const props = {
+      storyId: STORY_ID,
+      wordCount: 0,
+      bodyIsEmpty: true,
+      onWriteAbout: vi.fn(),
+      onInsertOutline: vi.fn(),
+    };
+    const random = vi.spyOn(Math, "random").mockReturnValue(0);
+    const serverHtml = renderToString(<StoryStartersCard {...props} />);
+
+    random.mockReturnValue(0.999);
+    const container = document.createElement("div");
+    container.innerHTML = serverHtml;
+    document.body.appendChild(container);
+    const serverQuestion = container.querySelector(
+      'p[aria-live="polite"]',
+    )?.textContent;
+
+    const recoverableErrors: unknown[] = [];
+    const root = await act(async () =>
+      hydrateRoot(container, <StoryStartersCard {...props} />, {
+        onRecoverableError: (error) => recoverableErrors.push(error),
+      }),
+    );
+
+    expect(recoverableErrors).toEqual([]);
+    expect(serverQuestion).toBeTruthy();
+    expect(container.querySelector('p[aria-live="polite"]')?.textContent).toBe(
+      serverQuestion,
+    );
+
+    act(() => root.unmount());
+    container.remove();
   });
 });

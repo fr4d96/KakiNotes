@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getStoryStarters,
   outlineMarkdown,
+  seededRandom,
   shuffleStarters,
 } from "./story-starters";
 
@@ -74,5 +75,41 @@ describe("shuffleStarters", () => {
     expect(shuffled).not.toBe(items);
     expect(shuffled.slice().sort()).toEqual(original.slice().sort());
     expect(shuffled).toHaveLength(items.length);
+  });
+});
+
+describe("seededRandom", () => {
+  it("returns the same sequence for the same seed", () => {
+    const a = seededRandom("story-1");
+    const b = seededRandom("story-1");
+    const seqA = Array.from({ length: 20 }, a);
+    const seqB = Array.from({ length: 20 }, b);
+    expect(seqA).toEqual(seqB);
+  });
+
+  it("stays within [0, 1)", () => {
+    const next = seededRandom("0b6e9f2c-4a1d-4c3e-9f7a-2d5b8c1e0a3f");
+    for (let i = 0; i < 1000; i += 1) {
+      const value = next();
+      expect(value).toBeGreaterThanOrEqual(0);
+      expect(value).toBeLessThan(1);
+    }
+  });
+
+  it("gives the same shuffle for the same seed and varies across seeds", () => {
+    const { prompts } = getStoryStarters("en");
+    const ids = prompts.map((p) => p.id);
+    const first = (seed: string) => shuffleStarters(ids, seededRandom(seed))[0];
+
+    // Server render and client hydration both do this -- they must agree.
+    expect(shuffleStarters(ids, seededRandom("story-1"))).toEqual(
+      shuffleStarters(ids, seededRandom("story-1")),
+    );
+
+    // Different stories should not all open on the same prompt.
+    const firstPrompts = new Set(
+      Array.from({ length: 20 }, (_, i) => first(`story-${i}`)),
+    );
+    expect(firstPrompts.size).toBeGreaterThan(1);
   });
 });
