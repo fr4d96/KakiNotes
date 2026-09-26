@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/fr4d96/KakiNotes/compare/v1.0.0...v1.0.1) (2026-09-26)
+
+
+### Bug Fixes
+
+* **stories:** draft delete on reviewed drafts, and saves failing after a photo upload ([eb86d92](https://github.com/fr4d96/KakiNotes/commit/eb86d92e41251be99944b9d0ac93c73e0f71b691))
+
 ## [1.0.0](https://github.com/fr4d96/KakiNotes/compare/v0.10.0...v1.0.0) (2026-09-24)
 
 ### What's new for everyone
