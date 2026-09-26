@@ -2078,6 +2078,10 @@ export type Database = {
           viewer_relationship: string;
         }[];
       };
+      get_story_version_for_media: {
+        Args: { p_media_id: string };
+        Returns: number;
+      };
       get_user_account_detail: {
         Args: { p_user_id: string };
         Returns: {
@@ -2205,6 +2209,7 @@ export type Database = {
           published_at: string;
           published_revision_id: string;
           regions: Json;
+          revision_count: number;
           slug: string;
           source_kind: Database["public"]["Enums"]["story_source_kind"];
           submitted_at: string;

@@ -3,7 +3,9 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-09-24 (shipped as 1.0.0: story editor fixes — bold/italic toggle off, a
+Last updated: 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
+review, and a photo upload no longer leaves every later save rejected as stale; see the entry at
+the end of this file); earlier, 2026-09-24 (shipped as 1.0.0: story editor fixes — bold/italic toggle off, a
 "free" travel style, line breaks kept on the review screen, uploads no longer lost to a
 version clash, Markdown symbols shown only where you are editing, no iOS zoom on form fields,
 caption "Done" keeps your place, and no hydration mismatch from the story-starters card; see
@@ -8986,3 +8988,95 @@ sequence, values stay in [0, 1), different seeds give different first prompts).
 `hydrateRoot` on that HTML with `Math.random` forced to a different value for each pass, asserting
 no recoverable errors and the same question text. With the old code this test fails with the same
 "Hydration failed…" error seen in the browser.
+
+## 2026-09-26 — Deleting a reviewed draft, and every save failing after the first photo upload
+
+**Status:** done; applied to the hosted dev project and verified in the browser against it.
+Vitest 1203/1203, `tsc`, Prettier and ESLint (0 errors) pass.
+
+Both reports were first diagnosed from the code alone, and that diagnosis was wrong for both. The
+real causes came from the dev project's logs (PostgREST 400s, and the Postgres error text behind
+them). Worth doing first next time.
+
+### 1. "Delete" on a draft that can never be deleted
+
+**The bug.** `delete_draft_story()` hard-deletes only a story with exactly one `story_revisions`
+row ever. A story that was submitted, then rejected/withdrawn/reopened and edited again has a
+second revision, and the RPC refuses it with "has prior reviewed revision history and cannot be
+deleted this way". That guard is intended. But My Stories' `deletable` gate only checked
+`lifecycle_status` and `published_revision_id`, so it showed Delete on those drafts, and every click
+failed.
+
+**The fix.** `list_my_stories()` returns a new `revision_count` column
+(`20260926110804_list_my_stories_revision_count`), which `listMyStories()` surfaces as
+`revisionCount`. `my-stories-view.tsx` now also requires `revisionCount === 1`, the same count the
+RPC uses. `deleteDraftStoryAction` maps any remaining RPC error to a translated message
+(`actionErrors.deleteHasReviewHistory`, en + zh-CN) instead of raw Postgres text, and now calls
+`revalidatePath("/my-stories")` on success like its sibling actions do.
+
+### 2. The second photo, and every save after it, rejected as "stale"
+
+**The bug.** After a successful `finalize_story_media_upload()` (which bumps `stories.version`),
+`finalizeMediaUploadAction` reads the new version back through `storyVersionForMedia()` so the
+browser can keep its `versionRef` in step. That helper read `story_media` and `stories` directly
+with `.from(...)`. Both tables have had every privilege revoked from `authenticated` since
+`20260803090900_lock_down_story_domain_grants` (all access goes through SECURITY DEFINER
+functions), so it **always** failed with "permission denied for table story_media". It swallowed
+the error and returned `null`, so the client never learned the new version. The browser stayed
+one version behind the database from then on: the next photo, autosave, tags and locations were
+all rejected with "Stale version … (expected N, got N-1)", and nothing ever recovered.
+
+**The fix.**
+
+- `get_story_version_for_media(p_media_id)` (`20260926110809`): a SECURITY DEFINER function that
+  re-derives owner-or-assigned-editor from the database. `storyVersionForMedia()` calls it instead
+  of the direct reads. No grant was added to either table.
+- `20260926110829_fix_get_story_version_for_media_null_guard`: the first version's check,
+  `not (_is_story_owner(...) or assigned_editor_id = auth.uid())`, evaluates to NULL when the
+  story has no assigned editor, so the `raise` never fired and any signed-in user could read any
+  story's version number. Caught in review before any use. Now wrapped in `coalesce(..., false)`,
+  like `_authorize_revision_edit`.
+- `image-upload-manager.tsx`: a stale-version result from finalize is now rethrown into the shared
+  `MutationQueue`, so it reaches the "reload to continue" banner like every other mutation
+  instead of a plain "upload failed" toast.
+- Hardening, not the reported bug: `20260926110716_finalize_media_upload_sort_order_race` locks
+  the revision row before computing the next `sort_order`, as `begin_story_media_upload()` already
+  does, so two overlapping finalizes (two tabs, or a retry) can't collide on
+  `story_revision_media_sort_order_unique`.
+
+### Decisions
+
+- **Hide the button, keep the guard.** A story with review history still can't be hard-deleted.
+  Its revisions are the moderation record. The UI now just stops offering it. Take-down/withdraw
+  remains the path for those stories.
+- **A new function, not a grant.** Granting SELECT on `stories`/`story_media` would have fixed
+  the symptom but broken the lock-down migration's guarantee (Engineering Rule 21).
+- **`list_my_stories()` is dropped and re-created** because its return shape changed. The body
+  was diffed against the latest live definition (`20260914092322_vocab_name_zh_cn`), so the zh-CN
+  region names and the cover fallback to the first photo are kept. An older copy would have
+  quietly dropped both.
+- **Applied through the Supabase MCP**, and the local files were renamed to the versions it
+  stamped (the drift described in docs/architecture.md). `types/database.ts` was regenerated
+  (`supabase:types:linked`), and the temporary casts on both new names were removed.
+
+### Verified against the hosted dev project
+
+- My Stories showed Delete on exactly the 14 drafts with one revision, and not on the one with
+  two ("Work Day On A Rainy Day"). No story was actually deleted during testing.
+- 3 JPEGs dropped at once onto a throwaway draft: all three finalized (sort_order 0/1/2, all
+  `processed`), version 9 → 13. The logs show `finalize_story_media_upload` 204 →
+  `get_story_version_for_media` 200 for each photo, then `save_revision_draft` 200 for a subtitle
+  edit afterwards. No stale-version or permission errors.
+
+**Tests:** `app/(contributor)/my-stories/actions.test.ts` (new: revalidation on successful delete),
+`my-stories-view.test.tsx` (Delete hidden when `revisionCount` is 2), and
+`lib/story/mutations.test.ts` (new: `storyVersionForMedia` goes through the RPC and never
+`.from(...)`; fails against the old code).
+
+**Not covered by automated tests:** the SQL side (the null guard, the sort_order lock,
+`revision_count`) needs the live RLS integration suite. It wasn't extended this round because
+`tests/integration/story-rls.integration.test.ts` has unrelated uncommitted edits. Worth adding:
+a non-owner calling `get_story_version_for_media` must raise.
+
+**Heads-up:** the hosted history records `countries` as `20260924021909`, but the local file is
+still `20260924100000_countries.sql`, so `db push` will abort until that file is renamed.

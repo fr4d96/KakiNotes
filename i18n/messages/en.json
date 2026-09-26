@@ -1120,6 +1120,7 @@
     "loadImageFailed": "Could not load image.",
     "previewNotAuthorized": "Not authorized to preview this image.",
     "deleteStoryFailed": "Could not delete this story.",
+    "deleteHasReviewHistory": "This story has already been through review, so it can't be deleted this way.",
     "loadStoryFailed": "Could not load this story.",
     "reserveUploadFailed": "Could not reserve an upload slot.",
     "heicConvertFailed": "Could not convert this HEIC photo. Please try again.",

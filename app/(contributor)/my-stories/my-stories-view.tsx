@@ -195,13 +195,20 @@ function storyStatusFlags(story: MyStoryWithCover) {
     story.draftRevisionStatus === "submitted";
   const editable =
     Boolean(story.current_draft_revision_id) && !awaitingApproval && !inReview;
-  // Coarse client-side gate matching delete_draft_story()'s cheap
-  // precondition (lifecycle_status 'draft' or 'private', and never
-  // published) -- the RPC itself is the real safety boundary and
-  // additionally requires this story have no prior review history, which
-  // isn't visible from list_my_stories()'s columns; a story that fails that
-  // finer check surfaces the RPC's specific error via the confirm flow
-  // below instead of silently hiding the button.
+  // Client-side gate matching delete_draft_story()'s precondition EXACTLY
+  // (lifecycle_status 'draft' or 'private', never published, AND exactly
+  // one story_revisions row ever) -- the RPC itself is still the real
+  // safety boundary, but the button no longer offers an action it is
+  // always going to refuse. A story that was submitted and then rejected/
+  // withdrawn/sent back for changes and is now editable again as a plain
+  // draft satisfies the first two conditions but has TWO OR MORE revisions
+  // (a fresh one is created for the retry -- the earlier one is immutable
+  // once it leaves 'draft'), which is exactly the case that used to show
+  // Delete and then fail with "has prior reviewed revision history" —
+  // see supabase/migrations/20260926110804_list_my_stories_revision_count.sql
+  // for the `revisionCount` column this reads, and this file's
+  // deleteDraftErrorMessage() (actions.ts) for the translated message a
+  // stale page would still surface if this were somehow bypassed.
   //
   // 'private' belongs here for the same reason 'draft' does, and leaving it
   // out would have been a quiet regression: nothing about a private story
@@ -211,7 +218,8 @@ function storyStatusFlags(story: MyStoryWithCover) {
   const deletable =
     (story.lifecycle_status === "draft" ||
       isPrivateStory(story.lifecycle_status)) &&
-    story.published_revision_id === null;
+    story.published_revision_id === null &&
+    story.revisionCount === 1;
   // Withdrawal ("Take down") is the OTHER destructive action, and the
   // opposite case to deletable above: a story that is live to the public
   // right now. revoke_publication_consent() only has anything to do on a

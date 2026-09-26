@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { RevisionMediaItem } from "@/lib/story/contributor-queries";
-import type { MutationQueue } from "@/lib/story/mutation-queue";
+import {
+  isStaleVersionConflict,
+  type MutationQueue,
+} from "@/lib/story/mutation-queue";
 import {
   looksLikeHeicUpload,
   MAX_HEIC_UPLOAD_BYTES,
@@ -525,8 +528,25 @@ export function ImageUploadManager({
               // counter alone rather than guess it wrong.
               if (result.version !== null) versionRef.current = result.version;
               onVersionBumped();
+              resolve(result);
+              return;
             }
             resolve(result);
+            // Every OTHER mutation on this shared queue throws on failure,
+            // which is what lets the queue's own onVersionConflict callback
+            // (story-edit-form.tsx) show the "this draft changed elsewhere —
+            // reload to continue" banner instead of a plain toast that just
+            // invites retrying into the same wall. This one used to swallow
+            // its own error and resolve unconditionally, so a genuine
+            // version conflict on a photo upload never reached that banner
+            // — only a generic "failed to upload" toast, with nothing
+            // telling the contributor their local version was stale. Rethrow
+            // for a version conflict specifically (not every finalize
+            // failure — an unsupported format or a decode failure is not
+            // "reload this page", it's "pick a different photo").
+            if (isStaleVersionConflict(result.error)) {
+              throw new Error(result.error);
+            }
           });
         });
         if ("error" in finalized) throw new Error(finalized.error);
