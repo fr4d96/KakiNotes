@@ -22,12 +22,43 @@ export type DeleteDraftStoryResult =
   { ok: true } | { ok: false; error: string };
 
 /**
+ * Maps delete_draft_story()'s own raised text to a translated, friendly
+ * message — same mechanism as withdrawalErrorMessage() below, and for the
+ * same reason: that RPC has no dedicated SQLSTATE, so this is matched on
+ * message text, deliberately narrowly.
+ *
+ * my-stories-view.tsx's `deletable` flag (storyStatusFlags) now hides
+ * Delete for a story with prior review history at all — it mirrors
+ * delete_draft_story()'s own "exactly one revision, ever" rule via
+ * list_my_stories()'s `revision_count` column (supabase/migrations/
+ * 20260926110804_list_my_stories_revision_count.sql) — so
+ * "has prior reviewed revision history" should not normally be reachable
+ * from the UI any more. It stays translated here anyway as defense in
+ * depth: the RPC re-checks regardless (Engineering Rule 2), and a stale
+ * page (list loaded before a background change) could still hit it.
+ */
+function deleteDraftErrorMessage(
+  error: unknown,
+  tErr: Awaited<ReturnType<typeof getTranslations<"actionErrors">>>,
+): string {
+  // The PATTERN stays English: it matches the database function's own
+  // raised text, which is not user-facing and never translated. Anything
+  // that doesn't match a known case falls back to the generic translated
+  // message — this never surfaces raw Postgres text to the contributor.
+  const raw = getErrorMessage(error, "");
+  if (/prior reviewed revision history/i.test(raw)) {
+    return tErr("deleteHasReviewHistory");
+  }
+  return tErr("deleteStoryFailed");
+}
+
+/**
  * Backs the "Delete" action on a still-draft story in My Stories
  * (my-stories-view.tsx). delete_draft_story() (the RPC this calls through
  * lib/story/mutations.ts) is the real safety boundary — only a story that
  * has never left plain-draft status can actually be deleted; a story with
- * prior review history fails with a specific, user-facing Postgres message
- * rather than silently doing nothing.
+ * prior review history fails with a specific error, translated above
+ * rather than shown as raw Postgres text.
  */
 export async function deleteDraftStoryAction(
   storyId: string,
@@ -47,10 +78,18 @@ export async function deleteDraftStoryAction(
   } catch (error) {
     return {
       ok: false,
-      error: getErrorMessage(error, tErr("deleteStoryFailed")),
+      error: deleteDraftErrorMessage(error, tErr),
     };
   }
 
+  // Without this, the deleted story could still come back on the next
+  // render of "/my-stories" -- router.refresh() (my-stories-view.tsx) only
+  // asks Next to re-render the current route, it does not by itself
+  // guarantee a server-rendered result cached under that path gets rebuilt.
+  // Every other mutating action in this file (requestStoryTakedownAction,
+  // cancelStoryTakedownAction below) already does this on success; this one
+  // was missing it.
+  revalidatePath("/my-stories");
   return { ok: true };
 }
 

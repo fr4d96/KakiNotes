@@ -65,6 +65,11 @@ function makeStory(overrides: StoryOverrides = {}) {
     draftRevisionStatus: "draft",
     coverMediaId: "33333333-3333-4333-8333-333333333333",
     coverAltText: "An orchard at dawn",
+    // Matches delete_draft_story()'s own "exactly one revision, ever" rule
+    // (supabase/migrations/20260926110804_list_my_stories_revision_count.sql)
+    // -- 1 is the ordinary, never-submitted-before draft every existing test
+    // here assumes unless it says otherwise.
+    revisionCount: 1,
     ...overrides,
   } as MyStoryWithCover;
 }
@@ -231,6 +236,22 @@ describe("MyStoriesView", () => {
       screen.queryByRole("link", { name: /^Edit/ }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^Review/ })).toBeInTheDocument();
+  });
+
+  // BUG: My Stories used to offer "Delete" on a draft that had already been
+  // through review once (submitted, then rejected/withdrawn/sent back, and
+  // now editable again) -- delete_draft_story() always refuses those
+  // (revision_count > 1, "has prior reviewed revision history"), so
+  // confirming Delete there just failed with no clue why. Fixed by gating
+  // `deletable` on revisionCount === 1 too (my-stories-view.tsx), matching
+  // the RPC's own rule exactly via list_my_stories()'s new revision_count
+  // column (supabase/migrations/20260926110804_list_my_stories_revision_count.sql).
+  it("hides Delete for a draft with prior review history, even though it looks like a plain draft otherwise", () => {
+    render(<MyStoriesView stories={[makeStory({ revisionCount: 2 })]} />);
+
+    expect(
+      screen.queryByRole("button", { name: /^Delete/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("offers Delete only for a never-published draft, with a confirm step", async () => {

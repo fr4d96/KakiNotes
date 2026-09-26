@@ -8,13 +8,19 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 // server-side; getCurrentUser() here is only so a signed-out caller gets a
 // clean empty result instead of a raw Postgres auth error).
 
+// revisionCount: list_my_stories()'s revision_count
+// (20260926110804_list_my_stories_revision_count.sql) -- the count
+// delete_draft_story() requires to equal 1 before it will hard-delete.
 export async function listMyStories() {
   const user = await getCurrentUser();
   if (!user) return [];
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("list_my_stories");
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).map((row) => ({
+    ...row,
+    revisionCount: row.revision_count,
+  }));
 }
 
 export type MyStoryWithCover = Awaited<

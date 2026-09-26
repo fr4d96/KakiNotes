@@ -1120,6 +1120,7 @@
     "loadImageFailed": "无法加载图片。",
     "previewNotAuthorized": "你没有预览这张图片的权限。",
     "deleteStoryFailed": "无法删除这篇故事。",
+    "deleteHasReviewHistory": "这篇故事已经经过审核，无法用这种方式删除。",
     "loadStoryFailed": "无法加载这篇故事。",
     "reserveUploadFailed": "无法预留上传位置。",
     "heicConvertFailed": "无法转换这张 HEIC 照片，请再试一次。",

@@ -488,31 +488,37 @@ export async function recordHeicTranscodedOriginal(
 
 /**
  * The story's current authoring version, for the one caller that needs it:
- * finalizeMediaUploadAction's stale-version retry (see its own comment for
- * why that retry is safe). Read through the ordinary user-scoped client, so
- * RLS decides whether this user may see the row at all — and the finalize
- * RPC re-authorizes the media id independently regardless of what this
- * returns. Returns null when there is nothing readable to report, which the
- * caller treats as "cannot retry", never as version 0.
+ * finalizeMediaUploadAction's stale-version retry, and its post-success
+ * read-back so the client learns the version finalize_story_media_upload
+ * just bumped (see that action's own comments for both).
+ *
+ * Goes through get_story_version_for_media() (supabase/migrations/
+ * 20260926110809_get_story_version_for_media.sql) — a SECURITY DEFINER RPC
+ * that re-derives the caller's own owner-or-assigned-editor relationship to
+ * the story independently, never trusting that an earlier authorization on
+ * this media id still holds. This used to be two direct `.from("story_media")`
+ * / `.from("stories")` reads through the ordinary client — which ALWAYS
+ * failed with "permission denied": both tables have had every privilege
+ * revoked from anon/authenticated since 20260803090900_lock_down_story_
+ * domain_grants.sql, "no policies — every access is a SECURITY DEFINER
+ * function" being enforced at the grant level, not just via RLS. That
+ * silent, permanent failure was the root cause of a story's version
+ * appearing to the client to never advance past a successful photo upload,
+ * which then rejected every subsequent save as "stale" indefinitely.
+ * Returns null only when the RPC itself raises (no such media, or not
+ * authorized), which the caller treats as "cannot retry", never as
+ * version 0.
  */
 export async function storyVersionForMedia(
   mediaId: string,
 ): Promise<number | null> {
   await requireUser();
   const supabase = await createClient();
-  const { data: media, error: mediaError } = await supabase
-    .from("story_media")
-    .select("story_id")
-    .eq("id", mediaId)
-    .maybeSingle();
-  if (mediaError || !media?.story_id) return null;
-  const { data: story, error: storyError } = await supabase
-    .from("stories")
-    .select("version")
-    .eq("id", media.story_id)
-    .maybeSingle();
-  if (storyError) return null;
-  return story?.version ?? null;
+  const { data, error } = await supabase.rpc("get_story_version_for_media", {
+    p_media_id: mediaId,
+  });
+  if (error) return null;
+  return data ?? null;
 }
 
 /**
