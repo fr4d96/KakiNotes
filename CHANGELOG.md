@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.1](https://github.com/fr4d96/KakiNotes/compare/v1.0.0...v1.0.1) (2026-09-26)
+
+### What's new for contributors
+
+**Adding more than one photo works again.** After your first photo uploaded, the second one failed, and so did everything after it: your writing stopped saving, and so did tags and places, until you reloaded the page. Now you can add several photos in a row, even all at once, and keep writing straight after. If your story really was changed somewhere else, say in another tab, you'll see a clear message asking you to reload, not a vague "upload failed".
+
+**Delete only shows up where it works.** A draft that has already been through review (sent in, then sent back or withdrawn, then edited again) can't be deleted. Its earlier versions are part of the review record. My Stories used to show a Delete button on these drafts anyway, and clicking it just failed. Now the button only shows on drafts you can actually delete. If deleting does fail for some reason, you'll see a plain explanation instead of a technical error.
+
+
+### Bug Fixes
+
+* **stories:** draft delete on reviewed drafts, and saves failing after a photo upload ([eb86d92](https://github.com/fr4d96/KakiNotes/commit/eb86d92e41251be99944b9d0ac93c73e0f71b691))
+
 ## [1.0.0](https://github.com/fr4d96/KakiNotes/compare/v0.10.0...v1.0.0) (2026-09-24)
 
 ### What's new for everyone
