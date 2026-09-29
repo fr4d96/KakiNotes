@@ -19,12 +19,6 @@ export type StoryContentEditorProps = {
   onChange: (blocks: StoryContentBlock[]) => void;
   editable?: boolean;
   ariaLabel?: string;
-  /**
-   * Takes the contributor to the Images panel -- see
-   * MarkdownEditorProps.onRequestImages. Passed straight through; uploading
-   * still lives entirely in image-upload-manager.tsx.
-   */
-  onRequestImages?: () => void;
   /** Rendered outline Markdown for `/outline` and insertOutline -- see
    * MarkdownEditorProps.outline. */
   outline?: string;
@@ -40,9 +34,6 @@ export type StoryContentEditorProps = {
  */
 export type StoryContentEditorHandle = {
   replaceContent: (blocks: StoryContentBlock[]) => void;
-  /** Inserts an already-uploaded image's embed token at the cursor -- see
-   * MarkdownEditorHandle.insertMedia's own comment. */
-  insertMedia: (mediaId: string, width?: number) => void;
   /** See MarkdownEditorHandle.insertHeading / insertOutline. */
   insertHeading: (heading: string) => void;
   insertOutline: () => boolean;
@@ -63,14 +54,7 @@ export const StoryContentEditor = forwardRef<
   StoryContentEditorHandle,
   StoryContentEditorProps
 >(function StoryContentEditor(
-  {
-    initialContent,
-    onChange,
-    editable = true,
-    ariaLabel,
-    onRequestImages,
-    outline,
-  },
+  { initialContent, onChange, editable = true, ariaLabel, outline },
   ref,
 ) {
   const t = useTranslations("editor.fields");
@@ -81,9 +65,6 @@ export const StoryContentEditor = forwardRef<
     () => ({
       replaceContent: (blocks: StoryContentBlock[]) => {
         editorRef.current?.replaceValue(storyContentText(blocks));
-      },
-      insertMedia: (mediaId: string, width?: number) => {
-        editorRef.current?.insertMedia(mediaId, width);
       },
       insertHeading: (heading: string) => {
         editorRef.current?.insertHeading(heading);
@@ -109,7 +90,6 @@ export const StoryContentEditor = forwardRef<
         onChange={(text) => onChange(markdownToStoryContent(text))}
         editable={editable}
         ariaLabel={ariaLabel ?? t("storyContent")}
-        onRequestImages={onRequestImages}
         outline={outline}
       />
     </div>

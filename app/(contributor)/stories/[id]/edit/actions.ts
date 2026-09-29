@@ -188,18 +188,13 @@ const mediaCaptionInputSchema = z.object({
   revisionId: z.uuid(),
   mediaId: z.uuid(),
   expectedVersion: z.number().int(),
-  altText: z.string().trim().max(500).nullable(),
   caption: z.string().trim().max(500).nullable(),
-  decorative: z.boolean(),
 });
 
 export async function updateMediaCaptionAction(
   params: unknown,
 ): Promise<MutationResult> {
-  const [tErr, tv] = await Promise.all([
-    getTranslations("actionErrors"),
-    getTranslations("validation"),
-  ]);
+  const tv = await getTranslations("validation");
   const authError = await requireSignedIn();
   if (authError) return authError;
 
@@ -210,14 +205,20 @@ export async function updateMediaCaptionAction(
       error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
     };
   }
-  if (!parsed.data.decorative && !parsed.data.altText) {
-    return {
-      ok: false,
-      error: tErr("altTextRequired"),
-    };
-  }
+  // A photo has one optional caption. It doubles as the alt text so screen
+  // readers hear it too; with no caption the photo is stored decorative
+  // (alt="") -- which story_revision_media_alt_text_required allows -- rather
+  // than as "missing alt text". Derived here, never taken from the client.
+  const caption = parsed.data.caption || null;
   try {
-    await updateStoryMediaCaption(parsed.data);
+    await updateStoryMediaCaption({
+      revisionId: parsed.data.revisionId,
+      mediaId: parsed.data.mediaId,
+      expectedVersion: parsed.data.expectedVersion,
+      caption,
+      altText: caption,
+      decorative: caption === null,
+    });
     return { ok: true };
   } catch (error) {
     return { ok: false, error: await errorMessage(error) };

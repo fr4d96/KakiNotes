@@ -29,14 +29,6 @@ import { insertOutline, insertTable } from "./markdown-commands";
 
 export type SlashCommandOptions = {
   /**
-   * Called by the "Photo" entry. Images are never uploaded from inside the
-   * editor -- image-upload-manager.tsx owns the whole reservation /
-   * direct-to-storage / embed-token flow -- so this entry's only job is to
-   * take the contributor to that panel instead of leaving them hunting for
-   * it.
-   */
-  onRequestImages?: () => void;
-  /**
    * Rendered Markdown for the "Outline" entry (nine `##` headings, see
    * lib/story/story-starters.ts#outlineMarkdown), supplied by the caller
    * because the headings are per-locale content. The entry only exists
@@ -176,23 +168,6 @@ export function slashCommands(
         if (!insertOutline(view, outline, { from, to })) {
           clearTrigger(view, from, to);
         }
-      },
-    });
-  }
-
-  if (options.onRequestImages) {
-    const onRequestImages = options.onRequestImages;
-    commands.push({
-      key: "photo",
-      ...text(
-        "photo",
-        "Photo",
-        "Go to the Images panel to upload and place a photo",
-      ),
-      aliases: ["image", "picture", "img"],
-      apply: (view, from, to) => {
-        clearTrigger(view, from, to);
-        onRequestImages();
       },
     });
   }

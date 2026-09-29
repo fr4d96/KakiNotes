@@ -10,7 +10,7 @@ describe("WhatsPublicSummary", () => {
         attributionValue="Backpack Mei"
         hasExcerpt={true}
         imageCount={0}
-        decorativeImageCount={0}
+        captionedImageCount={0}
       />,
     );
 
@@ -25,7 +25,7 @@ describe("WhatsPublicSummary", () => {
         attributionValue="Mei"
         hasExcerpt={false}
         imageCount={0}
-        decorativeImageCount={0}
+        captionedImageCount={0}
       />,
     );
 
@@ -39,7 +39,7 @@ describe("WhatsPublicSummary", () => {
         attributionValue="Mei Lin"
         hasExcerpt={false}
         imageCount={3}
-        decorativeImageCount={1}
+        captionedImageCount={2}
       />,
     );
 
@@ -54,7 +54,7 @@ describe("WhatsPublicSummary", () => {
         attributionValue="Anonymous"
         hasExcerpt={false}
         imageCount={0}
-        decorativeImageCount={0}
+        captionedImageCount={0}
       />,
     );
 

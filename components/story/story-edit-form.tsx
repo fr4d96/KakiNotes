@@ -134,30 +134,11 @@ export type StoryEditFormProps = {
 
 const FIELDS_SAVE_DEBOUNCE_MS = 600;
 
-/**
- * The Images section's anchor. The editor's slash-menu "Photo" entry and
- * its toolbar image button both call focusImagesPanel() below rather than
- * uploading anything themselves -- image-upload-manager.tsx owns the whole
- * reservation / direct-to-storage / embed-token flow, and duplicating it
- * inside the editor is the change docs/editor-competitive-research.md
- * deliberately deferred.
- */
-const IMAGES_PANEL_ID = "story-images";
-
 /** See the StoryStepProgress call below. Module-level so it is one stable array. */
 const REVIEW_STEP_LOCK: StoryStepId[] = ["review"];
 
 /** Ties the disabled "Review & submit" button to the reason it is disabled. */
 const MISSING_REQUIREMENTS_ID = "story-missing-requirements";
-
-function focusImagesPanel() {
-  const section = document.getElementById(IMAGES_PANEL_ID);
-  if (!section) return;
-  section.scrollIntoView({ behavior: "smooth", block: "start" });
-  // Moves keyboard AND screen-reader focus, not just the viewport -- a
-  // scroll alone would leave a keyboard user's focus back in the editor.
-  section.focus({ preventScroll: true });
-}
 
 /**
  * One step of the timeline. Always mounted; hidden with a class when it is
@@ -1289,26 +1270,13 @@ export function StoryEditForm({
                     setContent(blocks);
                     scheduleSave({ content: blocks });
                   }}
-                  // The editor's slash-menu "Photo" entry and toolbar image
-                  // button live on THIS step, but the image panel they point
-                  // at is on the next one -- so the request has to move the
-                  // timeline first, then focus, or it would scroll to a
-                  // section that is still `hidden`.
-                  onRequestImages={() => {
-                    goToStep("photos");
-                    requestAnimationFrame(focusImagesPanel);
-                  }}
                 />
               </div>
             </div>
           </StepSection>
 
           <StepSection id="photos" activeStep={step}>
-            <div
-              id={IMAGES_PANEL_ID}
-              tabIndex={-1}
-              className="scroll-mt-[12rem] outline-none"
-            >
+            <div>
               {/* No "Images (N)" heading here any more: the step is already
                 titled "Photos", and the panel below opens with its own
                 "N photos · N in your story" summary, so this was the third
@@ -1326,33 +1294,6 @@ export function StoryEditForm({
                   onVersionBumped={bumpVersion}
                   inlineMediaIds={inlineMediaIds}
                   onMediaDetached={handleMediaDetached}
-                  // Placing a photo moves the timeline to the story step and
-                  // shows it landing there. Before this, "Add to story"
-                  // inserted the embed into an editor that was on a hidden
-                  // step, so the contributor got no feedback at all and had
-                  // to walk back a step to find out whether it had worked.
-                  //
-                  // The step switch has to happen FIRST and the insert on the
-                  // next frame: CodeMirror cannot measure or scroll a
-                  // document inside a `display: none` section, so inserting
-                  // before the section is painted puts the embed in at the
-                  // right place but leaves the view scrolled somewhere else.
-                  onInsertIntoEditor={(mediaId, width) => {
-                    goToStep("story");
-                    requestAnimationFrame(() => {
-                      richTextEditorRef.current?.insertMedia(mediaId, width);
-                      // insertMedia focuses the editor, and focusing an
-                      // element the page is not scrolled to can move the
-                      // page. The step effect above already asked for the
-                      // top; this re-asserts it AFTER the insert, so the
-                      // contributor always lands looking at the editor with
-                      // their new photo in it rather than somewhere down the
-                      // page. Instant for the same reason as above.
-                      requestAnimationFrame(() =>
-                        window.scrollTo({ top: 0, behavior: "instant" }),
-                      );
-                    });
-                  }}
                 />
               </div>
             </div>

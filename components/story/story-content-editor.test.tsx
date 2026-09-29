@@ -66,25 +66,6 @@ describe("StoryContentEditor", () => {
     expect(screen.getByText(/1 min read/)).toBeInTheDocument();
   });
 
-  it("offers a Photo route to the Images panel only when the page provides one", () => {
-    const { rerender } = render(
-      <StoryContentEditor
-        initialContent={markdownToStoryContent("Hi")}
-        onChange={() => {}}
-      />,
-    );
-    expect(screen.queryByTitle(/Add a photo/)).not.toBeInTheDocument();
-
-    rerender(
-      <StoryContentEditor
-        initialContent={markdownToStoryContent("Hi")}
-        onChange={() => {}}
-        onRequestImages={() => {}}
-      />,
-    );
-    expect(screen.getByTitle(/Add a photo/)).toBeVisible();
-  });
-
   describe("rich paste", () => {
     function pasteInto(container: HTMLElement, data: Record<string, string>) {
       const content = container.querySelector(".cm-content");

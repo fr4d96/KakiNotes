@@ -53,8 +53,6 @@ function mediaItem(mediaId: string, sortOrder: number): RevisionMediaItem {
   };
 }
 
-const onInsertIntoEditor = vi.fn();
-
 function renderPanel(inlineMediaIds: Set<string>) {
   const versionRef = createRef<number>() as { current: number };
   versionRef.current = 1;
@@ -67,7 +65,6 @@ function renderPanel(inlineMediaIds: Set<string>) {
       queue={new MutationQueue()}
       onVersionBumped={() => {}}
       inlineMediaIds={inlineMediaIds}
-      onInsertIntoEditor={onInsertIntoEditor}
     />,
   );
 }
@@ -82,7 +79,6 @@ async function openDetails(index: number) {
 describe("ImageUploadManager — the photo library", () => {
   beforeEach(() => {
     updateMediaCaptionAction.mockClear();
-    onInsertIntoEditor.mockClear();
   });
 
   it("summarises the library in one line instead of two groups", () => {
@@ -96,67 +92,65 @@ describe("ImageUploadManager — the photo library", () => {
   // three dozen controls and no image you could actually look at.
   it("shows no form fields until a photo's details are opened", async () => {
     renderPanel(new Set());
-    expect(screen.queryByLabelText(/Describe this photo/)).toBeNull();
     expect(screen.queryByLabelText(/^Caption/)).toBeNull();
 
     await openDetails(1);
-    expect(screen.getByLabelText(/Describe this photo/)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Caption/)).toBeInTheDocument();
   });
 
   it("opens only one photo's details at a time", async () => {
     renderPanel(new Set());
     await openDetails(1);
-    expect(screen.getAllByLabelText(/Describe this photo/)).toHaveLength(1);
+    expect(screen.getAllByLabelText(/^Caption/)).toHaveLength(1);
     await openDetails(2);
-    expect(screen.getAllByLabelText(/Describe this photo/)).toHaveLength(1);
+    expect(screen.getAllByLabelText(/^Caption/)).toHaveLength(1);
   });
 
   // The gap this closes: placed images used to be filtered out of the panel
-  // completely, so describing a photo after putting it where it belonged was
+  // completely, so captioning a photo after putting it where it belonged was
   // impossible. It must stay true through the redesign.
-  it("keeps alt text and caption editable after an image is placed", async () => {
+  it("keeps the caption editable after an image is placed", async () => {
     renderPanel(new Set([PLACED_ID]));
     await openDetails(1);
 
-    const altText = screen.getByLabelText(/Describe this photo/);
-    await userEvent.type(altText, "A vineyard at dawn");
-    expect(altText).toHaveValue("A vineyard at dawn");
+    const caption = screen.getByLabelText(/^Caption/);
+    await userEvent.type(caption, "A vineyard at dawn");
+    expect(caption).toHaveValue("A vineyard at dawn");
     expect(updateMediaCaptionAction).toHaveBeenCalled();
-
-    expect(screen.getByLabelText(/^Caption/)).toBeInTheDocument();
   });
 
-  it("offers 'Add to story' only for a photo that is not in the text yet", () => {
+  it("shows a placed photo's 'In story' badge", () => {
     renderPanel(new Set([PLACED_ID]));
-    expect(
-      screen.getAllByRole("button", { name: "Add to story" }),
-    ).toHaveLength(1);
-    // A placed photo says so with its tile badge, not a second line of
-    // text next to the button.
     expect(screen.getByText("In story")).toBeInTheDocument();
   });
 
-  it("flags photos with no description, on the tile and in the summary", () => {
-    renderPanel(new Set());
-    expect(
-      screen.getByText("2 photos still need a description"),
-    ).toBeInTheDocument();
-    expect(screen.getAllByText("Needs description")).toHaveLength(2);
-    // The details button doubles as the call to action when it is the thing
-    // still missing.
-    expect(
-      screen.getAllByRole("button", { name: /^Describe photo/ }),
-    ).toHaveLength(2);
-  });
-
-  it("stops flagging a photo once it is marked decorative", async () => {
+  // One optional field per photo: no separate description, no decorative
+  // checkbox. The server derives alt text and "decorative" from the caption,
+  // so the client sends the caption alone.
+  it("has a single optional caption field and sends only the caption", async () => {
     renderPanel(new Set());
     await openDetails(1);
-    await userEvent.click(screen.getByLabelText(/decorative/i));
+
+    expect(screen.queryByLabelText(/Describe this photo/)).toBeNull();
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(screen.queryByText("required", { exact: false })).toBeNull();
+
+    await userEvent.type(screen.getByLabelText(/^Caption/), "Hi");
+    const lastCall = updateMediaCaptionAction.mock.calls.at(-1) as unknown as [
+      Record<string, unknown>,
+    ];
+    expect(lastCall[0]).toMatchObject({ caption: "Hi" });
+    expect(lastCall[0]).not.toHaveProperty("altText");
+    expect(lastCall[0]).not.toHaveProperty("decorative");
+  });
+
+  it("never nags about photos without a caption", () => {
+    renderPanel(new Set());
+    expect(screen.queryByText(/need a description/)).toBeNull();
+    expect(screen.queryByText("Needs description")).toBeNull();
     expect(
-      screen.getByText("1 photo still needs a description"),
-    ).toBeInTheDocument();
+      screen.getAllByRole("button", { name: /^Details photo/ }),
+    ).toHaveLength(2);
   });
 
   it("opens the lightbox on a tile's thumbnail once it has a signed URL", async () => {
@@ -175,7 +169,6 @@ describe("ImageUploadManager — the photo library", () => {
           queue={new MutationQueue()}
           onVersionBumped={() => {}}
           inlineMediaIds={new Set()}
-          onInsertIntoEditor={onInsertIntoEditor}
         />
       </PhotoLightboxProvider>,
     );

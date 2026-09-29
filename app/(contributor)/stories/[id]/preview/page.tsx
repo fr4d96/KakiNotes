@@ -344,8 +344,8 @@ export default async function StoryPreviewPage({
             attributionValue={preview.attributionValue}
             hasExcerpt={Boolean(preview.excerpt)}
             imageCount={preview.media.length}
-            decorativeImageCount={
-              preview.media.filter((m) => m.decorative).length
+            captionedImageCount={
+              preview.media.filter((m) => m.caption?.trim()).length
             }
           />
         </div>

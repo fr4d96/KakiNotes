@@ -8,7 +8,8 @@ export type WhatsPublicSummaryProps = {
   attributionValue: string;
   hasExcerpt: boolean;
   imageCount: number;
-  decorativeImageCount: number;
+  /** Count of `imageCount` that carry a visible caption. */
+  captionedImageCount: number;
 };
 
 /**
@@ -25,14 +26,13 @@ export function WhatsPublicSummary({
   attributionValue,
   hasExcerpt,
   imageCount,
-  decorativeImageCount,
+  captionedImageCount,
 }: WhatsPublicSummaryProps) {
   const t = useTranslations("whatsPublic");
   const key = `attribution.${attributionType}` as never;
   // An enum value this app has not been taught renders as itself rather
   // than as a missing-message error.
   const attributionLabel = t.has(key) ? t(key) : attributionType;
-  const captionedImageCount = imageCount - decorativeImageCount;
 
   return (
     <div className="rounded-md border border-border-subtle p-4 text-sm">

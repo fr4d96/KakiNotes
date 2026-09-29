@@ -8,8 +8,6 @@ import { EditorView, keymap } from "@codemirror/view";
 import { EditorState, Prec } from "@codemirror/state";
 import { autocompletion } from "@codemirror/autocomplete";
 
-import { DEFAULT_EMBED_WIDTH } from "@/lib/story/markdown-media";
-import { GalleryIcon } from "@/components/icons";
 import { htmlPasteToMarkdown } from "@/lib/story/html-paste";
 import {
   markdownImageCount,
@@ -18,7 +16,6 @@ import {
 } from "@/lib/story/markdown-text";
 import { createMarkdownLiveExtensions } from "./markdown-live-decorations";
 import {
-  insertMediaToken,
   insertOutline,
   insertSectionHeading,
   insertTable,
@@ -41,15 +38,6 @@ export {
 export type MarkdownEditorHandle = {
   replaceValue: (text: string) => void;
   /**
-   * Inserts an already-uploaded image's embed token at the cursor. Images
-   * are uploaded exclusively through image-upload-manager.tsx's "Images"
-   * panel now (never from within this editor -- see this file's removed
-   * ImageButton/ImageUploadContext, superseded by that panel's own "Add to
-   * story" action); this is the other half of that flow, called via
-   * StoryContentEditorHandle from story-edit-form.tsx.
-   */
-  insertMedia: (mediaId: string, width?: number) => void;
-  /**
    * Appends a `## heading` section at the end of the document and puts
    * the cursor under it. Called by the starter card
    * (components/story/story-starters-card.tsx) via StoryContentEditorHandle.
@@ -67,13 +55,6 @@ export type MarkdownEditorProps = {
   onChange: (text: string) => void;
   editable?: boolean;
   ariaLabel?: string;
-  /**
-   * Takes the contributor to the Images panel. Wired to the slash menu's
-   * "Photo" entry and the toolbar's image button -- uploading still happens
-   * only in image-upload-manager.tsx, so this points at it rather than
-   * duplicating the upload flow.
-   */
-  onRequestImages?: () => void;
   /**
    * Rendered Markdown for the "Outline" slash entry and the handle's
    * insertOutline -- see SlashCommandOptions.outline. Omitted in view-only
@@ -196,13 +177,7 @@ function MarkdownGuideLink() {
  * needed. Owning a scroll region is the fix that does not depend on
  * knowing the height of everything above it.
  */
-function EditorToolbar({
-  getView,
-  onRequestImages,
-}: {
-  getView: () => EditorView | null;
-  onRequestImages?: () => void;
-}) {
+function EditorToolbar({ getView }: { getView: () => EditorView | null }) {
   const t = useTranslations("editor.toolbar");
   const run = (fn: (view: EditorView) => void) => () => {
     const view = getView();
@@ -271,13 +246,6 @@ function EditorToolbar({
           label="▦"
           onClick={run((v) => insertTable(v))}
         />
-        {onRequestImages && (
-          <ToolbarButton
-            title={t("photo")}
-            label={<GalleryIcon className="h-4 w-4" />}
-            onClick={onRequestImages}
-          />
-        )}
       </div>
       <div className="shrink-0">
         <MarkdownGuideLink />
@@ -292,14 +260,7 @@ export const MarkdownEditor = React.forwardRef<
   MarkdownEditorHandle,
   MarkdownEditorProps
 >(function MarkdownEditor(
-  {
-    initialValue,
-    onChange,
-    editable = true,
-    ariaLabel,
-    onRequestImages,
-    outline,
-  },
+  { initialValue, onChange, editable = true, ariaLabel, outline },
   ref,
 ) {
   const t = useTranslations("editor.toolbar");
@@ -320,7 +281,6 @@ export const MarkdownEditor = React.forwardRef<
             "quote",
             "link",
             "table",
-            "photo",
             "outline",
           ] as const
         ).map((key) => [
@@ -369,10 +329,6 @@ export const MarkdownEditor = React.forwardRef<
           changes: { from: 0, to: view.state.doc.length, insert: text },
         });
       },
-      insertMedia: (mediaId: string, width?: number) => {
-        const view = getView();
-        if (view) insertMediaToken(view, mediaId, width ?? DEFAULT_EMBED_WIDTH);
-      },
       insertHeading: (heading: string) => {
         const view = getView();
         if (view) insertSectionHeading(view, heading);
@@ -391,10 +347,10 @@ export const MarkdownEditor = React.forwardRef<
   // away the parse state) and createMarkdownLiveExtensions() (whose signed
   // image-URL cache is per editor instance -- a new one every render would
   // re-mint a URL for every embedded image on every keystroke). Only the
-  // slash-command source depends on `onRequestImages`, so even a caller
-  // passing a fresh arrow function each render can at worst reconfigure
-  // that one facet; CodeMirror keeps the plugin instances behind the
-  // extension values that did not change.
+  // slash-command source depends on `outline`/`labels`, so even a caller
+  // passing fresh values each render can at worst reconfigure that one
+  // facet; CodeMirror keeps the plugin instances behind the extension
+  // values that did not change.
   const stableExtensions = React.useMemo(
     () => [
       markdownLang(),
@@ -445,14 +401,12 @@ export const MarkdownEditor = React.forwardRef<
     () => [
       ...stableExtensions,
       autocompletion({
-        override: [
-          createSlashCommandSource({ onRequestImages, outline, labels }),
-        ],
+        override: [createSlashCommandSource({ outline, labels })],
         // No type icons: this is a prose menu, not a code completion list.
         icons: false,
       }),
     ],
-    [stableExtensions, onRequestImages, outline, labels],
+    [stableExtensions, outline, labels],
   );
 
   const words = markdownWordCount(text);
@@ -481,9 +435,7 @@ export const MarkdownEditor = React.forwardRef<
         editable ? "flex h-[clamp(20rem,62vh,46rem)] flex-col" : undefined
       }
     >
-      {editable && (
-        <EditorToolbar getView={getView} onRequestImages={onRequestImages} />
-      )}
+      {editable && <EditorToolbar getView={getView} />}
       <div
         aria-label={ariaLabel ?? tFields("storyContent")}
         role="textbox"

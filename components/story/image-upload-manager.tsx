@@ -15,7 +15,6 @@ import {
   UPLOAD_ACCEPT_ATTRIBUTE,
 } from "@/lib/story/image-validation";
 import { getErrorMessage } from "@/lib/errors";
-import { DEFAULT_EMBED_WIDTH } from "@/lib/story/markdown-media";
 import { useToast } from "@/components/ui/toast";
 import { Spinner } from "@/components/ui/spinner";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
@@ -147,18 +146,6 @@ export type ImageUploadManagerProps = {
    * longer carries.
    */
   onMediaDetached?: (mediaId: string) => void;
-  /**
-   * Places an uploaded image into the story text at the editor's cursor,
-   * via the "Add to story" button below -- the only way an image reaches
-   * the story text now that the editor toolbar's own upload-and-insert
-   * button has been removed (uploading happens here, exclusively). `width`
-   * is this tile's own on-screen pixel width at the moment of the click
-   * (see the button's onClick below) -- passed through so the inserted
-   * image starts out the same size as its thumbnail here, not a separate
-   * guessed default. Omitted in any context with no open editor to insert
-   * into.
-   */
-  onInsertIntoEditor?: (mediaId: string, width: number) => void;
 };
 
 const PROCESSING_LABEL_KEYS: Record<string, string> = {
@@ -171,9 +158,7 @@ const PROCESSING_LABEL_KEYS: Record<string, string> = {
   promoted: "ready",
 };
 
-type MediaTextPatch = Partial<
-  Pick<RevisionMediaItem, "altText" | "caption" | "decorative">
->;
+type MediaTextPatch = Partial<Pick<RevisionMediaItem, "altText" | "caption">>;
 
 /**
  * Distinguishes one photo from another in an accessible name, so a screen
@@ -255,7 +240,6 @@ export function ImageUploadManager({
   onVersionBumped,
   inlineMediaIds,
   onMediaDetached,
-  onInsertIntoEditor,
 }: ImageUploadManagerProps) {
   const t = useTranslations("editor.photos");
   const tCommon = useTranslations("common");
@@ -264,14 +248,16 @@ export function ImageUploadManager({
   );
   // Uploaded but not yet placed in the story text.
   const visibleMedia = media.filter((m) => !inlineMediaIds.has(m.mediaId));
-  // Already placed in the story text. These used to be hidden from this
+  // Already placed in the story text (from an existing embed token in a
+  // published story predating this panel's own removal of in-body image
+  // placement -- see markdown-editor.tsx). These used to be hidden from this
   // panel entirely, which meant alt text and captions became UNEDITABLE the
   // moment an image was put where it belonged -- the natural order (place
   // the photo, then describe it) was impossible, and it was the reason
   // stories arrived at moderation with the `images_missing_alt_text`
-  // warning. They now get their own group below: describe and cover/remove,
-  // but no "Add to story" (already there) and no reorder (their order is
-  // the order they appear in the text).
+  // warning. They still get their own group below: describe and
+  // cover/remove, but no reorder (their order is the order they appear in
+  // the text).
   const placedMedia = media.filter((m) => inlineMediaIds.has(m.mediaId));
   const [uploading, setUploading] = useState<UploadingItem[]>([]);
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
@@ -288,12 +274,6 @@ export function ImageUploadManager({
   // re-minted. Guards the onError retry below against a loop when the image
   // is genuinely broken rather than merely expired.
   const retriedThumbnailsRef = useRef<Set<string>>(new Set());
-  // Drives the summary line -- alt text is what the moderation queue's
-  // `images_missing_alt_text` warning fires on, so it is worth counting
-  // where the contributor can still act on it.
-  const needsAltTextCount = media.filter(
-    (m) => !m.decorative && !m.altText?.trim(),
-  ).length;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
 
@@ -644,25 +624,21 @@ export function ImageUploadManager({
     });
   }
 
-  function updateCaption(
-    mediaId: string,
-    patch: Partial<
-      Pick<RevisionMediaItem, "altText" | "caption" | "decorative">
-    >,
-  ) {
+  // One optional caption per photo. The server copies it into alt text too
+  // (and marks an empty one decorative) -- see updateMediaCaptionAction --
+  // so the local copy mirrors that for the thumbnail's own alt attribute.
+  function updateCaption(mediaId: string, caption: string) {
     setMedia((prev) =>
-      prev.map((m) => (m.mediaId === mediaId ? { ...m, ...patch } : m)),
+      prev.map((m) =>
+        m.mediaId === mediaId ? { ...m, caption, altText: caption } : m,
+      ),
     );
     queue.enqueue(`media-caption:${mediaId}`, async () => {
-      const item = media.find((m) => m.mediaId === mediaId);
-      const merged = { ...item, ...patch };
       const result = await updateMediaCaptionAction({
         revisionId,
         mediaId,
         expectedVersion: versionRef.current,
-        altText: merged.altText ?? null,
-        caption: merged.caption ?? null,
-        decorative: merged.decorative ?? false,
+        caption,
       });
       if (result.ok) {
         versionRef.current += 1;
@@ -776,11 +752,6 @@ export function ImageUploadManager({
                 </span>
               )}
             </p>
-            {needsAltTextCount > 0 && (
-              <p className="text-xs text-amber-700 dark:text-amber-400">
-                {t("needsDescriptionCount", { count: needsAltTextCount })}
-              </p>
-            )}
           </div>
 
           <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -803,7 +774,6 @@ export function ImageUploadManager({
                   ? t(`state.${PROCESSING_LABEL_KEYS[state]}` as never)
                   : state;
               const isOpen = openMediaId === item.mediaId;
-              const needsAltText = !item.decorative && !item.altText?.trim();
               const detailsId = `media-details-${item.mediaId}`;
 
               const thumb = (
@@ -842,11 +812,6 @@ export function ImageUploadManager({
                   <div className="pointer-events-none absolute inset-x-1 top-1 flex flex-wrap gap-1">
                     {item.isCover && <TileBadge>{t("badges.cover")}</TileBadge>}
                     {isPlaced && <TileBadge>{t("badges.inStory")}</TileBadge>}
-                    {needsAltText && (
-                      <TileBadge tone="warning">
-                        {t("badges.needsDescription")}
-                      </TileBadge>
-                    )}
                     {isDuplicate && (
                       <TileBadge tone="warning">
                         {t("badges.duplicate")}
@@ -883,51 +848,6 @@ export function ImageUploadManager({
                     <div id={detailsId} className="min-w-0 flex-1 space-y-3">
                       <div>
                         <label
-                          htmlFor={`alt-${item.mediaId}`}
-                          className="block text-xs font-medium"
-                        >
-                          {t("describeThisPhoto")}
-                          {!item.decorative && (
-                            <span className="text-destructive">
-                              <span aria-hidden="true"> *</span>
-                              <span className="sr-only">
-                                {tCommon("requiredSuffix")}
-                              </span>
-                            </span>
-                          )}
-                        </label>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          {t("describeHint")}
-                        </p>
-                        <input
-                          id={`alt-${item.mediaId}`}
-                          type="text"
-                          value={item.altText ?? ""}
-                          disabled={item.decorative}
-                          onChange={(e) =>
-                            updateCaption(item.mediaId, {
-                              altText: e.target.value,
-                            })
-                          }
-                          placeholder={t("altPlaceholder")}
-                          className="mt-1.5 w-full rounded-md border border-border-subtle px-2 py-1.5 text-sm disabled:opacity-50 dark:bg-transparent"
-                        />
-                        <label className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <input
-                            type="checkbox"
-                            checked={item.decorative}
-                            onChange={(e) =>
-                              updateCaption(item.mediaId, {
-                                decorative: e.target.checked,
-                              })
-                            }
-                          />
-                          {t("decorative")}
-                        </label>
-                      </div>
-
-                      <div>
-                        <label
                           htmlFor={`caption-${item.mediaId}`}
                           className="block text-xs font-medium"
                         >
@@ -941,9 +861,7 @@ export function ImageUploadManager({
                           type="text"
                           value={item.caption ?? ""}
                           onChange={(e) =>
-                            updateCaption(item.mediaId, {
-                              caption: e.target.value,
-                            })
+                            updateCaption(item.mediaId, e.target.value)
                           }
                           className="mt-1 w-full rounded-md border border-border-subtle px-2 py-1.5 text-sm dark:bg-transparent"
                         />
@@ -997,29 +915,6 @@ export function ImageUploadManager({
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5">
-                      {onInsertIntoEditor && !isPlaced && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            // Reads this tile's own current on-screen width
-                            // (the grid is responsive -- 2 or 3 columns
-                            // depending on viewport) rather than a hardcoded
-                            // number, so "same size as the Images section"
-                            // stays true at whatever width it's actually
-                            // showing right now.
-                            const el = e.currentTarget
-                              .closest("li")
-                              ?.querySelector<HTMLElement>(".js-image-thumb");
-                            const width = el
-                              ? Math.round(el.getBoundingClientRect().width)
-                              : DEFAULT_EMBED_WIDTH;
-                            onInsertIntoEditor(item.mediaId, width);
-                          }}
-                          className="min-w-0 flex-1 truncate rounded-md bg-accent px-2 py-1.5 text-xs font-semibold text-accent-foreground"
-                        >
-                          {t("addToStory")}
-                        </button>
-                      )}
                       {/* No "already placed" text: the tile's own "In story"
                           badge says it, and a second copy of the same fact
                           truncated to "Placed in your…" next to Details in a
@@ -1046,11 +941,7 @@ export function ImageUploadManager({
                         // "Describephoto 1". Confirmed against
                         // dom-accessibility-api, which is what both this
                         // project's tests and real screen readers implement.
-                        aria-label={
-                          needsAltText
-                            ? t("describeLabel", { name })
-                            : t("detailsLabel", { name })
-                        }
+                        aria-label={t("detailsLabel", { name })}
                         // scroll-mt clears the two stacked sticky bars above
                         // (the site header at top-0 and the editor's own bar
                         // at top-[76px]); without it the scrollIntoView above
@@ -1065,13 +956,9 @@ export function ImageUploadManager({
                         // a second line on a narrower phone.
                         className={`shrink-0 scroll-mt-[15rem] rounded-md border px-2 py-1.5 text-xs font-medium ${
                           isPlaced ? "w-full" : ""
-                        } ${
-                          needsAltText
-                            ? "border-amber-500/70 text-amber-700 dark:text-amber-400"
-                            : "border-border-subtle"
-                        }`}
+                        } border-border-subtle`}
                       >
-                        {needsAltText ? t("describe") : t("details")}
+                        {t("details")}
                       </button>
                     </div>
                   )}

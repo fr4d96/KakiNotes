@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { CompletionContext } from "@codemirror/autocomplete";
@@ -18,12 +18,8 @@ function viewWithDoc(doc: string, pos: number) {
   });
 }
 
-function completeAt(
-  view: EditorView,
-  pos: number,
-  onRequestImages?: () => void,
-) {
-  const source = createSlashCommandSource({ onRequestImages });
+function completeAt(view: EditorView, pos: number) {
+  const source = createSlashCommandSource({});
   return source(new CompletionContext(view.state, pos, false));
 }
 
@@ -89,13 +85,6 @@ describe("createSlashCommandSource", () => {
     expect(completeAt(view, 5)).toBeNull();
   });
 
-  it("only offers Photo when the editor can reach the Images panel", () => {
-    const view = viewWithDoc("/photo", 6);
-    expect(completeAt(view, 6)).toBeNull();
-    const withPanel = completeAt(view, 6, () => {});
-    expect(withPanel?.options.map((o) => o.label)).toEqual(["Photo"]);
-  });
-
   it("labels every option with a human name, not the typed key", () => {
     const view = viewWithDoc("/", 1);
     const labels = completeAt(view, 1)?.options.map((o) => o.label);
@@ -149,18 +138,6 @@ describe("slash command apply()", () => {
     const doc = applyByKey("/table", 6, "table").doc.toString();
     expect(doc).not.toContain("/table");
     expect(doc).toContain("| Column 1 | Column 2 |");
-  });
-
-  it("leaves the document untouched when Photo just points at the panel", () => {
-    const onRequestImages = vi.fn();
-    const view = viewWithDoc("/photo", 6);
-    const command = slashCommands({ onRequestImages }).find(
-      (c) => c.key === "photo",
-    );
-    command?.apply(view, 0, 6);
-    expect(view.state.doc.toString()).toBe("");
-    expect(onRequestImages).toHaveBeenCalledTimes(1);
-    view.destroy();
   });
 
   it("keeps preceding text on the line when the slash is indented", () => {
