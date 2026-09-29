@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/fr4d96/KakiNotes/compare/v1.0.1...v1.1.0) (2026-09-29)
+
+
+### Features
+
+* **stories:** words-only story editor and one optional caption per photo ([bd45952](https://github.com/fr4d96/KakiNotes/commit/bd459528488ea4951743dadc918e9ee24c82b58a))
+
 ## [1.0.1](https://github.com/fr4d96/KakiNotes/compare/v1.0.0...v1.0.1) (2026-09-26)
 
 ### What's new for contributors
