@@ -2,6 +2,12 @@
 
 ## [1.1.0](https://github.com/fr4d96/KakiNotes/compare/v1.0.1...v1.1.0) (2026-09-29)
 
+### What's new for contributors
+
+**The story editor is just for words now.** You can no longer drop a photo into the middle of your text. The photo button in the toolbar, the "/photo" shortcut and the "Add to story" button on each photo are gone. You still add photos in the Photos step, and they show in a gallery with your story. Stories that already have photos inside their text still show them.
+
+**One simple caption per photo.** Each photo used to ask for a description, a caption and whether it was "decorative". Now there's one box: a caption, and it's optional. If you write one, it shows under the photo and people using screen readers hear it too. If you leave it empty, that's fine. Nothing nags you about photos without a caption any more.
+
 
 ### Features
 
