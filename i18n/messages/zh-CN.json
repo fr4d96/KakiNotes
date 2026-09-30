@@ -1115,7 +1115,12 @@
     "submitFailed": "无法提交这篇故事送审。",
     "savePrivateFailed": "无法把这篇故事保存为私密。",
     "requestChangesFailed": "无法提交修改请求。",
-    "declineFailed": "无法拒绝。"
+    "declineFailed": "无法拒绝。",
+    "subStorySelf": "故事不能把自己设为主故事。",
+    "subStoryNotFound": "找不到这篇主故事。",
+    "subStoryParentNotPublished": "主故事必须先发布。",
+    "subStoryParentIsSubStory": "那篇故事本身就是子故事，不能再有子故事。",
+    "subStoryHasSubStories": "已经有其他故事归在这篇故事下面，所以它不能成为子故事。"
   },
   "takedown": {
     "alreadyDown": "这篇故事已经被撤下了。",

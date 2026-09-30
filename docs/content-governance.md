@@ -278,6 +278,14 @@ what readers currently see. It only works on a revision still genuinely `submitt
 has acted on it, it is no longer `submitted` and the contributor instead gets the normal
 "changes requested → start a new draft" path (`request_editorial_changes()`/`create_next_draft_revision()`).
 
+### Sub stories are moderated content
+
+Filing a story under a main story (2026-09-30) is part of the revision, not a setting: it is frozen
+on submit, shown to the moderator on the review page ("Filed under main story"), and only goes
+public when that revision is approved. A contributor can only file a story under their **own**
+published story, so nobody can attach their story to someone else's. If the main story is later
+archived or taken down, its sub stories stay up but stop showing the "Part of" link.
+
 ## Reporting
 
 - Any reader can report a published story or image for review (e.g. suspected impersonation, rights

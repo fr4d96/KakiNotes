@@ -1289,6 +1289,7 @@ export type Database = {
           currency: string;
           excerpt: string | null;
           id: string;
+          parent_story_id: string | null;
           revision_number: number;
           revision_status: Database["public"]["Enums"]["story_revision_status"];
           search_vector: unknown;
@@ -1311,6 +1312,7 @@ export type Database = {
           currency?: string;
           excerpt?: string | null;
           id?: string;
+          parent_story_id?: string | null;
           revision_number: number;
           revision_status?: Database["public"]["Enums"]["story_revision_status"];
           search_vector?: unknown;
@@ -1333,6 +1335,7 @@ export type Database = {
           currency?: string;
           excerpt?: string | null;
           id?: string;
+          parent_story_id?: string | null;
           revision_number?: number;
           revision_status?: Database["public"]["Enums"]["story_revision_status"];
           search_vector?: unknown;
@@ -1347,6 +1350,13 @@ export type Database = {
           updated_by?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "story_revisions_parent_story_id_fkey";
+            columns: ["parent_story_id"];
+            isOneToOne: false;
+            referencedRelation: "stories";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "story_revisions_story_id_fkey";
             columns: ["story_id"];
@@ -1566,6 +1576,14 @@ export type Database = {
           p_operation: string;
         };
         Returns: undefined;
+      };
+      _story_has_sub_stories: {
+        Args: { p_story_id: string };
+        Returns: boolean;
+      };
+      _story_is_publicly_visible: {
+        Args: { p_story_id: string };
+        Returns: boolean;
       };
       _terminalize_active_revision: {
         Args: { p_story_id: string };
@@ -1942,6 +1960,13 @@ export type Database = {
           work_types: Json;
         }[];
       };
+      get_published_story_family: {
+        Args: { p_slug: string };
+        Returns: {
+          parent: Json;
+          sub_stories: Json;
+        }[];
+      };
       get_published_story_media: {
         Args: { p_story_id: string };
         Returns: {
@@ -1969,6 +1994,15 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      get_revision_parent_story: {
+        Args: { p_revision_id: string };
+        Returns: {
+          has_sub_stories: boolean;
+          parent_slug: string;
+          parent_story_id: string;
+          parent_title: string;
+        }[];
       };
       get_revision_selections: {
         Args: { p_revision_id: string };
@@ -2229,6 +2263,14 @@ export type Database = {
           requested_at: string;
           status: string;
           story_id: string;
+        }[];
+      };
+      list_parent_story_options: {
+        Args: { p_story_id: string };
+        Returns: {
+          slug: string;
+          story_id: string;
+          title: string;
         }[];
       };
       list_public_contributors: {
@@ -2511,6 +2553,14 @@ export type Database = {
         Args: {
           p_expected_version: number;
           p_locations: Json;
+          p_revision_id: string;
+        };
+        Returns: undefined;
+      };
+      set_revision_parent_story: {
+        Args: {
+          p_expected_version: number;
+          p_parent_story_id: string;
           p_revision_id: string;
         };
         Returns: undefined;

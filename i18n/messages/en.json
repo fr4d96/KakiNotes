@@ -1115,7 +1115,12 @@
     "submitFailed": "Could not submit this story for review.",
     "savePrivateFailed": "Could not save this story privately.",
     "requestChangesFailed": "Could not request changes.",
-    "declineFailed": "Could not decline."
+    "declineFailed": "Could not decline.",
+    "subStorySelf": "A story can't be its own main story.",
+    "subStoryNotFound": "That main story couldn't be found.",
+    "subStoryParentNotPublished": "The main story has to be published first.",
+    "subStoryParentIsSubStory": "That story is already a sub story, so it can't have sub stories of its own.",
+    "subStoryHasSubStories": "Other stories are already filed under this one, so it can't become a sub story."
   },
   "takedown": {
     "alreadyDown": "This story has already been taken down.",

@@ -830,6 +830,37 @@ logic of its own — the UI only ever decides whether to _show_ the button; the 
 enforces who may use it. The `ReopenForEditingButton` component surfaces it in three places: the
 editor's not-editable screen for a submitted story, the preview page, and My Stories.
 
+### Sub stories (2026-09-30)
+
+A story can be filed under a **main story** by the same contributor ("Fergburger" under "Food in
+Queenstown"). Two levels only. Migration `20260930083209_sub_stories.sql`.
+
+- **Where it lives:** `story_revisions.parent_story_id`, not a column on `stories`. The link is
+  something readers see, so it rides the normal revision flow: set on the draft, frozen with the
+  rest of the content on submit (`story_revisions_protect_immutable_content()` now checks it),
+  public only once that revision is approved (Engineering Rule 11). `create_next_draft_revision()`
+  copies it, so editing a published sub story keeps the link.
+- **Only writer:** `set_revision_parent_story(revision, expected_version, parent | null)`.
+  `_authorize_revision_edit()` + version check like every authoring RPC, then: not itself (WHV10);
+  same `contributor_id` — "not found" and "not yours" share one message so ids can't be probed
+  (WHV11); the main story is `published` with a published revision (WHV12) — which also means it
+  can never be hard-deleted, so the `on delete restrict` FK can't block `delete_draft_story()`; the
+  main story is not itself a sub story (WHV13); this story has no sub stories of its own (WHV14).
+  The two-level checks read current state and can race; public reads only follow one hop, so the
+  worst case is odd display, never a leak.
+- **Readers:** `get_revision_parent_story(revision)` (owner / assigned editor / moderator / admin —
+  editor, preview and moderation review), `list_parent_story_options(story)` (owner / assigned
+  editor — the picker; a convenience, not the gate).
+- **Public read:** `get_published_story_family(slug)`, granted to `anon`. It reads only published
+  revisions and runs **both** ends of every link through `_story_is_publicly_visible()` — the same
+  gate as `get_published_story()` (checked equal on all 214 dev stories). An archived, taken-down
+  or consent-revoked main story just drops the "Part of" line; a non-public sub story never appears
+  in its main story's list.
+- **Gotcha hit while building it:** `_story_is_publicly_visible()` first ended in
+  `consent_row is not null`. For a composite, `IS NOT NULL` means _every_ field is non-null, so it
+  said "not public" for every story (fixed in `20260930083643_fix_story_is_publicly_visible.sql`,
+  now `not (x is null)`). Same family of bug as the three-valued-logic section below.
+
 ### Public reads
 
 `get_published_story(slug)`, `list_published_stories(...)`, `get_published_story_media(story_id)`

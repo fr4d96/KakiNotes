@@ -388,6 +388,29 @@ export async function setRevisionTags(
 }
 
 /**
+ * Files the revision under a main story, or clears that with null. Every
+ * rule (same contributor, main story published, two levels only, not
+ * itself) is set_revision_parent_story()'s; it raises WHV10-WHV14 to say
+ * which one failed (see subStoryErrorKey in lib/story/rpc-errors.ts).
+ */
+export async function setRevisionParentStory(
+  revisionId: string,
+  expectedVersion: number,
+  parentStoryId: string | null,
+) {
+  await requireUser();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_revision_parent_story", {
+    p_revision_id: revisionId,
+    p_expected_version: expectedVersion,
+    // The generator types every SQL argument as non-null; null clears the
+    // link, which the function handles explicitly.
+    p_parent_story_id: parentStoryId as string,
+  });
+  if (error) throw error;
+}
+
+/**
  * Replaces a revision's optional per-category expense breakdown
  * (supabase/migrations/20260902110200_set_revision_expenses.sql).
  *
