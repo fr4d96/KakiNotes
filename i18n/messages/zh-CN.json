@@ -252,6 +252,11 @@
         "spam_commercial": "垃圾信息或商业内容",
         "other": "其他"
       }
+    },
+    "family": {
+      "partOfLabel": "所属的完整故事",
+      "partOf": "属于：",
+      "subStoriesHeading": "这篇故事里的更多内容"
     }
   },
   "expenses": {
@@ -856,6 +861,13 @@
       "hide": "隐藏",
       "outlineLead": "已经想好结构了？",
       "outlineAction": "从大纲开始"
+    },
+    "parentStory": {
+      "label": "主故事（可选）",
+      "none": "无，这是一篇独立的故事",
+      "help": "把这篇故事归到你已发布的某篇故事下面，比如把“Fergburger”归到“皇后镇美食”下。这个版本通过审核后才会公开。",
+      "hasSubStories": "已经有其他故事归在这篇故事下面，所以它不能成为子故事。",
+      "noOptions": "请先发布另一篇故事，才能把这篇归到它下面。"
     }
   },
   "publish": {
@@ -936,7 +948,9 @@
     "downloadCopy": "下载副本",
     "contentUnavailable": "这份草稿的内容无法显示。",
     "submitForReview": "提交审核",
-    "submitCorrection": "提交修改以供审核"
+    "submitCorrection": "提交修改以供审核",
+    "partOf": "属于：{title}",
+    "partOfHint": "已归入一篇主故事。这个版本通过审核后才会公开。"
   },
   "import": {
     "heading": "导入内容",

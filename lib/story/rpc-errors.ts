@@ -38,7 +38,7 @@ export function subStoryErrorKey(error: unknown): SubStoryErrorKey | null {
     return null;
   }
   const code = (error as { code?: unknown }).code;
-  return typeof code === "string" && code in SUB_STORY_ERROR_KEYS
+  return typeof code === "string" && Object.hasOwn(SUB_STORY_ERROR_KEYS, code)
     ? SUB_STORY_ERROR_KEYS[code as keyof typeof SUB_STORY_ERROR_KEYS]
     : null;
 }

@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
+Last updated: 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor; see the entry at the end of this file); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
 review, and a photo upload no longer leaves every later save rejected as stale; see the entry at
 the end of this file); earlier, 2026-09-24 (shipped as 1.0.0: story editor fixes — bold/italic toggle off, a
 "free" travel style, line breaks kept on the review screen, uploads no longer lost to a
@@ -9080,3 +9080,63 @@ a non-owner calling `get_story_version_for_media` must raise.
 
 **Heads-up:** the hosted history records `countries` as `20260924021909`, but the local file is
 still `20260924100000_countries.sql`, so `db push` will abort until that file is renamed.
+
+## 2026-09-30 — sub stories
+
+A story can now be filed under a **main story** by the same contributor, e.g. "Fergburger" under
+"Food in Queenstown". Two levels only.
+
+**Built.**
+
+- Database (`20260930083209_sub_stories`, `20260930083643_fix_story_is_publicly_visible`):
+  `story_revisions.parent_story_id`, frozen on submit and copied by `create_next_draft_revision()`;
+  `set_revision_parent_story()` (the only writer, refusals WHV10–WHV14);
+  `get_revision_parent_story()`, `list_parent_story_options()`; and the anon read
+  `get_published_story_family()`. Full design in
+  [docs/architecture.md](architecture.md#sub-stories-2026-09-30).
+- Server: `lib/story/sub-stories.ts` (typed readers, public payload parsed with Zod),
+  `setRevisionParentStory()` in `lib/story/mutations.ts`, `setParentStoryAction` in the edit
+  actions (Zod uuid-or-null; refusals mapped to `actionErrors.subStory*` by `subStoryErrorKey`).
+- UI: a "Main story (optional)" select on the editor's places step, after tags
+  (`components/story/parent-story-picker.tsx`, saved on its own mutation-queue slot like tags);
+  "Part of: …" breadcrumb and a "More in this story" list on the public story page
+  (`components/story/story-family.tsx`); "Part of" on the contributor preview; "Filed under main
+  story" on the moderation review page. en + zh-CN copy.
+
+**Decisions.**
+
+- **On the revision, not the story.** The link is visible to readers, so it is moderated content
+  (Engineering Rule 11). Changing it on a published story means edit → resubmit.
+- **Main story must be your own and published.** Stops anyone hanging their story off someone
+  else's, and a published story can never be hard-deleted, so the `on delete restrict` FK can't
+  break `delete_draft_story()`.
+- **Two levels.** "Main" and "sub" was the ask. Checks read current state and can race; public
+  reads follow one hop only, so the worst case is odd display, never a leak.
+- **Sub stories still appear in the normal story index.** They are full stories; the link only
+  adds navigation.
+
+**Verified against the hosted dev project** (inside a rolled-back transaction, nothing kept):
+every refusal fires with its code, other users / anon are denied, the public read shows the link
+both ways only when both stories are public, archiving the main story hides the "Part of" line,
+the new draft keeps the link, and the approved revision's link can't be changed.
+`_story_is_publicly_visible()` agrees with `get_published_story()` on all 214 dev stories.
+
+**Found and fixed while testing:** the visibility helper first used `consent_row is not null`,
+which for a composite is only true when every field is filled, so it called every story
+non-public. Fixed in the second migration.
+
+**Tests:** `lib/story/sub-stories.test.ts`, `lib/story/rpc-errors.test.ts`,
+`components/story/parent-story-picker.test.tsx`, `components/story/story-family.test.tsx`,
+`app/(contributor)/stories/[id]/edit/actions.test.ts`. `npm run verify`: format, lint (0 errors),
+typecheck, and 1220 unit tests pass. `build` compiled but could not prerender `/sitemap.xml` in the
+cloud container because its network blocks the Supabase host, so that stage needs CI.
+
+**Not covered:** no Playwright spec yet for linking a story in the editor. The SQL rules are not in
+the live RLS integration suite (`tests/integration/story-rls.integration.test.ts`); worth adding
+the refusals and the anon family read there.
+
+**Drift note:** the hosted `create_next_draft_revision()` was applied without the long checklist
+comments inside its body; the behaviour is identical to the repo file.
+
+**Next prompt:** run CI on this branch; add a Playwright flow (publish main → link sub → approve →
+both pages show the link).

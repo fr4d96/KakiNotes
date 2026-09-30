@@ -28,6 +28,7 @@ import {
   absoluteTime,
   mediaDescription,
 } from "@/lib/story/moderation-queue-view";
+import { getRevisionParentStory } from "@/lib/story/sub-stories";
 import { AlertCircleIcon, CheckCircleIcon } from "@/components/icons";
 import { ReviewControls } from "./review-controls";
 
@@ -213,6 +214,7 @@ export default async function ModerationReviewPage({
     editorialHistory,
     reports,
     publishedMedia,
+    parentInfo,
   ] = await Promise.all([
     getPublishedRevisionSnapshot(detail.story_id),
     getStoryModerationHistory(detail.story_id),
@@ -226,6 +228,9 @@ export default async function ModerationReviewPage({
     // submitted revision's, still private) it needs no signed-URL mint,
     // just a plain public URL.
     getPublishedStoryMedia(detail.story_id),
+    // Sub stories: the main story this revision asks to be filed under. A
+    // read failure only hides the line, it never blocks the review.
+    getRevisionParentStory(revisionId).catch(() => null),
   ]);
   const publishedSnapshot = snapshotRows[0] ?? null;
   const isReplacement = publishedSnapshot !== null;
@@ -369,6 +374,16 @@ export default async function ModerationReviewPage({
         <p className="mt-0.5 font-mono text-xs text-muted-foreground">
           /{detail.slug}
         </p>
+        {parentInfo?.parent && (
+          <p className="mt-2 text-sm">
+            <span className="text-muted-foreground">
+              Filed under main story:{" "}
+            </span>
+            <span className="font-medium">
+              {parentInfo.parent.title ?? parentInfo.parent.slug}
+            </span>
+          </p>
+        )}
       </header>
 
       {detail.contributor_note && (

@@ -252,6 +252,11 @@
         "spam_commercial": "Spam or commercial content",
         "other": "Other"
       }
+    },
+    "family": {
+      "partOfLabel": "Part of a larger story",
+      "partOf": "Part of:",
+      "subStoriesHeading": "More in this story"
     }
   },
   "expenses": {
@@ -856,6 +861,13 @@
       "hide": "Hide",
       "outlineLead": "Know the shape already?",
       "outlineAction": "Start from an outline"
+    },
+    "parentStory": {
+      "label": "Main story (optional)",
+      "none": "None — this is its own story",
+      "help": "Link this story under one of your published stories, e.g. 'Fergburger' under 'Food in Queenstown'. It goes public when this version is approved.",
+      "hasSubStories": "Other stories are filed under this one, so it can't become a sub story.",
+      "noOptions": "Publish another story first to file this one under it."
     }
   },
   "publish": {
@@ -936,7 +948,9 @@
     "downloadCopy": "Download a copy",
     "contentUnavailable": "This draft's content couldn't be rendered.",
     "submitForReview": "Submit for review",
-    "submitCorrection": "Submit correction for review"
+    "submitCorrection": "Submit correction for review",
+    "partOf": "Part of: {title}",
+    "partOfHint": "Filed under a main story. This goes public when this version is approved."
   },
   "import": {
     "heading": "Import content",

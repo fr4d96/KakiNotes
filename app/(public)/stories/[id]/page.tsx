@@ -18,6 +18,8 @@ import {
   type ContentBlockMediaMap,
 } from "@/components/story/content-block-renderer";
 import { StoryGallery } from "@/components/story/story-gallery";
+import { PartOfStory, SubStoryList } from "@/components/story/story-family";
+import { getPublishedStoryFamilyDeduped } from "@/lib/story/sub-stories";
 import { StoryCard } from "@/components/story/story-card";
 import { AttributionChip } from "@/components/story/attribution-chip";
 import { PersonalExperienceLabel } from "@/components/story/personal-experience-label";
@@ -179,9 +181,10 @@ export default async function StoryDetailPage({
   ]);
   if (!story) notFound();
 
-  const [media, activeRegions] = await Promise.all([
+  const [media, activeRegions, family] = await Promise.all([
     getPublishedStoryMediaDeduped(story.story_id),
     listPublicRegions(),
+    getPublishedStoryFamilyDeduped(story.slug),
   ]);
 
   const firstRegionName = regionLabelsRaw(story.regions)[0] ?? null;
@@ -263,6 +266,8 @@ export default async function StoryDetailPage({
         dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
       />
 
+      <PartOfStory parent={family.parent} />
+
       <div className="mb-4">
         <PersonalExperienceLabel />
       </div>
@@ -324,6 +329,8 @@ export default async function StoryDetailPage({
         tripEndDate={story.trip_end_date}
         expenses={localizedExpenses(story.expenses, locale)}
       />
+
+      <SubStoryList subStories={family.subStories} />
 
       <div className="mt-10 border-t border-border-subtle pt-6">
         <ReportStoryForm storyId={story.story_id} storySlug={story.slug} />
