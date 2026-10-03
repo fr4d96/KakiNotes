@@ -44,8 +44,21 @@ who completed or are completing a Working Holiday Visa (WHV) experience in New Z
 11. An unapproved edit must never overwrite or replace what is publicly visible.
 12. Draft, private, rejected, and archived content must never appear in public queries, sitemaps,
     metadata, previews-by-URL-guessing, or public image delivery.
-13. Draft images are stored in a private bucket until approved.
-14. Only processed, approved image derivatives with stripped metadata (EXIF/GPS etc.) are published.
+13. An unapproved image must never be reachable by anyone other than its owner, the assigned
+    editor, and a moderator actively reviewing it. For a Supabase-backed image, this means the
+    private bucket until approved, served exactly as today. For a Drive-backed image, this means
+    the proxy route's authorization check (never a Drive share link) is the only path to its
+    bytes, for every state — draft, in review, or published. The proxy route only ever serves
+    Drive-backed images — it refuses (404) any request for a Supabase-backed one, so it can never
+    become a second, unaudited path into the private bucket.
+14. Only a processed, approved derivative with stripped metadata (EXIF/GPS etc.) is ever shown to
+    a public reader. For a Supabase-backed image, this is the public bucket, unchanged. For a
+    Drive-backed image, this is the one derivative file this platform ever writes for public use
+    — the raw, unprocessed original, if it reaches Drive at all, exists there only as a transient
+    staging file, never shared or linked, permanently deleted (not trashed) as soon as its
+    one-time processing run finishes. The proxy route is the only path a reader's request can
+    take to reach the derivative, and it never serves the staging file.
+    See [docs/google-drive-integration.md](docs/google-drive-integration.md).
 15. Do not collect or store passport scans, visa documents, bank credentials, exact live location, or
     medical records — ever, in any form, seed data included.
 16. Public contributor profiles expose only fields explicitly marked public.
