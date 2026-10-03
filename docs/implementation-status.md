@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-03 (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
+Last updated: 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
 review, and a photo upload no longer leaves every later save rejected as stale; see the entry at
 the end of this file); earlier, 2026-09-24 (shipped as 1.0.0: story editor fixes — bold/italic toggle off, a
 "free" travel style, line breaks kept on the review screen, uploads no longer lost to a
@@ -9263,3 +9263,51 @@ page, each sub story is now a compact card with just the title on the left and t
 and costs, just above the Report box. One column on phones, two from `sm`, three from `lg`. Sub stories without a card row use the same
 card with the placeholder image. No excerpt, author or tags. (`SubStoryCard` in
 `components/story/story-family.tsx`.)
+
+## 2026-10-03 — Google Drive photo storage: design spec (not built)
+
+**Design only. No code, migrations, env vars or dependencies have landed.** The owner wants
+contributors to be able to opt in to keeping their story photos only in their own Google Drive,
+with nothing stored in Supabase for those photos. The approved design is
+[docs/google-drive-integration.md](google-drive-integration.md). Every owner decision is recorded in
+its section 12 ("Decisions").
+
+What the design says, in short:
+
+- Opt-in per contributor, tracked per image as `story_media.storage_backend`
+  (`'supabase' | 'google_drive'`). Contributors who don't link Drive are unchanged.
+- OAuth with the `drive.file` scope only. The refresh token is encrypted in a new
+  `contributor_drive_connections` table (service-role only), behind a new `lib/drive/token-store.ts`
+  that only `lib/story/drive-sync.ts` may import. `lib/story/image-pipeline.ts` stays the only
+  importer of the admin client.
+- Upload: the browser sends the raw photo straight to a staging file in the contributor's Drive
+  (resumable session). The server checks it via `appProperties`, strips and resizes it in memory,
+  writes the cleaned photo as a new Drive file, then permanently deletes the raw one. If the browser
+  can't PUT to Google (CORS), the fallback is to shrink in the browser (about 2,400px, JPEG ~0.9)
+  and POST to our server. No raw bytes are ever staged in Supabase.
+- Serving: a new proxy route serves Drive photos only, after a published-revision check, with
+  `s-maxage=300`. It returns 404 for Supabase-backed media. Supabase photos keep their current URLs.
+- New screens: a contributor "My Photos" page (view and download per story; "download all" as a
+  server-streamed zip via `archiver`), and a two-way Supabase ↔ Drive move tool (copy → verify →
+  flip → delete, tracked in `story_media_move_jobs`). One heavy job per contributor at a time.
+
+**Rules changed.** CLAUDE.md Engineering Rules 13 and 14 were reworded (owner-approved) so they
+cover Drive-backed images as well as the Supabase buckets. Nothing changes for Supabase-backed
+images.
+
+**Owner setup needed before any build.** A Google Cloud project with the Drive API enabled, an
+External consent screen in Testing with the `drive.file` scope, and a Web OAuth client with redirect
+URI `http://localhost:3000/account/drive/callback`. Four server-only env vars go in `.env.local`:
+`GOOGLE_DRIVE_OAUTH_CLIENT_ID`, `GOOGLE_DRIVE_OAUTH_CLIENT_SECRET`,
+`GOOGLE_DRIVE_OAUTH_REDIRECT_URI` and `GOOGLE_DRIVE_TOKEN_ENCRYPTION_KEY`. They aren't in
+`.env.example` or `lib/env.server.ts` yet; slice 1 adds them.
+
+**Found along the way (separate task, not fixed here):** for Supabase-backed images, the raw
+original at `story_media.private_storage_path` is never deleted after processing, so every raw
+upload, including its EXIF/GPS, stays in `story-images-private` indefinitely. The only delete in
+`lib/story/image-pipeline.ts` is the transient HEIC staging object.
+
+**Biggest open risk:** nobody has confirmed whether a browser can PUT straight to a Drive resumable
+session URI (CORS). Build slice 2 is a spike that settles it and picks the upload path.
+
+**Next:** slice 2, the CORS spike, once the owner has set up Google Cloud.
