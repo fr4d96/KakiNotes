@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.0](https://github.com/fr4d96/KakiNotes/compare/v1.1.0...v1.2.0) (2026-10-03)
+
+
+### Features
+
+* **stories:** link published stories from My Stories, live straight away ([648060b](https://github.com/fr4d96/KakiNotes/commit/648060b67ecd051e0185ed8f0fbe114a4f94c8e9))
+* **stories:** sub stories — database and server layer ([529a629](https://github.com/fr4d96/KakiNotes/commit/529a62911e31ec4d3e73fc433bb767ec34bccdd6))
+* **stories:** sub stories UI — picker, "Part of" link and sub story list ([f7d0e33](https://github.com/fr4d96/KakiNotes/commit/f7d0e33d97316313f88774cd0cc2822523618dc7))
+
 ## [1.1.0](https://github.com/fr4d96/KakiNotes/compare/v1.0.1...v1.1.0) (2026-09-29)
 
 ### What's new for contributors
