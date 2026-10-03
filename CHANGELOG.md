@@ -2,6 +2,16 @@
 
 ## [1.2.0](https://github.com/fr4d96/KakiNotes/compare/v1.1.0...v1.2.0) (2026-10-03)
 
+### What's new for everyone
+
+**Stories can belong together.** A writer can now group their stories, for example "Fergburger" and "Rata" under a bigger story called "Food in Queenstown". At the end of the main story you'll see a "More in this story" section with a small card for each story in the group: its title and cover photo, and a tap takes you there. Each story in the group shows "Part of: Food in Queenstown" at the top, so you can always get back to the main one.
+
+### What's new for contributors
+
+**Link your stories from My Stories.** Each of your published stories now has a link button (the chain icon) in My Stories. Tap it, pick which of your other published stories it belongs under, and save. The link shows on both stories straight away. There's no extra review, because both stories have already been approved. You can change or remove a link the same way.
+
+**A few simple rules.** You can only link your own stories, and only ones that are already published: drafts and stories waiting for review don't get the button. Grouping goes one level deep, so a story that's inside a group can't have its own group, and a main story can't be put inside another one. If you ever take a story down, its link just stops showing.
+
 
 ### Features
 
