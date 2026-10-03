@@ -583,7 +583,18 @@
       "delete": "删除《{title}》",
       "takeDown": "申请撤下《{title}》",
       "cancelTakedown": "取消《{title}》的撤下申请",
-      "takedownPending": "《{title}》的撤下申请正在等待处理。点击可取消申请。"
+      "takedownPending": "《{title}》的撤下申请正在等待处理。点击可取消申请。",
+      "linkMainStory": "设置《{title}》的主故事"
+    },
+    "linkMainStoryDialog": {
+      "title": "《{title}》的主故事",
+      "liveNote": "两篇故事都已发布，所以链接会立即显示在两个页面上，无需审核。",
+      "loading": "加载中…",
+      "save": "保存",
+      "saving": "保存中…",
+      "cancel": "取消",
+      "toast": "已将《{title}》链接到它的主故事。",
+      "toastCleared": "已移除《{title}》的主故事。"
     },
     "deleteDialog": {
       "title": "确定删除这篇故事？",
@@ -865,8 +876,8 @@
     "parentStory": {
       "label": "主故事（可选）",
       "none": "无，这是一篇独立的故事",
-      "help": "把这篇故事归到你已发布的某篇故事下面，比如把“Fergburger”归到“皇后镇美食”下。这个版本通过审核后才会公开。",
-      "hasSubStories": "已经有其他故事归在这篇故事下面，所以它不能成为子故事。",
+      "help": "把这个故事链接到你另一个已发布的故事下，例如把“Fergburger”放在“皇后镇美食”下。",
+      "hasSubStories": "已有其他故事链接在这篇故事下，所以它不能成为子故事。",
       "noOptions": "请先发布另一篇故事，才能把这篇归到它下面。"
     }
   },
@@ -948,9 +959,7 @@
     "downloadCopy": "下载副本",
     "contentUnavailable": "这份草稿的内容无法显示。",
     "submitForReview": "提交审核",
-    "submitCorrection": "提交修改以供审核",
-    "partOf": "属于：{title}",
-    "partOfHint": "已归入一篇主故事。这个版本通过审核后才会公开。"
+    "submitCorrection": "提交修改以供审核"
   },
   "import": {
     "heading": "导入内容",
@@ -1134,7 +1143,8 @@
     "subStoryNotFound": "找不到这篇主故事。",
     "subStoryParentNotPublished": "主故事必须先发布。",
     "subStoryParentIsSubStory": "那篇故事本身就是子故事，不能再有子故事。",
-    "subStoryHasSubStories": "已经有其他故事归在这篇故事下面，所以它不能成为子故事。"
+    "subStoryHasSubStories": "已有其他故事链接在这篇故事下，所以它不能成为子故事。",
+    "subStoryNotPublished": "只有已发布的故事才能链接。"
   },
   "takedown": {
     "alreadyDown": "这篇故事已经被撤下了。",

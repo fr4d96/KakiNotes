@@ -830,32 +830,44 @@ logic of its own — the UI only ever decides whether to _show_ the button; the 
 enforces who may use it. The `ReopenForEditingButton` component surfaces it in three places: the
 editor's not-editable screen for a submitted story, the preview page, and My Stories.
 
-### Sub stories (2026-09-30)
+### Sub stories (2026-09-30, reworked 2026-10-03)
 
-A story can be filed under a **main story** by the same contributor ("Fergburger" under "Food in
-Queenstown"). Two levels only. Migration `20260930083209_sub_stories.sql`.
+A **published** story can be linked under another published **main story** by the same contributor
+("Fergburger" under "Food in Queenstown"). Two levels only. The link goes public as soon as it is
+saved — no review round. Migrations `20260930083209_sub_stories.sql` (first version, on revisions),
+`20260930083643_fix_story_is_publicly_visible.sql`, and `20261003051644_story_level_sub_stories.sql`
+(the current design).
 
-- **Where it lives:** `story_revisions.parent_story_id`, not a column on `stories`. The link is
-  something readers see, so it rides the normal revision flow: set on the draft, frozen with the
-  rest of the content on submit (`story_revisions_protect_immutable_content()` now checks it),
-  public only once that revision is approved (Engineering Rule 11). `create_next_draft_revision()`
-  copies it, so editing a published sub story keeps the link.
-- **Only writer:** `set_revision_parent_story(revision, expected_version, parent | null)`.
-  `_authorize_revision_edit()` + version check like every authoring RPC, then: not itself (WHV10);
-  same `contributor_id` — "not found" and "not yours" share one message so ids can't be probed
-  (WHV11); the main story is `published` with a published revision (WHV12) — which also means it
-  can never be hard-deleted, so the `on delete restrict` FK can't block `delete_draft_story()`; the
-  main story is not itself a sub story (WHV13); this story has no sub stories of its own (WHV14).
-  The two-level checks read current state and can race; public reads only follow one hop, so the
-  worst case is odd display, never a leak.
-- **Readers:** `get_revision_parent_story(revision)` (owner / assigned editor / moderator / admin —
-  editor, preview and moderation review), `list_parent_story_options(story)` (owner / assigned
-  editor — the picker; a convenience, not the gate).
-- **Public read:** `get_published_story_family(slug)`, granted to `anon`. It reads only published
-  revisions and runs **both** ends of every link through `_story_is_publicly_visible()` — the same
-  gate as `get_published_story()` (checked equal on all 214 dev stories). An archived, taken-down
-  or consent-revoked main story just drops the "Part of" line; a non-public sub story never appears
-  in its main story's list.
+- **Where it lives:** `stories.parent_story_id` (FK to `stories`, `on delete restrict`, check
+  `<> id`). It started on `story_revisions` so it would be moderated with the content; on
+  2026-10-03 the product owner chose "only already-published stories, live straight away", so it
+  moved to `stories` and the revision column, `set_revision_parent_story()` and
+  `get_revision_parent_story()` were dropped. This is a documented exception to Engineering Rule 11
+  for this one field — see docs/content-governance.md, "Sub stories". `stories` still has no
+  direct API grants (RLS on, zero policies), so the column is writable only through the function
+  below. Not copied into drafts; editing a published sub story does not touch the link.
+- **Only writer:** `set_story_parent_story(story, parent | null)`, **owner only** (not the assigned
+  editor — this skips review, so it stays the contributor's call). Checks ownership first, then
+  locks both rows in id order so concurrent link changes queue instead of racing the two-level
+  check. Refusals: this story is not published (WHV15); not itself (WHV10); same `contributor_id` —
+  "not found" and "not yours" share one message so ids can't be probed (WHV11); the main story is
+  published (WHV12); the main story is not itself a sub story (WHV13); this story has no sub
+  stories of its own (WHV14). Clearing (null) is always allowed. No `stories.version` bump, so an
+  open editor tab on the same story doesn't go stale.
+- **Readers:** `get_story_parent_story(story)` and `list_parent_story_options(story)`, both owner
+  only — they back the "Link" dialog on My Stories (`app/(contributor)/my-stories/
+link-main-story-dialog.tsx`), which only shows on published rows. The editor, preview and
+  moderation pages no longer show anything about sub stories.
+- **Public read:** `get_published_story_family(slug)`, granted to `anon`. It follows
+  `stories.parent_story_id` and runs **both** ends of every link through
+  `_story_is_publicly_visible()` — the same gate as `get_published_story()`. An archived,
+  taken-down or consent-revoked story on either end just drops out; the link row itself stays.
+  The main story's page shows its sub stories as `StoryCard`s under the description, filling card
+  fields from the contributor's `list_published_stories()` page (`matchSubStoryCards()`); the
+  family read alone decides which stories appear.
+- **Verified 2026-10-03** on the hosted dev project inside a rolled-back transaction, then applied:
+  every refusal fires with its code, another user and anon are refused, anon can still read the
+  family, unlinking removes it publicly, and `stories.version` doesn't change.
 - **Gotcha hit while building it:** `_story_is_publicly_visible()` first ended in
   `consent_row is not null`. For a composite, `IS NOT NULL` means _every_ field is non-null, so it
   said "not public" for every story (fixed in `20260930083643_fix_story_is_publicly_visible.sql`,

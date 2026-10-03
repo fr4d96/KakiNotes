@@ -472,6 +472,7 @@ export type Database = {
           kept_private_at: string | null;
           lifecycle_status: Database["public"]["Enums"]["story_lifecycle_status"];
           owner_user_id: string | null;
+          parent_story_id: string | null;
           published_at: string | null;
           published_revision_id: string | null;
           slug: string;
@@ -494,6 +495,7 @@ export type Database = {
           kept_private_at?: string | null;
           lifecycle_status?: Database["public"]["Enums"]["story_lifecycle_status"];
           owner_user_id?: string | null;
+          parent_story_id?: string | null;
           published_at?: string | null;
           published_revision_id?: string | null;
           slug: string;
@@ -516,6 +518,7 @@ export type Database = {
           kept_private_at?: string | null;
           lifecycle_status?: Database["public"]["Enums"]["story_lifecycle_status"];
           owner_user_id?: string | null;
+          parent_story_id?: string | null;
           published_at?: string | null;
           published_revision_id?: string | null;
           slug?: string;
@@ -538,6 +541,13 @@ export type Database = {
             columns: ["current_draft_revision_id"];
             isOneToOne: false;
             referencedRelation: "story_revisions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "stories_parent_story_id_fkey";
+            columns: ["parent_story_id"];
+            isOneToOne: false;
+            referencedRelation: "stories";
             referencedColumns: ["id"];
           },
           {
@@ -1289,7 +1299,6 @@ export type Database = {
           currency: string;
           excerpt: string | null;
           id: string;
-          parent_story_id: string | null;
           revision_number: number;
           revision_status: Database["public"]["Enums"]["story_revision_status"];
           search_vector: unknown;
@@ -1312,7 +1321,6 @@ export type Database = {
           currency?: string;
           excerpt?: string | null;
           id?: string;
-          parent_story_id?: string | null;
           revision_number: number;
           revision_status?: Database["public"]["Enums"]["story_revision_status"];
           search_vector?: unknown;
@@ -1335,7 +1343,6 @@ export type Database = {
           currency?: string;
           excerpt?: string | null;
           id?: string;
-          parent_story_id?: string | null;
           revision_number?: number;
           revision_status?: Database["public"]["Enums"]["story_revision_status"];
           search_vector?: unknown;
@@ -1350,13 +1357,6 @@ export type Database = {
           updated_by?: string | null;
         };
         Relationships: [
-          {
-            foreignKeyName: "story_revisions_parent_story_id_fkey";
-            columns: ["parent_story_id"];
-            isOneToOne: false;
-            referencedRelation: "stories";
-            referencedColumns: ["id"];
-          },
           {
             foreignKeyName: "story_revisions_story_id_fkey";
             columns: ["story_id"];
@@ -1995,15 +1995,6 @@ export type Database = {
           isSetofReturn: true;
         };
       };
-      get_revision_parent_story: {
-        Args: { p_revision_id: string };
-        Returns: {
-          has_sub_stories: boolean;
-          parent_slug: string;
-          parent_story_id: string;
-          parent_title: string;
-        }[];
-      };
       get_revision_selections: {
         Args: { p_revision_id: string };
         Returns: {
@@ -2087,6 +2078,15 @@ export type Database = {
           previous_status: Database["public"]["Enums"]["story_revision_status"];
           revision_id: string;
           user_facing_reason: string;
+        }[];
+      };
+      get_story_parent_story: {
+        Args: { p_story_id: string };
+        Returns: {
+          has_sub_stories: boolean;
+          parent_slug: string;
+          parent_story_id: string;
+          parent_title: string;
         }[];
       };
       get_story_preview: {
@@ -2557,14 +2557,6 @@ export type Database = {
         };
         Returns: undefined;
       };
-      set_revision_parent_story: {
-        Args: {
-          p_expected_version: number;
-          p_parent_story_id: string;
-          p_revision_id: string;
-        };
-        Returns: undefined;
-      };
       set_revision_tags: {
         Args: {
           p_expected_version: number;
@@ -2587,6 +2579,10 @@ export type Database = {
           p_media_id: string;
           p_revision_id: string;
         };
+        Returns: undefined;
+      };
+      set_story_parent_story: {
+        Args: { p_parent_story_id: string; p_story_id: string };
         Returns: undefined;
       };
       submit_revision_with_consent: {

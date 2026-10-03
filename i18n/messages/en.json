@@ -583,7 +583,18 @@
       "delete": "Delete {title}",
       "takeDown": "Take down {title}",
       "cancelTakedown": "Cancel the takedown request for {title}",
-      "takedownPending": "Takedown requested for {title} — awaiting review. Choose to cancel the request."
+      "takedownPending": "Takedown requested for {title} — awaiting review. Choose to cancel the request.",
+      "linkMainStory": "Set the main story for {title}"
+    },
+    "linkMainStoryDialog": {
+      "title": "Main story for \"{title}\"",
+      "liveNote": "Both stories are already published, so the link shows on both pages straight away — no review needed.",
+      "loading": "Loading…",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "toast": "Linked \"{title}\" to its main story.",
+      "toastCleared": "Removed the main story from \"{title}\"."
     },
     "deleteDialog": {
       "title": "Delete this story?",
@@ -865,8 +876,8 @@
     "parentStory": {
       "label": "Main story (optional)",
       "none": "None — this is its own story",
-      "help": "Link this story under one of your published stories, e.g. 'Fergburger' under 'Food in Queenstown'. It goes public when this version is approved.",
-      "hasSubStories": "Other stories are filed under this one, so it can't become a sub story.",
+      "help": "Link this story under one of your other published stories, e.g. 'Fergburger' under 'Food in Queenstown'.",
+      "hasSubStories": "Other stories are linked under this one, so it can't become a sub story.",
       "noOptions": "Publish another story first to file this one under it."
     }
   },
@@ -948,9 +959,7 @@
     "downloadCopy": "Download a copy",
     "contentUnavailable": "This draft's content couldn't be rendered.",
     "submitForReview": "Submit for review",
-    "submitCorrection": "Submit correction for review",
-    "partOf": "Part of: {title}",
-    "partOfHint": "Filed under a main story. This goes public when this version is approved."
+    "submitCorrection": "Submit correction for review"
   },
   "import": {
     "heading": "Import content",
@@ -1134,7 +1143,8 @@
     "subStoryNotFound": "That main story couldn't be found.",
     "subStoryParentNotPublished": "The main story has to be published first.",
     "subStoryParentIsSubStory": "That story is already a sub story, so it can't have sub stories of its own.",
-    "subStoryHasSubStories": "Other stories are already filed under this one, so it can't become a sub story."
+    "subStoryHasSubStories": "Other stories are already linked under this one, so it can't become a sub story.",
+    "subStoryNotPublished": "Only published stories can be linked."
   },
   "takedown": {
     "alreadyDown": "This story has already been taken down.",

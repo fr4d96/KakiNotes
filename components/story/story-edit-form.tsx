@@ -49,14 +49,9 @@ import {
   saveRevisionFieldsAction,
   setLocationsAction,
   setTagsAction,
-  setParentStoryAction,
   setExpensesAction,
 } from "@/app/(contributor)/stories/[id]/edit/actions";
 import { TagEditor } from "@/components/story/tag-editor";
-import {
-  ParentStoryPicker,
-  type ParentStoryPickerOption,
-} from "@/components/story/parent-story-picker";
 import {
   ExpenseBreakdown,
   expenseRowsToPayload,
@@ -135,16 +130,6 @@ export type StoryEditFormProps = {
    * back to the first step, so a hand-typed URL can never land on nothing.
    */
   initialStep?: StoryStepId;
-  /**
-   * Sub stories: the saved main story, whether other stories hang off this
-   * one, and the stories it could be filed under. Omitted by callers that
-   * don't offer the picker (the editorial import page), which hides it.
-   */
-  parentStory?: {
-    current: ParentStoryPickerOption | null;
-    hasSubStories: boolean;
-    options: ParentStoryPickerOption[];
-  };
 };
 
 const FIELDS_SAVE_DEBOUNCE_MS = 600;
@@ -318,7 +303,6 @@ export function StoryEditForm({
   showContentImport,
   isNewStory = false,
   initialStep = "title",
-  parentStory,
 }: StoryEditFormProps) {
   const t = useTranslations("editor");
   const tValidation = useTranslations("validation");
@@ -766,30 +750,6 @@ export function StoryEditForm({
         next.map((tag) =>
           tag.id ? { id: tag.id } : { customLabel: tag.name },
         ),
-      );
-      if (result.ok) {
-        versionRef.current += 1;
-        bumpVersion();
-        setLastSavedAt(Date.now());
-      } else {
-        throw new Error(result.error);
-      }
-    });
-  }
-
-  const [parentStoryId, setParentStoryId] = useState<string | null>(
-    parentStory?.current?.storyId ?? null,
-  );
-
-  /** A discrete choice, saved at once on its own "parentStory" queue slot. */
-  function changeParentStory(next: string | null) {
-    setParentStoryId(next);
-    setSaving(true);
-    queue.enqueue("parentStory", async () => {
-      const result = await setParentStoryAction(
-        revisionId,
-        versionRef.current,
-        next,
       );
       if (result.ok) {
         versionRef.current += 1;
@@ -1641,16 +1601,6 @@ export function StoryEditForm({
               suggestions={tags}
               onChange={changeTags}
             />
-
-            {parentStory ? (
-              <ParentStoryPicker
-                value={parentStoryId}
-                currentParent={parentStory.current}
-                options={parentStory.options}
-                hasSubStories={parentStory.hasSubStories}
-                onChange={changeParentStory}
-              />
-            ) : null}
 
             <details className="rounded-md border border-border-subtle">
               <summary className="cursor-pointer px-3 py-2 text-sm font-medium select-none">

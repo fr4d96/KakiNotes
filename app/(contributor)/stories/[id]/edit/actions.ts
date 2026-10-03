@@ -18,14 +18,12 @@ import {
   setRevisionLocations,
   setRevisionTags,
   setRevisionExpenses,
-  setRevisionParentStory,
   updateStoryMediaCaption,
   reorderStoryMedia,
   setStoryCoverMedia,
   detachStoryMedia,
   cancelPendingStoryMediaUpload,
 } from "@/lib/story/mutations";
-import { subStoryErrorKey } from "@/lib/story/rpc-errors";
 
 /**
  * Every action here is invoked directly (not bound to a <form>) by
@@ -305,43 +303,6 @@ export async function cancelPendingUploadAction(
     await cancelPendingStoryMediaUpload(parsed.data);
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: await errorMessage(error) };
-  }
-}
-
-/**
- * Files this story under a main story (a uuid), or clears that (null).
- * Only the id's SHAPE is checked here -- whether the caller may edit the
- * revision, and whether that story may be its main story (same
- * contributor, published, two levels only), is re-derived by
- * set_revision_parent_story() from the database, never taken from the
- * client.
- */
-export async function setParentStoryAction(
-  revisionId: string,
-  expectedVersion: number,
-  parentStoryId: unknown,
-): Promise<MutationResult> {
-  const tv = await getTranslations("validation");
-  const authError = await requireSignedIn();
-  if (authError) return authError;
-
-  const parsed = z.string().uuid().nullable().safeParse(parentStoryId);
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
-    };
-  }
-  try {
-    await setRevisionParentStory(revisionId, expectedVersion, parsed.data);
-    return { ok: true };
-  } catch (error) {
-    const key = subStoryErrorKey(error);
-    if (key) {
-      const t = await getTranslations("actionErrors");
-      return { ok: false, error: t(key) };
-    }
     return { ok: false, error: await errorMessage(error) };
   }
 }

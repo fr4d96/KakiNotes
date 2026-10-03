@@ -6,11 +6,11 @@ import { useTranslations } from "next-intl";
 export type ParentStoryPickerOption = { storyId: string; title: string };
 
 /**
- * "Main story (optional)": files this story under one of the contributor's
- * published stories. Presentational only -- the parent form owns the
- * selection state and saves it through the mutation queue. What may be a
- * main story is decided by set_revision_parent_story() on save; this list
- * is a convenience, not a check.
+ * "Main story (optional)": links a published story under another of the
+ * contributor's published stories. Presentational only -- My Stories' Link
+ * dialog (app/(contributor)/my-stories/link-main-story-dialog.tsx) owns the
+ * selection state and the save. What may be a main story is decided by
+ * set_story_parent_story() on save; this list is a convenience, not a check.
  */
 export function ParentStoryPicker({
   value,

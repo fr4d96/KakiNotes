@@ -8,6 +8,7 @@ describe("subStoryErrorKey", () => {
     ["WHV12", "subStoryParentNotPublished"],
     ["WHV13", "subStoryParentIsSubStory"],
     ["WHV14", "subStoryHasSubStories"],
+    ["WHV15", "subStoryNotPublished"],
   ])("maps %s to %s", (code, key) => {
     expect(subStoryErrorKey({ code })).toBe(key);
   });

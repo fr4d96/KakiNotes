@@ -15,8 +15,9 @@ vi.mock("@/lib/supabase/server", () => ({
 
 const {
   getPublishedStoryFamily,
-  getRevisionParentStory,
+  getStoryParentStory,
   listParentStoryOptions,
+  matchSubStoryCards,
 } = await import("@/lib/story/sub-stories");
 
 beforeEach(() => {
@@ -83,8 +84,8 @@ describe("getPublishedStoryFamily", () => {
   });
 });
 
-describe("getRevisionParentStory", () => {
-  it("maps a linked revision", async () => {
+describe("getStoryParentStory", () => {
+  it("maps a linked story and calls the owner-only RPC", async () => {
     sessionRpc.mockResolvedValue({
       data: [
         {
@@ -96,13 +97,16 @@ describe("getRevisionParentStory", () => {
       ],
       error: null,
     });
-    await expect(getRevisionParentStory("r1")).resolves.toEqual({
+    await expect(getStoryParentStory("s1")).resolves.toEqual({
       parent: {
         storyId: "p1",
         title: "Food in Queenstown",
         slug: "food-in-queenstown",
       },
       hasSubStories: false,
+    });
+    expect(sessionRpc).toHaveBeenCalledWith("get_story_parent_story", {
+      p_story_id: "s1",
     });
   });
 
@@ -118,7 +122,7 @@ describe("getRevisionParentStory", () => {
       ],
       error: null,
     });
-    await expect(getRevisionParentStory("r1")).resolves.toEqual({
+    await expect(getStoryParentStory("s1")).resolves.toEqual({
       parent: null,
       hasSubStories: true,
     });
@@ -137,5 +141,29 @@ describe("listParentStoryOptions", () => {
     expect(sessionRpc).toHaveBeenCalledWith("list_parent_story_options", {
       p_story_id: "s1",
     });
+  });
+});
+
+describe("matchSubStoryCards", () => {
+  it("keeps the family's order and returns sub stories with no card row", () => {
+    const result = matchSubStoryCards(
+      [
+        { slug: "b", title: "B" },
+        { slug: "missing", title: "Missing" },
+        { slug: "a", title: "A" },
+      ],
+      [
+        { slug: "a", story_id: "1" },
+        { slug: "b", story_id: "2" },
+        { slug: "not-a-sub-story", story_id: "3" },
+      ],
+    );
+    expect(result.cards.map((c) => c.slug)).toEqual(["b", "a"]);
+    expect(result.unmatched).toEqual([{ slug: "missing", title: "Missing" }]);
+  });
+
+  it("never adds a card the family read didn't return", () => {
+    const result = matchSubStoryCards([], [{ slug: "x", story_id: "1" }]);
+    expect(result).toEqual({ cards: [], unmatched: [] });
   });
 });

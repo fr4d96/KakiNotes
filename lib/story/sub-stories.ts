@@ -4,13 +4,13 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createPublicClient } from "@/lib/supabase/public";
 
-// Sub stories (supabase/migrations/20260930083209_sub_stories.sql): a story
-// can be filed under a "main story" by the same contributor, two levels
-// only. The link lives on the REVISION, so it is moderated like the rest of
-// the content and only a published revision's link is ever shown publicly.
+// Sub stories (supabase/migrations/20261003051644_story_level_sub_stories.sql):
+// a published story can be linked under a "main story" by the same
+// contributor, two levels only. The link lives on the STORY and goes public
+// as soon as the owner sets it -- both stories must already be published.
 //
-// Every rule (same contributor, main story published, two levels, not
-// itself) is enforced by set_revision_parent_story(). Nothing here decides
+// Every rule (owner only, both published, same contributor, two levels, not
+// itself) is enforced by set_story_parent_story(). Nothing here decides
 // anything; these are typed readers over the RPCs.
 
 const familyLinkSchema = z.object({
@@ -64,23 +64,47 @@ export async function getPublishedStoryFamily(
 /** Per-request dedupe only, never across requests. */
 export const getPublishedStoryFamilyDeduped = cache(getPublishedStoryFamily);
 
-export type RevisionParentStory = {
+/**
+ * Pairs the family's sub story links with full card rows (from
+ * list_published_stories(), same contributor) by slug, keeping the
+ * family's order. Only slugs the family read already returned can match,
+ * so a card row can never add a story the family gate didn't approve.
+ * Anything without a card row (contributor has more published stories than
+ * one page, or no public profile) comes back in `unmatched` so the page can
+ * still link to it.
+ */
+export function matchSubStoryCards<T extends { slug: string }>(
+  subStories: SubStoryLink[],
+  cards: T[],
+): { cards: T[]; unmatched: SubStoryLink[] } {
+  const bySlug = new Map(cards.map((c) => [c.slug, c]));
+  const matched: T[] = [];
+  const unmatched: SubStoryLink[] = [];
+  for (const s of subStories) {
+    const card = bySlug.get(s.slug);
+    if (card) matched.push(card);
+    else unmatched.push(s);
+  }
+  return { cards: matched, unmatched };
+}
+
+export type StoryParentStory = {
   parent: { storyId: string; title: string | null; slug: string } | null;
-  /** True when other stories are filed under this one, so it can't become a sub story. */
+  /** True when other stories are linked under this one, so it can't become a sub story. */
   hasSubStories: boolean;
 };
 
 /**
- * Owner, assigned editor, moderator or admin (the RPC checks). The generated
- * types say the parent columns are non-null; they are null when the revision
- * has no main story, hence the explicit checks.
+ * Owner only (the RPC checks). The generated types say the parent columns
+ * are non-null; they are null when the story has no main story, hence the
+ * explicit checks.
  */
-export async function getRevisionParentStory(
-  revisionId: string,
-): Promise<RevisionParentStory> {
+export async function getStoryParentStory(
+  storyId: string,
+): Promise<StoryParentStory> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("get_revision_parent_story", {
-    p_revision_id: revisionId,
+  const { data, error } = await supabase.rpc("get_story_parent_story", {
+    p_story_id: storyId,
   });
   if (error) throw error;
   const row = data?.[0];
@@ -105,9 +129,9 @@ export type ParentStoryOption = {
 };
 
 /**
- * Owner or assigned editor: the same contributor's published stories that
- * are not themselves sub stories. A convenience for the picker only --
- * set_revision_parent_story() re-checks every rule on save.
+ * Owner only: the same contributor's published stories that are not
+ * themselves sub stories. A convenience for the picker only --
+ * set_story_parent_story() re-checks every rule on save.
  */
 export async function listParentStoryOptions(
   storyId: string,

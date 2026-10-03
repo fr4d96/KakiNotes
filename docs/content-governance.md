@@ -278,13 +278,25 @@ what readers currently see. It only works on a revision still genuinely `submitt
 has acted on it, it is no longer `submitted` and the contributor instead gets the normal
 "changes requested → start a new draft" path (`request_editorial_changes()`/`create_next_draft_revision()`).
 
-### Sub stories are moderated content
+### Sub stories go live without review (exception to Rule 11)
 
-Filing a story under a main story (2026-09-30) is part of the revision, not a setting: it is frozen
-on submit, shown to the moderator on the review page ("Filed under main story"), and only goes
-public when that revision is approved. A contributor can only file a story under their **own**
-published story, so nobody can attach their story to someone else's. If the main story is later
-archived or taken down, its sub stories stay up but stop showing the "Part of" link.
+Linking a story under a main story is **not** moderated (decided 2026-10-03). The product owner
+chose this over "link on a draft, then review": the link only says two stories belong together,
+and both stories have already been approved on their own.
+
+What keeps it safe:
+
+- **Both stories must already be published** to link them. Drafts and stories in review can't be
+  linked, so nothing unreviewed ever appears through a link.
+- **Only the owner** can set it, and only between their **own** stories, so nobody can attach their
+  story to someone else's. An assigned editor can't set it either.
+- The link adds no new text: readers see the two stories' already-approved titles, excerpts and
+  covers.
+- If either story is later archived, taken down or loses consent, the link stops showing at once
+  (the public read checks both ends every time).
+- Each change is logged as `story.main_story.set` (story id and "linked"/"cleared" only).
+
+Moderators don't see the link on the review page any more, because it isn't part of a revision.
 
 ## Reporting
 

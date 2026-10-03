@@ -13,10 +13,6 @@ import {
   listActiveTags,
   listActiveExpenseCategories,
 } from "@/lib/story/active-lookups";
-import {
-  getRevisionParentStory,
-  listParentStoryOptions,
-} from "@/lib/story/sub-stories";
 import { StoryEditForm } from "@/components/story/story-edit-form";
 import { ReopenForEditingButton } from "@/components/story/reopen-for-editing-button";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
@@ -131,25 +127,15 @@ export default async function EditStoryPage({
     );
   }
 
-  const [
-    selections,
-    preview,
-    regions,
-    destinations,
-    tags,
-    expenseCategories,
-    parentInfo,
-    parentOptions,
-  ] = await Promise.all([
-    getRevisionSelections(draft.revision_id),
-    getStoryPreview(id),
-    listActiveRegions(),
-    listActiveDestinations(),
-    listActiveTags(),
-    listActiveExpenseCategories(),
-    getRevisionParentStory(draft.revision_id),
-    listParentStoryOptions(id),
-  ]);
+  const [selections, preview, regions, destinations, tags, expenseCategories] =
+    await Promise.all([
+      getRevisionSelections(draft.revision_id),
+      getStoryPreview(id),
+      listActiveRegions(),
+      listActiveDestinations(),
+      listActiveTags(),
+      listActiveExpenseCategories(),
+    ]);
 
   const parsedContent = normalizeStoryContentJson(draft.content_json);
 
@@ -177,19 +163,6 @@ export default async function EditStoryPage({
       expenseCategories={expenseCategories}
       isNewStory={draft.revision_number === 1}
       initialStep={resolveStep(step)}
-      parentStory={{
-        current: parentInfo.parent
-          ? {
-              storyId: parentInfo.parent.storyId,
-              title: parentInfo.parent.title ?? parentInfo.parent.slug,
-            }
-          : null,
-        hasSubStories: parentInfo.hasSubStories,
-        options: parentOptions.map((o) => ({
-          storyId: o.storyId,
-          title: o.title,
-        })),
-      }}
     />
   );
 }

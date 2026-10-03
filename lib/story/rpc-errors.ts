@@ -18,8 +18,8 @@ export function isTermsChangedError(error: unknown): boolean {
   );
 }
 
-// set_revision_parent_story() (20260930083209_sub_stories.sql) names each
-// refusal with its own SQLSTATE, so the editor can say what went wrong in
+// set_story_parent_story() (20261003051644_story_level_sub_stories.sql)
+// names each refusal with its own SQLSTATE, so My Stories can say what went wrong in
 // the reader's language instead of showing Postgres text.
 const SUB_STORY_ERROR_KEYS = {
   WHV10: "subStorySelf",
@@ -27,6 +27,7 @@ const SUB_STORY_ERROR_KEYS = {
   WHV12: "subStoryParentNotPublished",
   WHV13: "subStoryParentIsSubStory",
   WHV14: "subStoryHasSubStories",
+  WHV15: "subStoryNotPublished",
 } as const;
 
 export type SubStoryErrorKey =

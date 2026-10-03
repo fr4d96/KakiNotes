@@ -23,7 +23,6 @@ import {
   missingStoryRequirements,
   type StoryStepId,
 } from "@/lib/story/steps";
-import { getRevisionParentStory } from "@/lib/story/sub-stories";
 import { isPrivateStory } from "@/lib/story/story-visibility";
 import { canExportStory } from "@/lib/story/story-export";
 
@@ -56,12 +55,6 @@ export default async function StoryPreviewPage({
   if (!preview) notFound();
 
   const parsedContent = normalizeStoryContentJson(preview.contentJson);
-
-  // Sub stories: the main story this revision is filed under. A read
-  // failure only hides the line, it never blocks the preview.
-  const parentInfo = await getRevisionParentStory(preview.revisionId).catch(
-    () => null,
-  );
 
   // Same "don't show an inline-placed image twice" rule as the public page
   // (app/(public)/stories/[id]/page.tsx) -- see
@@ -323,16 +316,6 @@ export default async function StoryPreviewPage({
       {preview.excerpt && (
         <p className="mt-2 text-muted-foreground">{preview.excerpt}</p>
       )}
-      {parentInfo?.parent ? (
-        <p className="mt-3 text-sm">
-          {t("partOf", {
-            title: parentInfo.parent.title ?? parentInfo.parent.slug,
-          })}
-          <span className="block text-xs text-muted-foreground">
-            {t("partOfHint")}
-          </span>
-        </p>
-      ) : null}
 
       <p className="mt-4 text-sm text-muted-foreground">
         Personal experience, not advice — shared by {preview.attributionValue}.

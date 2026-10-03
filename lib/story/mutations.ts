@@ -388,21 +388,21 @@ export async function setRevisionTags(
 }
 
 /**
- * Files the revision under a main story, or clears that with null. Every
- * rule (same contributor, main story published, two levels only, not
- * itself) is set_revision_parent_story()'s; it raises WHV10-WHV14 to say
- * which one failed (see subStoryErrorKey in lib/story/rpc-errors.ts).
+ * Links a PUBLISHED story under another of the owner's published stories,
+ * or clears that with null. Goes public immediately -- not moderated
+ * (20261003051644_story_level_sub_stories.sql). Every rule (owner only,
+ * both published, same contributor, two levels, not itself) is
+ * set_story_parent_story()'s; it raises WHV10-WHV15 to say which one failed
+ * (see subStoryErrorKey in lib/story/rpc-errors.ts).
  */
-export async function setRevisionParentStory(
-  revisionId: string,
-  expectedVersion: number,
+export async function setStoryParentStory(
+  storyId: string,
   parentStoryId: string | null,
 ) {
   await requireUser();
   const supabase = await createClient();
-  const { error } = await supabase.rpc("set_revision_parent_story", {
-    p_revision_id: revisionId,
-    p_expected_version: expectedVersion,
+  const { error } = await supabase.rpc("set_story_parent_story", {
+    p_story_id: storyId,
     // The generator types every SQL argument as non-null; null clears the
     // link, which the function handles explicitly.
     p_parent_story_id: parentStoryId as string,

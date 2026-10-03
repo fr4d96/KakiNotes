@@ -35,7 +35,9 @@ describe("ParentStoryPicker", () => {
       screen.getByRole("option", { name: "Food in Queenstown" }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("option")).toHaveLength(3);
-    expect(screen.getByText(/it goes public when this version/i)).toBeVisible();
+    expect(
+      screen.getByText(/one of your other published stories/i),
+    ).toBeVisible();
   });
 
   it("reports the chosen story id", async () => {
