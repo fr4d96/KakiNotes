@@ -21,6 +21,17 @@ vi.mock("./actions", () => ({
   deleteDraftStoryAction: vi.fn(async () => ({ ok: true }) as const),
   requestStoryTakedownAction: vi.fn(async () => ({ ok: true }) as const),
   cancelStoryTakedownAction: vi.fn(async () => ({ ok: true }) as const),
+  // link-main-story-dialog.tsx's own data load / save -- stubbed here too
+  // since my-stories-view.tsx renders LinkMainStoryAction on published rows.
+  // link-main-story-dialog.test.tsx covers its actual behaviour.
+  loadLinkMainStoryDataAction: vi.fn(
+    async () =>
+      ({
+        ok: true,
+        data: { parent: null, hasSubStories: false, options: [] },
+      }) as const,
+  ),
+  linkMainStoryAction: vi.fn(async () => ({ ok: true }) as const),
 }));
 
 const push = vi.fn();
@@ -101,6 +112,41 @@ beforeEach(() => {
 });
 
 describe("MyStoriesView", () => {
+  it("offers Link only on published stories, never on drafts or stories in review", () => {
+    render(
+      <MyStoriesView
+        stories={[
+          makeStory({
+            id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            title: "Published one",
+            lifecycle_status: "published",
+            published_revision_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            current_draft_revision_id: null,
+            draftRevisionStatus: null,
+          }),
+          makeStory({
+            id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+            title: "Draft one",
+          }),
+          makeStory({
+            id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            title: "In review one",
+            lifecycle_status: "pending_review",
+            draftRevisionStatus: "submitted",
+          }),
+        ]}
+      />,
+    );
+
+    const linkButtons = screen.queryAllByRole("button", {
+      name: /Set the main story for/,
+      hidden: true,
+    });
+    expect(linkButtons.map((b) => b.getAttribute("aria-label"))).toEqual([
+      "Set the main story for Published one",
+    ]);
+  });
+
   it("defaults to list view when nothing is stored", () => {
     render(<MyStoriesView stories={[makeStory()]} />);
 

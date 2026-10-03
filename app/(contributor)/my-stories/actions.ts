@@ -2,14 +2,22 @@
 
 import { getTranslations } from "next-intl/server";
 
+import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import {
   deleteDraftStory,
   requestStoryTakedown,
   cancelStoryTakedownRequest,
+  setStoryParentStory,
 } from "@/lib/story/mutations";
+import { subStoryErrorKey } from "@/lib/story/rpc-errors";
 import { listMyStories } from "@/lib/story/contributor-queries";
+import {
+  getStoryParentStory,
+  listParentStoryOptions,
+  type ParentStoryOption,
+} from "@/lib/story/sub-stories";
 import {
   requestTakedownSchema,
   cancelTakedownSchema,
@@ -244,6 +252,113 @@ export async function cancelStoryTakedownAction(
     event: "story.takedown.cancelled",
     target: parsed.data.requestId,
     outcome: "success",
+  });
+  return { ok: true };
+}
+
+export type LinkMainStoryDialogData = {
+  parent: { storyId: string; title: string | null; slug: string } | null;
+  hasSubStories: boolean;
+  options: ParentStoryOption[];
+};
+
+export type LoadLinkMainStoryDataResult =
+  { ok: true; data: LinkMainStoryDialogData } | { ok: false; error: string };
+
+export type LinkMainStoryResult = { ok: true } | { ok: false; error: string };
+
+const storyIdSchema = z.uuid();
+const parentStoryIdSchema = z.uuid().nullable();
+
+/**
+ * Backs the "Link" dialog on My Stories (link-main-story-dialog.tsx), loaded
+ * only when the dialog opens for one story -- not for every row, so the
+ * page's list query stays free of the N+1 its own comments warn about.
+ *
+ * storyId comes from the client and is never trusted for ownership
+ * (Engineering Rule 2): get_story_parent_story() and
+ * list_parent_story_options() are owner-only in the database. A story that
+ * isn't the caller's own and one that doesn't exist both come back as the
+ * same "could not load", so this can't be used to probe for other
+ * contributors' stories.
+ */
+export async function loadLinkMainStoryDataAction(
+  storyId: unknown,
+): Promise<LoadLinkMainStoryDataResult> {
+  const [tErr, tCommon] = await Promise.all([
+    getTranslations("actionErrors"),
+    getTranslations("common"),
+  ]);
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: tCommon("mustBeSignedIn") };
+  }
+
+  const parsed = storyIdSchema.safeParse(storyId);
+  if (!parsed.success) {
+    return { ok: false, error: tErr("invalidStory") };
+  }
+
+  try {
+    const [parentInfo, options] = await Promise.all([
+      getStoryParentStory(parsed.data),
+      listParentStoryOptions(parsed.data),
+    ]);
+    return {
+      ok: true,
+      data: {
+        parent: parentInfo.parent,
+        hasSubStories: parentInfo.hasSubStories,
+        options,
+      },
+    };
+  } catch {
+    return { ok: false, error: tErr("loadStoryFailed") };
+  }
+}
+
+/**
+ * Links a published story under another of the caller's published stories,
+ * or clears the link (null). Public immediately -- no review
+ * (20261003051644_story_level_sub_stories.sql). Only the ids' SHAPE is
+ * checked here; who may do it and whether the link is allowed (owner only,
+ * both published, same contributor, two levels, not itself) is re-derived
+ * by set_story_parent_story() from the database, never taken from the
+ * client. Its refusals (WHV10-WHV15) map to translated messages.
+ */
+export async function linkMainStoryAction(
+  storyId: unknown,
+  parentStoryId: unknown,
+): Promise<LinkMainStoryResult> {
+  const [tErr, tCommon] = await Promise.all([
+    getTranslations("actionErrors"),
+    getTranslations("common"),
+  ]);
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: tCommon("mustBeSignedIn") };
+  }
+
+  const parsedStory = storyIdSchema.safeParse(storyId);
+  const parsedParent = parentStoryIdSchema.safeParse(parentStoryId);
+  if (!parsedStory.success || !parsedParent.success) {
+    return { ok: false, error: tErr("invalidStory") };
+  }
+
+  try {
+    await setStoryParentStory(parsedStory.data, parsedParent.data);
+  } catch (error) {
+    const key = subStoryErrorKey(error);
+    return {
+      ok: false,
+      error: key ? tErr(key) : getErrorMessage(error, tErr("generic")),
+    };
+  }
+  logAppEvent({
+    event: "story.main_story.set",
+    target: parsedStory.data,
+    outcome: "success",
+    detail: parsedParent.data ? "linked" : "cleared",
   });
   return { ok: true };
 }

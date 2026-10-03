@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import {
   getPublishedStoryBySlugDeduped,
   getPublishedStoryMediaDeduped,
+  getPublicContributorDeduped,
   coverOf,
   listPublishedStories,
   listPublicRegions,
@@ -18,6 +19,11 @@ import {
   type ContentBlockMediaMap,
 } from "@/components/story/content-block-renderer";
 import { StoryGallery } from "@/components/story/story-gallery";
+import { PartOfStory, SubStoryList } from "@/components/story/story-family";
+import {
+  getPublishedStoryFamilyDeduped,
+  matchSubStoryCards,
+} from "@/lib/story/sub-stories";
 import { StoryCard } from "@/components/story/story-card";
 import { AttributionChip } from "@/components/story/attribution-chip";
 import { PersonalExperienceLabel } from "@/components/story/personal-experience-label";
@@ -179,10 +185,30 @@ export default async function StoryDetailPage({
   ]);
   if (!story) notFound();
 
-  const [media, activeRegions] = await Promise.all([
+  const [media, activeRegions, family] = await Promise.all([
     getPublishedStoryMediaDeduped(story.story_id),
     listPublicRegions(),
+    getPublishedStoryFamilyDeduped(story.slug),
   ]);
+
+  // Sub stories as full cards. A sub story always has the same contributor
+  // as its main story, so one page of that contributor's published cards
+  // covers it -- uncached, like every read on this page. The family read
+  // decides WHICH stories show; the cards only add display fields.
+  const subStoryContributor =
+    family.subStories.length > 0 && story.contributor_slug
+      ? await getPublicContributorDeduped(story.contributor_slug)
+      : null;
+  const subStoryCards = matchSubStoryCards(
+    family.subStories,
+    subStoryContributor
+      ? await listPublishedStories({
+          contributorId: subStoryContributor.contributor_id,
+          limit: 50,
+        })
+      : [],
+  );
+  const subStoryIds = new Set(subStoryCards.cards.map((s) => s.story_id));
 
   const firstRegionName = regionLabelsRaw(story.regions)[0] ?? null;
   const matchedRegionId = firstRegionName
@@ -212,6 +238,10 @@ export default async function StoryDetailPage({
               arr.findIndex((x) => x.story_id === s.story_id) === i,
           )
           .slice(0, 3);
+  // Already shown as sub story cards at the end of the story -- don't repeat them.
+  const relatedWithoutSubStories = relatedStories.filter(
+    (s) => !subStoryIds.has(s.story_id),
+  );
 
   const parsedContent = normalizeStoryContentJson(story.content_json);
 
@@ -262,6 +292,8 @@ export default async function StoryDetailPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
       />
+
+      <PartOfStory parent={family.parent} />
 
       <div className="mb-4">
         <PersonalExperienceLabel />
@@ -325,17 +357,22 @@ export default async function StoryDetailPage({
         expenses={localizedExpenses(story.expenses, locale)}
       />
 
+      <SubStoryList
+        cards={subStoryCards.cards}
+        subStories={subStoryCards.unmatched}
+      />
+
       <div className="mt-10 border-t border-border-subtle pt-6">
         <ReportStoryForm storyId={story.story_id} storySlug={story.slug} />
       </div>
 
-      {relatedStories.length > 0 ? (
+      {relatedWithoutSubStories.length > 0 ? (
         <div className="mt-16">
           <h2 className="text-xl font-semibold tracking-tight">
             {t("relatedStories")}
           </h2>
           <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {relatedStories.map((s) => (
+            {relatedWithoutSubStories.map((s) => (
               <StoryCard key={s.story_id} story={s} />
             ))}
           </div>

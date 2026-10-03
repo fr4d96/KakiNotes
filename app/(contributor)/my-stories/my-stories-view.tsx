@@ -11,6 +11,8 @@ import {
   requestStoryTakedownAction,
   cancelStoryTakedownAction,
 } from "./actions";
+import { LinkMainStoryAction } from "./link-main-story-dialog";
+import { ACTION_ICON_CLASS } from "./action-icon-class";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ALL, FilterRow } from "@/components/story/filter-row";
@@ -33,11 +35,10 @@ import {
 } from "@/components/icons";
 import type { MyStoryWithCover } from "@/lib/story/contributor-queries";
 
-// Shared 32px round hit-target for every per-story icon action (Edit,
-// Preview/Review, Delete and its confirm/cancel step) -- consistent size
-// and hover treatment whether the action is a Link or a button.
-const ACTION_ICON_CLASS =
-  "inline-flex h-8 w-8 items-center justify-center rounded-full hover:bg-surface-muted disabled:pointer-events-none disabled:opacity-60";
+// Moved to ./action-icon-class.ts (re-exported here for anything already
+// importing it from this file) so link-main-story-dialog.tsx can reuse the
+// same class without a circular import between the two files.
+export { ACTION_ICON_CLASS };
 
 type ViewMode = "grid" | "list";
 
@@ -726,6 +727,9 @@ function StoryGrid({
                     <EyeIcon className="h-4 w-4" />
                   </ActionIconLink>
                 )}
+                {story.lifecycle_status === "published" && (
+                  <LinkMainStoryAction storyId={story.id} title={title} />
+                )}
                 {deletable && <DeleteDraftAction story={story} title={title} />}
                 {withdrawable && (
                   <TakedownAction
@@ -876,6 +880,9 @@ function StoryList({
                     >
                       <EyeIcon className="h-4 w-4" />
                     </ActionIconLink>
+                  )}
+                  {story.lifecycle_status === "published" && (
+                    <LinkMainStoryAction storyId={story.id} title={title} />
                   )}
                   {deletable && (
                     <DeleteDraftAction story={story} title={title} />

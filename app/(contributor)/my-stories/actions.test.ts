@@ -15,12 +15,14 @@ vi.mock("@/lib/auth/get-current-user", () => ({
 const mockDeleteDraftStory = vi.fn();
 const mockRequestStoryTakedown = vi.fn();
 const mockCancelStoryTakedownRequest = vi.fn();
+const mockSetStoryParentStory = vi.fn();
 vi.mock("@/lib/story/mutations", () => ({
   deleteDraftStory: (...args: unknown[]) => mockDeleteDraftStory(...args),
   requestStoryTakedown: (...args: unknown[]) =>
     mockRequestStoryTakedown(...args),
   cancelStoryTakedownRequest: (...args: unknown[]) =>
     mockCancelStoryTakedownRequest(...args),
+  setStoryParentStory: (...args: unknown[]) => mockSetStoryParentStory(...args),
 }));
 
 const mockListMyStories = vi.fn();
@@ -28,12 +30,24 @@ vi.mock("@/lib/story/contributor-queries", () => ({
   listMyStories: () => mockListMyStories(),
 }));
 
+const mockGetStoryParentStory = vi.fn();
+const mockListParentStoryOptions = vi.fn();
+vi.mock("@/lib/story/sub-stories", () => ({
+  getStoryParentStory: (...args: unknown[]) => mockGetStoryParentStory(...args),
+  listParentStoryOptions: (...args: unknown[]) =>
+    mockListParentStoryOptions(...args),
+}));
+
 vi.mock("@/lib/log", () => ({ logAppEvent: vi.fn() }));
 
 const user = { id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" };
 
 import { revalidatePath } from "next/cache";
-import { deleteDraftStoryAction } from "./actions";
+import {
+  deleteDraftStoryAction,
+  loadLinkMainStoryDataAction,
+  linkMainStoryAction,
+} from "./actions";
 
 const mockRevalidatePath = vi.mocked(revalidatePath);
 
@@ -41,6 +55,9 @@ beforeEach(() => {
   mockRevalidatePath.mockClear();
   mockDeleteDraftStory.mockReset();
   mockGetCurrentUser.mockReset();
+  mockGetStoryParentStory.mockReset();
+  mockListParentStoryOptions.mockReset();
+  mockSetStoryParentStory.mockReset();
 });
 
 describe("deleteDraftStoryAction", () => {
@@ -84,5 +101,129 @@ describe("deleteDraftStoryAction", () => {
     expect(result.ok).toBe(false);
     expect(mockDeleteDraftStory).not.toHaveBeenCalled();
     expect(mockRevalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+const STORY_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+
+const PARENT_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+
+describe("loadLinkMainStoryDataAction", () => {
+  it("rejects a non-uuid storyId without calling any reader", async () => {
+    mockGetCurrentUser.mockResolvedValue(user);
+
+    const result = await loadLinkMainStoryDataAction("not-a-uuid");
+
+    expect(result.ok).toBe(false);
+    expect(mockGetStoryParentStory).not.toHaveBeenCalled();
+    expect(mockListParentStoryOptions).not.toHaveBeenCalled();
+  });
+
+  it("rejects when there is no authenticated user, without touching any reader", async () => {
+    mockGetCurrentUser.mockResolvedValue(null);
+
+    const result = await loadLinkMainStoryDataAction(STORY_ID);
+
+    expect(result.ok).toBe(false);
+    expect(mockGetStoryParentStory).not.toHaveBeenCalled();
+  });
+
+  it("returns the current main story, the sub-story flag and the options", async () => {
+    mockGetCurrentUser.mockResolvedValue(user);
+    mockGetStoryParentStory.mockResolvedValue({
+      parent: { storyId: PARENT_ID, title: "Food in Queenstown", slug: "food" },
+      hasSubStories: false,
+    });
+    mockListParentStoryOptions.mockResolvedValue([
+      { storyId: PARENT_ID, title: "Food in Queenstown", slug: "food" },
+    ]);
+
+    const result = await loadLinkMainStoryDataAction(STORY_ID);
+
+    expect(mockGetStoryParentStory).toHaveBeenCalledWith(STORY_ID);
+    expect(mockListParentStoryOptions).toHaveBeenCalledWith(STORY_ID);
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        parent: {
+          storyId: PARENT_ID,
+          title: "Food in Queenstown",
+          slug: "food",
+        },
+        hasSubStories: false,
+        options: [
+          { storyId: PARENT_ID, title: "Food in Queenstown", slug: "food" },
+        ],
+      },
+    });
+  });
+
+  it("gives one generic failure when the owner-only RPC refuses, so it can't be used to probe", async () => {
+    mockGetCurrentUser.mockResolvedValue(user);
+    mockGetStoryParentStory.mockRejectedValue(
+      new Error("Only the story owner can read its main story"),
+    );
+    mockListParentStoryOptions.mockResolvedValue([]);
+
+    const result = await loadLinkMainStoryDataAction(STORY_ID);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).not.toMatch(/owner/i);
+  });
+});
+
+describe("linkMainStoryAction", () => {
+  it("links through setStoryParentStory with the validated ids", async () => {
+    mockGetCurrentUser.mockResolvedValue(user);
+    mockSetStoryParentStory.mockResolvedValue(undefined);
+
+    const result = await linkMainStoryAction(STORY_ID, PARENT_ID);
+
+    expect(result).toEqual({ ok: true });
+    expect(mockSetStoryParentStory).toHaveBeenCalledWith(STORY_ID, PARENT_ID);
+  });
+
+  it("passes null through to clear the link", async () => {
+    mockGetCurrentUser.mockResolvedValue(user);
+    mockSetStoryParentStory.mockResolvedValue(undefined);
+
+    const result = await linkMainStoryAction(STORY_ID, null);
+
+    expect(result).toEqual({ ok: true });
+    expect(mockSetStoryParentStory).toHaveBeenCalledWith(STORY_ID, null);
+  });
+
+  it.each([
+    ["a non-uuid story", "nope", PARENT_ID],
+    ["a non-uuid main story", STORY_ID, "nope"],
+    ["a missing main story argument", STORY_ID, undefined],
+  ])("rejects %s without calling the mutation", async (_, story, parent) => {
+    mockGetCurrentUser.mockResolvedValue(user);
+
+    const result = await linkMainStoryAction(story, parent);
+
+    expect(result.ok).toBe(false);
+    expect(mockSetStoryParentStory).not.toHaveBeenCalled();
+  });
+
+  it("rejects when signed out, without calling the mutation", async () => {
+    mockGetCurrentUser.mockResolvedValue(null);
+
+    const result = await linkMainStoryAction(STORY_ID, PARENT_ID);
+
+    expect(result.ok).toBe(false);
+    expect(mockSetStoryParentStory).not.toHaveBeenCalled();
+  });
+
+  it("maps a WHV15 refusal (story not published) to its translated message", async () => {
+    mockGetCurrentUser.mockResolvedValue(user);
+    mockSetStoryParentStory.mockRejectedValue({ code: "WHV15", message: "x" });
+
+    const result = await linkMainStoryAction(STORY_ID, PARENT_ID);
+
+    expect(result).toEqual({
+      ok: false,
+      error: "Only published stories can be linked.",
+    });
   });
 });

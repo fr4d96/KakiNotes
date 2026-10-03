@@ -252,6 +252,11 @@
         "spam_commercial": "Spam or commercial content",
         "other": "Other"
       }
+    },
+    "family": {
+      "partOfLabel": "Part of a larger story",
+      "partOf": "Part of:",
+      "subStoriesHeading": "More in this story"
     }
   },
   "expenses": {
@@ -578,7 +583,18 @@
       "delete": "Delete {title}",
       "takeDown": "Take down {title}",
       "cancelTakedown": "Cancel the takedown request for {title}",
-      "takedownPending": "Takedown requested for {title} — awaiting review. Choose to cancel the request."
+      "takedownPending": "Takedown requested for {title} — awaiting review. Choose to cancel the request.",
+      "linkMainStory": "Set the main story for {title}"
+    },
+    "linkMainStoryDialog": {
+      "title": "Main story for \"{title}\"",
+      "liveNote": "Both stories are already published, so the link shows on both pages straight away — no review needed.",
+      "loading": "Loading…",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "toast": "Linked \"{title}\" to its main story.",
+      "toastCleared": "Removed the main story from \"{title}\"."
     },
     "deleteDialog": {
       "title": "Delete this story?",
@@ -856,6 +872,13 @@
       "hide": "Hide",
       "outlineLead": "Know the shape already?",
       "outlineAction": "Start from an outline"
+    },
+    "parentStory": {
+      "label": "Main story (optional)",
+      "none": "None — this is its own story",
+      "help": "Link this story under one of your other published stories, e.g. 'Fergburger' under 'Food in Queenstown'.",
+      "hasSubStories": "Other stories are linked under this one, so it can't become a sub story.",
+      "noOptions": "Publish another story first to file this one under it."
     }
   },
   "publish": {
@@ -1115,7 +1138,13 @@
     "submitFailed": "Could not submit this story for review.",
     "savePrivateFailed": "Could not save this story privately.",
     "requestChangesFailed": "Could not request changes.",
-    "declineFailed": "Could not decline."
+    "declineFailed": "Could not decline.",
+    "subStorySelf": "A story can't be its own main story.",
+    "subStoryNotFound": "That main story couldn't be found.",
+    "subStoryParentNotPublished": "The main story has to be published first.",
+    "subStoryParentIsSubStory": "That story is already a sub story, so it can't have sub stories of its own.",
+    "subStoryHasSubStories": "Other stories are already linked under this one, so it can't become a sub story.",
+    "subStoryNotPublished": "Only published stories can be linked."
   },
   "takedown": {
     "alreadyDown": "This story has already been taken down.",

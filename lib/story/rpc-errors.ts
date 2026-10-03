@@ -17,3 +17,29 @@ export function isTermsChangedError(error: unknown): boolean {
     (error as { code?: unknown }).code === "WHV01"
   );
 }
+
+// set_story_parent_story() (20261003051644_story_level_sub_stories.sql)
+// names each refusal with its own SQLSTATE, so My Stories can say what went wrong in
+// the reader's language instead of showing Postgres text.
+const SUB_STORY_ERROR_KEYS = {
+  WHV10: "subStorySelf",
+  WHV11: "subStoryNotFound",
+  WHV12: "subStoryParentNotPublished",
+  WHV13: "subStoryParentIsSubStory",
+  WHV14: "subStoryHasSubStories",
+  WHV15: "subStoryNotPublished",
+} as const;
+
+export type SubStoryErrorKey =
+  (typeof SUB_STORY_ERROR_KEYS)[keyof typeof SUB_STORY_ERROR_KEYS];
+
+/** The actionErrors.* key for a sub-story refusal, or null for anything else. */
+export function subStoryErrorKey(error: unknown): SubStoryErrorKey | null {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return null;
+  }
+  const code = (error as { code?: unknown }).code;
+  return typeof code === "string" && Object.hasOwn(SUB_STORY_ERROR_KEYS, code)
+    ? SUB_STORY_ERROR_KEYS[code as keyof typeof SUB_STORY_ERROR_KEYS]
+    : null;
+}

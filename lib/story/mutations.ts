@@ -388,6 +388,29 @@ export async function setRevisionTags(
 }
 
 /**
+ * Links a PUBLISHED story under another of the owner's published stories,
+ * or clears that with null. Goes public immediately -- not moderated
+ * (20261003051644_story_level_sub_stories.sql). Every rule (owner only,
+ * both published, same contributor, two levels, not itself) is
+ * set_story_parent_story()'s; it raises WHV10-WHV15 to say which one failed
+ * (see subStoryErrorKey in lib/story/rpc-errors.ts).
+ */
+export async function setStoryParentStory(
+  storyId: string,
+  parentStoryId: string | null,
+) {
+  await requireUser();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_story_parent_story", {
+    p_story_id: storyId,
+    // The generator types every SQL argument as non-null; null clears the
+    // link, which the function handles explicitly.
+    p_parent_story_id: parentStoryId as string,
+  });
+  if (error) throw error;
+}
+
+/**
  * Replaces a revision's optional per-category expense breakdown
  * (supabase/migrations/20260902110200_set_revision_expenses.sql).
  *

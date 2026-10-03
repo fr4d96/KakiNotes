@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
+Last updated: 2026-10-03 (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
 review, and a photo upload no longer leaves every later save rejected as stale; see the entry at
 the end of this file); earlier, 2026-09-24 (shipped as 1.0.0: story editor fixes — bold/italic toggle off, a
 "free" travel style, line breaks kept on the review screen, uploads no longer lost to a
@@ -9080,3 +9080,186 @@ a non-owner calling `get_story_version_for_media` must raise.
 
 **Heads-up:** the hosted history records `countries` as `20260924021909`, but the local file is
 still `20260924100000_countries.sql`, so `db push` will abort until that file is renamed.
+
+## 2026-09-30 — sub stories
+
+A story can now be filed under a **main story** by the same contributor, e.g. "Fergburger" under
+"Food in Queenstown". Two levels only.
+
+**Built.**
+
+- Database (`20260930083209_sub_stories`, `20260930083643_fix_story_is_publicly_visible`):
+  `story_revisions.parent_story_id`, frozen on submit and copied by `create_next_draft_revision()`;
+  `set_revision_parent_story()` (the only writer, refusals WHV10–WHV14);
+  `get_revision_parent_story()`, `list_parent_story_options()`; and the anon read
+  `get_published_story_family()`. Full design in
+  [docs/architecture.md](architecture.md#sub-stories-2026-09-30).
+- Server: `lib/story/sub-stories.ts` (typed readers, public payload parsed with Zod),
+  `setRevisionParentStory()` in `lib/story/mutations.ts`, `setParentStoryAction` in the edit
+  actions (Zod uuid-or-null; refusals mapped to `actionErrors.subStory*` by `subStoryErrorKey`).
+- UI: a "Main story (optional)" select on the editor's places step, after tags
+  (`components/story/parent-story-picker.tsx`, saved on its own mutation-queue slot like tags);
+  "Part of: …" breadcrumb and a "More in this story" list on the public story page
+  (`components/story/story-family.tsx`); "Part of" on the contributor preview; "Filed under main
+  story" on the moderation review page. en + zh-CN copy.
+
+**Decisions.**
+
+- **On the revision, not the story.** The link is visible to readers, so it is moderated content
+  (Engineering Rule 11). Changing it on a published story means edit → resubmit.
+- **Main story must be your own and published.** Stops anyone hanging their story off someone
+  else's, and a published story can never be hard-deleted, so the `on delete restrict` FK can't
+  break `delete_draft_story()`.
+- **Two levels.** "Main" and "sub" was the ask. Checks read current state and can race; public
+  reads follow one hop only, so the worst case is odd display, never a leak.
+- **Sub stories still appear in the normal story index.** They are full stories; the link only
+  adds navigation.
+
+**Verified against the hosted dev project** (inside a rolled-back transaction, nothing kept):
+every refusal fires with its code, other users / anon are denied, the public read shows the link
+both ways only when both stories are public, archiving the main story hides the "Part of" line,
+the new draft keeps the link, and the approved revision's link can't be changed.
+`_story_is_publicly_visible()` agrees with `get_published_story()` on all 214 dev stories.
+
+**Found and fixed while testing:** the visibility helper first used `consent_row is not null`,
+which for a composite is only true when every field is filled, so it called every story
+non-public. Fixed in the second migration.
+
+**Tests:** `lib/story/sub-stories.test.ts`, `lib/story/rpc-errors.test.ts`,
+`components/story/parent-story-picker.test.tsx`, `components/story/story-family.test.tsx`,
+`app/(contributor)/stories/[id]/edit/actions.test.ts`. `npm run verify`: format, lint (0 errors),
+typecheck, and 1220 unit tests pass. `build` compiled but could not prerender `/sitemap.xml` in the
+cloud container because its network blocks the Supabase host, so that stage needs CI.
+
+**Not covered:** no Playwright spec yet for linking a story in the editor. The SQL rules are not in
+the live RLS integration suite (`tests/integration/story-rls.integration.test.ts`); worth adding
+the refusals and the anon family read there.
+
+**Drift note:** the hosted `create_next_draft_revision()` was applied without the long checklist
+comments inside its body; the behaviour is identical to the repo file.
+
+**Next prompt:** run CI on this branch; add a Playwright flow (publish main → link sub → approve →
+both pages show the link).
+
+## 2026-10-03 — "Link" main-story action on My Stories
+
+The editor's "Main story" picker was the only place to set a sub story's link. My Stories
+(the grid and list of a contributor's own stories) gained a small "Link" icon action per row that
+opens the same picker in a dialog, without leaving the page.
+
+**Built.**
+
+- `components/icons.tsx`: `LinkIcon` (two interlocked links).
+- `app/(contributor)/my-stories/action-icon-class.ts`: `ACTION_ICON_CLASS` pulled out of
+  `my-stories-view.tsx` into its own module so the new dialog file and the view can both use it
+  without importing each other (the view renders the dialog's trigger; the dialog needed the
+  view's icon-button class).
+- `app/(contributor)/my-stories/link-main-story-dialog.tsx`: `<LinkMainStoryAction>`, a trigger +
+  native `<dialog>` built on the same shell mechanics as `components/ui/confirm-dialog.tsx`
+  (showModal/close, Escape via the native "close" event, backdrop click, explicit focus-return to
+  the trigger button on close so it doesn't depend on jsdom replicating that part of the `<dialog>`
+  spec). Reuses `ParentStoryPicker` as-is. Three states, driven entirely by the row's own
+  `draftRevisionStatus`:
+  - `"draft"`: loads the picker's data on open and saves through `linkMainStoryAction`.
+  - `"submitted"`: read-only current main story + a one-line "frozen for review" explanation, no
+    save control.
+  - `null` (published, nothing in flight): no RPC call at all — explains that changing the main
+    story means starting a new draft, and links to `/stories/<id>/edit`.
+- `app/(contributor)/my-stories/actions.ts`: `loadLinkMainStoryDataAction(storyId)` — the one new
+  server action, filling the one real gap (`MyStoryWithCover` carries `version` but not the
+  in-flight revision's id). Reuses `getStoryPreview()` (owner/editor/moderator-scoped) for the
+  revision id and a freshly-read `version`, then `getRevisionParentStory()` /
+  `listParentStoryOptions()` (both already owner-authorized RPCs) — storyId is Zod-validated but
+  never trusted for ownership. `linkMainStoryAction` is a thin wrapper over the edit page's own
+  `setParentStoryAction`, so `setRevisionParentStory()` still has exactly one caller.
+- `my-stories-view.tsx`: renders `<LinkMainStoryAction>` on every row, grid and list, unconditional
+  of story state (the dialog itself decides what it can offer).
+- en + zh-CN copy under `myStories.actions.linkMainStory` and `myStories.linkMainStoryDialog.*`.
+
+**Decisions.**
+
+- **No new RPC, no migration.** All four RPCs from the 2026-09-30 sub-stories work already cover
+  this; the only server-side gap was a reader joining `getStoryPreview()` with the sub-story
+  readers for one story at dialog-open time, not a list-query change (avoids reintroducing the N+1
+  `listMyStoriesWithCovers()`'s own comments warn against).
+- **Fetch on open, not on page load.** The dialog's data (revision id, current parent, options,
+  `hasSubStories`) is loaded fresh each time it opens, for one story — never added to the page's
+  own list query.
+- **`ACTION_ICON_CLASS` extracted rather than imported across files**, specifically to avoid a
+  circular import between `my-stories-view.tsx` (which renders the dialog) and
+  `link-main-story-dialog.tsx` (which needed the shared icon-button class).
+
+**Tests:** `app/(contributor)/my-stories/link-main-story-dialog.test.tsx` (new),
+`app/(contributor)/my-stories/actions.test.ts` (extended), `app/(contributor)/my-stories/
+my-stories-view.test.tsx` (mocks extended for the new row action). `npm run lint` (0 errors, only
+pre-existing warnings elsewhere), `npm run typecheck` (clean), `npm run test`: 1233 unit tests
+pass (up from 1220). `npm run build` was not re-run in this pass — a dev server was already running
+against this worktree and sharing `.next` with a build would have risked disrupting it; the prior
+entry's note (sitemap prerender needs network to the Supabase host, so it fails outside CI) still
+applies whenever build is run.
+
+**Not covered:** no Playwright flow for linking a main story from My Stories specifically (the
+editor's own linking flow still has none either, per the prior entry).
+
+## 2026-10-03 — sub stories shown as cards on the main story
+
+A main story's public page now shows its sub stories as full story cards, right under the
+description (the "More in this story" section moved up from near the bottom).
+
+- No new SQL. `get_published_story_family()` still decides **which** stories show; the page then
+  reads one page (50) of the same contributor's cards with the uncached `listPublishedStories()`
+  and pairs them by slug with `matchSubStoryCards()` (`lib/story/sub-stories.ts`). A card row can
+  never add a story the family read didn't return.
+- Sub stories with no card row (contributor has 50+ published stories, or no public profile) still
+  show as the old plain link, so nothing silently disappears.
+- Sub stories shown as cards are filtered out of "Related stories" on the same page.
+- Tests: `matchSubStoryCards` in `lib/story/sub-stories.test.ts`; card + mixed rendering in
+  `components/story/story-family.test.tsx`.
+
+**Not seen live yet:** the dev database has no approved main/sub pair, so the cards were checked by
+tests only. Approving one linked story would show it.
+
+## 2026-10-03 — sub stories reworked: published only, live straight away
+
+Product owner's call: only stories that are **already published** can be linked, and the link
+shows **immediately**, with no review round. This replaces the draft-based design above (and the
+draft/submitted states of the My Stories Link dialog in the earlier 2026-10-03 entry).
+
+**Built.**
+
+- Migration `20261003051644_story_level_sub_stories.sql` (applied to the hosted dev project; local
+  file renamed to the version hosted recorded). The link moved to `stories.parent_story_id`; the
+  revision column, `set_revision_parent_story()` and `get_revision_parent_story()` are gone. New:
+  `set_story_parent_story()` (owner only, both stories published, refusals WHV10–WHV15, row locks
+  close the two-level race, no version bump) and `get_story_parent_story()`.
+  `list_parent_story_options()` is now owner only; `get_published_story_family()` reads the new
+  column with the same both-ends visibility gate. Already-public links would have carried over
+  (there were none); the one draft-only test link was dropped.
+- `types/database.ts`: only this migration's changes were taken from the regenerated file. The
+  shared dev database also has `countries`/`trip_places` from `feat/itinerary-builder`, which this
+  branch has no migration for, so those were left out on purpose.
+- App: `setStoryParentStory()` / `getStoryParentStory()`; My Stories `loadLinkMainStoryDataAction`
+  and `linkMainStoryAction(storyId, parentId)` (Zod, WHV codes mapped, logged as
+  `story.main_story.set`). The Link button shows only on published rows; the dialog has one state
+  (picker + "goes live straight away" note + Save/Cancel). The editor's "Main story" picker, the
+  preview "Part of" line and the moderation "Filed under" line were removed (those files are back
+  to their `main` versions; `edit/actions.test.ts` deleted with `setParentStoryAction`).
+- Docs: architecture "Sub stories", and content-governance "Sub stories go live without review
+  (exception to Rule 11)".
+
+**Verified.** The SQL ran first inside a rolled-back transaction on the dev project: a published
+pair links and shows both ways; WHV10, 11, 13, 14 and 15 fire (a draft can't be linked); another
+user can't set, read or list; anon can't write but still sees the public link; clearing removes it;
+`stories.version` is unchanged. The security advisor lists only `get_published_story_family` as
+anon-callable among the new functions. Unit tests cover the actions, dialog, published-only button,
+readers and error codes.
+
+**Not covered:** no Playwright flow yet (publish two stories → link from My Stories → both public
+pages show it), and the new SQL rules aren't in `tests/integration/story-rls.integration.test.ts`.
+
+**Follow-up (same day): smaller sub-story cards, at the end of the story.** On the main story's
+page, each sub story is now a compact card with just the title on the left and the cover photo
+(56×40) on the right; the whole card is one link. The section sits after the story's content, photos
+and costs, just above the Report box. One column on phones, two from `sm`, three from `lg`. Sub stories without a card row use the same
+card with the placeholder image. No excerpt, author or tags. (`SubStoryCard` in
+`components/story/story-family.tsx`.)
