@@ -34,6 +34,21 @@ import {
   finalizeMediaUploadAction,
   transcodeHeicUploadAction,
 } from "@/app/(contributor)/stories/[id]/edit/upload-actions";
+// Drive mode's own actions/upload client are deliberately NOT imported
+// statically here, even though every other Server Action this component
+// calls is. lib/story/drive-sync.ts (which these transitively import)
+// carries `import "server-only"`, and that package throws unconditionally
+// the moment it's evaluated OUTSIDE Next's own bundler (confirmed live:
+// loading this component under Vitest with a static import crashed the
+// whole test file before a single test ran — `server-only`'s guard has no
+// special-case for "being imported by a Client Component test"). A
+// dynamic import() here defers that evaluation until the mode-check
+// effect/Drive branch below actually runs, turning a module-load-time
+// crash into an ordinary rejected promise this component already catches
+// — see the uploadMode effect and the Drive branch of handleFiles.
+type DriveUploadActionsModule =
+  typeof import("@/app/(contributor)/stories/[id]/edit/drive-upload-actions");
+type DriveUploadClientModule = typeof import("@/lib/story/drive-upload-client");
 
 /** Types a browser can render directly in an <img>, for the in-flight tile. */
 const BROWSER_RENDERABLE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -262,6 +277,28 @@ export function ImageUploadManager({
   const [uploading, setUploading] = useState<UploadingItem[]>([]);
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
   const [isDragging, setIsDragging] = useState(false);
+  // The server's own decision (lib/story/drive-sync.ts#getStoryMediaUploadMode),
+  // fetched once per revision — this component NEVER decides its own mode.
+  // Defaults to "supabase" until the check resolves (and forever, if it
+  // fails for any reason): the existing, byte-for-byte-unchanged upload
+  // path is the safe default, never Drive.
+  const [uploadMode, setUploadMode] = useState<"supabase" | "google_drive">(
+    "supabase",
+  );
+  useEffect(() => {
+    let cancelled = false;
+    import("@/app/(contributor)/stories/[id]/edit/drive-upload-actions")
+      .then((mod) => mod.getStoryMediaUploadModeAction(revisionId))
+      .then((mode) => {
+        if (!cancelled) setUploadMode(mode);
+      })
+      .catch(() => {
+        if (!cancelled) setUploadMode("supabase");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [revisionId]);
   // Which photo's detail panel is expanded. One at a time, deliberately:
   // the old panel put a checkbox and two text inputs on EVERY tile, so a
   // dozen photos meant three dozen form controls competing for attention
@@ -447,89 +484,154 @@ export function ImageUploadManager({
         : (file.type as "image/jpeg" | "image/png" | "image/webp");
 
       try {
-        const begun = await beginMediaUploadAction(revisionId, sourceMimeType);
-        if ("error" in begun) throw new Error(begun.error);
-        const { mediaId, reservedPath } = begun;
+        // Drive mode is decided ENTIRELY server-side (uploadMode, fetched
+        // on mount) — this branch is the only place that conditional
+        // appears in this component; everything below it in the non-Drive
+        // branch is the existing code, untouched. See lib/story/drive-
+        // upload-client.ts for why the chunked-PUT-to-Drive logic isn't
+        // inlined here.
+        if (uploadMode === "google_drive") {
+          const [driveActions, driveClient]: [
+            DriveUploadActionsModule,
+            DriveUploadClientModule,
+          ] = await Promise.all([
+            import("@/app/(contributor)/stories/[id]/edit/drive-upload-actions"),
+            import("@/lib/story/drive-upload-client"),
+          ]);
+          const begunDrive = await driveClient.beginAndUploadToDrive(
+            { revisionId, file, mimeType: sourceMimeType },
+            driveActions.beginDriveMediaUploadAction,
+          );
 
-        setUploading((prev) =>
-          prev.map((u) =>
-            u.key === key ? { ...u, progress: "processing" } : u,
-          ),
-        );
+          setUploading((prev) =>
+            prev.map((u) =>
+              u.key === key ? { ...u, progress: "processing" } : u,
+            ),
+          );
 
-        const {
-          data: { session },
-        } = await createBrowserSupabaseClient().auth.getSession();
-        if (!session) throw new Error(tCommon("mustBeSignedIn"));
-
-        await uploadDirectlyToStorage(
-          reservedPath,
-          file,
-          sourceMimeType,
-          session.access_token,
-          {
-            tooLarge: t("errors.tooLarge"),
-            failedWithStatus: (status) =>
-              t("errors.uploadFailedStatus", { status }),
-          },
-        );
-
-        if (isHeic) {
-          const transcoded = await transcodeHeicUploadAction(mediaId);
-          if ("error" in transcoded) throw new Error(transcoded.error);
-        }
-
-        // On the shared mutation queue, exactly like this panel's four other
-        // version-bumping mutations below (reorder, cover, detach, caption).
-        //
-        // It used to be a bare `await` outside the queue, and that was a
-        // real data-loss bug: finalize_story_media_upload takes an
-        // expectedVersion, and so does the editor's 600ms-debounced autosave.
-        // Upload a photo just after typing and the two went out
-        // CONCURRENTLY carrying the same version -- whichever landed second
-        // was rejected with "Stale version", and when the loser was the text
-        // save, the words the contributor had just written were simply never
-        // persisted. Queueing it means the version is only ever read inside a
-        // serialized callback, so the autosave that runs next reads the
-        // version this upload produced instead of racing it.
-        const finalized = await new Promise<
-          Awaited<ReturnType<typeof finalizeMediaUploadAction>>
-        >((resolve) => {
-          queue.enqueue(`media-finalize:${mediaId}`, async () => {
-            const result = await finalizeMediaUploadAction(
-              mediaId,
-              versionRef.current,
-            );
-            if (!("error" in result)) {
-              // The server's own post-bump version, not an assumed "+1":
-              // finalizeMediaUploadAction retries a stale version against
-              // the live one, so the bump can start from a number this tab
-              // never held. Null means it could not be read — leave the
-              // counter alone rather than guess it wrong.
-              if (result.version !== null) versionRef.current = result.version;
-              onVersionBumped();
+          // Same shared-queue reasoning as the Supabase path below: the
+          // version is only ever read inside this serialized callback, so
+          // the next autosave reads the version THIS upload produced
+          // instead of racing it.
+          const finalizedDrive = await new Promise<
+            Awaited<
+              ReturnType<
+                DriveUploadActionsModule["finalizeDriveMediaUploadAction"]
+              >
+            >
+          >((resolve) => {
+            queue.enqueue(`media-finalize:${begunDrive.mediaId}`, async () => {
+              const result = await driveActions.finalizeDriveMediaUploadAction(
+                begunDrive.mediaId,
+                versionRef.current,
+                begunDrive.driveFileId,
+              );
+              if (!("error" in result)) {
+                if (result.version !== null) {
+                  versionRef.current = result.version;
+                }
+                onVersionBumped();
+                resolve(result);
+                return;
+              }
               resolve(result);
-              return;
-            }
-            resolve(result);
-            // Every OTHER mutation on this shared queue throws on failure,
-            // which is what lets the queue's own onVersionConflict callback
-            // (story-edit-form.tsx) show the "this draft changed elsewhere —
-            // reload to continue" banner instead of a plain toast that just
-            // invites retrying into the same wall. This one used to swallow
-            // its own error and resolve unconditionally, so a genuine
-            // version conflict on a photo upload never reached that banner
-            // — only a generic "failed to upload" toast, with nothing
-            // telling the contributor their local version was stale. Rethrow
-            // for a version conflict specifically (not every finalize
-            // failure — an unsupported format or a decode failure is not
-            // "reload this page", it's "pick a different photo").
-            if (isStaleVersionConflict(result.error)) {
-              throw new Error(result.error);
-            }
+              if (isStaleVersionConflict(result.error)) {
+                throw new Error(result.error);
+              }
+            });
           });
-        });
-        if ("error" in finalized) throw new Error(finalized.error);
+          if ("error" in finalizedDrive) {
+            throw new Error(finalizedDrive.error);
+          }
+        } else {
+          const begun = await beginMediaUploadAction(
+            revisionId,
+            sourceMimeType,
+          );
+          if ("error" in begun) throw new Error(begun.error);
+          const { mediaId, reservedPath } = begun;
+
+          setUploading((prev) =>
+            prev.map((u) =>
+              u.key === key ? { ...u, progress: "processing" } : u,
+            ),
+          );
+
+          const {
+            data: { session },
+          } = await createBrowserSupabaseClient().auth.getSession();
+          if (!session) throw new Error(tCommon("mustBeSignedIn"));
+
+          await uploadDirectlyToStorage(
+            reservedPath,
+            file,
+            sourceMimeType,
+            session.access_token,
+            {
+              tooLarge: t("errors.tooLarge"),
+              failedWithStatus: (status) =>
+                t("errors.uploadFailedStatus", { status }),
+            },
+          );
+
+          if (isHeic) {
+            const transcoded = await transcodeHeicUploadAction(mediaId);
+            if ("error" in transcoded) throw new Error(transcoded.error);
+          }
+
+          // On the shared mutation queue, exactly like this panel's four other
+          // version-bumping mutations below (reorder, cover, detach, caption).
+          //
+          // It used to be a bare `await` outside the queue, and that was a
+          // real data-loss bug: finalize_story_media_upload takes an
+          // expectedVersion, and so does the editor's 600ms-debounced autosave.
+          // Upload a photo just after typing and the two went out
+          // CONCURRENTLY carrying the same version -- whichever landed second
+          // was rejected with "Stale version", and when the loser was the text
+          // save, the words the contributor had just written were simply never
+          // persisted. Queueing it means the version is only ever read inside a
+          // serialized callback, so the autosave that runs next reads the
+          // version this upload produced instead of racing it.
+          const finalized = await new Promise<
+            Awaited<ReturnType<typeof finalizeMediaUploadAction>>
+          >((resolve) => {
+            queue.enqueue(`media-finalize:${mediaId}`, async () => {
+              const result = await finalizeMediaUploadAction(
+                mediaId,
+                versionRef.current,
+              );
+              if (!("error" in result)) {
+                // The server's own post-bump version, not an assumed "+1":
+                // finalizeMediaUploadAction retries a stale version against
+                // the live one, so the bump can start from a number this tab
+                // never held. Null means it could not be read — leave the
+                // counter alone rather than guess it wrong.
+                if (result.version !== null)
+                  versionRef.current = result.version;
+                onVersionBumped();
+                resolve(result);
+                return;
+              }
+              resolve(result);
+              // Every OTHER mutation on this shared queue throws on failure,
+              // which is what lets the queue's own onVersionConflict callback
+              // (story-edit-form.tsx) show the "this draft changed elsewhere —
+              // reload to continue" banner instead of a plain toast that just
+              // invites retrying into the same wall. This one used to swallow
+              // its own error and resolve unconditionally, so a genuine
+              // version conflict on a photo upload never reached that banner
+              // — only a generic "failed to upload" toast, with nothing
+              // telling the contributor their local version was stale. Rethrow
+              // for a version conflict specifically (not every finalize
+              // failure — an unsupported format or a decode failure is not
+              // "reload this page", it's "pick a different photo").
+              if (isStaleVersionConflict(result.error)) {
+                throw new Error(result.error);
+              }
+            });
+          });
+          if ("error" in finalized) throw new Error(finalized.error);
+        }
         if (previewUrl) {
           URL.revokeObjectURL(previewUrl);
           previewUrlsRef.current.delete(previewUrl);
@@ -577,6 +679,7 @@ export function ImageUploadManager({
         revisionId,
         versionRef.current,
         next.map((m) => m.mediaId),
+        storyId,
       );
       if (result.ok) {
         versionRef.current += 1;
@@ -596,6 +699,7 @@ export function ImageUploadManager({
         revisionId,
         versionRef.current,
         mediaId,
+        storyId,
       );
       if (result.ok) {
         versionRef.current += 1;
@@ -614,6 +718,7 @@ export function ImageUploadManager({
         revisionId,
         versionRef.current,
         mediaId,
+        storyId,
       );
       if (result.ok) {
         versionRef.current += 1;
@@ -678,6 +783,14 @@ export function ImageUploadManager({
             Up to {MAX_IMAGES_PER_REVISION} images, JPEG/PNG/WebP/HEIC (iPhone
             photos), 15 MB each.
           </span>
+          {/* Quiet, not a banner: this is informational, not a decision the
+              contributor makes here (the server already decided the mode --
+              see uploadMode above). */}
+          {uploadMode === "google_drive" && (
+            <span className="text-xs text-muted-foreground">
+              {t("driveNote")}
+            </span>
+          )}
         </label>
         <input
           ref={fileInputRef}

@@ -11,7 +11,7 @@ import {
 import { resolveLocationLabels } from "@/lib/story/active-lookups";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
 import { storyContentText } from "@/lib/validation/story";
-import { downloadMediaPreviewBytes } from "@/lib/story/image-pipeline";
+import { getImageBytes } from "@/lib/story/image-bytes";
 import {
   buildStoryPdf,
   storyPdfFilename,
@@ -206,6 +206,10 @@ async function collectImages(
     altText: string | null;
     caption: string | null;
     decorative: boolean;
+    // Round B: which backend this image's bytes live on. Optional/
+    // defaulted to "supabase" below so a caller that predates this field
+    // behaves exactly as before.
+    storageBackend?: string;
   }[],
 ): Promise<StoryPdfImage[]> {
   const supabase = await createClient();
@@ -223,14 +227,27 @@ async function collectImages(
     if (authError) continue;
 
     try {
-      const { bytes, width, height } = await downloadMediaPreviewBytes(
-        item.mediaId,
-      );
+      // getImageBytes() (lib/story/image-bytes.ts) branches on backend:
+      // "supabase" calls downloadMediaPreviewBytes() exactly as before;
+      // "google_drive" fetches from the owning contributor's Drive via
+      // the same get_drive_media_for_proxy() RPC the public proxy route
+      // uses. authorize_story_media_preview() above already proved this
+      // caller may see this media — getImageBytes() performs no
+      // authorization of its own, same contract downloadMediaPreviewBytes()
+      // already had.
+      const result = await getImageBytes({
+        id: item.mediaId,
+        storage_backend:
+          item.storageBackend === "google_drive" ? "google_drive" : "supabase",
+      });
+      if (!result) {
+        throw new Error("No processed derivative available");
+      }
       images.push({
         mediaId: item.mediaId,
-        bytes,
-        width,
-        height,
+        bytes: result.bytes,
+        width: result.width,
+        height: result.height,
         altText: item.altText,
         caption: item.caption,
         decorative: item.decorative,

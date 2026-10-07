@@ -8,13 +8,14 @@ import {
   rawStorageUpload,
 } from "@/lib/story/raw-storage-http";
 import { encodeJpegUnderBudget } from "@/lib/story/jpeg-budget";
-import { transcodeHeicToJpeg } from "@/lib/story/heic";
+import { transcodeHeicToJpeg, HeicTranscodeError } from "@/lib/story/heic";
 import {
   extensionForMimeType,
   MAX_INPUT_PIXELS,
   MAX_PROCESSED_BYTES,
   MAX_PROCESSED_DIMENSION,
   sniffImageMimeType,
+  sniffUploadMimeType,
   type AllowedImageMimeType,
 } from "@/lib/story/image-validation";
 
@@ -137,7 +138,7 @@ export async function processStoryMedia(
     .select("story_id, private_storage_path, processing_state")
     .eq("id", mediaId)
     .single();
-  if (fetchError || !media) {
+  if (fetchError || !media || !media.private_storage_path) {
     throw new Error(`No such media: ${mediaId}`);
   }
 
@@ -590,4 +591,138 @@ export async function downloadMediaPreviewBytes(
     throw new Error(`Could not read dimensions for media ${mediaId}`);
   }
   return { bytes, width: metadata.width, height: metadata.height };
+}
+
+/**
+ * ADDITIVE ONLY — added at the end of this file per this task's
+ * instructions, because another in-flight task is editing the rest of this
+ * module right now. Does not modify, rename, or reorder anything above.
+ *
+ * A bytes-in/bytes-out sibling of processStoryMedia(), for
+ * lib/story/drive-sync.ts's Drive-mode upload path (docs/google-drive-
+ * integration.md section 4, step 4): no storage path, no admin client, no
+ * story_media row of its own — it only runs the same decode/validate/strip/
+ * resize/re-encode steps processStoryMedia() already runs, reusing the SAME
+ * shared helpers that function already calls (sniffImageMimeType,
+ * MAX_INPUT_PIXELS/MAX_PROCESSED_DIMENSION/MAX_PROCESSED_BYTES from
+ * lib/story/image-validation.ts, encodeJpegUnderBudget from
+ * lib/story/jpeg-budget.ts) — never a second, drifting copy of the actual
+ * image-processing logic. The decode/strip/resize/encode steps inside
+ * processStoryMedia() itself are inlined there (tightly coupled to its own
+ * DB-recording calls), not separately exported private functions — this
+ * function reuses everything that genuinely IS already shared/exported,
+ * and re-implements only the orchestration around it.
+ *
+ * Throws a plain Error whose message is one of processStoryMedia()'s own
+ * failure codes (unrecognized_image_format / decode_failed /
+ * animated_not_supported / reencode_failed / processed_too_large) on a bad
+ * input — the caller (drive-sync.ts) is expected to map that to its own
+ * error handling; this function performs no DB writes of any kind.
+ */
+export type ProcessedImageBytes = {
+  bytes: Buffer;
+  processedMimeType: AllowedImageMimeType;
+  sourceMimeType: AllowedImageMimeType;
+  sourceWidth: number;
+  sourceHeight: number;
+  processedWidth: number;
+  processedHeight: number;
+  sha256: string;
+};
+
+export async function processImageBytesInMemory(
+  original: Buffer,
+): Promise<ProcessedImageBytes> {
+  // Round B addition: a Drive-mode upload has no separate HEIC-transcode
+  // step the way the Supabase path does (begin/finalizeMediaUploadAction's
+  // transcodeHeicUploadAction runs BEFORE processStoryMedia() ever sees the
+  // bytes, rewriting the reservation onto a plain original.jpg first) --
+  // lib/story/drive-sync.ts downloads whatever raw bytes the browser PUT
+  // to the staging file and hands them straight here. sniffUploadMimeType
+  // (unlike sniffImageMimeType, which this function originally only
+  // called) also recognizes HEIC, so a HEIC source is transcoded to JPEG
+  // right here, first, via the same lib/story/heic.ts used by the
+  // Supabase path -- nothing about the actual transcode logic is
+  // duplicated or diverges between the two paths.
+  const uploadSniffed = sniffUploadMimeType(original);
+  let workingBytes = original;
+  if (uploadSniffed === "image/heic") {
+    try {
+      workingBytes = await transcodeHeicToJpeg(original);
+    } catch (err) {
+      throw err instanceof HeicTranscodeError
+        ? err
+        : new Error("unrecognized_image_format");
+    }
+  }
+
+  const sniffed = sniffImageMimeType(workingBytes);
+  if (!sniffed) {
+    throw new Error("unrecognized_image_format");
+  }
+
+  let image: Sharp;
+  let metadata: Metadata;
+  try {
+    metadata = await sharp(workingBytes, {
+      limitInputPixels: MAX_INPUT_PIXELS,
+      pages: -1,
+    }).metadata();
+    image = sharp(workingBytes, { limitInputPixels: MAX_INPUT_PIXELS });
+  } catch {
+    throw new Error("decode_failed");
+  }
+
+  if ((metadata.pages ?? 1) > 1) {
+    throw new Error("animated_not_supported");
+  }
+  if (!metadata.width || !metadata.height) {
+    throw new Error("decode_failed");
+  }
+  const sourceWidth = metadata.width;
+  const sourceHeight = metadata.height;
+
+  const processedMimeType: AllowedImageMimeType =
+    sniffed === "image/png" ? "image/png" : "image/jpeg";
+  const resized = image.rotate().resize({
+    width: MAX_PROCESSED_DIMENSION,
+    height: MAX_PROCESSED_DIMENSION,
+    fit: "inside",
+    withoutEnlargement: true,
+  });
+
+  let processedBuffer: Buffer;
+  let processedInfo: OutputInfo;
+  try {
+    if (processedMimeType === "image/png") {
+      const result = await resized.png().toBuffer({ resolveWithObject: true });
+      processedBuffer = result.data;
+      processedInfo = result.info;
+    } else {
+      const result = await encodeJpegUnderBudget(
+        resized,
+        JPEG_QUALITY_STEPS,
+        MAX_PROCESSED_BYTES,
+      );
+      processedBuffer = result.data;
+      processedInfo = result.info;
+    }
+  } catch {
+    throw new Error("reencode_failed");
+  }
+
+  if (processedBuffer.byteLength > MAX_PROCESSED_BYTES) {
+    throw new Error("processed_too_large");
+  }
+
+  return {
+    bytes: processedBuffer,
+    processedMimeType,
+    sourceMimeType: sniffed,
+    sourceWidth,
+    sourceHeight,
+    processedWidth: processedInfo.width,
+    processedHeight: processedInfo.height,
+    sha256: sha256Hex(processedBuffer),
+  };
 }

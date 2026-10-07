@@ -118,6 +118,13 @@ export async function markEditorialDraftAwaitingApproval(storyId: string) {
  * as of Prompt 4 Sub-phase 4's save_revision_draft() signature change --
  * previously void). Callers should use this instead of assuming the server
  * incremented by exactly 1.
+ *
+ * Deliberately UNCHANGED signature/return shape -- this RPC is shared with
+ * every other in-flight branch against this dev database (and, in
+ * production, with the currently deployed app); see get_story_drive_sync_
+ * state() (supabase/migrations/20261007190006_story_drive_folders.sql) and
+ * saveRevisionFieldsAction for how the title-save Drive-folder-rename hook
+ * is wired WITHOUT touching this function's shape.
  */
 export async function saveRevisionDraft(
   revisionId: string,
@@ -598,6 +605,13 @@ export async function updateStoryMediaCaption(params: {
   });
   if (error) throw error;
 }
+
+// reorderStoryMedia/setStoryCoverMedia/detachStoryMedia are deliberately
+// UNCHANGED (same signature, same void return) -- reorder_story_media/
+// set_story_cover_media/detach_story_media are shared editor RPCs; see
+// get_story_drive_sync_state() and app/(contributor)/stories/[id]/edit/
+// actions.ts for how the best-effort Drive sync hook is wired without
+// touching these functions' shape.
 
 export async function reorderStoryMedia(
   revisionId: string,

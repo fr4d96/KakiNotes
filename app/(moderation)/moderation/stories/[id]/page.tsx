@@ -12,7 +12,7 @@ import {
 } from "@/lib/story/moderation";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
 import { getPublishedStoryMedia } from "@/lib/story/public-queries";
-import { getPublicImageUrl } from "@/lib/story/public-image-url";
+import { getImageUrl } from "@/lib/story/image-url";
 import { imageBlockMediaIds, storyContentText } from "@/lib/validation/story";
 import {
   ContentBlockRenderer,
@@ -262,7 +262,11 @@ export default async function ModerationReviewPage({
     const inlineIds = new Set(imageBlockMediaIds(parsedPublishedContent));
     for (const m of publishedMedia) {
       if (!inlineIds.has(m.media_id)) continue;
-      const url = getPublicImageUrl(m.public_url);
+      const url = getImageUrl({
+        id: m.media_id,
+        storage_backend: m.storage_backend ?? "supabase",
+        public_url: m.public_url,
+      });
       if (url) {
         publishedContentMedia[m.media_id] = {
           url,

@@ -112,13 +112,33 @@ export async function getPublishedStoryBySlug(slug: string) {
  */
 export const getPublishedStoryBySlugDeduped = cache(getPublishedStoryBySlug);
 
-export async function getPublishedStoryMedia(storyId: string) {
+/**
+ * Round B: get_published_story_media() now also returns a `storage_backend`
+ * column (round A review MUST-FIX 1) — not yet in types/database.ts (the
+ * migration adding it predates this one's own regeneration; see the `as
+ * never` casts throughout the Drive work). This cast is additive only:
+ * every existing field keeps its original inferred type, with
+ * storage_backend layered on.
+ */
+export type PublishedStoryMediaRow = Awaited<
+  ReturnType<typeof getPublishedStoryMediaRaw>
+>[number] & {
+  storage_backend?: "supabase" | "google_drive";
+};
+
+async function getPublishedStoryMediaRaw(storyId: string) {
   const supabase = createPublicClient();
   const { data, error } = await supabase.rpc("get_published_story_media", {
     p_story_id: storyId,
   });
   if (error) throw error;
   return data ?? [];
+}
+
+export async function getPublishedStoryMedia(
+  storyId: string,
+): Promise<PublishedStoryMediaRow[]> {
+  return (await getPublishedStoryMediaRaw(storyId)) as PublishedStoryMediaRow[];
 }
 
 /** Per-request dedupe only, same rationale as getPublishedStoryBySlugDeduped. */
@@ -151,9 +171,20 @@ export function coverOf<T extends { is_cover: boolean }>(
  * passed. Card-shaped rows include cover image path, regions, and tags in
  * the same query (Prompt 5) -- no per-card follow-up query.
  */
-export async function listPublishedStories(
-  filter: PublishedStoriesFilter = {},
-) {
+/**
+ * Round B: list_published_stories() now also returns `cover_media_id`/
+ * `cover_storage_backend` (round A review MUST-FIX 1) — additive cast,
+ * same reasoning as PublishedStoryMediaRow above. `cover_image_path`'s
+ * own type/value is completely untouched.
+ */
+export type PublishedStoryCardRow = Awaited<
+  ReturnType<typeof listPublishedStoriesRaw>
+>[number] & {
+  cover_media_id?: string | null;
+  cover_storage_backend?: "supabase" | "google_drive" | null;
+};
+
+async function listPublishedStoriesRaw(filter: PublishedStoriesFilter = {}) {
   const supabase = createPublicClient();
   const { data, error } = await supabase.rpc("list_published_stories", {
     p_cursor_published_at: filter.cursorPublishedAt,
@@ -175,6 +206,12 @@ export async function listPublishedStories(
   });
   if (error) throw error;
   return data ?? [];
+}
+
+export async function listPublishedStories(
+  filter: PublishedStoriesFilter = {},
+): Promise<PublishedStoryCardRow[]> {
+  return (await listPublishedStoriesRaw(filter)) as PublishedStoryCardRow[];
 }
 
 /**

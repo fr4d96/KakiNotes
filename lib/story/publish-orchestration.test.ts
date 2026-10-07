@@ -138,4 +138,70 @@ describe("runApproveOrchestration", () => {
     expect(copyMedia).toHaveBeenCalledWith("m-1", "attempt-4");
     expect(result.ok).toBe(true);
   });
+
+  // Round A review, MUST-FIX 1: a google_drive item needs no bucket copy
+  // at all -- its derivative in Drive already is the public file.
+  // finalize_story_publication() promotes it directly; calling copyMedia
+  // for one would fail outright (no processed_private_storage_path to
+  // read). storageBackend is optional, so this is purely additive --
+  // every test above (which never sets it) is untouched.
+  it("skips a processed google_drive item's bucket copy, but still finalizes", async () => {
+    const beginAttempt = vi.fn().mockResolvedValue("attempt-5");
+    const copyMedia = vi.fn().mockResolvedValue(undefined);
+    const finalize = vi.fn().mockResolvedValue(undefined);
+
+    const result = await runApproveOrchestration(
+      {
+        revisionId: "rev-1",
+        media: [
+          media({
+            mediaId: "m-drive",
+            processingState: "processed",
+            storageBackend: "google_drive",
+          }),
+          media({
+            mediaId: "m-supabase",
+            processingState: "processed",
+            storageBackend: "supabase",
+          }),
+        ],
+      },
+      { beginAttempt, copyMedia, finalize },
+    );
+
+    expect(result).toEqual({ ok: true, approvalAttemptId: "attempt-5" });
+    // Only the supabase item is copied -- the Drive item is skipped
+    // entirely, never passed to copyMedia at all.
+    expect(copyMedia).toHaveBeenCalledTimes(1);
+    expect(copyMedia).toHaveBeenCalledWith("m-supabase", "attempt-5");
+    expect(finalize).toHaveBeenCalledWith({
+      revisionId: "rev-1",
+      approvalAttemptId: "attempt-5",
+      userFacingReason: undefined,
+      editorNote: undefined,
+    });
+  });
+
+  it("a google_drive item already promoted is skipped too, same as any backend", async () => {
+    const beginAttempt = vi.fn().mockResolvedValue("attempt-6");
+    const copyMedia = vi.fn().mockResolvedValue(undefined);
+    const finalize = vi.fn().mockResolvedValue(undefined);
+
+    const result = await runApproveOrchestration(
+      {
+        revisionId: "rev-1",
+        media: [
+          media({
+            mediaId: "m-drive-promoted",
+            processingState: "promoted",
+            storageBackend: "google_drive",
+          }),
+        ],
+      },
+      { beginAttempt, copyMedia, finalize },
+    );
+
+    expect(result.ok).toBe(true);
+    expect(copyMedia).not.toHaveBeenCalled();
+  });
 });

@@ -35,6 +35,8 @@ type FakeRow = {
   google_account_email: string | null;
   google_account_sub: string | null;
   status: string;
+  drive_folder_id?: string | null;
+  staging_folder_id?: string | null;
 };
 
 const rows = new Map<string, FakeRow>();
@@ -63,6 +65,13 @@ const fakeAdmin = {
           }),
         }),
       }),
+      update: (patch: Record<string, unknown>) => ({
+        eq: async (_col: string, value: string) => {
+          const existing = rows.get(value);
+          if (existing) rows.set(value, { ...existing, ...patch } as FakeRow);
+          return { error: null };
+        },
+      }),
       delete: () => ({
         eq: async (_col: string, value: string) => {
           rows.delete(value);
@@ -77,17 +86,27 @@ vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => fakeAdmin,
 }));
 
+const invalidateDriveCachesForUser = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/drive/drive-cache", () => ({
+  invalidateDriveCachesForUser,
+}));
+
 import {
   encryptRefreshToken,
   decryptRefreshToken,
   saveDriveConnection,
   readDriveConnection,
   deleteDriveConnection,
+  getDriveConnectionState,
+  setDriveFolderId,
+  setStagingFolderId,
+  markDriveConnectionRefreshFailed,
 } from "@/lib/drive/token-store";
 
 beforeEach(() => {
   rows.clear();
   envState.key = Buffer.alloc(32, 7).toString("base64");
+  invalidateDriveCachesForUser.mockClear();
 });
 
 describe("encryptRefreshToken / decryptRefreshToken", () => {
@@ -187,5 +206,123 @@ describe("saveDriveConnection / readDriveConnection / deleteDriveConnection", ()
     expect(rows.size).toBe(1);
     const read = await readDriveConnection("user-3");
     expect(read?.refreshToken).toBe("1//second-token");
+  });
+});
+
+describe("getDriveConnectionState / setDriveFolderId / setStagingFolderId", () => {
+  it("returns identity + active status + both folder ids null for a brand-new connection", async () => {
+    await saveDriveConnection({
+      userId: "user-4",
+      refreshToken: "1//token",
+      googleAccountEmail: null,
+      googleAccountSub: null,
+    });
+    const state = await getDriveConnectionState("user-4");
+    expect(state.status).toBe("active");
+    expect(state.connectionId).toBeTruthy();
+    expect(state.identityToken).toBeTruthy();
+    expect(state.appFolderId).toBeNull();
+    expect(state.stagingFolderId).toBeNull();
+  });
+
+  it("reads both folder ids back, in the same one call, once each has been set", async () => {
+    await saveDriveConnection({
+      userId: "user-5",
+      refreshToken: "1//token",
+      googleAccountEmail: null,
+      googleAccountSub: null,
+    });
+    await setDriveFolderId("user-5", "app-folder-id");
+    await setStagingFolderId("user-5", "staging-folder-id");
+
+    const state = await getDriveConnectionState("user-5");
+    expect(state.appFolderId).toBe("app-folder-id");
+    expect(state.stagingFolderId).toBe("staging-folder-id");
+  });
+
+  it("returns null identity for a user with no connection row at all", async () => {
+    const state = await getDriveConnectionState("nobody");
+    expect(state).toEqual({
+      connectionId: null,
+      identityToken: null,
+      status: null,
+      appFolderId: null,
+      stagingFolderId: null,
+    });
+  });
+
+  it("the identity token changes on every reconnect, even with the same refresh token value", async () => {
+    await saveDriveConnection({
+      userId: "user-6",
+      refreshToken: "1//same-token",
+      googleAccountEmail: null,
+      googleAccountSub: null,
+    });
+    const first = await getDriveConnectionState("user-6");
+
+    await saveDriveConnection({
+      userId: "user-6",
+      refreshToken: "1//same-token",
+      googleAccountEmail: null,
+      googleAccountSub: null,
+    });
+    const second = await getDriveConnectionState("user-6");
+
+    expect(second.identityToken).not.toBe(first.identityToken);
+    // Same row (same connection id), just a fresh identity.
+    expect(second.connectionId).toBe(first.connectionId);
+  });
+
+  it("setDriveFolderId/setStagingFolderId do NOT change the identity token", async () => {
+    await saveDriveConnection({
+      userId: "user-7",
+      refreshToken: "1//token",
+      googleAccountEmail: null,
+      googleAccountSub: null,
+    });
+    const before = await getDriveConnectionState("user-7");
+    await setDriveFolderId("user-7", "app-folder-id");
+    await setStagingFolderId("user-7", "staging-folder-id");
+    const after = await getDriveConnectionState("user-7");
+
+    expect(after.identityToken).toBe(before.identityToken);
+  });
+});
+
+describe("cache invalidation on disconnect/reconnect/refresh-failed", () => {
+  it("saveDriveConnection invalidates this user's in-memory caches", async () => {
+    await saveDriveConnection({
+      userId: "user-8",
+      refreshToken: "1//token",
+      googleAccountEmail: null,
+      googleAccountSub: null,
+    });
+    expect(invalidateDriveCachesForUser).toHaveBeenCalledWith("user-8");
+  });
+
+  it("deleteDriveConnection invalidates this user's in-memory caches", async () => {
+    await saveDriveConnection({
+      userId: "user-9",
+      refreshToken: "1//token",
+      googleAccountEmail: null,
+      googleAccountSub: null,
+    });
+    invalidateDriveCachesForUser.mockClear();
+
+    await deleteDriveConnection("user-9");
+    expect(invalidateDriveCachesForUser).toHaveBeenCalledWith("user-9");
+  });
+
+  it("markDriveConnectionRefreshFailed invalidates this user's in-memory caches", async () => {
+    await saveDriveConnection({
+      userId: "user-10",
+      refreshToken: "1//token",
+      googleAccountEmail: null,
+      googleAccountSub: null,
+    });
+    invalidateDriveCachesForUser.mockClear();
+
+    await markDriveConnectionRefreshFailed("user-10");
+    expect(invalidateDriveCachesForUser).toHaveBeenCalledWith("user-10");
   });
 });

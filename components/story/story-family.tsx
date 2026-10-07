@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import type { StoryFamilyLink, SubStoryLink } from "@/lib/story/sub-stories";
 import type { StoryCardData } from "@/components/story/story-card";
 import { StoryCoverFallback } from "@/components/story/story-cover-fallback";
-import { getPublicImageUrl } from "@/lib/story/public-image-url";
+import { getCardCoverUrl } from "@/lib/story/image-url";
 
 // Type-only import above: lib/story/sub-stories.ts is "server-only", and
 // erased type imports never pull it into a bundle.
@@ -47,7 +47,7 @@ export function SubStoryList({
     ...cards.map((c) => ({
       slug: c.slug,
       title: c.title,
-      coverUrl: getPublicImageUrl(c.cover_image_path),
+      coverUrl: getCardCoverUrl(c),
     })),
     ...subStories.map((s) => ({
       slug: s.slug,

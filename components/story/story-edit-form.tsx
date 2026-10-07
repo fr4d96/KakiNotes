@@ -555,6 +555,7 @@ export function StoryEditForm({
             revisionId,
             versionRef.current,
             parsed.data,
+            storyId,
           );
           if (result.ok) {
             // Authoritative: the server's own new version, not an assumed
@@ -678,6 +679,7 @@ export function StoryEditForm({
               revisionId,
               versionRef.current,
               parsed.data,
+              storyId,
             );
             if (result.ok) {
               versionRef.current = result.version;
