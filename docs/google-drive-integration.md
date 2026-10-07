@@ -416,6 +416,34 @@ not confirmed either way from official sources, so it is marked a
 **must-verify spike** in the build order (section 11, slice 2) rather than
 assumed to work.
 
+**Spike result (2026-10-07): the browser `PUT` works. Option D is the
+upload path.** Run with `scripts/spike-drive-cors.mjs` (a standalone
+localhost server, not app code) in Chrome, on a test Google account, with
+the `drive.file` scope:
+
+| Test                                                           | Result                                                                                      |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 6 MB single `PUT`, session started **with** an `Origin` header | **Pass.** HTTP 200, and the browser could read the response (the file id).                  |
+| 6 MB single `PUT`, session started **without** `Origin`        | **Blocked** by the browser ("Failed to fetch").                                             |
+| 6 MB in two `Content-Range` chunks, with `Origin`              | **Pass.** The first chunk got 308, the second 200. Resumable uploads work from the browser. |
+| Server check with a forged `kakinotes_reservation`             | **Rejected**, as it should be. The `appProperties` check works.                             |
+| A real JPEG, with `Origin`                                     | **Pass.**                                                                                   |
+
+Every test file was deleted afterwards (`files.delete` returned 204).
+
+**Rule this sets for the build:** the server **must** send
+`Origin: <our site origin>` when it starts the resumable session, or the
+browser's `PUT` is blocked. The origin comes from configuration (the same
+place as `GOOGLE_DRIVE_OAUTH_REDIRECT_URI`), never from the incoming
+request's headers. Test it: a session started without `Origin` should be
+covered by a unit test asserting the header is always set.
+
+**Not covered by the spike:** Safari and Firefox were not tried, and the
+6 MB tests used random bytes, not a large real photo. Slice 3 should check
+one large iPhone photo in Safari before it's called done. Option A stays
+written down below as the fallback, but nothing is built for it unless a
+browser turns out to need it.
+
 If the spike shows the `PUT` is blocked, the approved fallback is **Option
 A**: the browser shrinks the image itself (decode, then resize/re-encode
 via `createImageBitmap` + `OffscreenCanvas`/canvas) until it's comfortably
@@ -1306,7 +1334,7 @@ image-validation.ts`) as-is for Drive mode; no stricter Drive-specific
    change is needed, just confirmation that this is intentional, not a gap.
 7. **`s-maxage` — 300 seconds (5 minutes), as recommended.** Section 5's
    caching discussion is confirmed as-is, no change needed.
-8. **CORS on the resumable `PUT` — unchanged, still a slice-2 spike.** The
+8. **CORS on the resumable `PUT` — settled 2026-10-07: it works (with `Origin` set), so Option D is built.** See the spike result in section 4(a). Original note: The
    spike (section 11, slice 2) still decides between Option D and the
    Option A fallback; nothing about the decision process itself changed.
 9. **HEIC handling in the Option A fallback — keep the doc's split.**
