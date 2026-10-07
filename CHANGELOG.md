@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.3.0](https://github.com/fr4d96/KakiNotes/compare/v1.2.0...v1.3.0) (2026-10-07)
+
+### What's new for contributors
+
+**Keep your story photos in your own Google Drive.** In Account settings there's a new Google Drive tab. Connect your Google account, and from then on any photo you add to one of your own stories is saved in your Google Drive instead of on Kakinotes. Kakinotes only asks for access to the files it creates itself. It can't see anything else in your Drive.
+
+**Your photos are cleaned before they're saved.** Location and camera details are removed from every photo before it lands in your Drive. The original you uploaded is deleted straight after, not left in your Drive's bin.
+
+**Tidy folders, one per story.** Photos go into a "Kakinotes" folder in your Drive, with a folder for each story named after its title, and the photos numbered 01, 02, 03 in the same order as in your story. Rename the story and its folder follows. Reorder or remove photos and the numbers follow too.
+
+**Nothing changes if you don't connect.** Connecting is optional. If you don't, your photos are stored exactly as before. Your published stories look the same either way, and readers never see a Google Drive link.
+
+**You can disconnect at any time** from the same tab. Kakinotes also cancels its access on Google's side.
+
+### Good to know
+
+**Google Drive is in early testing.** For now only a small group of invited test accounts can connect. Everyone else will see a message from Google saying access is blocked. It will open up to everyone later.
+
+**Photos in Drive belong to you.** If you delete or move a story's photo in your Drive, or disconnect, that photo can stop showing on your story. Kakinotes doesn't keep a backup copy.
+
+
+
+### Features
+
+* **drive:** connect and disconnect Google Drive from Account settings ([d5ffcb6](https://github.com/fr4d96/KakiNotes/commit/d5ffcb6418ec370976322c4958b59d39666c1add))
+* **drive:** store a contributor's photos in their own Google Drive ([acabcb8](https://github.com/fr4d96/KakiNotes/commit/acabcb89c0a2dc7335456d4c6e4819764d9e896a))
+
 ## [1.2.0](https://github.com/fr4d96/KakiNotes/compare/v1.1.0...v1.2.0) (2026-10-03)
 
 ### What's new for everyone
