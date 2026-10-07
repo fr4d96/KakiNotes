@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
+Last updated: 2026-10-08 (Google Drive slice 3 plus story folders: a Drive-connected contributor's new photos go to their own Google Drive, one folder per story, and nothing is stored in Supabase for them; see the entry at the end of this file); earlier, 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
 review, and a photo upload no longer leaves every later save rejected as stale; see the entry at
 the end of this file); earlier, 2026-09-24 (shipped as 1.0.0: story editor fixes — bold/italic toggle off, a
 "free" travel style, line breaks kept on the review screen, uploads no longer lost to a
@@ -9363,3 +9363,75 @@ needs the four vars in Vercel (with its own encryption key) and the
 
 **Next:** slice 3, uploading new photos to Drive (Option D). Check a large iPhone photo in Safari
 before calling it done.
+
+## 2026-10-08 — Google Drive slice 3: uploads to Drive, per-story folders
+
+Slice 3 of [docs/google-drive-integration.md](google-drive-integration.md), plus a per-story folder
+layout the owner asked for after testing. A contributor with Drive connected, uploading to **their
+own self-submitted story**, now stores that photo **only in their Google Drive**. Everyone else
+(no connection, editors, admins, editorial imports) keeps the existing Supabase path unchanged.
+
+**Upload (Option D).** The server starts a resumable Drive session in `Kakinotes/.staging` (always
+sending `Origin`, per the CORS spike). The browser PUTs the raw file there in 8 MiB chunks and
+resumes from the 308 `Range` header. Finalize checks the staging file's `appProperties` against the
+reservation (a forged id is rejected before anything is downloaded), runs the existing sharp
+pipeline in memory (`processImageBytesInMemory`, HEIC included), writes the cleaned photo into the
+story's folder, then **permanently deletes** the raw file (`files.delete`, never the bin). The mode
+is decided server-side (`get_story_media_upload_mode`); the browser only follows it.
+
+**Serving.** `app/media/[mediaId]/route.ts` serves Drive photos only: published ones (same check
+as `get_published_story_media`) with `s-maxage=300`, previews for owner/editor/moderator with
+`private, no-store`, and a 404 for Supabase ids and anything else. `getImageUrl()` /
+`getImageBytes()` route every read site (editor, preview, My Stories, public page, OG, gallery,
+cards, home, moderation, PDF) by `storage_backend`; Supabase photos get exactly the URL/bytes they
+did before.
+
+**Publishing.** `finalize_story_publication` promotes a Drive photo straight from `processed` to
+`promoted` (there's no bucket copy), and the moderator approve flow skips the copy step for it. A
+promoted Drive photo's file id is immutable (Rule 11). Public reads (`get_published_story_media`,
+`list_published_stories` with new `cover_media_id` / `cover_storage_backend`) include Drive photos.
+
+**Folders.** `Kakinotes/<story title>/01.jpg, 02.jpg, …` (sanitised title; " (2)" on a clash;
+"Untitled story" if blank; sub stories get their own top-level folder). The folder renames with
+the title and files renumber on upload/reorder/remove, via `next/server` `after()` so the user
+never waits; a Drive failure there is logged, never surfaced. The shared editor RPCs
+(`save_revision_draft`, `reorder_story_media`, `set_story_cover_media`, `detach_story_media`) are
+**unchanged**: a first draft reshaped them, which would have broken autosave on the other branches
+sharing the dev DB, so the check moved to a separate post-response RPC (`get_story_drive_sync_state`).
+`scripts/drive-backfill-story-folders.mjs` (dry-run by default) tidies existing photos in one go.
+
+**Speed.** Access tokens and folder ids are cached in memory, keyed by **connection identity**
+(`userId:connectionId:token_auth_tag`) so a disconnect or reconnect (even with another Google account)
+never reuses an old entry on any server; every use first confirms an active connection row. Measured
+on the dev server: start 4.3 s → 1.9 s; finish 16.9 s → 6.6 s (22 KB, cold) and 8.5 s (1.5 MB PNG).
+
+**Migrations, all applied to the linked dev project via the Supabase MCP** (files renamed to the
+recorded versions; `db push` still can't run, see below): `20261007063355_story_media_drive_backend`,
+`20261007102405_story_media_drive_upload_mode`, `20261007190006_story_drive_folders`,
+`20261007194535_drive_staging_folder_and_sync_gate_fix`. Before applying, each replaced function was
+diffed against its newest prior definition (only the intended Drive lines differ) and grants were
+re-checked. After: all 455 existing `story_media` rows stayed `supabase` with paths intact, and all
+27 published stories still listed with the same 24 covers. `types/database.ts` keeps only this
+work's additions.
+
+**Verified.** `npm run verify` passes (1,409 tests). `npm run test:rls`: 122/123 existing pass (the
+one failure, "rejects a destination that does not belong to the given region", is
+`regions.country_id` from `feat/landing-country-cards` sitting on the shared dev DB, not this work);
+Drive RLS tests 3 pass, 3 skipped because a real Drive row needs a real Google sign-in. End to end
+with a test Google account: uploads land only in Drive (0 Supabase objects), no EXIF/XMP/IPTC in
+the stored photo, sha256 matches, 0 raw files left in staging or the bin, not shared publicly, a
+draft photo is a 404 to a signed-out visitor, and rename/reorder keep the folder name and every
+file number (checked by Drive file id) in step.
+
+**Not covered / follow-ups:**
+
+- A large iPhone photo in **Safari** (HEIC + chunked upload) and the **submit → approve → public
+  page** flow haven't been run for real yet.
+- The shared dev database carries unmerged branches' migrations (`feat/landing-country-cards`,
+  `feat/itinerary-builder`, `20261003120000_story_media_original_retention`), which is why `db
+push` aborts and one existing RLS test fails. Worth fixing (Supabase branching, or merging/rolling
+  back those branches).
+- When the raw-original retention task merges, add an explicit `storage_backend = 'supabase'`
+  filter to its sweep; today it skips Drive rows only because they have no paths.
+- Slices 4 (abandoned-staging sweep) and 5 (placeholder for a missing Drive photo) aren't built.
+  Queued owner tasks: move existing photos to Drive, a My Photos page, drag-to-reorder photos.

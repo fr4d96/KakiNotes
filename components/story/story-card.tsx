@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { getPublicImageUrl } from "@/lib/story/public-image-url";
+import { getCardCoverUrl } from "@/lib/story/image-url";
 import { firstRegionLabel, stringList } from "@/lib/story/card-fields";
 import { AttributionChip } from "@/components/story/attribution-chip";
 import { DEFAULT_LOCALE, isLocale } from "@/i18n/locales";
@@ -25,6 +25,11 @@ export type StoryCardData = {
   contributor_slug: string | null;
   contributor_avatar_emoji: string | null;
   cover_image_path: string | null;
+  // Round A review MUST-FIX 1 / round B: optional so every existing
+  // fixture/test (which never sets these) is unaffected — getCardCoverUrl()
+  // falls through to cover_image_path alone when they're absent.
+  cover_media_id?: string | null;
+  cover_storage_backend?: string | null;
   regions: unknown;
   tags: unknown;
 };
@@ -45,7 +50,7 @@ export function StoryCard({ story }: { story: StoryCardData }) {
   // already does.
   const rawLocale = useLocale();
   const locale = isLocale(rawLocale) ? rawLocale : DEFAULT_LOCALE;
-  const coverUrl = getPublicImageUrl(story.cover_image_path);
+  const coverUrl = getCardCoverUrl(story);
   const regionLabel = firstRegionLabel(story.regions, locale);
   const badges = stringList(story.tags).slice(0, 3);
 

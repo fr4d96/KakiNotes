@@ -2,6 +2,7 @@ import "server-only";
 import { randomBytes, createCipheriv, createDecipheriv } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getDriveEnv } from "@/lib/env.server";
+import { invalidateDriveCachesForUser } from "@/lib/drive/drive-cache";
 
 /**
  * The ONE module allowed to read/write `contributor_drive_connections`
@@ -94,8 +95,15 @@ export type SaveDriveConnectionInput = {
 /**
  * Encrypts and upserts the caller's connection row, keyed on the unique
  * `user_id` column — one row per contributor, so connecting again (e.g.
- * reconnecting after a revoke) replaces the previous token rather than
- * creating a second row. `status` is reset to 'active' on every save.
+ * reconnecting after a revoke, or with a DIFFERENT Google account) replaces
+ * the previous token rather than creating a second row. `status` is reset
+ * to 'active' on every save.
+ *
+ * Invalidates this user's in-memory caches (lib/drive/drive-cache.ts) on
+ * THIS instance before returning — belt-and-braces: the fresh
+ * `token_auth_tag` this write produces already makes any OLD cache entry
+ * unreachable by key (drive-client.ts's cache key includes it), but this
+ * clears it outright rather than leaving it to simply age out unused.
  */
 export async function saveDriveConnection(
   input: SaveDriveConnectionInput,
@@ -122,6 +130,7 @@ export async function saveDriveConnection(
   if (error) {
     throw new Error(`Failed to save Drive connection: ${error.message}`);
   }
+  invalidateDriveCachesForUser(input.userId);
 }
 
 export type DriveConnectionRow = {
@@ -174,6 +183,16 @@ export async function readDriveConnection(
  * flip) — this is the disconnect flow's local half, called after the
  * best-effort revoke call to Google's own revoke endpoint. Returns
  * normally whether or not a row existed.
+ *
+ * Invalidates this user's in-memory caches on THIS instance before
+ * returning, so this instance can never keep serving a cached access
+ * token or folder id for a connection that no longer exists in the
+ * database (docs/google-drive-integration.md section 8: disconnecting
+ * must stop Drive photos from showing). The row being gone already makes
+ * the NEXT getAccessToken()/ensureAppFolders() call throw
+ * DriveConnectionError on its own (no row found); this just means an
+ * in-flight-cached entry doesn't linger for up to its own ~1h expiry on
+ * this instance in the meantime.
  */
 export async function deleteDriveConnection(userId: string): Promise<void> {
   const admin = createAdminClient();
@@ -184,5 +203,130 @@ export async function deleteDriveConnection(userId: string): Promise<void> {
 
   if (error) {
     throw new Error(`Failed to delete Drive connection: ${error.message}`);
+  }
+  invalidateDriveCachesForUser(userId);
+}
+
+/**
+ * Flips a connection's status to 'refresh_failed' — called by
+ * lib/drive/drive-client.ts when Google's token endpoint reports
+ * `invalid_grant` while refreshing an access token (the refresh token was
+ * revoked or expired). Does not delete the row: the encrypted (now
+ * useless) refresh token stays, matching the failure-mode table in
+ * docs/google-drive-integration.md section 6, which treats this identically
+ * to a contributor-initiated revoke until they reconnect.
+ */
+export async function markDriveConnectionRefreshFailed(
+  userId: string,
+): Promise<void> {
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("contributor_drive_connections")
+    .update({ status: "refresh_failed" })
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(
+      `Failed to mark Drive connection refresh_failed: ${error.message}`,
+    );
+  }
+  invalidateDriveCachesForUser(userId);
+}
+
+export type DriveConnectionState = {
+  /** null only when there is no connection row at all for this user. */
+  connectionId: string | null;
+  /**
+   * token_auth_tag, base64 — NOT decrypted, not usable as a credential on
+   * its own (GCM's auth tag authenticates the ciphertext, it isn't a key).
+   * Exposed here purely as an IDENTITY marker: it changes on every
+   * saveDriveConnection() call (a fresh one is drawn per encryption, even
+   * reconnecting with the same Google account) and on no other write, so
+   * lib/drive/drive-client.ts uses `${userId}:${connectionId}:${identityToken}`
+   * as its cache key — a disconnect+reconnect (same or different account)
+   * always produces a new key, so a stale cached token/folder-id can never
+   * be served under the new connection.
+   */
+  identityToken: string | null;
+  status: DriveConnectionStatus | null;
+  appFolderId: string | null;
+  stagingFolderId: string | null;
+};
+
+/**
+ * THE one cheap, indexed DB read lib/drive/drive-client.ts's getAccessToken
+ * and ensureAppFolders each start with, every single call (warm or cold) —
+ * confirms an ACTIVE connection row exists and returns its identity
+ * (connectionId/identityToken, for the cache key) together with the
+ * folder ids, all in one query. This is the read that must never be
+ * skipped in favor of trusting an in-memory cache blindly: the cache is
+ * only ever consulted AFTER this confirms which connection (if any) is
+ * currently active. A null/inactive result means "no cached value may be
+ * used, full stop" — the caller throws DriveConnectionError before
+ * touching either cache.
+ */
+export async function getDriveConnectionState(
+  userId: string,
+): Promise<DriveConnectionState> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("contributor_drive_connections")
+    .select("id, token_auth_tag, status, drive_folder_id, staging_folder_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to read Drive connection state: ${error.message}`);
+  }
+  return {
+    connectionId: data?.id ?? null,
+    identityToken: data?.token_auth_tag ?? null,
+    status: (data?.status as DriveConnectionStatus | undefined) ?? null,
+    appFolderId: data?.drive_folder_id ?? null,
+    stagingFolderId: data?.staging_folder_id ?? null,
+  };
+}
+
+/**
+ * Persists the caller's app-folder id once lib/drive/drive-client.ts has
+ * found-or-created it. Safe to call repeatedly with the same value (a
+ * plain overwrite, not an append) — find-or-create is itself idempotent on
+ * the Drive side.
+ */
+export async function setDriveFolderId(
+  userId: string,
+  driveFolderId: string,
+): Promise<void> {
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("contributor_drive_connections")
+    .update({ drive_folder_id: driveFolderId })
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(`Failed to save Drive folder id: ${error.message}`);
+  }
+}
+
+/**
+ * Persists the caller's resolved STAGING folder id
+ * (supabase/migrations/20261007194535_drive_staging_folder_and_sync_gate_
+ * fix.sql's new nullable column). Once this is set, ensureAppFolders()
+ * trusts it directly (no Drive search call) and skips the one-time legacy
+ * "Kakinotes staging" cleanup for good — a set value IS the "already
+ * cleaned up" record, not a separate flag.
+ */
+export async function setStagingFolderId(
+  userId: string,
+  stagingFolderId: string,
+): Promise<void> {
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("contributor_drive_connections")
+    .update({ staging_folder_id: stagingFolderId })
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(`Failed to save Drive staging folder id: ${error.message}`);
   }
 }

@@ -30,3 +30,11 @@ export const disconnectDriveSchema = z.object({
 });
 
 export type DisconnectDriveInput = z.infer<typeof disconnectDriveSchema>;
+
+/**
+ * The Drive media proxy route's one path param
+ * (app/media/[mediaId]/route.ts). A malformed value is treated identically
+ * to "not found" by the route -- this schema only decides whether to even
+ * attempt the RPC call.
+ */
+export const driveMediaIdSchema = z.uuid();

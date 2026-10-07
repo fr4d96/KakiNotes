@@ -9,7 +9,7 @@ import {
   listPublishedStories,
   listPublicRegions,
 } from "@/lib/story/public-queries";
-import { getPublicImageUrl } from "@/lib/story/public-image-url";
+import { getImageUrl } from "@/lib/story/image-url";
 import { imageBlockMediaIds } from "@/lib/validation/story";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
 import { prefixedVocabName, vocabName } from "@/lib/i18n/vocab";
@@ -151,10 +151,22 @@ export async function generateMetadata({
   // the per-photo Details panel had no cover at all, so it shipped no
   // og:image and shared as a bare text card. See that helper for the rule,
   // which the SQL readers now share.
-  const coverUrl = getPublicImageUrl(
-    coverOf(await getPublishedStoryMediaDeduped(story.story_id))?.public_url ??
-      null,
+  //
+  // Only ever published media: getPublishedStoryMediaDeduped() wraps
+  // get_published_story_media(), which is scoped to the story's
+  // published_revision_id specifically (Rule 10) -- a draft/pending Drive
+  // (or supabase) photo can never appear in this list regardless of
+  // backend, so it can never end up in an og:image either.
+  const ogCoverMedia = coverOf(
+    await getPublishedStoryMediaDeduped(story.story_id),
   );
+  const coverUrl = ogCoverMedia
+    ? getImageUrl({
+        id: ogCoverMedia.media_id,
+        storage_backend: ogCoverMedia.storage_backend ?? "supabase",
+        public_url: ogCoverMedia.public_url,
+      })
+    : null;
 
   return {
     title: story.title,
@@ -255,7 +267,11 @@ export default async function StoryDetailPage({
   );
   const contentMedia: ContentBlockMediaMap = {};
   for (const m of media) {
-    const url = getPublicImageUrl(m.public_url);
+    const url = getImageUrl({
+      id: m.media_id,
+      storage_backend: m.storage_backend ?? "supabase",
+      public_url: m.public_url,
+    });
     if (url) {
       contentMedia[m.media_id] = {
         url,

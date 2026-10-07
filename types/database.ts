@@ -23,6 +23,7 @@ export type Database = {
           google_account_email: string | null;
           google_account_sub: string | null;
           id: string;
+          staging_folder_id: string | null;
           status: string;
           token_auth_tag: string;
           token_iv: string;
@@ -37,6 +38,7 @@ export type Database = {
           google_account_email?: string | null;
           google_account_sub?: string | null;
           id?: string;
+          staging_folder_id?: string | null;
           status?: string;
           token_auth_tag: string;
           token_iv: string;
@@ -51,6 +53,7 @@ export type Database = {
           google_account_email?: string | null;
           google_account_sub?: string | null;
           id?: string;
+          staging_folder_id?: string | null;
           status?: string;
           token_auth_tag?: string;
           token_iv?: string;
@@ -604,6 +607,41 @@ export type Database = {
           },
         ];
       };
+      story_drive_folders: {
+        Row: {
+          created_at: string;
+          drive_folder_id: string;
+          folder_name: string;
+          owner_user_id: string;
+          story_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          drive_folder_id: string;
+          folder_name: string;
+          owner_user_id: string;
+          story_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          drive_folder_id?: string;
+          folder_name?: string;
+          owner_user_id?: string;
+          story_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "story_drive_folders_story_id_fkey";
+            columns: ["story_id"];
+            isOneToOne: true;
+            referencedRelation: "stories";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       story_launch_verifications: {
         Row: {
           created_at: string;
@@ -657,12 +695,14 @@ export type Database = {
           approved_public_storage_path: string | null;
           created_at: string;
           deleted_at: string | null;
+          drive_folder_id: string | null;
+          drive_processed_file_id: string | null;
           error_code: string | null;
           failure_reason: string | null;
           id: string;
           metadata_removed_at: string | null;
           owner_user_id: string | null;
-          private_storage_path: string;
+          private_storage_path: string | null;
           processed_file_size_bytes: number | null;
           processed_height: number | null;
           processed_mime_type: string | null;
@@ -676,6 +716,7 @@ export type Database = {
           source_height: number | null;
           source_mime_type: string;
           source_width: number | null;
+          storage_backend: string;
           story_id: string;
           uploaded_by: string | null;
         };
@@ -683,12 +724,14 @@ export type Database = {
           approved_public_storage_path?: string | null;
           created_at?: string;
           deleted_at?: string | null;
+          drive_folder_id?: string | null;
+          drive_processed_file_id?: string | null;
           error_code?: string | null;
           failure_reason?: string | null;
           id?: string;
           metadata_removed_at?: string | null;
           owner_user_id?: string | null;
-          private_storage_path: string;
+          private_storage_path?: string | null;
           processed_file_size_bytes?: number | null;
           processed_height?: number | null;
           processed_mime_type?: string | null;
@@ -702,6 +745,7 @@ export type Database = {
           source_height?: number | null;
           source_mime_type: string;
           source_width?: number | null;
+          storage_backend?: string;
           story_id: string;
           uploaded_by?: string | null;
         };
@@ -709,12 +753,14 @@ export type Database = {
           approved_public_storage_path?: string | null;
           created_at?: string;
           deleted_at?: string | null;
+          drive_folder_id?: string | null;
+          drive_processed_file_id?: string | null;
           error_code?: string | null;
           failure_reason?: string | null;
           id?: string;
           metadata_removed_at?: string | null;
           owner_user_id?: string | null;
-          private_storage_path?: string;
+          private_storage_path?: string | null;
           processed_file_size_bytes?: number | null;
           processed_height?: number | null;
           processed_mime_type?: string | null;
@@ -728,6 +774,7 @@ export type Database = {
           source_height?: number | null;
           source_mime_type?: string;
           source_width?: number | null;
+          storage_backend?: string;
           story_id?: string;
           uploaded_by?: string | null;
         };
@@ -1574,6 +1621,10 @@ export type Database = {
       };
       _content_json_text_length: { Args: { p_content: Json }; Returns: number };
       _generate_story_slug: { Args: { p_title: string }; Returns: string };
+      _is_self_submitted_story_owner: {
+        Args: { p_story_id: string };
+        Returns: boolean;
+      };
       _is_story_owner: { Args: { p_story_id: string }; Returns: boolean };
       _latest_valid_consent_for_revision: {
         Args: { p_revision_id: string; p_story_id: string };
@@ -1650,6 +1701,14 @@ export type Database = {
         };
         Returns: undefined;
       };
+      authorize_drive_media_finalize: {
+        Args: { p_media_id: string };
+        Returns: undefined;
+      };
+      authorize_drive_media_finalize_v2: {
+        Args: { p_media_id: string };
+        Returns: string;
+      };
       authorize_heic_transcode: {
         Args: { p_media_id: string };
         Returns: {
@@ -1660,6 +1719,12 @@ export type Database = {
       authorize_story_media_preview: {
         Args: { p_media_id: string };
         Returns: undefined;
+      };
+      begin_drive_media_upload: {
+        Args: { p_revision_id: string; p_source_mime_type: string };
+        Returns: {
+          media_id: string;
+        }[];
       };
       begin_story_media_copy_attempt: {
         Args: { p_approval_attempt_id: string; p_media_id: string };
@@ -1802,6 +1867,24 @@ export type Database = {
         };
         Returns: undefined;
       };
+      finalize_drive_media_upload: {
+        Args: {
+          p_drive_folder_id: string;
+          p_drive_processed_file_id: string;
+          p_expected_version: number;
+          p_media_id: string;
+          p_processed_file_size_bytes: number;
+          p_processed_height: number;
+          p_processed_mime_type: string;
+          p_processed_width: number;
+          p_sha256: string;
+          p_source_file_size_bytes: number;
+          p_source_height: number;
+          p_source_mime_type: string;
+          p_source_width: number;
+        };
+        Returns: undefined;
+      };
       finalize_story_media_upload: {
         Args: { p_expected_version: number; p_media_id: string };
         Returns: undefined;
@@ -1856,6 +1939,16 @@ export type Database = {
           trip_date_or_year_present: boolean;
           updated_at: string;
           work_types_selected: boolean;
+        }[];
+      };
+      get_drive_media_for_proxy: {
+        Args: { p_media_id: string };
+        Returns: {
+          drive_processed_file_id: string;
+          is_published: boolean;
+          media_id: string;
+          owner_user_id: string;
+          processed_mime_type: string;
         }[];
       };
       get_expense_aggregates: {
@@ -2030,6 +2123,7 @@ export type Database = {
           media_id: string;
           public_url: string;
           sort_order: number;
+          storage_backend: string;
         }[];
       };
       get_report_notes: {
@@ -2055,6 +2149,20 @@ export type Database = {
           locations: Json;
           tags: Json;
           work_types: Json;
+        }[];
+      };
+      get_story_drive_folder: {
+        Args: { p_story_id: string };
+        Returns: {
+          drive_folder_id: string;
+          folder_name: string;
+        }[];
+      };
+      get_story_drive_sync_state: {
+        Args: { p_story_id: string };
+        Returns: {
+          has_drive_media: boolean;
+          has_folder: boolean;
         }[];
       };
       get_story_editorial_history: {
@@ -2119,6 +2227,10 @@ export type Database = {
           trip_start_date: string;
           trip_year: number;
         }[];
+      };
+      get_story_media_upload_mode: {
+        Args: { p_revision_id: string };
+        Returns: string;
       };
       get_story_moderation_history: {
         Args: { p_story_id: string };
@@ -2307,6 +2419,13 @@ export type Database = {
           visibility: Database["public"]["Enums"]["story_visibility"];
         }[];
       };
+      list_my_story_drive_folder_names: {
+        Args: { p_exclude_story_id?: string };
+        Returns: {
+          folder_name: string;
+          story_id: string;
+        }[];
+      };
       list_my_takedown_requests: {
         Args: never;
         Returns: {
@@ -2368,6 +2487,8 @@ export type Database = {
           contributor_avatar_emoji: string;
           contributor_slug: string;
           cover_image_path: string;
+          cover_media_id: string;
+          cover_storage_backend: string;
           excerpt: string;
           published_at: string;
           regions: Json;
@@ -2409,6 +2530,15 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      list_story_drive_media_for_sync: {
+        Args: { p_story_id: string };
+        Returns: {
+          drive_processed_file_id: string;
+          media_id: string;
+          processed_mime_type: string;
+          sort_order: number;
+        }[];
       };
       list_story_takedown_requests: {
         Args: { p_limit?: number; p_offset?: number };
@@ -2663,6 +2793,14 @@ export type Database = {
           p_expected_version: number;
           p_media_id: string;
           p_revision_id: string;
+        };
+        Returns: undefined;
+      };
+      upsert_story_drive_folder: {
+        Args: {
+          p_drive_folder_id: string;
+          p_folder_name: string;
+          p_story_id: string;
         };
         Returns: undefined;
       };

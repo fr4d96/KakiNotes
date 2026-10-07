@@ -111,6 +111,12 @@ export type PreviewableMediaItem = {
   caption: string | null;
   decorative: boolean;
   processingState: string;
+  /** "supabase" | "google_drive" — round B addition to get_story_preview()'s
+   * jsonb. Optional so a caller/test predating this field is unaffected;
+   * app/(contributor)/stories/[id]/export/route.ts's collectImages() uses
+   * it to call lib/story/image-bytes.ts#getImageBytes() instead of
+   * assuming every row is supabase-backed. */
+  storageBackend?: string;
 };
 
 export type RevisionMediaItem = PreviewableMediaItem & {

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { getPublicImageUrl } from "@/lib/story/public-image-url";
+import { getCardCoverUrl } from "@/lib/story/image-url";
 import {
   firstRegionLabel,
   regionNames,
@@ -341,7 +341,7 @@ function IndexEntry({
   story: StoryCardData;
   position: number;
 }) {
-  const coverUrl = getPublicImageUrl(story.cover_image_path);
+  const coverUrl = getCardCoverUrl(story);
   // Only fields this story actually carries -- a missing field is omitted,
   // never rendered as a placeholder dash.
   const fields = [

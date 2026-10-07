@@ -819,6 +819,7 @@
     },
     "photos": {
       "dropzone": "Drag and drop images here, or click to browse",
+      "driveNote": "Photos are saved to your Google Drive.",
       "count": "{count, plural, one {# photo} other {# photos}}",
       "placedCount": "{count} in your story",
       "badges": {
@@ -1162,6 +1163,7 @@
     "reserveUploadFailed": "Could not reserve an upload slot.",
     "heicConvertFailed": "Could not convert this HEIC photo. Please try again.",
     "finalizeUploadFailed": "Could not finalize the upload.",
+    "driveDisconnected": "Your Google Drive isn't connected anymore. Reconnect it in Account settings, then try again.",
     "submitFailed": "Could not submit this story for review.",
     "savePrivateFailed": "Could not save this story privately.",
     "requestChangesFailed": "Could not request changes.",

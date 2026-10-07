@@ -819,6 +819,7 @@
     },
     "photos": {
       "dropzone": "把图片拖到这里，或点击浏览文件",
+      "driveNote": "照片会保存到你的 Google Drive。",
       "count": "{count} 张照片",
       "placedCount": "已放入故事 {count} 张",
       "badges": {
@@ -1162,6 +1163,7 @@
     "reserveUploadFailed": "无法预留上传位置。",
     "heicConvertFailed": "无法转换这张 HEIC 照片，请再试一次。",
     "finalizeUploadFailed": "无法完成上传。",
+    "driveDisconnected": "你的 Google Drive 已断开连接。请在账户设置中重新连接，然后再试一次。",
     "submitFailed": "无法提交这篇故事送审。",
     "savePrivateFailed": "无法把这篇故事保存为私密。",
     "requestChangesFailed": "无法提交修改请求。",
