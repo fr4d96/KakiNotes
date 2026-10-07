@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
+Last updated: 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
 review, and a photo upload no longer leaves every later save rejected as stale; see the entry at
 the end of this file); earlier, 2026-09-24 (shipped as 1.0.0: story editor fixes — bold/italic toggle off, a
 "free" travel style, line breaks kept on the review screen, uploads no longer lost to a
@@ -9311,3 +9311,55 @@ upload, including its EXIF/GPS, stays in `story-images-private` indefinitely. Th
 session URI (CORS). Build slice 2 is a spike that settles it and picks the upload path.
 
 **Next:** slice 2, the CORS spike, once the owner has set up Google Cloud.
+
+## 2026-10-07 — Google Drive slice 1: connect and disconnect
+
+Slice 1 of [docs/google-drive-integration.md](google-drive-integration.md). A signed-in
+contributor can connect Google Drive from **Account → Google Drive** and disconnect it again.
+**No photo touches Drive yet.** No upload or image behaviour has changed for anyone.
+
+- **Spike first (slice 2, done 2026-10-07):** a browser can `PUT` straight to a Drive resumable
+  session, but only if our server sends `Origin` when it starts the session. Option D is the upload
+  path. Details in the spec, section 4(a); the test is `scripts/spike-drive-cors.mjs`.
+- **Migration** `20261007053505_drive_connections`: `contributor_drive_connections` (RLS on, no
+  policies, all table grants revoked from `anon`/`authenticated`) plus
+  `get_my_drive_connection_status()`, a security-definer function that returns only connected /
+  email / connected-at for `auth.uid()`. The token columns are base64 **text**, not `bytea`: the
+  first draft used `bytea`, which would have stored the base64 string's ASCII bytes and handed back
+  hex, so no saved login would ever have decrypted. Mocked unit tests can't see that; it was caught
+  in review.
+- **Applied to the linked dev project via the Supabase MCP, not `db push`.** The shared dev
+  database holds migrations from unmerged work (`feat/landing-country-cards`,
+  `feat/itinerary-builder`, and `20261003120000_story_media_original_retention`), so `db push`
+  aborts. The local file was renamed to the MCP-recorded version. `types/database.ts` was
+  regenerated but only this table and function were kept; the other branches' tables were left out
+  on purpose.
+- **Code:** `lib/drive/token-store.ts` (AES-256-GCM, random 12-byte IV, key version; the only
+  Drive module allowed to import `lib/supabase/admin.ts`, and only `lib/drive/**` and the drive
+  routes may import it, enforced in `eslint.config.mjs`); `lib/drive/oauth-state.ts`;
+  `lib/drive/connection-status.ts`; `getDriveEnv()` / `isDriveConfigured()` in `lib/env.server.ts`;
+  routes `app/(contributor)/account/drive/connect` and `.../callback`; a disconnect Server Action
+  that needs the warning ticked, revokes at Google (best effort) and deletes the row; the Drive tab
+  in English and Simplified Chinese. Scope is `drive.file` only. The Google email comes from
+  Drive's own `about` endpoint, so no email scope is needed.
+- **Env:** four server-only vars, now in `.env.example`: `GOOGLE_DRIVE_OAUTH_CLIENT_ID`,
+  `GOOGLE_DRIVE_OAUTH_CLIENT_SECRET`, `GOOGLE_DRIVE_OAUTH_REDIRECT_URI`,
+  `GOOGLE_DRIVE_TOKEN_ENCRYPTION_KEY`. Without them (e.g. Vercel previews) the tab says "not
+  available here". Locally the redirect is `http://localhost:3100/account/drive/callback`, matching
+  the `kakinotes-dev` launch config.
+
+**Verified.** `npm run verify` passes (1,282 tests). `npm run test:rls -- drive-connections`
+passes 4 tests against the real dev table: anon can't read, a contributor can't read or insert
+their own row directly, and the status function never returns a token column. Supabase's security
+advisor flags only the expected notes (RLS with no policy; the status function callable by
+`authenticated`, not `anon`). End to end in the running app: connected with a test Google account,
+the stored token decrypted with the env key, Google exchanged it for fresh access with scope
+`drive.file` only, then disconnect deleted the row with no revoke error logged.
+
+**Not covered / follow-ups:** reconnecting with a different Google account replaces the old token
+without revoking it at Google; no Playwright flow (it would need a real Google sign-in). Production
+needs the four vars in Vercel (with its own encryption key) and the
+`https://kakinotes.vercel.app/account/drive/callback` redirect, which is already registered.
+
+**Next:** slice 3, uploading new photos to Drive (Option D). Check a large iPhone photo in Safari
+before calling it done.
