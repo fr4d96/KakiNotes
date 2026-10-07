@@ -14,6 +14,51 @@ export type Database = {
   };
   public: {
     Tables: {
+      contributor_drive_connections: {
+        Row: {
+          created_at: string;
+          drive_folder_id: string | null;
+          encrypted_refresh_token: string;
+          encryption_key_version: number;
+          google_account_email: string | null;
+          google_account_sub: string | null;
+          id: string;
+          status: string;
+          token_auth_tag: string;
+          token_iv: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          drive_folder_id?: string | null;
+          encrypted_refresh_token: string;
+          encryption_key_version?: number;
+          google_account_email?: string | null;
+          google_account_sub?: string | null;
+          id?: string;
+          status?: string;
+          token_auth_tag: string;
+          token_iv: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          drive_folder_id?: string | null;
+          encrypted_refresh_token?: string;
+          encryption_key_version?: number;
+          google_account_email?: string | null;
+          google_account_sub?: string | null;
+          id?: string;
+          status?: string;
+          token_auth_tag?: string;
+          token_iv?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       contributor_links: {
         Row: {
           contributor_id: string;
@@ -1859,6 +1904,14 @@ export type Database = {
           tag_count: number;
           title: string;
           total_count: number;
+        }[];
+      };
+      get_my_drive_connection_status: {
+        Args: never;
+        Returns: {
+          connected: boolean;
+          connected_at: string;
+          google_account_email: string;
         }[];
       };
       get_my_story_with_draft: {

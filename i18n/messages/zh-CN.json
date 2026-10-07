@@ -180,6 +180,9 @@
       "empty": "PDF 文件是空的。",
       "tooLarge": "PDF 文件太大。",
       "notAPdf": "这个文件不是 PDF（文件头不匹配）。"
+    },
+    "drive": {
+      "confirmationRequired": "请先勾选确认框，然后再断开连接。"
     }
   },
   "stories": {
@@ -473,7 +476,9 @@
       "signIn": "登录方式",
       "signInDescription": "可选。设置用户名后，你可以用用户名或邮箱登录 — 邮箱始终可用。",
       "contributorIdentity": "投稿人身份",
-      "contributorIdentityDescription": "你在每篇故事上的署名方式，以及读者在你的投稿人主页看到的内容。这由你自己选择 — 我们不会从账户信息推断。"
+      "contributorIdentityDescription": "你在每篇故事上的署名方式，以及读者在你的投稿人主页看到的内容。这由你自己选择 — 我们不会从账户信息推断。",
+      "drive": "Google Drive",
+      "driveDescription": "可选。连接你自己的 Google Drive，以后上传的照片会存到那里，而不是存在 Kakinotes。"
     },
     "profile": {
       "nameLabel": "账户名称",
@@ -536,6 +541,28 @@
       "alreadyHaveIdentity": "你已经有投稿人身份了。",
       "identityCreateFailed": "无法设置你的投稿人身份，请再试一次。",
       "identityUpdateFailed": "无法更新你的投稿人身份，请再试一次。"
+    },
+    "drive": {
+      "notAvailableHere": "此部署环境暂不支持连接 Google Drive。",
+      "notConnectedExplainer": "连接你的 Google Drive 后，以后上传的新照片会存到你自己的 Drive，而不是 Kakinotes。你已经上传的照片不受影响，在你连接之前什么都不会改变。",
+      "connect": "连接 Google Drive",
+      "connectedTitle": "已连接 Google Drive",
+      "connectedAs": "已连接账号：{email}",
+      "connectedSince": "连接时间：{date}",
+      "warningTitle": "断开连接前请注意",
+      "warningBody": "断开连接后，存在 Drive 里的照片将无法在你已发布和草稿中的故事里显示。我们没有在别处保留这些照片的副本，所以一旦断开，我们这边无法把它们找回来。这个操作我们这边无法撤销。",
+      "confirmLabel": "我明白这个操作无法撤销，并确定要断开连接。",
+      "disconnect": "断开 Google Drive",
+      "disconnecting": "正在断开…",
+      "disconnected": "已断开 Google Drive。",
+      "banners": {
+        "connected": "Google Drive 已连接。",
+        "cancelled": "你没有完成连接，所以没有任何改变。你可以随时再试一次。",
+        "failed": "连接 Google Drive 时出了点问题，请重试。"
+      },
+      "errors": {
+        "notAvailable": "此部署环境暂不支持连接 Google Drive。"
+      }
     }
   },
   "myStories": {

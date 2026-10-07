@@ -180,6 +180,9 @@
       "empty": "The PDF file is empty.",
       "tooLarge": "The PDF file is too large.",
       "notAPdf": "The file is not a PDF (magic bytes did not match)."
+    },
+    "drive": {
+      "confirmationRequired": "Tick the box to confirm before disconnecting."
     }
   },
   "stories": {
@@ -473,7 +476,9 @@
       "signIn": "Sign-in",
       "signInDescription": "Optional. Set a username and you can sign in with either it or your email — your email keeps working either way.",
       "contributorIdentity": "Contributor identity",
-      "contributorIdentityDescription": "How you're attributed on every story, and what readers see on your contributor page. You choose this — it's never inferred from your account."
+      "contributorIdentityDescription": "How you're attributed on every story, and what readers see on your contributor page. You choose this — it's never inferred from your account.",
+      "drive": "Google Drive",
+      "driveDescription": "Optional. Connect your own Google Drive so future photo uploads are stored there instead of on Kakinotes."
     },
     "profile": {
       "nameLabel": "Account name",
@@ -536,6 +541,28 @@
       "alreadyHaveIdentity": "You already have a contributor identity.",
       "identityCreateFailed": "Could not set up your contributor identity. Please try again.",
       "identityUpdateFailed": "Could not update your contributor identity. Please try again."
+    },
+    "drive": {
+      "notAvailableHere": "Google Drive connection isn't available on this deployment yet.",
+      "notConnectedExplainer": "Connect your Google Drive and, from then on, new photos you upload go to your own Drive instead of Kakinotes. Nothing changes for photos you've already uploaded, and nothing changes until you connect.",
+      "connect": "Connect Google Drive",
+      "connectedTitle": "Google Drive is connected",
+      "connectedAs": "Connected as {email}",
+      "connectedSince": "Connected on {date}",
+      "warningTitle": "Before you disconnect",
+      "warningBody": "Disconnecting will stop your Drive-stored photos from showing on your published and draft stories. We don't keep a copy of these photos anywhere else, so once you disconnect, we can't bring them back. This can't be undone from our side.",
+      "confirmLabel": "I understand this can't be undone, and I want to disconnect.",
+      "disconnect": "Disconnect Google Drive",
+      "disconnecting": "Disconnecting…",
+      "disconnected": "Google Drive disconnected.",
+      "banners": {
+        "connected": "Google Drive connected.",
+        "cancelled": "You didn't finish connecting, so nothing changed. You can try again anytime.",
+        "failed": "Something went wrong connecting Google Drive. Please try again."
+      },
+      "errors": {
+        "notAvailable": "Google Drive connection isn't available on this deployment yet."
+      }
     }
   },
   "myStories": {

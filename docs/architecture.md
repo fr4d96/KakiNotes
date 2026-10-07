@@ -1182,6 +1182,44 @@ Conventional Commit in the project's history, not just the ones since some earli
   named/tagged as integration tests, excluded from `tests/vitest.config.ts`'s default include, run only via
   `npm run test:rls` with its own `.env.test.local` — see "RLS integration test setup" above.
 
+## Google Drive connection (slice 1 — connect/disconnect only)
+
+Full design: `docs/google-drive-integration.md`. This slice only lets a contributor link/unlink
+their Google Drive from Account settings — no image upload or read path changes yet.
+
+- `supabase/migrations/20261007053505_drive_connections.sql` — `contributor_drive_connections`
+  (encrypted refresh token + IV/auth tag/key version, display email, status). RLS enabled with zero
+  policies and table grants revoked for `anon`/`authenticated` — same "enable RLS, grant nothing"
+  shape as `notifications`. The only exposed read is `get_my_drive_connection_status()`, a
+  `SECURITY DEFINER` function whose `RETURNS TABLE` has no token column at all, so it cannot be
+  made to leak one regardless of how it's called.
+- `lib/env.server.ts` — `getDriveEnv()` (same shape as `getAdminEnv()`) plus `isDriveConfigured()`,
+  which returns `false` instead of throwing when the four `GOOGLE_DRIVE_*` vars are absent, so a
+  deployment with no Drive credentials configured (e.g. a fresh Vercel preview) just hides the
+  Connect button instead of crashing the Account page.
+- `lib/drive/token-store.ts` — the only module allowed to read/write
+  `contributor_drive_connections` or import `lib/supabase/admin.ts` for it (AES-256-GCM encrypt/
+  decrypt, a fresh random IV per call). Enforced by the `no-restricted-imports` allowlist in
+  `eslint.config.mjs`, mirroring the existing `lib/story/image-pipeline.ts` entry. Only the rest of
+  `lib/drive/**` and the `app/(contributor)/account/drive/*` routes/actions may import
+  `token-store.ts` itself — a second, narrower allowlist entry.
+- `app/(contributor)/account/drive/connect` and `/callback` (Route Handlers) — the OAuth flow,
+  `drive.file` scope only, CSRF `state` in a short-lived httpOnly cookie, server-to-server token
+  exchange. Both re-derive the signed-in user server-side rather than trusting anything in the
+  query string (Rule 2); `proxy.ts`'s existing `/account/:path*` matcher already redirects a
+  signed-out visitor away before either handler runs.
+- `app/(contributor)/account/drive/actions.ts` — the disconnect Server Action: requires an explicit
+  confirmation field (Zod), best-effort revoke at Google, then deletes the local row via
+  `token-store.ts`.
+- **Applied 2026-10-07** to the linked development project through the Supabase MCP, so the local
+  file was renamed from `20261007051136` to the version the MCP recorded (`20261007053505`).
+  `db push` couldn't be used: the shared dev database already holds migrations from unmerged
+  branches (`feat/landing-country-cards`, `feat/itinerary-builder`, and the raw-original retention
+  task), so it aborts with "remote migration versions not found". `types/database.ts` was
+  regenerated, but only the `contributor_drive_connections` table and
+  `get_my_drive_connection_status` function were kept; the other branches' tables and functions
+  were left out on purpose.
+
 ## Testing strategy
 
 - Vitest + React Testing Library: component/page content assertions and pure logic
