@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/fr4d96/KakiNotes/compare/v1.2.0...v1.3.0) (2026-10-07)
+
+
+### Features
+
+* **drive:** connect and disconnect Google Drive from Account settings ([d5ffcb6](https://github.com/fr4d96/KakiNotes/commit/d5ffcb6418ec370976322c4958b59d39666c1add))
+* **drive:** store a contributor's photos in their own Google Drive ([acabcb8](https://github.com/fr4d96/KakiNotes/commit/acabcb89c0a2dc7335456d4c6e4819764d9e896a))
+
 ## [1.2.0](https://github.com/fr4d96/KakiNotes/compare/v1.1.0...v1.2.0) (2026-10-03)
 
 ### What's new for everyone
