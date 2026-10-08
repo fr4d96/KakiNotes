@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/fr4d96/KakiNotes/compare/v1.4.0...v1.4.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* **drive:** always show Google's account chooser when connecting ([862e9fb](https://github.com/fr4d96/KakiNotes/commit/862e9fbe73f06affc40f9ef34130a9f6c6600bb4))
+
 ## [1.4.0](https://github.com/fr4d96/KakiNotes/compare/v1.3.0...v1.4.0) (2026-10-08)
 
 ### What's new for contributors
