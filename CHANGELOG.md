@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.4.0](https://github.com/fr4d96/KakiNotes/compare/v1.3.0...v1.4.0) (2026-10-08)
+
+### What's new for contributors
+
+**Move your older photos into your Google Drive.** If you connected Google Drive, the Google Drive tab in Account settings now shows a "Move photos to Drive" button for any photos you uploaded before you connected. Press it and Kakinotes moves them into your Drive one by one, into the same tidy per-story folders as your new photos. A progress bar shows how far along it is.
+
+**Your stories keep working while it moves.** Readers never see a broken or missing photo on a published story, before, during or after the move. Once a photo is safely in your Drive, and Kakinotes has checked the copy matches exactly, Kakinotes deletes its own copy, including the original you first uploaded.
+
+**Stop and pick up later.** You can stop after the current photo, or just close the page. Nothing is half-moved: every photo is either still on Kakinotes or fully in your Drive. Press the button again to carry on. If a photo can't be moved, for example because its story is being published at that moment, you'll see which story it belongs to and why, and it stays safely on Kakinotes.
+
+### Fixed
+
+**Photos stored in Google Drive now show to readers.** On published stories, photos kept in a contributor's Google Drive could appear as a broken image to anyone who wasn't signed in. They now show for everyone. This fix was already live before this release.
+
+### Good to know
+
+**Moving is your choice, and it's one-way for now.** Nothing moves unless you press the button. Once a photo is in your Drive, Kakinotes no longer keeps a copy, so keep it in your Drive to keep it showing. Photos in stories an editor imported for you stay on Kakinotes.
+
+**Published photos are tidied up a little later.** Kakinotes keeps its old copy of a published photo for 5 minutes after the move, so no reader ever catches a gap. It's deleted the next time you press the button.
+
+
+
+### Features
+
+* **drive:** move existing photos to Google Drive ([9ea199d](https://github.com/fr4d96/KakiNotes/commit/9ea199dbbcf2cc2bd307013d7c6acefbcad7865f))
+
+
+### Bug Fixes
+
+* **drive:** serve published Drive photos to readers ([9b19540](https://github.com/fr4d96/KakiNotes/commit/9b19540d81e22475d313b12ac99d9f5e34ad2daf))
+
 ## [1.3.0](https://github.com/fr4d96/KakiNotes/compare/v1.2.0...v1.3.0) (2026-10-07)
 
 ### What's new for contributors
