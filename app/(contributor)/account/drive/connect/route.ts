@@ -18,7 +18,10 @@ import {
  * `prompt=consent` are both required to guarantee Google actually returns
  * a refresh_token: without `prompt=consent`, a contributor who has
  * already granted this app any scope before gets silently re-authorized
- * with no refresh_token in the response at all.
+ * with no refresh_token in the response at all. `select_account` makes
+ * Google always show its account chooser, so a contributor signed in to
+ * one Google account can still pick (or add) a different one instead of
+ * being connected to whichever account the browser happens to be using.
  */
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
@@ -57,7 +60,7 @@ export async function GET(request: NextRequest) {
     "https://www.googleapis.com/auth/drive.file",
   );
   authorizeUrl.searchParams.set("access_type", "offline");
-  authorizeUrl.searchParams.set("prompt", "consent");
+  authorizeUrl.searchParams.set("prompt", "select_account consent");
   authorizeUrl.searchParams.set("state", state);
 
   const response = NextResponse.redirect(authorizeUrl);

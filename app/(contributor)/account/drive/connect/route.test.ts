@@ -57,7 +57,7 @@ describe("GET /account/drive/connect", () => {
       "https://www.googleapis.com/auth/drive.file",
     );
     expect(location.searchParams.get("access_type")).toBe("offline");
-    expect(location.searchParams.get("prompt")).toBe("consent");
+    expect(location.searchParams.get("prompt")).toBe("select_account consent");
     expect(location.searchParams.get("redirect_uri")).toBe(
       "https://kakinotes.test/account/drive/callback",
     );
