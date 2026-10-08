@@ -9475,8 +9475,9 @@ before replacing it.
 `get_drive_media_for_proxy` checked `_latest_valid_consent_for_revision(...) is not null`. On a row
 value that is false whenever any column is null, so `/media/<id>` returned 404 to readers for
 **every published Drive photo**, while the story page still linked to it. It's the same trap
-`20260930083643` fixed before. Now `not (... is null)`. **Production on 1.3.0 has this bug**, so any
-Drive photo published there shows as broken to readers until this ships.
+`20260930083643` fixed before. Now `not (... is null)`. Production reads the same Supabase project
+(`ybhydepjaantkngngvuf`, checked in the live site's bundle), so the fix took effect for
+production readers the moment it was applied, before any code shipped.
 
 **Code:** `lib/story/media-move.ts` (the orchestrator; holds no secret and only passes bytes
 between the two modules below), two additions at the end of `lib/story/image-pipeline.ts`
