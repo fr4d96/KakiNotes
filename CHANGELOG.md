@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.4.1](https://github.com/fr4d96/KakiNotes/compare/v1.4.0...v1.4.1) (2026-10-08)
+
+### Fixed
+
+**Choose which Google account to connect.** When you press "Connect Google Drive", Google now always asks which account to use, and lets you add another one. Before, if your browser was signed in to a single Google account, Kakinotes connected that one without asking.
+
+### Good to know
+
+**Switching to a different Google account.** Disconnect first from Account → Google Drive, then connect again and pick the other account. Photos already stored in the first account's Drive stop showing on your stories after you switch, because Kakinotes doesn't keep a copy of them.
+
+
+
+### Bug Fixes
+
+* **drive:** always show Google's account chooser when connecting ([862e9fb](https://github.com/fr4d96/KakiNotes/commit/862e9fbe73f06affc40f9ef34130a9f6c6600bb4))
+
 ## [1.4.0](https://github.com/fr4d96/KakiNotes/compare/v1.3.0...v1.4.0) (2026-10-08)
 
 ### What's new for contributors
