@@ -886,6 +886,13 @@
         "uploadFailed": "Upload failed.",
         "uploadFailedStatus": "Upload failed (error {status}).",
         "uploadedToast": "{fileName} uploaded."
+      },
+      "drag": {
+        "hint": "Drag a photo to change its place. On a phone, press and hold first.",
+        "pickedUp": "Picked up the photo in position {position}.",
+        "over": "Moved to position {position} of {total}.",
+        "dropped": "Dropped in position {position}.",
+        "cancelled": "Move cancelled. The photo is back where it was."
       }
     },
     "toolbar": {

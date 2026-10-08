@@ -886,6 +886,13 @@
         "uploadFailed": "上传失败。",
         "uploadFailedStatus": "上传失败（错误 {status}）。",
         "uploadedToast": "{fileName} 已上传。"
+      },
+      "drag": {
+        "hint": "拖动照片即可调整顺序。在手机上请先按住照片。",
+        "pickedUp": "已拿起第 {position} 张照片。",
+        "over": "移到第 {position} 个位置，共 {total} 个。",
+        "dropped": "已放到第 {position} 个位置。",
+        "cancelled": "已取消移动，照片回到原来的位置。"
       }
     },
     "toolbar": {

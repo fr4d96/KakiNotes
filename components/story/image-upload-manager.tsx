@@ -18,6 +18,22 @@ import { getErrorMessage } from "@/lib/errors";
 import { useToast } from "@/components/ui/toast";
 import { Spinner } from "@/components/ui/spinner";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
+import {
+  DndContext,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type Announcements,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortablePhotoTile } from "@/components/story/sortable-photo-tile";
 import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client";
 import {
   reorderMediaAction,
@@ -673,6 +689,62 @@ export function ImageUploadManager({
     const j = next.findIndex((m) => m.mediaId === swapWithMediaId);
     if (i === -1 || j === -1) return;
     [next[i], next[j]] = [next[j], next[i]];
+    commitOrder(next);
+  }
+
+  // Drag and drop (task #4). Mouse: a drag starts after 6px of movement, so
+  // a plain click still opens the photo. Touch: a 250ms press-and-hold
+  // starts it, so a swipe still scrolls the page. Keyboard users keep the
+  // "Move earlier / Move later" buttons in Details.
+  const dragSensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 8 },
+    }),
+  );
+  // A mouse drag that ends over the same photo still fires a click on it,
+  // which would open the lightbox. Swallow exactly that one click.
+  const justDraggedRef = useRef(false);
+  function markJustDragged() {
+    justDraggedRef.current = true;
+    setTimeout(() => {
+      justDraggedRef.current = false;
+    }, 0);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    markJustDragged();
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = media.findIndex((m) => m.mediaId === active.id);
+    const to = media.findIndex((m) => m.mediaId === over.id);
+    if (from === -1 || to === -1) return;
+    commitOrder(arrayMove(media, from, to));
+  }
+
+  const positionOf = (id: string | number) =>
+    media.findIndex((m) => m.mediaId === id) + 1;
+  const dragAnnouncements: Announcements = {
+    onDragStart: ({ active }) =>
+      t("drag.pickedUp", { position: positionOf(active.id) }),
+    onDragOver: ({ over }) =>
+      over
+        ? t("drag.over", {
+            position: positionOf(over.id),
+            total: media.length,
+          })
+        : undefined,
+    onDragEnd: ({ over }) =>
+      over
+        ? t("drag.dropped", { position: positionOf(over.id) })
+        : t("drag.cancelled"),
+    onDragCancel: () => t("drag.cancelled"),
+  };
+
+  // The one place a new order is applied: optimistic local state, then the
+  // same queued, version-checked reorderMediaAction both the buttons and a
+  // drag use.
+  function commitOrder(next: RevisionMediaItem[]) {
     setMedia(next);
     queue.enqueue("media-reorder", async () => {
       const result = await reorderMediaAction(
@@ -867,218 +939,282 @@ export function ImageUploadManager({
             </p>
           </div>
 
-          <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {media.map((item, index) => {
-              // Prompt 7: same-story duplicate-image warning -- compares
-              // sha256 hashes of already-processed derivatives (never a
-              // storage path).
-              const duplicateCount = item.sha256
-                ? media.filter((m) => m.sha256 === item.sha256).length
-                : 1;
-              const isDuplicate = duplicateCount > 1;
-              const isPlaced = inlineMediaIds.has(item.mediaId);
-              // Resolved once per tile: it appears in four accessible names
-              // below, and itemName() needs the numbered fallback message.
-              const name = itemName(item, index, (position) =>
-                t("itemName", { index: position }),
-              );
-              const processingLabel = (state: string) =>
-                PROCESSING_LABEL_KEYS[state]
-                  ? t(`state.${PROCESSING_LABEL_KEYS[state]}` as never)
-                  : state;
-              const isOpen = openMediaId === item.mediaId;
-              const detailsId = `media-details-${item.mediaId}`;
+          {media.length > 1 && openMediaId === null && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t("drag.hint")}
+            </p>
+          )}
 
-              const thumb = (
-                <div className="js-image-thumb relative aspect-square overflow-hidden rounded-md border border-border-subtle bg-surface-muted">
-                  {thumbnails[item.mediaId] ? (
-                    <LightboxPhoto
-                      url={thumbnails[item.mediaId]}
-                      alt={item.altText ?? ""}
-                      caption={item.caption}
-                      className="block h-full w-full"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL, not an optimizable static asset */}
-                      <img
-                        src={thumbnails[item.mediaId]}
-                        alt={item.altText ?? ""}
-                        className="h-full w-full object-cover"
-                        onError={() => retryThumbnail(item.mediaId)}
-                      />
-                    </LightboxPhoto>
-                  ) : item.processingState === "failed" ? (
-                    <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
-                      {processingLabel(item.processingState)}
-                    </div>
-                  ) : (
-                    <div
-                      className="flex h-full w-full items-center justify-center text-muted-foreground"
-                      aria-label={processingLabel(item.processingState)}
-                    >
-                      <Spinner className="h-6 w-6" />
-                    </div>
-                  )}
+          <DndContext
+            sensors={dragSensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            onDragCancel={markJustDragged}
+            accessibility={{
+              announcements: dragAnnouncements,
+              screenReaderInstructions: { draggable: t("drag.hint") },
+            }}
+          >
+            <SortableContext
+              items={media.map((m) => m.mediaId)}
+              strategy={rectSortingStrategy}
+            >
+              <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {media.map((item, index) => {
+                  // Prompt 7: same-story duplicate-image warning -- compares
+                  // sha256 hashes of already-processed derivatives (never a
+                  // storage path).
+                  const duplicateCount = item.sha256
+                    ? media.filter((m) => m.sha256 === item.sha256).length
+                    : 1;
+                  const isDuplicate = duplicateCount > 1;
+                  const isPlaced = inlineMediaIds.has(item.mediaId);
+                  // Resolved once per tile: it appears in four accessible names
+                  // below, and itemName() needs the numbered fallback message.
+                  const name = itemName(item, index, (position) =>
+                    t("itemName", { index: position }),
+                  );
+                  const processingLabel = (state: string) =>
+                    PROCESSING_LABEL_KEYS[state]
+                      ? t(`state.${PROCESSING_LABEL_KEYS[state]}` as never)
+                      : state;
+                  const isOpen = openMediaId === item.mediaId;
+                  const detailsId = `media-details-${item.mediaId}`;
 
-                  {/* Status reads off the tile itself, the way a media
+                  const thumb = (
+                    <div className="js-image-thumb relative aspect-square overflow-hidden rounded-md border border-border-subtle bg-surface-muted">
+                      {thumbnails[item.mediaId] ? (
+                        <LightboxPhoto
+                          url={thumbnails[item.mediaId]}
+                          alt={item.altText ?? ""}
+                          caption={item.caption}
+                          className="block h-full w-full"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL, not an optimizable static asset */}
+                          <img
+                            src={thumbnails[item.mediaId]}
+                            alt={item.altText ?? ""}
+                            className="h-full w-full object-cover"
+                            draggable={false}
+                            onError={() => retryThumbnail(item.mediaId)}
+                          />
+                        </LightboxPhoto>
+                      ) : item.processingState === "failed" ? (
+                        <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
+                          {processingLabel(item.processingState)}
+                        </div>
+                      ) : (
+                        <div
+                          className="flex h-full w-full items-center justify-center text-muted-foreground"
+                          aria-label={processingLabel(item.processingState)}
+                        >
+                          <Spinner className="h-6 w-6" />
+                        </div>
+                      )}
+
+                      {/* Status reads off the tile itself, the way a media
                       library does it -- no field, no sentence, just the
                       three facts that change what you would do next. */}
-                  <div className="pointer-events-none absolute inset-x-1 top-1 flex flex-wrap gap-1">
-                    {item.isCover && <TileBadge>{t("badges.cover")}</TileBadge>}
-                    {isPlaced && <TileBadge>{t("badges.inStory")}</TileBadge>}
-                    {isDuplicate && (
-                      <TileBadge tone="warning">
-                        {t("badges.duplicate")}
-                      </TileBadge>
-                    )}
-                  </div>
-                </div>
-              );
-
-              // ONE element tree for both states, laid out differently by
-              // class. Rendering an `if (isOpen) return <li>…` branch beside
-              // a separate closed-state <li> looked equivalent but was not:
-              // React reconciles by position, so the two branches' <img>
-              // elements are different nodes, and toggling details unmounted
-              // the image and mounted a fresh one. A fresh <img> actually
-              // re-requests its src -- and these are 120-second signed URLs,
-              // so any tile older than two minutes came back blank. Keeping
-              // the thumbnail at a stable position in the tree means the
-              // browser never re-requests it at all.
-              return (
-                <li
-                  key={item.mediaId}
-                  className={
-                    isOpen
-                      ? "col-span-2 flex flex-col gap-4 rounded-lg border border-accent/50 bg-surface-muted/40 p-3 sm:col-span-3 sm:flex-row"
-                      : "flex flex-col gap-1.5"
-                  }
-                >
-                  <div className={isOpen ? "w-full shrink-0 sm:w-40" : ""}>
-                    {thumb}
-                  </div>
-
-                  {isOpen ? (
-                    <div id={detailsId} className="min-w-0 flex-1 space-y-3">
-                      <div>
-                        <label
-                          htmlFor={`caption-${item.mediaId}`}
-                          className="block text-xs font-medium"
-                        >
-                          {t("caption")}{" "}
-                          <span className="font-normal text-muted-foreground">
-                            {t("captionHint")}
-                          </span>
-                        </label>
-                        <input
-                          id={`caption-${item.mediaId}`}
-                          type="text"
-                          value={item.caption ?? ""}
-                          onChange={(e) =>
-                            updateCaption(item.mediaId, e.target.value)
-                          }
-                          className="mt-1 w-full rounded-md border border-border-subtle px-2 py-1.5 text-sm dark:bg-transparent"
-                        />
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-3">
-                        {!item.isCover && (
-                          <TileAction onClick={() => setCover(item.mediaId)}>
-                            {t("setAsCover")}
-                          </TileAction>
+                      <div className="pointer-events-none absolute inset-x-1 top-1 flex flex-wrap gap-1">
+                        {item.isCover && (
+                          <TileBadge>{t("badges.cover")}</TileBadge>
                         )}
-                        {index > 0 && (
-                          <TileAction
-                            onClick={() =>
-                              reorder(item.mediaId, media[index - 1].mediaId)
-                            }
-                            label={t("moveEarlierLabel", { name })}
-                          >
-                            {t("moveEarlier")}
-                          </TileAction>
+                        {isPlaced && (
+                          <TileBadge>{t("badges.inStory")}</TileBadge>
                         )}
-                        {index < media.length - 1 && (
-                          <TileAction
-                            onClick={() =>
-                              reorder(item.mediaId, media[index + 1].mediaId)
-                            }
-                            label={t("moveLaterLabel", { name })}
-                          >
-                            {t("moveLater")}
-                          </TileAction>
+                        {isDuplicate && (
+                          <TileBadge tone="warning">
+                            {t("badges.duplicate")}
+                          </TileBadge>
                         )}
-                        <TileAction
-                          tone="destructive"
-                          onClick={() => detach(item.mediaId)}
-                        >
-                          {t("deletePhoto")}
-                        </TileAction>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            // Hand the collapse a target to land on -- see
-                            // the refocusToggleIdRef effect above.
-                            refocusToggleIdRef.current = item.mediaId;
-                            setOpenMediaId(null);
-                          }}
-                          className="ml-auto rounded-md border border-border-subtle px-3 py-1.5 text-xs font-medium"
-                        >
-                          {t("done")}
-                        </button>
                       </div>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5">
-                      {/* No "already placed" text: the tile's own "In story"
+                  );
+
+                  // ONE element tree for both states, laid out differently by
+                  // class. Rendering an `if (isOpen) return <li>…` branch beside
+                  // a separate closed-state <li> looked equivalent but was not:
+                  // React reconciles by position, so the two branches' <img>
+                  // elements are different nodes, and toggling details unmounted
+                  // the image and mounted a fresh one. A fresh <img> actually
+                  // re-requests its src -- and these are 120-second signed URLs,
+                  // so any tile older than two minutes came back blank. Keeping
+                  // the thumbnail at a stable position in the tree means the
+                  // browser never re-requests it at all.
+                  return (
+                    <SortablePhotoTile
+                      key={item.mediaId}
+                      id={item.mediaId}
+                      // Not while a details panel is open: that tile spans the
+                      // whole row, and dragging around it reads as chaos.
+                      disabled={openMediaId !== null}
+                      className={
+                        isOpen
+                          ? "col-span-2 flex flex-col gap-4 rounded-lg border border-accent/50 bg-surface-muted/40 p-3 sm:col-span-3 sm:flex-row"
+                          : "flex flex-col gap-1.5"
+                      }
+                    >
+                      {(drag) => (
+                        <>
+                          <div
+                            ref={drag.ref}
+                            {...drag.listeners}
+                            onClickCapture={(e) => {
+                              if (justDraggedRef.current) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }
+                            }}
+                            className={`${isOpen ? "w-full shrink-0 sm:w-40" : ""} ${
+                              drag.listeners
+                                ? "cursor-grab touch-manipulation select-none [-webkit-touch-callout:none] active:cursor-grabbing"
+                                : ""
+                            } ${
+                              drag.isDragging
+                                ? "[&_.js-image-thumb]:shadow-lg [&_.js-image-thumb]:ring-2 [&_.js-image-thumb]:ring-accent"
+                                : ""
+                            }`}
+                          >
+                            {thumb}
+                          </div>
+
+                          {isOpen ? (
+                            <div
+                              id={detailsId}
+                              className="min-w-0 flex-1 space-y-3"
+                            >
+                              <div>
+                                <label
+                                  htmlFor={`caption-${item.mediaId}`}
+                                  className="block text-xs font-medium"
+                                >
+                                  {t("caption")}{" "}
+                                  <span className="font-normal text-muted-foreground">
+                                    {t("captionHint")}
+                                  </span>
+                                </label>
+                                <input
+                                  id={`caption-${item.mediaId}`}
+                                  type="text"
+                                  value={item.caption ?? ""}
+                                  onChange={(e) =>
+                                    updateCaption(item.mediaId, e.target.value)
+                                  }
+                                  className="mt-1 w-full rounded-md border border-border-subtle px-2 py-1.5 text-sm dark:bg-transparent"
+                                />
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-3">
+                                {!item.isCover && (
+                                  <TileAction
+                                    onClick={() => setCover(item.mediaId)}
+                                  >
+                                    {t("setAsCover")}
+                                  </TileAction>
+                                )}
+                                {index > 0 && (
+                                  <TileAction
+                                    onClick={() =>
+                                      reorder(
+                                        item.mediaId,
+                                        media[index - 1].mediaId,
+                                      )
+                                    }
+                                    label={t("moveEarlierLabel", { name })}
+                                  >
+                                    {t("moveEarlier")}
+                                  </TileAction>
+                                )}
+                                {index < media.length - 1 && (
+                                  <TileAction
+                                    onClick={() =>
+                                      reorder(
+                                        item.mediaId,
+                                        media[index + 1].mediaId,
+                                      )
+                                    }
+                                    label={t("moveLaterLabel", { name })}
+                                  >
+                                    {t("moveLater")}
+                                  </TileAction>
+                                )}
+                                <TileAction
+                                  tone="destructive"
+                                  onClick={() => detach(item.mediaId)}
+                                >
+                                  {t("deletePhoto")}
+                                </TileAction>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    // Hand the collapse a target to land on -- see
+                                    // the refocusToggleIdRef effect above.
+                                    refocusToggleIdRef.current = item.mediaId;
+                                    setOpenMediaId(null);
+                                  }}
+                                  className="ml-auto rounded-md border border-border-subtle px-3 py-1.5 text-xs font-medium"
+                                >
+                                  {t("done")}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              {/* No "already placed" text: the tile's own "In story"
                           badge says it, and a second copy of the same fact
                           truncated to "Placed in your…" next to Details in a
                           2-column phone grid. */}
-                      <button
-                        type="button"
-                        // Registered so closing the panel can put focus back
-                        // here (see the refocusToggleIdRef effect above).
-                        // Braces, not a concise arrow body: React 19 treats a
-                        // ref callback's return value as a cleanup function,
-                        // and Map.set returns the Map.
-                        ref={(node) => {
-                          const map = detailsToggleRefs.current;
-                          if (node) map.set(item.mediaId, node);
-                          else map.delete(item.mediaId);
-                        }}
-                        onClick={() => setOpenMediaId(item.mediaId)}
-                        aria-expanded={false}
-                        aria-controls={detailsId}
-                        // aria-label, NOT visible text plus an sr-only span:
-                        // the accessible-name algorithm trims each element's
-                        // text before joining them with no separator, so
-                        // "Describe" + <span> photo 1</span> is announced as
-                        // "Describephoto 1". Confirmed against
-                        // dom-accessibility-api, which is what both this
-                        // project's tests and real screen readers implement.
-                        aria-label={t("detailsLabel", { name })}
-                        // scroll-mt clears the two stacked sticky bars above
-                        // (the site header at top-0 and the editor's own bar
-                        // at top-[76px]); without it the scrollIntoView above
-                        // parks this button at y=0, underneath both of them,
-                        // and the contributor lands looking at the header.
-                        //
-                        // 15rem (240px), not the 12rem the Images panel uses
-                        // in story-edit-form.tsx: those two bars were measured
-                        // together at 215px on a 375px-wide viewport, so 12rem
-                        // (192px) actually lands 23px BEHIND them. The extra
-                        // room also absorbs the step-progress row wrapping to
-                        // a second line on a narrower phone.
-                        className={`shrink-0 scroll-mt-[15rem] rounded-md border px-2 py-1.5 text-xs font-medium ${
-                          isPlaced ? "w-full" : ""
-                        } border-border-subtle`}
-                      >
-                        {t("details")}
-                      </button>
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                              <button
+                                type="button"
+                                // Registered so closing the panel can put focus back
+                                // here (see the refocusToggleIdRef effect above).
+                                // Braces, not a concise arrow body: React 19 treats a
+                                // ref callback's return value as a cleanup function,
+                                // and Map.set returns the Map.
+                                ref={(node) => {
+                                  const map = detailsToggleRefs.current;
+                                  if (node) map.set(item.mediaId, node);
+                                  else map.delete(item.mediaId);
+                                }}
+                                onClick={() => setOpenMediaId(item.mediaId)}
+                                aria-expanded={false}
+                                aria-controls={detailsId}
+                                // aria-label, NOT visible text plus an sr-only span:
+                                // the accessible-name algorithm trims each element's
+                                // text before joining them with no separator, so
+                                // "Describe" + <span> photo 1</span> is announced as
+                                // "Describephoto 1". Confirmed against
+                                // dom-accessibility-api, which is what both this
+                                // project's tests and real screen readers implement.
+                                aria-label={t("detailsLabel", { name })}
+                                // scroll-mt clears the two stacked sticky bars above
+                                // (the site header at top-0 and the editor's own bar
+                                // at top-[76px]); without it the scrollIntoView above
+                                // parks this button at y=0, underneath both of them,
+                                // and the contributor lands looking at the header.
+                                //
+                                // 15rem (240px), not the 12rem the Images panel uses
+                                // in story-edit-form.tsx: those two bars were measured
+                                // together at 215px on a 375px-wide viewport, so 12rem
+                                // (192px) actually lands 23px BEHIND them. The extra
+                                // room also absorbs the step-progress row wrapping to
+                                // a second line on a narrower phone.
+                                className={`shrink-0 scroll-mt-[15rem] rounded-md border px-2 py-1.5 text-xs font-medium ${
+                                  isPlaced ? "w-full" : ""
+                                } border-border-subtle`}
+                              >
+                                {t("details")}
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </SortablePhotoTile>
+                  );
+                })}
+              </ul>
+            </SortableContext>
+          </DndContext>
         </div>
       )}
     </div>
