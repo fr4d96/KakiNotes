@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/fr4d96/KakiNotes/compare/v1.4.1...v1.5.0) (2026-10-08)
+
+
+### Features
+
+* **editor:** drag photos to reorder them ([3f0c4ed](https://github.com/fr4d96/KakiNotes/commit/3f0c4ed042e0ff14a31e614d05073ea1232711e2))
+
 ## [1.4.1](https://github.com/fr4d96/KakiNotes/compare/v1.4.0...v1.4.1) (2026-10-08)
 
 ### Fixed
