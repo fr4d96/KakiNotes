@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-08 (move existing photos to Drive: a button on Account → Google Drive moves a contributor's existing Supabase photos into their Drive, one at a time, and fixes the Drive proxy 404ing every published Drive photo for readers; see the entry at the end of this file); earlier the same day (Google Drive slice 3 plus story folders: a Drive-connected contributor's new photos go to their own Google Drive, one folder per story, and nothing is stored in Supabase for them; see the entry at the end of this file); earlier, 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
+Last updated: 2026-10-08 (drag to reorder photos: contributors drag photos in the editor's Photos step, by mouse or press-and-hold on a phone; see the entry at the end of this file); earlier the same day (move existing photos to Drive: a button on Account → Google Drive moves a contributor's existing Supabase photos into their Drive, one at a time, and fixes the Drive proxy 404ing every published Drive photo for readers; see the entry at the end of this file); earlier the same day (Google Drive slice 3 plus story folders: a Drive-connected contributor's new photos go to their own Google Drive, one folder per story, and nothing is stored in Supabase for them; see the entry at the end of this file); earlier, 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
 review, and a photo upload no longer leaves every later save rejected as stale; see the entry at
 the end of this file); earlier, 2026-09-24 (shipped as 1.0.0: story editor fixes — bold/italic toggle off, a
 "free" travel style, line breaks kept on the review screen, uploads no longer lost to a
@@ -9511,3 +9511,34 @@ signed-out visitor.
 - Drive → Supabase, "move back before disconnecting" (section 8) and "download all" (section 7)
   aren't built.
 - The 15 remaining photos of the dev test account are still on Supabase.
+
+## 2026-10-08 — Drag to reorder photos
+
+In the editor's **Photos** step, a contributor can now drag a photo to a new place in the grid.
+With a mouse, the drag starts after 6px of movement, so a click still opens the photo. On a phone,
+it starts after a 250ms press-and-hold, so a swipe still scrolls the page. A drop saves through the
+same queued, version-checked `reorderMediaAction` as the existing "Move earlier / later" buttons, so
+the server side is unchanged (it already took the whole new order). Dragging is turned off while a
+photo's Details panel is open, and a one-line hint explains it when there are two or more photos.
+
+**New dependency:** `@dnd-kit/core`, `@dnd-kit/sortable` and `@dnd-kit/utilities` (≈ 56 lines in the
+lockfile, peer `react >= 16.8`). Why: dependable touch dragging that still lets the page scroll,
+screen-reader announcements, and a clean split between tap and drag. Plain HTML5 drag-and-drop
+doesn't work on phones. The drag listeners go on the thumbnail only, and useSortable's `attributes`
+are deliberately not spread: they would make the thumbnail a focusable `role="button"` around the
+lightbox button (nested controls). Keyboard users keep the existing buttons. Announcements are in
+English and Simplified Chinese.
+
+**Code:** `components/story/sortable-photo-tile.tsx` (new), `components/story/image-upload-manager.tsx`
+(sensors, `handleDragEnd`, `commitOrder` shared with the buttons, and swallowing the one click a
+mouse drag would otherwise send to the lightbox), and `editor.photos.drag.*` strings.
+
+**Verified.** `npm run verify` passes. 5 new tests (`image-upload-manager.drag.test.tsx`: drop
+order, no save for a drop on itself or outside the grid, chained drops, hint shown and hidden). In
+the browser on the dev test account's 5-photo draft: a mouse drag moved photo 1 to place 3 and the
+database order followed; a plain click still opened the lightbox and a drag didn't. At 375px with
+real `TouchEvent`s: a quick swipe started no drag, and a press-hold-move dropped photo 1 into
+place 2 and saved. The draft is back in its original order.
+
+**Not covered:** checked with emulated touch, not on a physical iPhone. iOS Safari's long-press
+menu is suppressed with `-webkit-touch-callout: none`, but that's worth a quick real-device check.
