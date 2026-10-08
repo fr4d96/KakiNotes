@@ -2,6 +2,15 @@
 
 ## [1.5.0](https://github.com/fr4d96/KakiNotes/compare/v1.4.1...v1.5.0) (2026-10-08)
 
+### What's new for contributors
+
+**Drag your photos into the order you want.** In the Photos step of the story editor, pick up a photo and drop it where it should go. The other photos make room as you move it, and the new order saves on its own.
+
+**Works on your phone too.** Press and hold a photo for a moment, then drag it. A quick swipe still scrolls the page as normal, so you won't move a photo by accident.
+
+**Tapping still opens the photo.** A plain click or tap shows the photo large, just as before. The "Move earlier" and "Move later" buttons under Details are still there if you'd rather use those, or use a keyboard.
+
+
 
 ### Features
 
