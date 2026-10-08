@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.0](https://github.com/fr4d96/KakiNotes/compare/v1.3.0...v1.4.0) (2026-10-08)
+
+
+### Features
+
+* **drive:** move existing photos to Google Drive ([9ea199d](https://github.com/fr4d96/KakiNotes/commit/9ea199dbbcf2cc2bd307013d7c6acefbcad7865f))
+
+
+### Bug Fixes
+
+* **drive:** serve published Drive photos to readers ([9b19540](https://github.com/fr4d96/KakiNotes/commit/9b19540d81e22475d313b12ac99d9f5e34ad2daf))
+
 ## [1.3.0](https://github.com/fr4d96/KakiNotes/compare/v1.2.0...v1.3.0) (2026-10-07)
 
 ### What's new for contributors
