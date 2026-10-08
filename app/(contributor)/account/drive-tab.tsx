@@ -6,6 +6,8 @@ import {
   disconnectDriveAction,
   type DriveFormState,
 } from "@/app/(contributor)/account/drive/actions";
+import { DriveMovePanel } from "@/app/(contributor)/account/drive-move-panel";
+import type { DriveMoveSummary } from "@/lib/story/media-move";
 
 export type DriveResultStatus =
   "connected" | "cancelled" | "failed" | "unavailable" | null;
@@ -25,18 +27,22 @@ const initialState: DriveFormState = {};
  * completed connect attempt (driven by /account?drive=<status>, read by
  * the Server Component page and passed in as `resultStatus`).
  *
- * No image ever touches Drive in this slice -- the explanation text below
- * says so explicitly, since "Connect Google Drive" could otherwise read
- * as "my existing photos are moving."
+ * Connecting never moves an existing photo by itself -- the explanation
+ * text below says so, since "Connect Google Drive" could otherwise read as
+ * "my existing photos are moving." Moving them is a separate, explicit
+ * step: the DriveMovePanel shown once connected (docs/google-drive-
+ * integration.md section 9).
  */
 export function DriveTab({
   configured,
   connection,
   resultStatus,
+  moveSummary = null,
 }: {
   configured: boolean;
   connection: DriveConnectionSummary;
   resultStatus: DriveResultStatus;
+  moveSummary?: DriveMoveSummary | null;
 }) {
   const t = useTranslations("account.drive");
   const [confirmed, setConfirmed] = useState(false);
@@ -102,6 +108,8 @@ export function DriveTab({
               </p>
             )}
           </div>
+
+          {moveSummary && <DriveMovePanel summary={moveSummary} />}
 
           <form action={formAction} className="space-y-3" noValidate>
             <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm">

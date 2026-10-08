@@ -4,6 +4,11 @@ import { render, screen, fireEvent } from "@testing-library/react";
 vi.mock("@/app/(contributor)/account/drive/actions", () => ({
   disconnectDriveAction: vi.fn(async () => ({})),
 }));
+vi.mock("@/app/(contributor)/account/drive/move-actions", () => ({
+  startDriveMoveAction: vi.fn(),
+  moveNextDrivePhotoAction: vi.fn(),
+  finishDriveMoveAction: vi.fn(),
+}));
 
 import { DriveTab } from "@/app/(contributor)/account/drive-tab";
 

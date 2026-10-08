@@ -562,6 +562,40 @@
       },
       "errors": {
         "notAvailable": "此部署环境暂不支持连接 Google Drive。"
+      },
+      "move": {
+        "title": "把已有照片移到 Drive",
+        "explainer": "你在连接 Drive 之前上传的 {count} 张照片还存在 Kakinotes。把它们移到你的 Drive，所有照片就都在一个地方了。移动期间，已发布的故事会一直正常显示。照片进入你的 Drive 后，Kakinotes 会删除自己的副本。编辑替你导入的故事里的照片会留在 Kakinotes。",
+        "confirmLabel": "我明白照片移到我的 Drive 后，Kakinotes 不会再保留副本。",
+        "start": "把 {count} 张照片移到 Drive",
+        "progress": "已移动 {done} / {total}…",
+        "progressLabel": "移动进度",
+        "keepOpen": "请保持此页面打开。离开页面会暂停移动，之后可以回到这里继续。",
+        "stop": "移完这张后停止",
+        "stopping": "移完这张后停止…",
+        "movedCount": "已将 {count} 张照片移到你的 Drive。",
+        "failedCount": "有 {count} 张照片没能移动，仍保存在 Kakinotes：",
+        "failedItem": "{story}：{reason}",
+        "untitledStory": "未命名故事",
+        "runningElsewhere": "另一个标签页或窗口正在移动照片。",
+        "cleanupExplainer": "有 {count} 张已发布的照片已移到你的 Drive。为了不让任何人看到加载失败的图片，Kakinotes 会在移动后把旧副本保留 5 分钟，点击下面的按钮即可删除。",
+        "cleanup": "删除 Kakinotes 的旧副本",
+        "nothingToMove": "Kakinotes 上没有需要移动的照片。你的照片都在你的 Drive 里。",
+        "reasons": {
+          "being_published": "它所在的故事正在发布，请几分钟后再试。",
+          "source_missing": "Kakinotes 读取不到这张照片的副本。",
+          "verify_failed": "Drive 里的副本与原图不一致，所以照片保留在原处。",
+          "changed_meanwhile": "照片在移动过程中发生了变化，请重试。",
+          "unknown": "出了点问题，请稍后再试。"
+        },
+        "errors": {
+          "notAvailable": "此部署环境暂不支持连接 Google Drive。",
+          "drive_not_connected": "你的 Google Drive 已断开连接。请重新连接后再试。",
+          "drive_unavailable": "Google Drive 拒绝了上传（可能空间已满或暂时繁忙）。没有丢失任何内容，请稍后再试。",
+          "already_running": "另一个标签页或窗口正在移动照片。请等它完成后再试。",
+          "run_not_active": "这次移动已停止。再点一次按钮即可继续。",
+          "generic": "移动照片时出了点问题。没有丢失任何内容，请重试。"
+        }
       }
     }
   },

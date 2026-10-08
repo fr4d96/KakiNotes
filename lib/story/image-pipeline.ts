@@ -726,3 +726,130 @@ export async function processImageBytesInMemory(
     sha256: sha256Hex(processedBuffer),
   };
 }
+
+/**
+ * Supabase half of the "move my photos to Drive" tool
+ * (docs/google-drive-integration.md section 9; orchestrated by
+ * lib/story/media-move.ts, which passes only plain bytes between this
+ * module and the Drive side).
+ *
+ * Returns a supabase-backend photo's processed derivative -- the only form
+ * of a photo that may ever be written to Drive (Rule 14) -- and refuses
+ * bytes whose sha256 doesn't match the one recorded at processing time.
+ * The caller must already have claimed this media through
+ * claim_next_drive_move() on the contributor's own client, which is the
+ * ownership check; this function, like every export here, only takes a
+ * media id and resolves the path itself.
+ */
+export async function downloadProcessedDerivativeForMove(
+  mediaId: string,
+): Promise<{ bytes: Buffer; sha256: string; mimeType: string }> {
+  const admin = createAdminClient();
+  const { data: media, error } = await admin
+    .from("story_media")
+    .select(
+      "storage_backend, processed_private_storage_path, processed_mime_type, sha256",
+    )
+    .eq("id", mediaId)
+    .single();
+  if (
+    error ||
+    !media ||
+    media.storage_backend !== "supabase" ||
+    !media.processed_private_storage_path ||
+    !media.processed_mime_type ||
+    !media.sha256
+  ) {
+    throw new Error(`Media ${mediaId} has no Supabase derivative to move`);
+  }
+
+  const bytes = await downloadObject(
+    PRIVATE_BUCKET,
+    media.processed_private_storage_path,
+  );
+  if (sha256Hex(bytes) !== media.sha256) {
+    throw new Error(
+      `Stored derivative for media ${mediaId} failed its hash check`,
+    );
+  }
+  return { bytes, sha256: media.sha256, mimeType: media.processed_mime_type };
+}
+
+/**
+ * Deletes every Supabase object a moved photo left behind: the raw
+ * original (which still carries its EXIF/GPS), the processed derivative,
+ * any other leftover under the photo's own `<story>/<media>/` folder in the
+ * private bucket (e.g. a HEIC staging file), and its public-bucket copy.
+ *
+ * get_drive_move_cleanup_target() only returns a job that has already
+ * switched to Drive AND is due -- immediately for a photo with no public
+ * copy, 5 minutes after the flip for one with a public copy -- so this
+ * can never delete the copy a live page is still serving, whoever calls
+ * it. Returns false (and deletes nothing) for a job that isn't due.
+ * Safe to retry: removing an already-missing object is not an error.
+ */
+export async function deleteMovedSupabaseCopies(
+  jobId: string,
+): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data: rows, error } = await admin.rpc(
+    "get_drive_move_cleanup_target",
+    { p_job_id: jobId },
+  );
+  if (error) {
+    throw new Error(`get_drive_move_cleanup_target failed: ${error.message}`);
+  }
+  const target = rows?.[0];
+  if (!target) return false;
+
+  const folder = `${target.story_id}/${target.media_id}`;
+  const { data: listed, error: listError } = await admin.storage
+    .from(PRIVATE_BUCKET)
+    .list(folder);
+  if (listError) {
+    throw new Error(
+      `Failed to list ${PRIVATE_BUCKET}/${folder}: ${listError.message}`,
+    );
+  }
+  const privatePaths = new Set<string>(
+    (listed ?? []).map((obj) => `${folder}/${obj.name}`),
+  );
+  for (const path of [
+    target.old_private_storage_path,
+    target.old_processed_private_storage_path,
+  ]) {
+    if (path) privatePaths.add(path);
+  }
+
+  if (privatePaths.size > 0) {
+    const { error: removeError } = await admin.storage
+      .from(PRIVATE_BUCKET)
+      .remove([...privatePaths]);
+    if (removeError) {
+      throw new Error(
+        `Failed to delete private copies for job ${jobId}: ${removeError.message}`,
+      );
+    }
+  }
+  if (target.old_public_storage_path) {
+    const { error: removeError } = await admin.storage
+      .from(PUBLIC_BUCKET)
+      .remove([target.old_public_storage_path]);
+    if (removeError) {
+      throw new Error(
+        `Failed to delete public copy for job ${jobId}: ${removeError.message}`,
+      );
+    }
+  }
+
+  const { error: recordError } = await admin.rpc(
+    "record_drive_move_old_deleted",
+    { p_job_id: jobId },
+  );
+  if (recordError) {
+    throw new Error(
+      `record_drive_move_old_deleted failed: ${recordError.message}`,
+    );
+  }
+  return true;
+}

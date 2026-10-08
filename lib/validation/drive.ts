@@ -38,3 +38,10 @@ export type DisconnectDriveInput = z.infer<typeof disconnectDriveSchema>;
  * attempt the RPC call.
  */
 export const driveMediaIdSchema = z.uuid();
+
+/**
+ * The move-to-Drive actions' one argument (app/(contributor)/account/drive/
+ * move-actions.ts). Only decides whether the id is worth sending to the
+ * RPCs at all -- ownership and run state are checked by the database.
+ */
+export const driveMoveRunIdSchema = z.uuid();
