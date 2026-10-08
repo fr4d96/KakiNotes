@@ -562,6 +562,40 @@
       },
       "errors": {
         "notAvailable": "Google Drive connection isn't available on this deployment yet."
+      },
+      "move": {
+        "title": "Move your existing photos to Drive",
+        "explainer": "{count, plural, one {1 photo is} other {# photos are}} still stored on Kakinotes from before you connected Drive. Moving puts all your photos in your own Drive. Published stories keep showing the whole time. Once a photo is in your Drive, Kakinotes deletes its own copy. Photos in stories an editor imported for you stay on Kakinotes.",
+        "confirmLabel": "I understand Kakinotes won't keep a copy of photos it moves to my Drive.",
+        "start": "{count, plural, one {Move 1 photo to Drive} other {Move # photos to Drive}}",
+        "progress": "Moved {done} of {total}…",
+        "progressLabel": "Move progress",
+        "keepOpen": "Keep this page open. If you leave, the move pauses, and you can carry on later from here.",
+        "stop": "Stop after this photo",
+        "stopping": "Stopping after this photo…",
+        "movedCount": "{count, plural, one {Moved 1 photo to your Drive.} other {Moved # photos to your Drive.}}",
+        "failedCount": "{count, plural, one {1 photo couldn't be moved and is still on Kakinotes:} other {# photos couldn't be moved and are still on Kakinotes:}}",
+        "failedItem": "{story}: {reason}",
+        "untitledStory": "Untitled story",
+        "runningElsewhere": "A move is already running in another tab or window.",
+        "cleanupExplainer": "{count, plural, one {1 published photo has} other {# published photos have}} moved to your Drive. Kakinotes keeps its old copy for 5 minutes after a move so nobody sees a broken image, and deletes it when you press the button below.",
+        "cleanup": "Delete Kakinotes' old copies",
+        "nothingToMove": "There are no photos on Kakinotes to move. All your photos are in your Drive.",
+        "reasons": {
+          "being_published": "its story is being published right now. Try again in a few minutes.",
+          "source_missing": "Kakinotes couldn't read its copy of this photo.",
+          "verify_failed": "the copy in Drive didn't match, so we left it where it was.",
+          "changed_meanwhile": "the photo changed while it was moving. Try again.",
+          "unknown": "something went wrong. Try again later."
+        },
+        "errors": {
+          "notAvailable": "Google Drive connection isn't available on this deployment yet.",
+          "drive_not_connected": "Your Google Drive isn't connected any more. Reconnect it, then try again.",
+          "drive_unavailable": "Google Drive refused the upload (it may be full, or busy). Nothing was lost. Try again later.",
+          "already_running": "A move is already running in another tab or window. Wait for it to finish, then try again.",
+          "run_not_active": "This move stopped. Press the button again to carry on.",
+          "generic": "Something went wrong moving your photos. Nothing was lost. Try again."
+        }
       }
     }
   },

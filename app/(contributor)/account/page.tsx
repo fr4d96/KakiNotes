@@ -13,6 +13,13 @@ import {
 } from "@/app/(contributor)/account/drive-tab";
 import { isDriveConfigured } from "@/lib/env.server";
 import { getMyDriveConnectionStatus } from "@/lib/drive/connection-status";
+import { getMyDriveMoveSummary } from "@/lib/story/media-move";
+
+// Server Actions on this page use the page's maxDuration. One "move a photo
+// to Drive" step downloads, uploads and re-downloads a photo of up to 8 MiB,
+// so it gets the same 60s the Drive upload finalize step is planned for
+// (docs/google-drive-integration.md, Decision Q10).
+export const maxDuration = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("account");
@@ -93,6 +100,12 @@ export default async function AccountPage({
         }),
   ]);
 
+  // Only worth asking once Drive is connected: the move tool needs it.
+  const driveMoveSummary =
+    driveConfigured && driveConnection.connected
+      ? await getMyDriveMoveSummary()
+      : null;
+
   const currentUsername = usernameRow?.username ?? "";
 
   return (
@@ -172,6 +185,7 @@ export default async function AccountPage({
                 configured={driveConfigured}
                 connection={driveConnection}
                 resultStatus={driveResultStatus}
+                moveSummary={driveMoveSummary}
               />
             ),
           },

@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-08 (Google Drive slice 3 plus story folders: a Drive-connected contributor's new photos go to their own Google Drive, one folder per story, and nothing is stored in Supabase for them; see the entry at the end of this file); earlier, 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
+Last updated: 2026-10-08 (move existing photos to Drive: a button on Account → Google Drive moves a contributor's existing Supabase photos into their Drive, one at a time, and fixes the Drive proxy 404ing every published Drive photo for readers; see the entry at the end of this file); earlier the same day (Google Drive slice 3 plus story folders: a Drive-connected contributor's new photos go to their own Google Drive, one folder per story, and nothing is stored in Supabase for them; see the entry at the end of this file); earlier, 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
 review, and a photo upload no longer leaves every later save rejected as stale; see the entry at
 the end of this file); earlier, 2026-09-24 (shipped as 1.0.0: story editor fixes — bold/italic toggle off, a
 "free" travel style, line breaks kept on the review screen, uploads no longer lost to a
@@ -9435,3 +9435,79 @@ push` aborts and one existing RLS test fails. Worth fixing (Supabase branching, 
   filter to its sweep; today it skips Drive rows only because they have no paths.
 - Slices 4 (abandoned-staging sweep) and 5 (placeholder for a missing Drive photo) aren't built.
   Queued owner tasks: move existing photos to Drive, a My Photos page, drag-to-reorder photos.
+
+## 2026-10-08 — Move existing photos to Google Drive
+
+The Supabase → Drive half of the move tool in
+[docs/google-drive-integration.md](google-drive-integration.md) section 9, started from a
+**"Move N photos to Drive"** button on **Account → Google Drive** (shown once Drive is connected).
+Owner decisions for this task: the browser runs the loop (no background job); a published photo's
+old copies are deleted on a later run, at least 5 minutes after its flip; the raw original (with
+its GPS) is deleted as part of the move; and only self-submitted stories move (same rule as new
+Drive uploads, so editorial imports stay on Supabase). Drive → Supabase is not built.
+
+**How a move works.** One Server Action per photo: claim → download the processed copy (its sha256
+is checked against the row) → upload it into the story's Drive folder → record the Drive id →
+download it back and compare sha256 → flip `story_media` to `google_drive` in one transaction →
+delete the old Supabase objects. A photo is always either fully on Supabase or fully on Drive. A
+failure before the flip deletes the new Drive file and reports the photo as "couldn't be moved" with
+its story title and a reason. A lost Drive connection, a full Drive or rate limiting stops the run
+with one message. If the flip's response is lost, the Drive file is kept, because it may already be
+the live copy. "Stop after this photo" and closing the tab both just pause; pressing the button
+again carries on.
+
+**Database** (`20261008053425_story_media_move_to_drive`): `story_media_move_runs` and
+`story_media_move_jobs` (RLS on, no policies, all grants revoked from `anon`/`authenticated`;
+internal record only, per Decision 14). Only one running run per user, enforced by a partial unique
+index (Decision 13); a run that's been silent for 2 minutes stops blocking. Authenticated RPCs (each
+re-derives the owner, the run and an active connection): `get_my_drive_move_summary`,
+`begin_drive_move_run`, `claim_next_drive_move`, `record_drive_move_copied`,
+`record_drive_move_failed`, `switch_story_media_to_drive`, `finish_drive_move_run`,
+`list_my_drive_move_cleanup_due`. Service-role only: `get_drive_move_cleanup_target` (re-checks
+"due" itself, so nothing can delete a live copy early) and `record_drive_move_old_deleted`.
+**Rule 11 change:** the transition trigger keeps a promoted row immutable except for one case: a
+supabase → google_drive flip with identical mime/size/dimensions/sha256. That case is allowed only
+when the transaction-local `kakinotes.media_move` setting is on, and only
+`switch_story_media_to_drive` turns it on. The trigger body was diffed against the live definition
+before replacing it.
+
+**Pre-existing bug fixed** (`20261008054929_fix_drive_proxy_consent_check`): since slice 3,
+`get_drive_media_for_proxy` checked `_latest_valid_consent_for_revision(...) is not null`. On a row
+value that is false whenever any column is null, so `/media/<id>` returned 404 to readers for
+**every published Drive photo**, while the story page still linked to it. It's the same trap
+`20260930083643` fixed before. Now `not (... is null)`. Production reads the same Supabase project
+(`ybhydepjaantkngngvuf`, checked in the live site's bundle), so the fix took effect for
+production readers the moment it was applied, before any code shipped.
+
+**Code:** `lib/story/media-move.ts` (the orchestrator; holds no secret and only passes bytes
+between the two modules below), two additions at the end of `lib/story/image-pipeline.ts`
+(`downloadProcessedDerivativeForMove`, `deleteMovedSupabaseCopies`, which deletes everything under
+the photo's own `<story>/<media>/` folder plus its public copy), `app/(contributor)/account/drive/
+move-actions.ts`, `drive-move-panel.tsx`, and `maxDuration = 60` on the account page (Server
+Actions use the page's value). After the run, the Drive folders of the stories that had photos moved
+are renumbered via `after()`. When a published photo moves, the listings cache is refreshed so `/`
+points covers at `/media/<id>` well inside the 5-minute window. English and Simplified Chinese.
+`types/database.ts` gains only these RPCs.
+
+**Verified.** `npm run verify` passes (1,430 tests; 21 new: 15 orchestrator, 6 panel).
+`npm run test:rls -- drive-move`: 11/11 against the real dev tables (deny-all for anon and owner,
+service-role RPCs refuse a contributor, a forged run or job id is refused). Probe: an un-gated flip
+of a promoted row is still rejected by the trigger. Security advisor: only the expected notes
+(RLS without policies; RPCs callable by `authenticated`, none by `anon`). **End to end** with the
+dev Google test account at 375px: moved 5 of its 20 photos, then pressed Stop. The 4 unpublished ones
+are on Drive with their sha256 unchanged and 0 objects left in either bucket (raw originals
+included); jobs are `old_deleted`. The published one flipped while `promoted`, kept its 2 private + 1
+public objects, and its job stayed `switched`. The cleanup lookup returned nothing at 3.5 minutes; the next press after 5 minutes deleted all three objects (job `old_deleted`), and readers still got the photo from `/media/<id>`. That press hit Stop during start, so it moved nothing, as intended. A
+signed-out reader gets it from `/media/<id>` (200, `public, s-maxage=300`, sha256 equal to the
+original's, rendered 1500×2000 on the story page). A moved unpublished photo is still a 404 to a
+signed-out visitor.
+
+**Not covered / follow-ups:**
+
+- About 9–10 s per photo on the dev server (download, upload, read back). Fine for a
+  per-contributor, one-off move; a background job is the fallback if it ever times out.
+- The old copies of a moved published photo wait for the contributor's next press of the button.
+  Nothing deletes them on a schedule yet. The slice-4 sweep is the natural place for that.
+- Drive → Supabase, "move back before disconnecting" (section 8) and "download all" (section 7)
+  aren't built.
+- The 15 remaining photos of the dev test account are still on Supabase.

@@ -1726,6 +1726,13 @@ export type Database = {
           media_id: string;
         }[];
       };
+      begin_drive_move_run: {
+        Args: never;
+        Returns: {
+          run_id: string;
+          total: number;
+        }[];
+      };
       begin_story_media_copy_attempt: {
         Args: { p_approval_attempt_id: string; p_media_id: string };
         Returns: {
@@ -1780,6 +1787,21 @@ export type Database = {
         Returns: {
           allowed: boolean;
           retry_after_seconds: number;
+        }[];
+      };
+      claim_next_drive_move: {
+        Args: { p_run_id: string };
+        Returns: {
+          error_code: string;
+          job_id: string;
+          job_status: string;
+          media_id: string;
+          processed_file_size_bytes: number;
+          processed_mime_type: string;
+          sha256: string;
+          stale_drive_file_ids: string[];
+          story_id: string;
+          story_title: string;
         }[];
       };
       contributor_public_facts: {
@@ -1898,6 +1920,12 @@ export type Database = {
         };
         Returns: undefined;
       };
+      finish_drive_move_run: {
+        Args: { p_run_id: string };
+        Returns: {
+          story_id: string;
+        }[];
+      };
       get_consent_terms_version: {
         Args: { p_revision_id: string };
         Returns: string;
@@ -1949,6 +1977,16 @@ export type Database = {
           media_id: string;
           owner_user_id: string;
           processed_mime_type: string;
+        }[];
+      };
+      get_drive_move_cleanup_target: {
+        Args: { p_job_id: string };
+        Returns: {
+          media_id: string;
+          old_private_storage_path: string;
+          old_processed_private_storage_path: string;
+          old_public_storage_path: string;
+          story_id: string;
         }[];
       };
       get_expense_aggregates: {
@@ -2005,6 +2043,14 @@ export type Database = {
           connected: boolean;
           connected_at: string;
           google_account_email: string;
+        }[];
+      };
+      get_my_drive_move_summary: {
+        Args: never;
+        Returns: {
+          cleanup_pending_count: number;
+          movable_count: number;
+          run_in_progress: boolean;
         }[];
       };
       get_my_story_with_draft: {
@@ -2358,6 +2404,12 @@ export type Database = {
           version: number;
         }[];
       };
+      list_my_drive_move_cleanup_due: {
+        Args: never;
+        Returns: {
+          job_id: string;
+        }[];
+      };
       list_my_notifications: {
         Args: { p_limit?: number };
         Returns: {
@@ -2620,6 +2672,22 @@ export type Database = {
         };
         Returns: undefined;
       };
+      record_drive_move_copied: {
+        Args: {
+          p_drive_file_id: string;
+          p_drive_folder_id: string;
+          p_job_id: string;
+        };
+        Returns: undefined;
+      };
+      record_drive_move_failed: {
+        Args: { p_error_code: string; p_job_id: string };
+        Returns: undefined;
+      };
+      record_drive_move_old_deleted: {
+        Args: { p_job_id: string };
+        Returns: undefined;
+      };
       record_heic_transcoded_original: {
         Args: { p_media_id: string; p_new_storage_path: string };
         Returns: undefined;
@@ -2780,6 +2848,12 @@ export type Database = {
           p_revision_id: string;
         };
         Returns: undefined;
+      };
+      switch_story_media_to_drive: {
+        Args: { p_job_id: string; p_sha256: string };
+        Returns: {
+          had_public_copy: boolean;
+        }[];
       };
       unlink_contributor_from_user: {
         Args: { p_contributor_id: string; p_note?: string };

@@ -961,6 +961,13 @@ moves a story's images between `supabase` and `google_drive` deliberately
 
 ### Supabase → Drive
 
+**Built 2026-10-08** (see docs/implementation-status.md): the "move everything" button on
+Account → Google Drive, driven one photo per request by the browser rather than a background
+job; a published photo's old copies are deleted on the contributor's next run, at least 5 minutes
+after the flip. "Verified" is not a separate job status: the flip RPC only runs after the
+read-back sha256 matched. The job statuses are `pending` / `copied` / `switched` /
+`old_deleted` / `failed`.
+
 Requires an active Drive connection. Moves **only the processed
 derivative** — never a raw original with GPS intact, per Rule 14 (there is
 no reason to ever write a non-derivative file to Drive, move tool
