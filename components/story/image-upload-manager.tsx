@@ -982,7 +982,7 @@ export function ImageUploadManager({
                   const detailsId = `media-details-${item.mediaId}`;
 
                   const thumb = (
-                    <div className="js-image-thumb relative aspect-square overflow-hidden rounded-md border border-border-subtle bg-surface-muted">
+                    <div className="js-image-thumb group/tile relative aspect-square overflow-hidden rounded-md border border-border-subtle bg-surface-muted">
                       {thumbnails[item.mediaId] ? (
                         <LightboxPhoto
                           url={thumbnails[item.mediaId]}
@@ -1015,7 +1015,7 @@ export function ImageUploadManager({
                       {/* Status reads off the tile itself, the way a media
                       library does it -- no field, no sentence, just the
                       three facts that change what you would do next. */}
-                      <div className="pointer-events-none absolute inset-x-1 top-1 flex flex-wrap gap-1">
+                      <div className="pointer-events-none absolute left-1 right-10 top-1 flex flex-wrap gap-1">
                         {item.isCover && (
                           <TileBadge>{t("badges.cover")}</TileBadge>
                         )}
@@ -1028,6 +1028,60 @@ export function ImageUploadManager({
                           </TileBadge>
                         )}
                       </div>
+
+                      {/* Always-on hint that a tap/click opens the photo large.
+    Decorative and click-through: the photo underneath is
+    already the (labelled) lightbox button. */}
+                      {thumbnails[item.mediaId] && (
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white shadow-sm"
+                        >
+                          <ZoomIcon />
+                        </span>
+                      )}
+
+                      {!isOpen && (
+                        <button
+                          type="button"
+                          // Registered so closing the panel can put focus back
+                          // here (see the refocusToggleIdRef effect above).
+                          // Braces, not a concise arrow body: React 19 treats a
+                          // ref callback's return value as a cleanup function,
+                          // and Map.set returns the Map.
+                          ref={(node) => {
+                            const map = detailsToggleRefs.current;
+                            if (node) map.set(item.mediaId, node);
+                            else map.delete(item.mediaId);
+                          }}
+                          onClick={() => setOpenMediaId(item.mediaId)}
+                          aria-expanded={false}
+                          aria-controls={detailsId}
+                          // aria-label, NOT visible text plus an sr-only span:
+                          // the accessible-name algorithm trims each element's
+                          // text before joining them with no separator, so
+                          // "Describe" + <span> photo 1</span> is announced as
+                          // "Describephoto 1".
+                          aria-label={t("detailsLabel", { name })}
+                          // Shown on hover with a mouse (Tailwind 4's hover:
+                          // only applies where the device can hover), on keyboard
+                          // focus, always on touch screens (no hover there), and
+                          // always while there's no photo to look at yet -- a
+                          // failed upload still needs Details to be removed.
+                          //
+                          // scroll-mt clears the two stacked sticky bars (site
+                          // header + editor bar, measured together at 215px on a
+                          // 375px viewport); without it the scrollIntoView above
+                          // parks this button underneath both of them.
+                          className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 scroll-mt-[15rem] rounded-md bg-black/70 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-opacity focus-visible:opacity-100 group-hover/tile:opacity-100 [@media(hover:none)]:opacity-100 ${
+                            thumbnails[item.mediaId]
+                              ? "opacity-0"
+                              : "opacity-100"
+                          }`}
+                        >
+                          {t("details")}
+                        </button>
+                      )}
                     </div>
                   );
 
@@ -1158,55 +1212,7 @@ export function ImageUploadManager({
                                 </button>
                               </div>
                             </div>
-                          ) : (
-                            <div className="flex items-center gap-1.5">
-                              {/* No "already placed" text: the tile's own "In story"
-                          badge says it, and a second copy of the same fact
-                          truncated to "Placed in your…" next to Details in a
-                          2-column phone grid. */}
-                              <button
-                                type="button"
-                                // Registered so closing the panel can put focus back
-                                // here (see the refocusToggleIdRef effect above).
-                                // Braces, not a concise arrow body: React 19 treats a
-                                // ref callback's return value as a cleanup function,
-                                // and Map.set returns the Map.
-                                ref={(node) => {
-                                  const map = detailsToggleRefs.current;
-                                  if (node) map.set(item.mediaId, node);
-                                  else map.delete(item.mediaId);
-                                }}
-                                onClick={() => setOpenMediaId(item.mediaId)}
-                                aria-expanded={false}
-                                aria-controls={detailsId}
-                                // aria-label, NOT visible text plus an sr-only span:
-                                // the accessible-name algorithm trims each element's
-                                // text before joining them with no separator, so
-                                // "Describe" + <span> photo 1</span> is announced as
-                                // "Describephoto 1". Confirmed against
-                                // dom-accessibility-api, which is what both this
-                                // project's tests and real screen readers implement.
-                                aria-label={t("detailsLabel", { name })}
-                                // scroll-mt clears the two stacked sticky bars above
-                                // (the site header at top-0 and the editor's own bar
-                                // at top-[76px]); without it the scrollIntoView above
-                                // parks this button at y=0, underneath both of them,
-                                // and the contributor lands looking at the header.
-                                //
-                                // 15rem (240px), not the 12rem the Images panel uses
-                                // in story-edit-form.tsx: those two bars were measured
-                                // together at 215px on a 375px-wide viewport, so 12rem
-                                // (192px) actually lands 23px BEHIND them. The extra
-                                // room also absorbs the step-progress row wrapping to
-                                // a second line on a narrower phone.
-                                className={`shrink-0 scroll-mt-[15rem] rounded-md border px-2 py-1.5 text-xs font-medium ${
-                                  isPlaced ? "w-full" : ""
-                                } border-border-subtle`}
-                              >
-                                {t("details")}
-                              </button>
-                            </div>
-                          )}
+                          ) : null}
                         </>
                       )}
                     </SortablePhotoTile>
@@ -1218,5 +1224,24 @@ export function ImageUploadManager({
         </div>
       )}
     </div>
+  );
+}
+
+/** Magnifier with a plus: "tap to see this photo large". */
+function ZoomIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-4-4M11 8v6M8 11h6" />
+    </svg>
   );
 }

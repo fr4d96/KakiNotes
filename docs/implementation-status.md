@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-08 (drag to reorder photos: contributors drag photos in the editor's Photos step, by mouse or press-and-hold on a phone; see the entry at the end of this file); earlier the same day (move existing photos to Drive: a button on Account → Google Drive moves a contributor's existing Supabase photos into their Drive, one at a time, and fixes the Drive proxy 404ing every published Drive photo for readers; see the entry at the end of this file); earlier the same day (Google Drive slice 3 plus story folders: a Drive-connected contributor's new photos go to their own Google Drive, one folder per story, and nothing is stored in Supabase for them; see the entry at the end of this file); earlier, 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
+Last updated: 2026-10-09 (photo tiles: Details sits on the photo, shown on hover, and a zoom icon is always in the corner; see the entry at the end of this file); earlier, 2026-10-08 (drag to reorder photos: contributors drag photos in the editor's Photos step, by mouse or press-and-hold on a phone; see the entry at the end of this file); earlier the same day (move existing photos to Drive: a button on Account → Google Drive moves a contributor's existing Supabase photos into their Drive, one at a time, and fixes the Drive proxy 404ing every published Drive photo for readers; see the entry at the end of this file); earlier the same day (Google Drive slice 3 plus story folders: a Drive-connected contributor's new photos go to their own Google Drive, one folder per story, and nothing is stored in Supabase for them; see the entry at the end of this file); earlier, 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
 review, and a photo upload no longer leaves every later save rejected as stale; see the entry at
 the end of this file); earlier, 2026-09-24 (shipped as 1.0.0: story editor fixes — bold/italic toggle off, a
 "free" travel style, line breaks kept on the review screen, uploads no longer lost to a
@@ -9542,3 +9542,27 @@ place 2 and saved. The draft is back in its original order.
 
 **Not covered:** checked with emulated touch, not on a physical iPhone. iOS Safari's long-press
 menu is suppressed with `-webkit-touch-callout: none`, but that's worth a quick real-device check.
+
+## 2026-10-09 — Photo tiles: Details on hover, zoom icon always shown
+
+In the editor's Photos step, each photo's **Details** button now sits on the photo itself (bottom
+centre) instead of below it. With a mouse it appears on hover. It also appears on keyboard focus
+(`:focus-visible`), always on touch screens (`@media (hover: none)`), and always when a photo has no
+thumbnail yet: a failed upload still needs Details to be removed. A **zoom icon** (magnifier with a
+plus) is always shown in the top-right corner of every loaded photo. It's decorative and
+click-through (`aria-hidden`, `pointer-events-none`), since the photo underneath is already the
+labelled lightbox button, so there's no second control and no button inside a button. The tile
+badges now stop short of the corner (`right-10`) so they never sit under the icon. The grid is
+shorter because the row under each photo is gone. Code: `components/story/image-upload-manager.tsx`
+only (inline `ZoomIcon` SVG; no icon library).
+
+**Verified.** `npm run verify` passes. 4 new tests (`image-upload-manager.tile-overlay.test.tsx`), and
+all existing manager tests unchanged. In the browser at desktop size: all 5 Details buttons start at
+opacity 0; hovering photo 1 shows only its own; a click opens the details panel (not the lightbox);
+Tab from the photo lands on a visible Details; Enter opens it, and Done returns focus to a visible
+Details. At 375px: `hover: none` matches, all 5 Details are visible, all 5 zoom icons show, and
+there's no sideways scroll.
+
+**Known, accepted:** after closing Details with the **mouse**, focus returns to the Details button but
+it stays invisible until hover. Browsers don't count focus after a mouse click as `:focus-visible`.
+The keyboard path, where it matters (WCAG 2.4.7), shows it.
