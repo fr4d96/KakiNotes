@@ -2,6 +2,15 @@
 
 ## [1.6.0](https://github.com/fr4d96/KakiNotes/compare/v1.5.0...v1.6.0) (2026-10-09)
 
+### What's new for contributors
+
+**A tidier photo grid.** In the Photos step of the story editor, each photo's Details button now sits on the photo itself instead of underneath it, so the grid is more compact and you see more of your photos at once.
+
+**Details when you need it.** On a computer, move your mouse over a photo and its Details button appears. On a phone or tablet it's always shown, since there's no mouse to hover with. If you move around with the keyboard, it shows as soon as you reach it.
+
+**See at a glance which photos you can enlarge.** A small magnifier icon in the top-right corner of each photo is a reminder that you can tap or click any photo to see it large.
+
+
 
 ### Features
 
