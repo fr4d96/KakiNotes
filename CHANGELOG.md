@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/fr4d96/KakiNotes/compare/v1.5.0...v1.6.0) (2026-10-09)
+
+
+### Features
+
+* **editor:** Details on the photo on hover, zoom icon always shown ([8352324](https://github.com/fr4d96/KakiNotes/commit/835232415f556cdb759c7df9115acab017c350ae))
+
 ## [1.5.0](https://github.com/fr4d96/KakiNotes/compare/v1.4.1...v1.5.0) (2026-10-08)
 
 ### What's new for contributors
