@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.7.0](https://github.com/fr4d96/KakiNotes/compare/v1.6.0...v1.7.0) (2026-10-11)
+
+### What's new for contributors
+
+**All your photos in one place.** A new My Photos page shows every photo on your stories, grouped by story, whatever state each story is in: drafts, stories waiting for review, published and private ones. Find it in the menu under your profile picture, or with the My Photos button on My Stories.
+
+**Download any photo.** Each photo has its own Download button that saves it to your device. You always get the same cleaned copy readers see, with location and camera details removed.
+
+**See where each photo is kept.** Every photo says whether it's stored on Kakinotes or in your Google Drive. If you've disconnected Google Drive, photos kept there show a "Reconnect Google Drive" link instead.
+
+### Good to know
+
+**One photo at a time for now.** There's no "download everything as one file" option yet.
+
+
+
+### Features
+
+* **photos:** My Photos page with a download per photo ([a2f75ba](https://github.com/fr4d96/KakiNotes/commit/a2f75ba8bfe0dbd91c9bc75f65274164efdfe1fd))
+
 ## [1.6.0](https://github.com/fr4d96/KakiNotes/compare/v1.5.0...v1.6.0) (2026-10-09)
 
 ### What's new for contributors
