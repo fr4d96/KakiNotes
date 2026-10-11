@@ -117,6 +117,11 @@ export function DriveTab({
                 {t("warningTitle")}
               </p>
               <p className="mt-1 text-foreground/70">{t("warningBody")}</p>
+              <p className="mt-2">
+                <a href="/my-photos" className="font-medium underline">
+                  {t("seeMyPhotos")}
+                </a>
+              </p>
               <label className="mt-3 flex items-start gap-2">
                 <input
                   type="checkbox"

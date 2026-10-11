@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { driveMediaIdSchema } from "@/lib/validation/drive";
 import { getAccessToken, downloadFileBytes } from "@/lib/drive/drive-client";
+import { photoDownloadFilename } from "@/lib/story/photo-download-name";
 
 /**
  * docs/google-drive-integration.md section 5. Serves `google_drive`-backend
@@ -60,7 +61,7 @@ type ProxyLookupRow = {
 const ALLOWED_PROXY_MIME_TYPES = new Set(["image/jpeg", "image/png"]);
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ mediaId: string }> },
 ): Promise<NextResponse> {
   const { mediaId: rawMediaId } = await context.params;
@@ -126,19 +127,31 @@ export async function GET(
   // has a real, statable worst-case staleness). Anything else a
   // contributor/moderator is previewing: never cacheable by a shared
   // cache, same as today's signed-URL preview path.
-  const cacheControl = row.is_published
-    ? "public, s-maxage=300, stale-while-revalidate=60"
-    : "private, no-store";
+  //
+  // ?download=1 (My Photos, section 7): the same bytes and the same
+  // authorization, but saved as a file instead of shown -- and never put in
+  // a shared cache, whatever the photo's status.
+  const isDownload = request.nextUrl.searchParams.get("download") === "1";
+  const cacheControl =
+    row.is_published && !isDownload
+      ? "public, s-maxage=300, stale-while-revalidate=60"
+      : "private, no-store";
 
-  return new NextResponse(new Uint8Array(bytes), {
-    status: 200,
-    headers: {
-      "Content-Type": row.processed_mime_type,
-      // SMALL 3: stops a browser from ever re-sniffing/re-interpreting
-      // these bytes as something other than the declared, whitelisted
-      // image type above.
-      "X-Content-Type-Options": "nosniff",
-      "Cache-Control": cacheControl,
-    },
-  });
+  const headers: Record<string, string> = {
+    "Content-Type": row.processed_mime_type,
+    // SMALL 3: stops a browser from ever re-sniffing/re-interpreting
+    // these bytes as something other than the declared, whitelisted
+    // image type above.
+    "X-Content-Type-Options": "nosniff",
+    "Cache-Control": cacheControl,
+  };
+  if (isDownload) {
+    headers["Content-Disposition"] =
+      `attachment; filename="${photoDownloadFilename(
+        parsedId.data,
+        row.processed_mime_type,
+      )}"`;
+  }
+
+  return new NextResponse(new Uint8Array(bytes), { status: 200, headers });
 }

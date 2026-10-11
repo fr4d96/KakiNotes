@@ -8,6 +8,7 @@ import {
   rawStorageUpload,
 } from "@/lib/story/raw-storage-http";
 import { encodeJpegUnderBudget } from "@/lib/story/jpeg-budget";
+import { photoDownloadFilename } from "@/lib/story/photo-download-name";
 import { transcodeHeicToJpeg, HeicTranscodeError } from "@/lib/story/heic";
 import {
   extensionForMimeType,
@@ -852,4 +853,88 @@ export async function deleteMovedSupabaseCopies(
     );
   }
   return true;
+}
+
+/**
+ * My Photos page thumbnails: signed preview URLs for many Kakinotes-stored
+ * photos in one database read and one storage call, instead of one round
+ * trip per photo. Drive-stored ids are skipped (they're served by
+ * /media/<id>). Same contract as mintMediaPreviewSignedUrl(): the caller
+ * must already have authorized every id -- here, by taking them only from
+ * list_my_photos(), which returns nothing but the caller's own photos.
+ */
+export async function mintMediaPreviewSignedUrls(
+  mediaIds: readonly string[],
+  expiresInSeconds: number,
+): Promise<Record<string, string>> {
+  if (mediaIds.length === 0) return {};
+  const admin = createAdminClient();
+  const { data: rows, error } = await admin
+    .from("story_media")
+    .select("id, processed_private_storage_path")
+    .in("id", [...mediaIds])
+    .eq("storage_backend", "supabase")
+    .not("processed_private_storage_path", "is", null);
+  if (error) {
+    throw new Error(`Failed to look up photos for previews: ${error.message}`);
+  }
+  const withPaths = (rows ?? []).filter(
+    (row): row is { id: string; processed_private_storage_path: string } =>
+      !!row.processed_private_storage_path,
+  );
+  if (withPaths.length === 0) return {};
+
+  const { data: signed, error: signError } = await admin.storage
+    .from(PRIVATE_BUCKET)
+    .createSignedUrls(
+      withPaths.map((row) => row.processed_private_storage_path),
+      expiresInSeconds,
+    );
+  if (signError || !signed) {
+    throw new Error(
+      `Failed to mint preview URLs: ${signError?.message ?? "no data"}`,
+    );
+  }
+  const urls: Record<string, string> = {};
+  signed.forEach((entry, index) => {
+    if (entry.signedUrl) urls[withPaths[index].id] = entry.signedUrl;
+  });
+  return urls;
+}
+
+/**
+ * My Photos "Download": a short-lived signed URL for a Kakinotes-stored
+ * photo's processed derivative -- never the raw original (Rule 14) -- that
+ * makes the browser save the file instead of showing it. Same contract as
+ * mintMediaPreviewSignedUrl(): the caller must already have authorized the
+ * request via authorize_story_media_preview() on their own client.
+ */
+export async function mintMediaDownloadSignedUrl(
+  mediaId: string,
+): Promise<string> {
+  const admin = createAdminClient();
+  const [{ data: path, error: pathError }, { data: media }] = await Promise.all(
+    [
+      admin.rpc("get_media_private_path_for_preview", { p_media_id: mediaId }),
+      admin
+        .from("story_media")
+        .select("processed_mime_type")
+        .eq("id", mediaId)
+        .maybeSingle(),
+    ],
+  );
+  if (pathError || !path) {
+    throw new Error(`No processed derivative available for media ${mediaId}`);
+  }
+  const { data, error } = await admin.storage
+    .from(PRIVATE_BUCKET)
+    .createSignedUrl(path, SIGNED_URL_EXPIRY_SECONDS, {
+      download: photoDownloadFilename(mediaId, media?.processed_mime_type),
+    });
+  if (error || !data) {
+    throw new Error(
+      `Failed to mint download URL for media ${mediaId}: ${error?.message ?? "no data"}`,
+    );
+  }
+  return data.signedUrl;
 }

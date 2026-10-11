@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-09 (photo tiles: Details sits on the photo, shown on hover, and a zoom icon is always in the corner; see the entry at the end of this file); earlier, 2026-10-08 (drag to reorder photos: contributors drag photos in the editor's Photos step, by mouse or press-and-hold on a phone; see the entry at the end of this file); earlier the same day (move existing photos to Drive: a button on Account → Google Drive moves a contributor's existing Supabase photos into their Drive, one at a time, and fixes the Drive proxy 404ing every published Drive photo for readers; see the entry at the end of this file); earlier the same day (Google Drive slice 3 plus story folders: a Drive-connected contributor's new photos go to their own Google Drive, one folder per story, and nothing is stored in Supabase for them; see the entry at the end of this file); earlier, 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
+Last updated: 2026-10-11 (My Photos: a page listing every photo on a contributor's stories, with a Download button per photo; see the entry at the end of this file); earlier, 2026-10-09 (photo tiles: Details sits on the photo, shown on hover, and a zoom icon is always in the corner; see the entry at the end of this file); earlier, 2026-10-08 (drag to reorder photos: contributors drag photos in the editor's Photos step, by mouse or press-and-hold on a phone; see the entry at the end of this file); earlier the same day (move existing photos to Drive: a button on Account → Google Drive moves a contributor's existing Supabase photos into their Drive, one at a time, and fixes the Drive proxy 404ing every published Drive photo for readers; see the entry at the end of this file); earlier the same day (Google Drive slice 3 plus story folders: a Drive-connected contributor's new photos go to their own Google Drive, one folder per story, and nothing is stored in Supabase for them; see the entry at the end of this file); earlier, 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
 review, and a photo upload no longer leaves every later save rejected as stale; see the entry at
 the end of this file); earlier, 2026-09-24 (shipped as 1.0.0: story editor fixes — bold/italic toggle off, a
 "free" travel style, line breaks kept on the review screen, uploads no longer lost to a
@@ -9566,3 +9566,57 @@ there's no sideways scroll.
 **Known, accepted:** after closing Details with the **mouse**, focus returns to the Details button but
 it stays invisible until hover. Browsers don't count focus after a mouse click as `:focus-visible`.
 The keyboard path, where it matters (WCAG 2.4.7), shows it.
+
+## 2026-10-11 — My Photos page (per-photo downloads)
+
+Section 7 of [docs/google-drive-integration.md](google-drive-integration.md), minus "Download all":
+the owner chose per-photo downloads only for now, so there's no zip and no `archiver` dependency.
+`/my-photos` lists every photo on the contributor's own stories (the same stories My Stories
+shows: self-submitted, plus editorial imports linked to them), across every status. It's grouped
+by story with the story's status badge. Each photo shows where it lives ("On Kakinotes" / "In your
+Google Drive"), whether it's only in an earlier version, and its own **Download** button. A Drive
+photo whose connection is gone shows "Reconnect Google Drive" (linking to `/account#drive`) instead
+of a download that would fail. Tapping a photo opens the existing lightbox. The page is reached
+from the avatar menu ("My Photos"), a button on My Stories, and a link in the Drive disconnect
+warning (section 8). English and Simplified Chinese.
+
+**Download is always the processed photo** (Rule 14), never a raw original. Kakinotes-stored: a
+120-second signed URL minted with `download: kakinotes-photo-<id8>.<ext>`, after
+`authorize_story_media_preview()`. Drive-stored: `/media/<id>?download=1`. The proxy keeps the same
+authorization and adds `Content-Disposition: attachment` and `Cache-Control: private, no-store`,
+even for a published photo. The file name is built only from the media id and MIME type
+(`lib/story/photo-download-name.ts`), so nothing typed by a user reaches a header.
+
+**Database** (`20261010220948_list_my_photos`, applied via the MCP to the shared project, which
+production also reads; it's additive and nothing deployed calls it): `list_my_photos()`, using
+`list_my_stories()`'s ownership rule. It returns photos with a processed derivative that are
+attached to at least one revision, and never any storage path or Drive id. Thumbnails: one admin
+query plus one `createSignedUrls` call for every Kakinotes photo on the page
+(`mintMediaPreviewSignedUrls`, 10-minute URLs; each tile asks for a fresh one once if it fails), and
+`/media/<id>` for Drive photos. Route protected in `proxy.ts` (`PROTECTED_PATHS` and the matcher)
+and disallowed in `robots.ts`.
+
+**Verified.** `npm run verify` passes (11 new unit and component tests: grouping, view, download
+filename; plus 3 proxy `?download=1` cases). `npm run test:rls -- my-photos`: 2 pass and 2 **skip
+with a reason**, because every RLS test account has 0 processed photos, and getting one there needs
+the service-role pipeline, which that suite never uses; an empty list would have "passed" without
+proving anything. Isolation was therefore proven against real data by impersonating three real users
+in a rolled-back transaction: contributor A sees 25 photos, contributor B sees 337, a moderator sees
+0, no photo appears for two people, and no row comes from a story the viewer doesn't own. In the
+browser as the Drive test account: at 375px, "25 photos across 12 stories", 12 groups, 25 labelled
+Download buttons, all 25 thumbnails load (lazily), and there's no sideways scroll. At desktop there
+are 4 columns and the avatar menu shows My Photos. Downloads were checked without saving files: the
+Kakinotes one is a signed URL to the `processed-…` object answering `200 image/jpeg` with
+`attachment; filename=kakinotes-photo-05bf2804.jpg`; the Drive one (a draft photo) answers `200
+image/png`, `attachment`, `private, no-store`, and **404** to a signed-out request. Signed-out
+`/my-photos` gives a 307 to `/sign-in?next=%2Fmy-photos`.
+
+**Not covered / follow-ups:**
+
+- "Download all" (one zip per story) isn't built; it's the next slice of section 7.
+- The "missing in Drive" status from section 7 isn't shown. A deleted Drive file just shows "can't be
+  shown". Detecting it needs a Drive check per photo.
+- Drive thumbnails are slow on a cold dev server (8–10 s each when 24 load at once through the
+  proxy). Worth watching in production; a smaller thumbnail derivative would be the fix.
+- The "Reconnect" state wasn't triggered in the browser (that would mean disconnecting the test
+  account's real Drive); it's covered by the component test.

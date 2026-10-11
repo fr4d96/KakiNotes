@@ -2424,6 +2424,25 @@ export type Database = {
           story_title: string;
         }[];
       };
+      list_my_photos: {
+        Args: never;
+        Returns: {
+          alt_text: string;
+          caption: string;
+          in_current_version: boolean;
+          lifecycle_status: string;
+          media_id: string;
+          processed_file_size_bytes: number;
+          processed_height: number;
+          processed_mime_type: string;
+          processed_width: number;
+          storage_backend: string;
+          story_id: string;
+          story_title: string;
+          story_updated_at: string;
+          uploaded_at: string;
+        }[];
+      };
       list_my_reports: {
         Args: never;
         Returns: {
