@@ -1014,6 +1014,12 @@ export function MyStoriesView({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="journiq-heading text-[2.4rem]">{t("title")}</h1>
         <div className="flex items-center gap-3">
+          <Link
+            href="/my-photos"
+            className="rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium"
+          >
+            {t("myPhotosLink")}
+          </Link>
           {stories.length > 0 && (
             <div
               role="group"

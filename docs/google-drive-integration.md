@@ -798,6 +798,10 @@ broken-image icon and never a bare 404.
 
 ## 7. My Photos page (contributor-only)
 
+**Built 2026-10-11, without "Download all"** (owner's choice: per-photo downloads only for now; see
+docs/implementation-status.md). The per-image status shows where the photo lives and "Reconnect"
+when its Drive connection is gone; "missing in Drive" is not yet detected.
+
 A new page where a contributor sees and downloads every image they've
 uploaded — this is what replaces the old "offer a zip before unlinking"
 idea (section 12, Decisions, Q3): there's no separate one-off flow,

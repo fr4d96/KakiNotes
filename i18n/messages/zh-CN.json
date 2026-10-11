@@ -61,7 +61,8 @@
     "account": "账户",
     "signOut": "退出登录",
     "accountMenu": "账户菜单",
-    "staff": "工作人员"
+    "staff": "工作人员",
+    "myPhotos": "我的照片"
   },
   "footer": {
     "tagline": "一个分享新西兰打工度假真实经历的故事社区。",
@@ -596,7 +597,8 @@
           "run_not_active": "这次移动已停止。再点一次按钮即可继续。",
           "generic": "移动照片时出了点问题。没有丢失任何内容，请重试。"
         }
-      }
+      },
+      "seeMyPhotos": "先到「我的照片」保存副本"
     }
   },
   "myStories": {
@@ -679,7 +681,8 @@
       "submitted": "已提交审核。",
       "keptPrivate": "已保存为私密，只有你能看到。"
     },
-    "updatedAt": "更新于 {date}"
+    "updatedAt": "更新于 {date}",
+    "myPhotosLink": "我的照片"
   },
   "storyStatus": {
     "draft": "草稿",
@@ -1225,5 +1228,25 @@
     "onlyPublished": "只有已发布的故事才能撤下。",
     "gone": "这篇故事已经不存在了。",
     "failed": "无法撤下这篇故事，请再试一次。"
+  },
+  "myPhotos": {
+    "metaTitle": "我的照片",
+    "title": "我的照片",
+    "subtitle": "你所有故事里的照片，都在这里。",
+    "summary": "{stories} 个故事中共有 {photos} 张照片。",
+    "empty": "还没有照片。你添加到故事里的照片会显示在这里。",
+    "backToMyStories": "我的故事",
+    "untitledStory": "未命名故事",
+    "photoCount": "{count} 张照片",
+    "photoLabel": "《{story}》的第 {index} 张照片",
+    "whereKakinotes": "存在 Kakinotes",
+    "whereDrive": "存在你的 Google Drive",
+    "earlierVersion": "来自较早的版本",
+    "download": "下载",
+    "downloadLabel": "下载{photo}",
+    "preparing": "准备中…",
+    "reconnect": "重新连接 Google Drive",
+    "reconnectToSee": "重新连接 Google Drive 后才能看到这张照片。",
+    "cantShow": "这张照片暂时无法显示。"
   }
 }

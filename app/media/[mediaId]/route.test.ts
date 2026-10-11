@@ -20,9 +20,9 @@ vi.mock("@/lib/drive/drive-client", () => ({
 
 import { GET } from "@/app/media/[mediaId]/route";
 
-function requestFor(mediaId: string) {
+function requestFor(mediaId: string, query = "") {
   return {
-    request: new NextRequest(`https://kakinotes.test/media/${mediaId}`),
+    request: new NextRequest(`https://kakinotes.test/media/${mediaId}${query}`),
     context: { params: Promise.resolve({ mediaId }) },
   };
 }
@@ -185,5 +185,56 @@ describe("GET /media/[mediaId]", () => {
     const response = await GET(request, context);
     expect(response.status).toBe(502);
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+  });
+
+  describe("?download=1 (My Photos)", () => {
+    const row = (isPublished: boolean) => ({
+      data: [
+        {
+          media_id: "37cd5afe-6b32-444b-a27f-0f97d121f469",
+          drive_processed_file_id: "drive-file-1",
+          processed_mime_type: "image/png",
+          owner_user_id: "owner-1",
+          is_published: isPublished,
+        },
+      ],
+      error: null,
+    });
+
+    it("saves the file instead of showing it, and never caches it publicly -- even when published", async () => {
+      rpcMock.mockResolvedValue(row(true));
+      const { request, context } = requestFor(
+        "37cd5afe-6b32-444b-a27f-0f97d121f469",
+        "?download=1",
+      );
+      const response = await GET(request, context);
+      expect(response.status).toBe(200);
+      expect(response.headers.get("Content-Disposition")).toBe(
+        'attachment; filename="kakinotes-photo-37cd5afe.png"',
+      );
+      expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+      expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    });
+
+    it("goes through exactly the same authorization: no row, no file", async () => {
+      rpcMock.mockResolvedValue({ data: [], error: null });
+      const { request, context } = requestFor(
+        "00000000-0000-4000-8000-000000000009",
+        "?download=1",
+      );
+      const response = await GET(request, context);
+      expect(response.status).toBe(404);
+      expect(response.headers.get("Content-Disposition")).toBeNull();
+      expect(downloadFileBytes).not.toHaveBeenCalled();
+    });
+
+    it("shows inline as before without the flag", async () => {
+      rpcMock.mockResolvedValue(row(false));
+      const { request, context } = requestFor(
+        "37cd5afe-6b32-444b-a27f-0f97d121f469",
+      );
+      const response = await GET(request, context);
+      expect(response.headers.get("Content-Disposition")).toBeNull();
+    });
   });
 });

@@ -61,7 +61,8 @@
     "account": "Account",
     "signOut": "Sign out",
     "accountMenu": "Account menu",
-    "staff": "Staff"
+    "staff": "Staff",
+    "myPhotos": "My Photos"
   },
   "footer": {
     "tagline": "A storytelling community for honest working-holiday experiences across Aotearoa New Zealand.",
@@ -596,7 +597,8 @@
           "run_not_active": "This move stopped. Press the button again to carry on.",
           "generic": "Something went wrong moving your photos. Nothing was lost. Try again."
         }
-      }
+      },
+      "seeMyPhotos": "Save copies first from My Photos"
     }
   },
   "myStories": {
@@ -679,7 +681,8 @@
       "submitted": "Submitted for review.",
       "keptPrivate": "Saved privately. Only you can see it."
     },
-    "updatedAt": "Updated {date}"
+    "updatedAt": "Updated {date}",
+    "myPhotosLink": "My Photos"
   },
   "storyStatus": {
     "draft": "Draft",
@@ -1225,5 +1228,25 @@
     "onlyPublished": "Only a published story can be taken down.",
     "gone": "That story no longer exists.",
     "failed": "Could not take this story down. Please try again."
+  },
+  "myPhotos": {
+    "metaTitle": "My Photos",
+    "title": "My Photos",
+    "subtitle": "Every photo on your stories, in one place.",
+    "summary": "{photos, plural, one {1 photo} other {# photos}} across {stories, plural, one {1 story} other {# stories}}.",
+    "empty": "No photos yet. Photos you add to your stories will show up here.",
+    "backToMyStories": "My Stories",
+    "untitledStory": "Untitled story",
+    "photoCount": "{count, plural, one {1 photo} other {# photos}}",
+    "photoLabel": "photo {index} of {story}",
+    "whereKakinotes": "On Kakinotes",
+    "whereDrive": "In your Google Drive",
+    "earlierVersion": "from an earlier version",
+    "download": "Download",
+    "downloadLabel": "Download {photo}",
+    "preparing": "Preparing…",
+    "reconnect": "Reconnect Google Drive",
+    "reconnectToSee": "Reconnect Google Drive to see this photo.",
+    "cantShow": "This photo can't be shown right now."
   }
 }
