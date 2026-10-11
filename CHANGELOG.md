@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/fr4d96/KakiNotes/compare/v1.6.0...v1.7.0) (2026-10-11)
+
+
+### Features
+
+* **photos:** My Photos page with a download per photo ([a2f75ba](https://github.com/fr4d96/KakiNotes/commit/a2f75ba8bfe0dbd91c9bc75f65274164efdfe1fd))
+
 ## [1.6.0](https://github.com/fr4d96/KakiNotes/compare/v1.5.0...v1.6.0) (2026-10-09)
 
 ### What's new for contributors
