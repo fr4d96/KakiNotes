@@ -68,8 +68,17 @@ const processImageBytesInMemory = vi.hoisted(() =>
     sha256: "abc123",
   })),
 );
+const processFullResolutionBytesInMemory = vi.hoisted(() =>
+  vi.fn(async () => ({
+    bytes: Buffer.from("full-bytes"),
+    mimeType: "image/jpeg" as const,
+    width: 4000,
+    height: 3000,
+  })),
+);
 vi.mock("@/lib/story/image-pipeline", () => ({
   processImageBytesInMemory,
+  processFullResolutionBytesInMemory,
 }));
 
 // drive-folders.ts owns story-folder creation/renumbering -- exercised on
@@ -80,9 +89,13 @@ const ensureStoryFolder = vi.hoisted(() =>
   vi.fn(async () => "story-folder-id"),
 );
 const syncStoryFolder = vi.hoisted(() => vi.fn(async () => {}));
+const ensureFullQualityFolder = vi.hoisted(() =>
+  vi.fn(async () => "full-folder-id"),
+);
 vi.mock("@/lib/story/drive-folders", () => ({
   ensureStoryFolder,
   syncStoryFolder,
+  ensureFullQualityFolder,
   // Real, pure implementation -- not worth mocking (lib/story/drive-
   // folders.test.ts already covers it directly).
   extensionForMimeType: (mimeType: string | null | undefined) =>
@@ -123,6 +136,8 @@ beforeEach(() => {
   ensureStoryFolder.mockClear();
   ensureStoryFolder.mockResolvedValue("story-folder-id");
   syncStoryFolder.mockClear();
+  processFullResolutionBytesInMemory.mockClear();
+  ensureFullQualityFolder.mockClear();
   getFileMetadata.mockResolvedValue({ ...VALID_METADATA });
 });
 
@@ -239,10 +254,23 @@ describe("finalizeDriveMediaUpload", () => {
         return { data: [], error: null }; // no existing Drive media -- next number is 1
       }
       if (name === "finalize_drive_media_upload") return { error: null };
+      if (name === "record_drive_media_full_copy") {
+        order.push("record-full");
+        return { error: null };
+      }
       throw new Error(`unexpected rpc ${name}`);
     });
 
     const order: string[] = [];
+    processFullResolutionBytesInMemory.mockImplementation(async () => {
+      order.push("full-pipeline");
+      return {
+        bytes: Buffer.from("full-bytes"),
+        mimeType: "image/jpeg" as const,
+        width: 4000,
+        height: 3000,
+      };
+    });
     downloadFileBytes.mockImplementation(async () => {
       order.push("download");
       return Buffer.from("raw-bytes");
@@ -301,16 +329,56 @@ describe("finalizeDriveMediaUpload", () => {
       "user-1",
     );
 
-    // Once the deferred work actually runs, it deletes the raw staging
-    // file and runs the best-effort renumber -- in that order.
+    // Once the deferred work actually runs: the full-quality copy is made
+    // from the raw bytes and recorded FIRST, then the raw staging file is
+    // deleted, then the best-effort renumber.
     await runScheduled();
     expect(order).toEqual([
       "download",
       "pipeline",
       "upload",
       "record",
+      "full-pipeline",
+      "upload",
+      "record-full",
       "delete",
     ]);
+    expect(processFullResolutionBytesInMemory).toHaveBeenCalledWith(
+      Buffer.from("raw-bytes"),
+    );
+    expect(ensureFullQualityFolder).toHaveBeenCalledWith(
+      "access-token",
+      "story-folder-id",
+      "user-1",
+    );
+    // Same number as the display copy, inside "Full quality".
+    expect(uploadDerivativeFile).toHaveBeenLastCalledWith(
+      "access-token",
+      "full-folder-id",
+      "01.jpg",
+      Buffer.from("full-bytes"),
+      "image/jpeg",
+      "user-1",
+    );
+    expect(
+      rpcMock.mock.calls.find(
+        ([n]) => n === "record_drive_media_full_copy",
+      )?.[1],
+    ).toEqual({
+      p_media_id: "media-1",
+      p_drive_full_file_id: "derivative-file-id",
+      p_drive_full_folder_id: "full-folder-id",
+      p_full_mime_type: "image/jpeg",
+      p_full_width: 4000,
+      p_full_height: 3000,
+      p_full_file_size_bytes: Buffer.from("full-bytes").byteLength,
+    });
+    expect(deleteFilePermanently).toHaveBeenCalledTimes(1);
+    expect(deleteFilePermanently).toHaveBeenCalledWith(
+      "access-token",
+      "drive-file-1",
+      "user-1",
+    );
     expect(syncStoryFolder).toHaveBeenCalledWith("user-1", "story-1");
   });
 
@@ -412,5 +480,57 @@ describe("getStoryMediaUploadMode", () => {
   it("defaults to supabase for any value other than exactly 'google_drive'", async () => {
     rpcMock.mockResolvedValue({ data: "something_else", error: null });
     expect(await getStoryMediaUploadMode("revision-1")).toBe("supabase");
+  });
+});
+
+describe("finalizeDriveMediaUpload -- the full-quality copy is best effort", () => {
+  function happyRpc(recordFull: { error: { message: string } | null }) {
+    rpcMock.mockImplementation(async (name: string) => {
+      if (name === "authorize_drive_media_finalize_v2") {
+        return { error: null, data: "story-1" };
+      }
+      if (name === "list_story_drive_media_for_sync") {
+        return { data: [], error: null };
+      }
+      if (name === "finalize_drive_media_upload") return { error: null };
+      if (name === "record_drive_media_full_copy") return recordFull;
+      throw new Error(`unexpected rpc ${name}`);
+    });
+  }
+
+  it("still deletes the raw upload and syncs when the full copy can't be made", async () => {
+    happyRpc({ error: null });
+    processFullResolutionBytesInMemory.mockRejectedValueOnce(
+      new Error("reencode_failed"),
+    );
+
+    await finalizeDriveMediaUpload("media-1", 1, "drive-file-1");
+    await runScheduled();
+
+    expect(
+      rpcMock.mock.calls.some(([n]) => n === "record_drive_media_full_copy"),
+    ).toBe(false);
+    expect(deleteFilePermanently).toHaveBeenCalledWith(
+      "access-token",
+      "drive-file-1",
+      "user-1",
+    );
+    expect(syncStoryFolder).toHaveBeenCalledWith("user-1", "story-1");
+  });
+
+  it("removes the full copy it uploaded if recording it fails, and still deletes the raw upload", async () => {
+    happyRpc({ error: { message: "db down" } });
+    uploadDerivativeFile
+      .mockResolvedValueOnce("display-file-id")
+      .mockResolvedValueOnce("full-file-id");
+
+    await finalizeDriveMediaUpload("media-1", 1, "drive-file-1");
+    await runScheduled();
+
+    const deleted = deleteFilePermanently.mock.calls.map(
+      (c) => (c as unknown[])[1],
+    );
+    expect(deleted).toEqual(["full-file-id", "drive-file-1"]);
+    expect(deleted).not.toContain("display-file-id");
   });
 });

@@ -11,12 +11,16 @@ import {
   uploadDerivativeFile,
   deleteFilePermanently,
 } from "@/lib/drive/drive-client";
-import { processImageBytesInMemory } from "@/lib/story/image-pipeline";
+import {
+  processFullResolutionBytesInMemory,
+  processImageBytesInMemory,
+} from "@/lib/story/image-pipeline";
 import {
   MAX_UPLOAD_BYTES,
   MAX_HEIC_UPLOAD_BYTES,
 } from "@/lib/story/image-validation";
 import {
+  ensureFullQualityFolder,
   ensureStoryFolder,
   syncStoryFolder,
   extensionForMimeType,
@@ -324,6 +328,27 @@ export async function finalizeDriveMediaUpload(
   //   - syncStoryFolder's full renumber pass, which with the new file
   //     already correctly named is now almost always a fast no-op.
   after(async () => {
+    // Full-quality copy first, while the raw bytes are still in memory and
+    // before the raw staging file is deleted. Best effort: a failure here is
+    // logged and the photo simply has no full copy -- the upload itself has
+    // already succeeded, and the raw file is deleted below either way.
+    try {
+      await writeFullQualityCopy({
+        supabase,
+        accessToken,
+        userId: user.id,
+        mediaId,
+        storyFolderId,
+        number: nextNumber,
+        rawBytes,
+      });
+    } catch (err) {
+      console.error("Full-quality copy failed (photo kept display-only)", {
+        mediaId,
+        error: err instanceof Error ? err.message : err,
+      });
+    }
+
     await deleteFilePermanently(accessToken, driveFileId, user.id).catch(
       (err) => {
         console.error("Failed to delete Drive staging file", {
@@ -335,4 +360,60 @@ export async function finalizeDriveMediaUpload(
     );
     await syncStoryFolder(user.id, storyId);
   });
+}
+
+/**
+ * The full-quality copy of a just-uploaded Drive photo (owner decision
+ * 2026-10-11): every pixel, metadata stripped, into the story folder's
+ * "Full quality" subfolder as NN.ext to match the display copy's NN.ext.
+ * Owner-only: recorded on the row, never served to anyone but the
+ * contributor (get_drive_full_copy_for_owner). If recording fails, the file
+ * just written is deleted so nothing in Drive is left unaccounted for.
+ */
+async function writeFullQualityCopy(input: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  accessToken: string;
+  userId: string;
+  mediaId: string;
+  storyFolderId: string;
+  number: number;
+  rawBytes: Buffer;
+}): Promise<void> {
+  const full = await processFullResolutionBytesInMemory(input.rawBytes);
+  const folderId = await ensureFullQualityFolder(
+    input.accessToken,
+    input.storyFolderId,
+    input.userId,
+  );
+  const name = `${String(input.number).padStart(2, "0")}.${extensionForMimeType(full.mimeType)}`;
+  const fileId = await uploadDerivativeFile(
+    input.accessToken,
+    folderId,
+    name,
+    full.bytes,
+    full.mimeType,
+    input.userId,
+  );
+
+  const { error } = await input.supabase.rpc("record_drive_media_full_copy", {
+    p_media_id: input.mediaId,
+    p_drive_full_file_id: fileId,
+    p_drive_full_folder_id: folderId,
+    p_full_mime_type: full.mimeType,
+    p_full_width: full.width,
+    p_full_height: full.height,
+    p_full_file_size_bytes: full.bytes.byteLength,
+  });
+  if (error) {
+    await deleteFilePermanently(input.accessToken, fileId, input.userId).catch(
+      (deleteErr) => {
+        console.error("Failed to delete an unrecorded full-quality copy", {
+          mediaId: input.mediaId,
+          fileId,
+          error: deleteErr instanceof Error ? deleteErr.message : deleteErr,
+        });
+      },
+    );
+    throw new Error(`record_drive_media_full_copy failed: ${error.message}`);
+  }
 }

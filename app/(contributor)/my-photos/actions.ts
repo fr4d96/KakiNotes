@@ -13,9 +13,10 @@ import { getErrorMessage } from "@/lib/errors";
  * media id; who may download it is decided by authorize_story_media_preview()
  * on the caller's own client, exactly as for an editor preview.
  *
- * Returns a URL the browser then opens: a signed, save-as-file URL for a
- * Kakinotes-stored photo, or /media/<id>?download=1 for a Drive-stored one
- * (the proxy re-checks access itself).
+ * Returns a URL the browser then opens: the full-quality copy when the
+ * caller owns one (/media/<id>?full=1, owner-only), otherwise a signed,
+ * save-as-file URL for a Kakinotes-stored photo, or /media/<id>?download=1
+ * for a Drive-stored one. The proxy re-checks access itself either way.
  */
 export async function getPhotoDownloadUrlAction(
   mediaId: string,
@@ -36,6 +37,16 @@ export async function getPhotoDownloadUrlAction(
     { p_media_id: parsed.data },
   );
   if (authError) return { error: tErr("previewNotAuthorized") };
+
+  // The full-quality copy, if this caller owns one. Zero rows for anyone
+  // else, so a non-owner falls through to the display copy below.
+  const { data: fullRows, error: fullError } = await supabase.rpc(
+    "get_drive_full_copy_for_owner",
+    { p_media_id: parsed.data },
+  );
+  if (!fullError && (fullRows ?? []).length > 0) {
+    return { url: `/media/${parsed.data}?full=1` };
+  }
 
   // Same backend check resolvePreviewImageUrl() uses: a row here means the
   // photo lives in Drive and the caller may see it.

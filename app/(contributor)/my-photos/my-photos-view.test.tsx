@@ -30,6 +30,7 @@ const stories: MyPhotoStory[] = [
         width: 1500,
         height: 2000,
         inCurrentVersion: true,
+        hasFullCopy: false,
         thumbnailUrl: "https://example.test/kaki.jpg",
       },
       {
@@ -40,6 +41,7 @@ const stories: MyPhotoStory[] = [
         width: 1500,
         height: 2000,
         inCurrentVersion: false,
+        hasFullCopy: false,
         thumbnailUrl: null,
       },
     ],
@@ -134,5 +136,21 @@ describe("MyPhotosView", () => {
   it("has a friendly empty state", () => {
     render(<MyPhotosView stories={[]} driveConnected={false} />);
     expect(screen.getByText(/No photos yet/)).toBeInTheDocument();
+  });
+
+  it("labels a photo with a full-quality copy and offers that download", () => {
+    const withFull: MyPhotoStory[] = [
+      {
+        ...stories[0],
+        photos: [{ ...stories[0].photos[1], hasFullCopy: true }],
+      },
+    ];
+    render(<MyPhotosView stories={withFull} driveConnected={true} />);
+    expect(screen.getByText(/Full quality/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Download photo 1 of Kiwi orchard summer in full quality",
+      }),
+    ).toHaveTextContent("Download full quality");
   });
 });

@@ -1969,6 +1969,14 @@ export type Database = {
           work_types_selected: boolean;
         }[];
       };
+      get_drive_full_copy_for_owner: {
+        Args: { p_media_id: string };
+        Returns: {
+          drive_full_file_id: string;
+          full_mime_type: string;
+          owner_user_id: string;
+        }[];
+      };
       get_drive_media_for_proxy: {
         Args: { p_media_id: string };
         Returns: {
@@ -2429,6 +2437,7 @@ export type Database = {
         Returns: {
           alt_text: string;
           caption: string;
+          has_full_copy: boolean;
           in_current_version: boolean;
           lifecycle_status: string;
           media_id: string;
@@ -2602,6 +2611,15 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      list_story_drive_full_copies_for_sync: {
+        Args: { p_story_id: string };
+        Returns: {
+          drive_full_file_id: string;
+          full_mime_type: string;
+          media_id: string;
+          sort_order: number;
+        }[];
+      };
       list_story_drive_media_for_sync: {
         Args: { p_story_id: string };
         Returns: {
@@ -2688,6 +2706,18 @@ export type Database = {
           p_expected_version?: number;
           p_note?: string;
           p_story_id: string;
+        };
+        Returns: undefined;
+      };
+      record_drive_media_full_copy: {
+        Args: {
+          p_drive_full_file_id: string;
+          p_drive_full_folder_id: string;
+          p_full_file_size_bytes: number;
+          p_full_height: number;
+          p_full_mime_type: string;
+          p_full_width: number;
+          p_media_id: string;
         };
         Returns: undefined;
       };
