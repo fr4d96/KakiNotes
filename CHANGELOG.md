@@ -2,6 +2,19 @@
 
 ## [1.8.0](https://github.com/fr4d96/KakiNotes/compare/v1.7.0...v1.8.0) (2026-10-12)
 
+### What's new for contributors
+
+**Keep your photos in full quality.** If you've connected Google Drive, every new photo you upload is now saved twice in your Drive: the version readers see on Kakinotes, and a full-size copy at the photo's original resolution. The full-size copies go in a "Full quality" folder inside each story's folder, numbered to match the others.
+
+**Download them from My Photos.** Photos with a full-size copy are marked "Full quality", and their Download button gives you the full-size version.
+
+**Private to you.** Only you can download a full-size copy. Readers, editors and moderators only ever see the regular version. Location and camera details are removed from both copies.
+
+### Good to know
+
+**Only for Google Drive, and only for new photos.** Photos stored on Kakinotes keep the regular size; connect Google Drive in Account settings to start keeping full-size copies. Photos uploaded before this release don't have a full-size copy, because the original files weren't kept.
+
+
 
 ### Features
 
