@@ -26,4 +26,14 @@ describe("photoDownloadFilename", () => {
       "kakinotes-photo-photo.jpg",
     );
   });
+
+  it("marks the full-quality copy in the name", () => {
+    expect(
+      photoDownloadFilename(
+        "37cd5afe-6b32-444b-a27f-0f97d121f469",
+        "image/jpeg",
+        "full",
+      ),
+    ).toBe("kakinotes-photo-37cd5afe-full.jpg");
+  });
 });

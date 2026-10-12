@@ -5,6 +5,7 @@ import {
   getAccessToken,
   ensureAppFolders,
   createFolder,
+  findFolder,
   getFileMetadata,
   listFolderChildren,
   renameFile,
@@ -291,7 +292,16 @@ type DriveSyncMediaRow = {
   drive_processed_file_id: string;
   processed_mime_type: string | null;
   sort_order: number;
+  /**
+   * The 1-based number to give this file. Defaults to its index + 1; the
+   * full-quality folder passes it explicitly so Full quality/03.jpg stays
+   * the full copy of 03.jpg even when an older photo has no full copy.
+   */
+  position?: number;
 };
+
+/** The subfolder of a story's folder that holds its full-quality copies. */
+export const FULL_QUALITY_FOLDER_NAME = "Full quality";
 
 /**
  * Runs `fn` over `items` with at most `limit` in flight at once, preserving
@@ -351,7 +361,7 @@ async function renumberStoryMedia(
   const targets = media.map((m, index) => ({
     mediaId: m.media_id,
     fileId: m.drive_processed_file_id,
-    targetName: `${String(index + 1).padStart(2, "0")}.${extensionForMimeType(m.processed_mime_type)}`,
+    targetName: `${String(m.position ?? index + 1).padStart(2, "0")}.${extensionForMimeType(m.processed_mime_type)}`,
   }));
 
   const metadataByFileId = new Map<
@@ -500,6 +510,13 @@ export async function syncStoryFolder(
       );
     }
     await renumberStoryMedia(accessToken, folderId, mediaRows ?? [], userId);
+    await renumberFullQualityCopies(
+      supabase,
+      accessToken,
+      folderId,
+      storyId,
+      userId,
+    );
   } catch (err) {
     console.error("Drive folder sync failed (best-effort, no action taken)", {
       userId,
@@ -507,4 +524,84 @@ export async function syncStoryFolder(
       error: err instanceof Error ? err.message : err,
     });
   }
+}
+
+/**
+ * Finds (or creates) the story folder's "Full quality" subfolder. THROWS on
+ * failure: lib/story/drive-sync.ts treats a missing full copy as a logged,
+ * best-effort miss, never as a failed upload.
+ */
+export async function ensureFullQualityFolder(
+  accessToken: string,
+  storyFolderId: string,
+  userId: string,
+): Promise<string> {
+  const existing = await findFolder(
+    accessToken,
+    FULL_QUALITY_FOLDER_NAME,
+    storyFolderId,
+    userId,
+  );
+  if (existing) return existing;
+  return createFolder(
+    accessToken,
+    FULL_QUALITY_FOLDER_NAME,
+    storyFolderId,
+    userId,
+  );
+}
+
+/**
+ * Keeps Full quality/NN.ext numbered like the display copies: the full copy
+ * of the photo shown third is 03.ext, whatever older photos lack one.
+ * Does nothing (and creates no folder) for a story with no full copies.
+ */
+async function renumberFullQualityCopies(
+  supabase: SupabaseClient,
+  accessToken: string,
+  storyFolderId: string,
+  storyId: string,
+  userId: string,
+): Promise<void> {
+  const { data: rows, error } = await supabase.rpc(
+    "list_story_drive_full_copies_for_sync",
+    { p_story_id: storyId },
+  );
+  if (error) {
+    throw new Error(
+      `Failed to list full-quality copies for story ${storyId}: ${error.message}`,
+    );
+  }
+  type FullCopyRow = {
+    media_id: string;
+    drive_full_file_id: string | null;
+    full_mime_type: string | null;
+    sort_order: number;
+  };
+  // Position = place in the display order (all Drive photos), so numbering
+  // matches the display copies even when some photos have no full copy.
+  const withFull: { row: FullCopyRow; position: number }[] = (
+    (rows ?? []) as FullCopyRow[]
+  )
+    .map((row, index) => ({ row, position: index + 1 }))
+    .filter(({ row }) => row.drive_full_file_id !== null);
+  if (withFull.length === 0) return;
+
+  const fullFolderId = await ensureFullQualityFolder(
+    accessToken,
+    storyFolderId,
+    userId,
+  );
+  await renumberStoryMedia(
+    accessToken,
+    fullFolderId,
+    withFull.map(({ row, position }) => ({
+      media_id: row.media_id,
+      drive_processed_file_id: row.drive_full_file_id as string,
+      processed_mime_type: row.full_mime_type,
+      sort_order: row.sort_order,
+      position,
+    })),
+    userId,
+  );
 }

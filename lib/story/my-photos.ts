@@ -20,6 +20,8 @@ export type MyPhoto = {
   width: number | null;
   height: number | null;
   inCurrentVersion: boolean;
+  /** A full-resolution copy is kept in the contributor's Drive. */
+  hasFullCopy: boolean;
   /** null when it can't be shown right now (e.g. Drive is disconnected). */
   thumbnailUrl: string | null;
 };
@@ -44,6 +46,7 @@ export function groupPhotosByStory(
     processed_width: number | null;
     processed_height: number | null;
     in_current_version: boolean;
+    has_full_copy?: boolean | null;
   }[],
   thumbnailFor: (
     mediaId: string,
@@ -74,6 +77,7 @@ export function groupPhotosByStory(
       width: row.processed_width,
       height: row.processed_height,
       inCurrentVersion: row.in_current_version,
+      hasFullCopy: row.has_full_copy === true,
       thumbnailUrl: thumbnailFor(row.media_id, backend),
     });
   }

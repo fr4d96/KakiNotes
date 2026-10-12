@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-11 (My Photos: a page listing every photo on a contributor's stories, with a Download button per photo; see the entry at the end of this file); earlier, 2026-10-09 (photo tiles: Details sits on the photo, shown on hover, and a zoom icon is always in the corner; see the entry at the end of this file); earlier, 2026-10-08 (drag to reorder photos: contributors drag photos in the editor's Photos step, by mouse or press-and-hold on a phone; see the entry at the end of this file); earlier the same day (move existing photos to Drive: a button on Account → Google Drive moves a contributor's existing Supabase photos into their Drive, one at a time, and fixes the Drive proxy 404ing every published Drive photo for readers; see the entry at the end of this file); earlier the same day (Google Drive slice 3 plus story folders: a Drive-connected contributor's new photos go to their own Google Drive, one folder per story, and nothing is stored in Supabase for them; see the entry at the end of this file); earlier, 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
+Last updated: 2026-10-11 (full-quality copies: a Drive-connected contributor's new photos also keep a full-resolution, location-stripped copy in their Drive, downloadable only by them from My Photos; see the entry at the end of this file); earlier the same day (My Photos: a page listing every photo on a contributor's stories, with a Download button per photo; see the entry at the end of this file); earlier, 2026-10-09 (photo tiles: Details sits on the photo, shown on hover, and a zoom icon is always in the corner; see the entry at the end of this file); earlier, 2026-10-08 (drag to reorder photos: contributors drag photos in the editor's Photos step, by mouse or press-and-hold on a phone; see the entry at the end of this file); earlier the same day (move existing photos to Drive: a button on Account → Google Drive moves a contributor's existing Supabase photos into their Drive, one at a time, and fixes the Drive proxy 404ing every published Drive photo for readers; see the entry at the end of this file); earlier the same day (Google Drive slice 3 plus story folders: a Drive-connected contributor's new photos go to their own Google Drive, one folder per story, and nothing is stored in Supabase for them; see the entry at the end of this file); earlier, 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
 review, and a photo upload no longer leaves every later save rejected as stale; see the entry at
 the end of this file); earlier, 2026-09-24 (shipped as 1.0.0: story editor fixes — bold/italic toggle off, a
 "free" travel style, line breaks kept on the review screen, uploads no longer lost to a
@@ -9620,3 +9620,53 @@ image/png`, `attachment`, `private, no-store`, and **404** to a signed-out reque
   proxy). Worth watching in production; a smaller thumbnail derivative would be the fix.
 - The "Reconnect" state wasn't triggered in the browser (that would mean disconnecting the test
   account's real Drive); it's covered by the component test.
+
+## 2026-10-11 — Full-quality copies for Drive-connected contributors
+
+Owner decision ("option B", Drive only). Every **new** photo a Drive-connected contributor uploads now
+gets two cleaned copies in their own Drive. One is the display copy (unchanged: long edge ≤ 2000px,
+what readers see). The other is a **full-resolution** copy in a **"Full quality"** subfolder of the
+story's folder, numbered to match (`03.jpg` ↔ `Full quality/03.jpg`). Both have all metadata (EXIF,
+GPS, XMP, IPTC) removed. The full copy is **never public**: only the photo's own contributor can
+download it, from My Photos, where Download picks it automatically ("Download full quality").
+Kakinotes-stored photos stay display-only. Photos uploaded before today have no full copy, because
+their raw upload was already deleted. The Drive note in the upload area and the Account → Google Drive
+explainer now say this.
+
+**How:** after the upload responds, the server re-encodes the raw upload, which is still in memory,
+at full size (`processFullResolutionBytesInMemory` in `lib/story/image-pipeline.ts`: same sniffing,
+HEIC conversion, 50MP limit and rotation as the display copy; JPEG quality 92 stepping down under 40
+MiB; PNG stays lossless). It uploads that into "Full quality", records it, and **only then** deletes
+the raw staging file. It's best effort: if anything fails, the photo is just display-only and the raw
+file is still deleted. If recording fails, the uploaded full copy is deleted. Folder sync renumbers
+the full copies to match the display order (`renumberStoryMedia` takes explicit positions).
+Measured: a worst-case 48MP photo re-encodes in about 5 s to about 11 MB using about 470 MB of
+memory, well inside the 60 s limit.
+
+**Database** (`20261011021351_story_media_full_quality_copy`, applied via MCP; additive for the live
+app): six nullable `story_media` columns with an all-or-nothing check (Drive rows with a display copy
+only), `record_drive_media_full_copy` (story owner only, once), `list_story_drive_full_copies_for_sync`,
+`get_drive_full_copy_for_owner` (owner only: deliberately not the proxy's reader/staff lookup), and
+`list_my_photos()` recreated with `has_full_copy`. **Serving:** `/media/<id>?full=1` uses only
+`get_drive_full_copy_for_owner` and never falls back to the reader lookup. It always answers
+`attachment` (`kakinotes-photo-<id8>-full.<ext>`) with `private, no-store`, or a 404.
+
+**Verified.** `npm run verify` passes (1,466 tests; new: full-res encoder 6, including the GPS strip
+and HEIC; finalize ordering and failure cases 3; proxy `?full=1` 2; download names 1; view 1). No new
+lint warnings. **End to end** as the Drive test account, uploading a fictional 4032×3024, 4.5 MB
+photo with camera and GPS EXIF through the real editor: the display copy is 2000×1500 (348 KB), the
+full copy is 4032×3024 JPEG (4.5 MB) in the subfolder, and nothing is in Kakinotes storage. Fetched
+as the owner: `200`, `attachment; …-full.jpg`, `private, no-store`, 4032×3024, and **no** EXIF marker
+or camera make/model in the bytes. A signed-out visitor gets 404. SQL impersonation of
+`get_drive_full_copy_for_owner`: owner 1 row, another contributor 0, moderator 0. My Photos showed
+"In your Google Drive · Full quality" and "Download full quality" on that photo only. The test photo
+was then removed with the editor's Delete photo and the draft is back in its original order. Its two
+Drive files stay in the test account's Drive, since Delete photo never deletes Drive files.
+
+**Not covered / follow-ups:**
+
+- The move tool (Supabase → Drive) still moves only the display copy. It could make a full copy from
+  the raw original, which still exists for most Kakinotes photos, before deleting it.
+- Deleting a photo leaves both of its Drive files in place (existing behaviour for display copies
+  too).
+- Not yet tried with a real 48MP iPhone HEIC on Vercel (the memory and time measurements were local).

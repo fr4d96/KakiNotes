@@ -8,8 +8,10 @@
 export function photoDownloadFilename(
   mediaId: string,
   processedMimeType: string | null | undefined,
+  variant: "display" | "full" = "display",
 ): string {
   const ext = processedMimeType === "image/png" ? "png" : "jpg";
   const shortId = mediaId.replace(/[^0-9a-f]/gi, "").slice(0, 8) || "photo";
-  return `kakinotes-photo-${shortId}.${ext}`;
+  const suffix = variant === "full" ? "-full" : "";
+  return `kakinotes-photo-${shortId}${suffix}.${ext}`;
 }

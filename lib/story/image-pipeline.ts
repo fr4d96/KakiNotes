@@ -938,3 +938,93 @@ export async function mintMediaDownloadSignedUrl(
   }
   return data.signedUrl;
 }
+
+// Full-quality copy (owner decision 2026-10-11, "option B"): the photo at its
+// original resolution, metadata stripped, for the contributor's own Drive.
+// High JPEG quality first, stepping down only to stay under the ceiling.
+// Measured on a worst-case (noisy) 48MP photo: ~5s and ~11MB at q92.
+const FULL_JPEG_QUALITY_STEPS = [92, 88, 85, 80] as const;
+export const MAX_FULL_COPY_BYTES = 40 * 1024 * 1024;
+
+export type FullResolutionBytes = {
+  bytes: Buffer;
+  mimeType: "image/jpeg" | "image/png";
+  width: number;
+  height: number;
+};
+
+/**
+ * Bytes-in/bytes-out like processImageBytesInMemory(), with the same input
+ * checks (format sniffing, HEIC transcode, MAX_INPUT_PIXELS, no animation),
+ * but NO resize: it keeps every pixel and only strips metadata (sharp writes
+ * no EXIF/GPS/XMP/ICC unless asked to) and applies the EXIF rotation first.
+ * A PNG stays a lossless PNG unless that would pass MAX_FULL_COPY_BYTES, in
+ * which case it becomes a high-quality JPEG. Never stores anything.
+ */
+export async function processFullResolutionBytesInMemory(
+  original: Buffer,
+): Promise<FullResolutionBytes> {
+  let workingBytes = original;
+  if (sniffUploadMimeType(original) === "image/heic") {
+    try {
+      workingBytes = await transcodeHeicToJpeg(original);
+    } catch (err) {
+      throw err instanceof HeicTranscodeError
+        ? err
+        : new Error("unrecognized_image_format");
+    }
+  }
+  const sniffed = sniffImageMimeType(workingBytes);
+  if (!sniffed) throw new Error("unrecognized_image_format");
+
+  let metadata: Metadata;
+  try {
+    metadata = await sharp(workingBytes, {
+      limitInputPixels: MAX_INPUT_PIXELS,
+      pages: -1,
+    }).metadata();
+  } catch {
+    throw new Error("decode_failed");
+  }
+  if ((metadata.pages ?? 1) > 1) throw new Error("animated_not_supported");
+  if (!metadata.width || !metadata.height) throw new Error("decode_failed");
+
+  const base = sharp(workingBytes, {
+    limitInputPixels: MAX_INPUT_PIXELS,
+  }).rotate();
+
+  try {
+    if (sniffed === "image/png") {
+      const png = await base
+        .clone()
+        .png({ compressionLevel: 9 })
+        .toBuffer({ resolveWithObject: true });
+      if (png.data.byteLength <= MAX_FULL_COPY_BYTES) {
+        return {
+          bytes: png.data,
+          mimeType: "image/png",
+          width: png.info.width,
+          height: png.info.height,
+        };
+      }
+    }
+    const jpeg = await encodeJpegUnderBudget(
+      base,
+      FULL_JPEG_QUALITY_STEPS,
+      MAX_FULL_COPY_BYTES,
+    );
+    if (jpeg.data.byteLength > MAX_FULL_COPY_BYTES) {
+      throw new Error("processed_too_large");
+    }
+    return {
+      bytes: jpeg.data,
+      mimeType: "image/jpeg",
+      width: jpeg.info.width,
+      height: jpeg.info.height,
+    };
+  } catch (err) {
+    if (err instanceof Error && err.message === "processed_too_large")
+      throw err;
+    throw new Error("reencode_failed");
+  }
+}

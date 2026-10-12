@@ -179,6 +179,12 @@ function PhotoCard({
 
       <p className="text-xs text-foreground/65">
         {onDrive ? t("whereDrive") : t("whereKakinotes")}
+        {photo.hasFullCopy && (
+          <span className="font-medium text-foreground/80">
+            {" "}
+            · {t("fullQuality")}
+          </span>
+        )}
         {!photo.inCurrentVersion && (
           <span className="text-foreground/50"> · {t("earlierVersion")}</span>
         )}
@@ -196,10 +202,18 @@ function PhotoCard({
           type="button"
           onClick={() => void download()}
           disabled={downloading}
-          aria-label={t("downloadLabel", { photo: label })}
+          aria-label={
+            photo.hasFullCopy
+              ? t("downloadFullLabel", { photo: label })
+              : t("downloadLabel", { photo: label })
+          }
           className="rounded-md border border-border-subtle px-2 py-1.5 text-xs font-medium disabled:opacity-60"
         >
-          {downloading ? t("preparing") : t("download")}
+          {downloading
+            ? t("preparing")
+            : photo.hasFullCopy
+              ? t("downloadFull")
+              : t("download")}
         </button>
       )}
 

@@ -34,6 +34,12 @@ Plain-language terms used below:
 
 ## 1. Summary — what changes for a contributor
 
+**Update 2026-10-11 (full-quality copies):** a Drive-connected contributor's new photos now get a
+second stripped derivative, a full-resolution copy in the story folder's "Full quality" subfolder,
+owner-only and never public. Where this doc says the display derivative is "the ONLY form of the
+image ever written to Drive", read it as the only form written _for public use_. See
+docs/implementation-status.md.
+
 Today: every contributor's story images live in Supabase. A device upload
 goes into a private bucket, gets processed, and (once approved) a
 derivative is copied into the public bucket.

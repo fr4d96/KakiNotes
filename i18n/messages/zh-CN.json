@@ -545,7 +545,7 @@
     },
     "drive": {
       "notAvailableHere": "此部署环境暂不支持连接 Google Drive。",
-      "notConnectedExplainer": "连接你的 Google Drive 后，以后上传的新照片会存到你自己的 Drive，而不是 Kakinotes。你已经上传的照片不受影响，在你连接之前什么都不会改变。",
+      "notConnectedExplainer": "连接你的 Google Drive 后，以后上传的新照片会存到你自己的 Drive，而不是 Kakinotes，并且每张照片都会在那里保留一份原图画质的副本。你已经上传的照片不受影响，在你连接之前什么都不会改变。",
       "connect": "连接 Google Drive",
       "connectedTitle": "已连接 Google Drive",
       "connectedAs": "已连接账号：{email}",
@@ -856,7 +856,7 @@
     },
     "photos": {
       "dropzone": "把图片拖到这里，或点击浏览文件",
-      "driveNote": "照片会保存到你的 Google Drive。",
+      "driveNote": "照片会保存到你的 Google Drive，每张还会保留一份原图画质的副本。",
       "count": "{count} 张照片",
       "placedCount": "已放入故事 {count} 张",
       "badges": {
@@ -1247,6 +1247,9 @@
     "preparing": "准备中…",
     "reconnect": "重新连接 Google Drive",
     "reconnectToSee": "重新连接 Google Drive 后才能看到这张照片。",
-    "cantShow": "这张照片暂时无法显示。"
+    "cantShow": "这张照片暂时无法显示。",
+    "fullQuality": "原图画质",
+    "downloadFull": "下载原图画质",
+    "downloadFullLabel": "下载{photo}（原图画质）"
   }
 }

@@ -545,7 +545,7 @@
     },
     "drive": {
       "notAvailableHere": "Google Drive connection isn't available on this deployment yet.",
-      "notConnectedExplainer": "Connect your Google Drive and, from then on, new photos you upload go to your own Drive instead of Kakinotes. Nothing changes for photos you've already uploaded, and nothing changes until you connect.",
+      "notConnectedExplainer": "Connect your Google Drive and, from then on, new photos you upload go to your own Drive instead of Kakinotes, and you also keep a full-quality copy of each one there. Nothing changes for photos you've already uploaded, and nothing changes until you connect.",
       "connect": "Connect Google Drive",
       "connectedTitle": "Google Drive is connected",
       "connectedAs": "Connected as {email}",
@@ -856,7 +856,7 @@
     },
     "photos": {
       "dropzone": "Drag and drop images here, or click to browse",
-      "driveNote": "Photos are saved to your Google Drive.",
+      "driveNote": "Photos are saved to your Google Drive, with a full-quality copy of each one.",
       "count": "{count, plural, one {# photo} other {# photos}}",
       "placedCount": "{count} in your story",
       "badges": {
@@ -1247,6 +1247,9 @@
     "preparing": "Preparing…",
     "reconnect": "Reconnect Google Drive",
     "reconnectToSee": "Reconnect Google Drive to see this photo.",
-    "cantShow": "This photo can't be shown right now."
+    "cantShow": "This photo can't be shown right now.",
+    "fullQuality": "Full quality",
+    "downloadFull": "Download full quality",
+    "downloadFullLabel": "Download {photo} in full quality"
   }
 }

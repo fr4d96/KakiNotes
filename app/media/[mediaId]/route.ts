@@ -74,6 +74,15 @@ export async function GET(
   }
 
   const supabase = await createClient();
+
+  // ?full=1: the full-quality copy (owner decision 2026-10-11). A separate,
+  // owner-only lookup -- never get_drive_media_for_proxy(), which also
+  // answers for readers and staff. Always a private download; zero rows
+  // (anyone else, or no full copy) is the same 404 as everything else here.
+  if (request.nextUrl.searchParams.get("full") === "1") {
+    return serveFullQualityCopy(supabase, parsedId.data);
+  }
+
   const { data, error } = await supabase.rpc("get_drive_media_for_proxy", {
     p_media_id: parsedId.data,
   });
@@ -154,4 +163,54 @@ export async function GET(
   }
 
   return new NextResponse(new Uint8Array(bytes), { status: 200, headers });
+}
+
+async function serveFullQualityCopy(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  mediaId: string,
+): Promise<NextResponse> {
+  const { data, error } = await supabase.rpc("get_drive_full_copy_for_owner", {
+    p_media_id: mediaId,
+  });
+  if (error) {
+    console.error("get_drive_full_copy_for_owner failed", {
+      mediaId,
+      error: error.message,
+    });
+    return notFound();
+  }
+  const row = (data ?? [])[0];
+  if (
+    !row ||
+    !row.owner_user_id ||
+    !ALLOWED_PROXY_MIME_TYPES.has(row.full_mime_type)
+  ) {
+    return notFound();
+  }
+
+  let bytes: Buffer;
+  try {
+    const accessToken = await getAccessToken(row.owner_user_id);
+    bytes = await downloadFileBytes(accessToken, row.drive_full_file_id);
+  } catch (err) {
+    console.error("Drive proxy full-copy fetch failed", {
+      mediaId,
+      error: err instanceof Error ? err.message : err,
+    });
+    return driveFailure();
+  }
+
+  return new NextResponse(new Uint8Array(bytes), {
+    status: 200,
+    headers: {
+      "Content-Type": row.full_mime_type,
+      "X-Content-Type-Options": "nosniff",
+      "Cache-Control": "private, no-store",
+      "Content-Disposition": `attachment; filename="${photoDownloadFilename(
+        mediaId,
+        row.full_mime_type,
+        "full",
+      )}"`,
+    },
+  });
 }
