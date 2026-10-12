@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/fr4d96/KakiNotes/compare/v1.7.0...v1.8.0) (2026-10-12)
+
+
+### Features
+
+* **drive:** keep a full-quality copy of each new Drive photo ([7900c08](https://github.com/fr4d96/KakiNotes/commit/7900c08d960cc331fef2fe27507a561a6d48774f))
+
 ## [1.7.0](https://github.com/fr4d96/KakiNotes/compare/v1.6.0...v1.7.0) (2026-10-11)
 
 ### What's new for contributors
