@@ -23,6 +23,23 @@ export type ActiveRegion = {
   slug: string;
   islandOrGrouping: string | null;
   name_zh_cn: string | null;
+  /**
+   * The slug of the country this region belongs to (regions.country_id ->
+   * countries.slug). Always present -- regions.country_id is NOT NULL --
+   * so a client that fetches every active region (no countrySlug filter)
+   * can still filter/group by country itself, e.g. the Places step's
+   * client-side region filter and the moderation queue's region-by-country
+   * optgroup.
+   */
+  countrySlug: string;
+};
+
+export type ActiveCountry = {
+  id: string;
+  slug: string;
+  code: string;
+  name: string;
+  name_zh_cn: string | null;
 };
 
 export type ActiveDestination = {
@@ -82,20 +99,54 @@ export async function listActiveRegions(
   }
   let query = supabase
     .from("regions")
-    .select("id, name, slug, island_or_grouping, name_zh_cn")
+    .select("id, name, slug, island_or_grouping, name_zh_cn, country_id")
     .eq("active", true);
   if (countryId) {
     query = query.eq("country_id", countryId);
   }
   const { data, error } = await query.order("name");
   if (error) throw error;
-  return (data ?? []).map((r) => ({
+  const rows = data ?? [];
+  if (rows.length === 0) return [];
+
+  // Two plain queries rather than an embedded `countries(slug)` select --
+  // same reasoning as resolveCountryId's own comment: this keeps working
+  // against a hand-edited types/database.ts that may not yet describe the
+  // regions -> countries relationship.
+  const countryIds = [...new Set(rows.map((r) => r.country_id))];
+  const { data: countryRows, error: countryError } = await supabase
+    .from("countries")
+    .select("id, slug")
+    .in("id", countryIds);
+  if (countryError) throw countryError;
+  const countrySlugById = new Map(
+    (countryRows ?? []).map((c) => [c.id, c.slug] as const),
+  );
+
+  return rows.map((r) => ({
     id: r.id,
     name: r.name,
     slug: r.slug,
     islandOrGrouping: r.island_or_grouping,
     name_zh_cn: r.name_zh_cn,
+    countrySlug: countrySlugById.get(r.country_id) ?? "",
   }));
+}
+
+/**
+ * Active countries for the Places step's Country select. Mirrors the
+ * `active` retirement model every other lookup here uses (the select would
+ * otherwise offer a country no longer open to new authoring).
+ */
+export async function listActiveCountries(): Promise<ActiveCountry[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("countries")
+    .select("id, slug, code, name, name_zh_cn")
+    .eq("active", true)
+    .order("name");
+  if (error) throw error;
+  return data ?? [];
 }
 
 /**

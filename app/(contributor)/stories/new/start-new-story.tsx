@@ -36,7 +36,12 @@ const MAX_TITLE_LENGTH = 200;
  * (pdf-import-picker.tsx), which has always asked for a title first too --
  * the two entry points now behave the same way.
  */
-export function StartNewStory() {
+export function StartNewStory({
+  defaultCountrySlug,
+}: {
+  /** From /stories/new's own `?country=`, already validated against COUNTRY_SLUGS. */
+  defaultCountrySlug?: string;
+}) {
   const t = useTranslations("newStory");
   const tCommon = useTranslations("common");
   const [state, formAction, pending] = useActionState(
@@ -56,6 +61,9 @@ export function StartNewStory() {
       <p className="mt-2 text-sm text-muted-foreground">{t("intro")}</p>
 
       <form action={formAction} className="mt-8 space-y-5" noValidate>
+        {defaultCountrySlug && (
+          <input type="hidden" name="country" value={defaultCountrySlug} />
+        )}
         <div>
           <label
             htmlFor="new-story-title"

@@ -178,7 +178,8 @@
       "consentRequired": "You must confirm you have permission to publish this story.",
       "termsVersionMissing": "Missing terms version.",
       "selectPage": "Select at least one page.",
-      "changeNoteRequired": "Describe what needs to change."
+      "changeNoteRequired": "Describe what needs to change.",
+      "invalidCountry": "Choose a valid country."
     },
     "pdf": {
       "empty": "The PDF file is empty.",
@@ -745,7 +746,10 @@
       "unmatchedPlace": "We could not match that place to a {country} region — use \"Add a location manually\" below.",
       "photosHint": "Add photos here. They show in a gallery with your story.",
       "unmatchedPlaceNamed": "We could not match \"{label}\" to a {country} region — use \"Add a location manually\" below.",
-      "noteToEditorsHint": "(optional, private, never published)"
+      "noteToEditorsHint": "(optional, private, never published)",
+      "country": "Country",
+      "countryLocked": "Country can't be changed after a story is published.",
+      "countryClearedNotice": "Locations for the previous country were cleared — add places in {country} below."
     },
     "tripDates": {
       "heading": "When did you travel?",
@@ -772,7 +776,7 @@
     },
     "place": {
       "heading": "Search for a place",
-      "placeholder": "Type a full place name, e.g. Queenstown",
+      "placeholder": "Type a full place name, e.g. {example}",
       "search": "Search",
       "searching": "Searching…",
       "unavailable": "Place search is unavailable right now — pick the region below instead.",
@@ -1264,7 +1268,8 @@
       "storiesMetaDescription": "Browse real, first-person Working Holiday Visa stories from New Zealand, filterable by region, tag, trip year, travel style, and reported cost.",
       "costsFraming": "What people actually spent on their Working Holiday Visa in New Zealand, built from the budgets contributors chose to share.",
       "aboutText": "Kakinotes collects and verifies real, detailed stories from Working Holiday Visa travellers in New Zealand, so the next traveller can read what the experience actually involved.",
-      "personalExperienceLabel": "One person's experience, not advice."
+      "personalExperienceLabel": "One person's experience, not advice.",
+      "placeExample": "Queenstown"
     },
     "china": {
       "name": "China",
@@ -1275,7 +1280,8 @@
       "costsFraming": "What people actually spent travelling in China, built from the budgets contributors chose to share.",
       "aboutText": "Kakinotes' China section collects and verifies real, detailed first-person travel stories from China, so the next traveller can read what the trip actually involved.",
       "personalExperienceLabel": "One person's experience, not advice.",
-      "madeFor": "Made for travellers exploring China"
+      "madeFor": "Made for travellers exploring China",
+      "placeExample": "Guangzhou"
     }
   }
 }

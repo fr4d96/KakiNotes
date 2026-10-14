@@ -5,7 +5,10 @@ import {
   parseModerationQueueSearchParams,
   MODERATION_QUEUE_PAGE_SIZE,
 } from "@/lib/validation/moderation";
-import { listActiveRegions } from "@/lib/story/active-lookups";
+import {
+  listActiveRegions,
+  listActiveCountries,
+} from "@/lib/story/active-lookups";
 import {
   SUBMISSION_KIND_LABELS,
   SOURCE_KIND_LABELS,
@@ -69,7 +72,20 @@ export default async function ModerationStoriesQueuePage({
   const rawParams = await searchParams;
   const filters = parseModerationQueueSearchParams(rawParams);
 
-  const regions = await listActiveRegions();
+  const [regions, countries] = await Promise.all([
+    listActiveRegions(),
+    listActiveCountries(),
+  ]);
+  // Grouped by country so the filter stays usable now that regions span
+  // more than one country (China added 2026-10-14) -- no change to what a
+  // moderator can actually filter by, just how the options are organized.
+  const countryNameBySlug = new Map(countries.map((c) => [c.slug, c.name]));
+  const regionsByCountry = new Map<string, typeof regions>();
+  for (const region of regions) {
+    const existing = regionsByCountry.get(region.countrySlug) ?? [];
+    existing.push(region);
+    regionsByCountry.set(region.countrySlug, existing);
+  }
 
   const offset = (filters.page - 1) * MODERATION_QUEUE_PAGE_SIZE;
   const status = filters.status ?? "submitted";
@@ -195,11 +211,20 @@ export default async function ModerationStoriesQueuePage({
               className={FIELD_CLASSES}
             >
               <option value="">Any region</option>
-              {regions.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
+              {[...regionsByCountry.entries()].map(
+                ([countrySlug, countryRegions]) => (
+                  <optgroup
+                    key={countrySlug}
+                    label={countryNameBySlug.get(countrySlug) ?? countrySlug}
+                  >
+                    {countryRegions.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ),
+              )}
             </select>
           </label>
           <label className="flex flex-col gap-1.5">

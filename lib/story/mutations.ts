@@ -107,6 +107,23 @@ export async function createEditorialImportDraftShell(
   return data?.[0] ?? null;
 }
 
+/**
+ * Changes an existing draft story's country (set_story_country() —
+ * supabase/migrations/20261014205738_set_story_country.sql). The RPC
+ * re-derives ownership/editor/admin itself and refuses once the story has
+ * ever been published, so storyId is never trusted as proof of ownership
+ * here -- same pattern as every other wrapper in this file.
+ */
+export async function setStoryCountry(storyId: string, countrySlug: string) {
+  await requireUser();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_story_country", {
+    p_story_id: storyId,
+    p_country_slug: countrySlug,
+  });
+  if (error) throw error;
+}
+
 export async function markEditorialDraftAwaitingApproval(storyId: string) {
   await requireUser();
   const supabase = await createClient();

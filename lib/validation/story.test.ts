@@ -14,6 +14,7 @@ import {
   revisionExpenseSchema,
   MAX_TAGS_PER_REVISION,
   TAG_MAX_LENGTH,
+  countrySlugSchema,
 } from "./story";
 
 describe("isSafeHref", () => {
@@ -477,5 +478,21 @@ describe("revisionExpenseSchema", () => {
       revisionExpenseSchema.safeParse({ categoryId: id, amountNzdCents: -1 })
         .success,
     ).toBe(false);
+  });
+});
+
+describe("countrySlugSchema", () => {
+  it("accepts every known country slug", () => {
+    expect(countrySlugSchema.safeParse("new-zealand").success).toBe(true);
+    expect(countrySlugSchema.safeParse("china").success).toBe(true);
+  });
+
+  it("rejects an unknown slug", () => {
+    expect(countrySlugSchema.safeParse("australia").success).toBe(false);
+  });
+
+  it("rejects a non-string value", () => {
+    expect(countrySlugSchema.safeParse(null).success).toBe(false);
+    expect(countrySlugSchema.safeParse(42).success).toBe(false);
   });
 });

@@ -178,7 +178,8 @@
       "consentRequired": "你必须确认自己有权发布这篇故事。",
       "termsVersionMissing": "缺少条款版本。",
       "selectPage": "请至少选择一页。",
-      "changeNoteRequired": "请说明需要修改什么。"
+      "changeNoteRequired": "请说明需要修改什么。",
+      "invalidCountry": "请选择一个有效的国家。"
     },
     "pdf": {
       "empty": "PDF 文件是空的。",
@@ -745,7 +746,10 @@
       "unmatchedPlace": "无法把这个地点匹配到{country}的某个地区 — 请使用下方的「手动添加地点」。",
       "photosHint": "在这里添加照片。照片会以相册形式显示在你的故事中。",
       "unmatchedPlaceNamed": "无法把「{label}」匹配到{country}的某个地区 — 请使用下方的「手动添加地点」。",
-      "noteToEditorsHint": "（可选，私密，不会公开）"
+      "noteToEditorsHint": "（可选，私密，不会公开）",
+      "country": "国家",
+      "countryLocked": "故事发布后无法更改国家。",
+      "countryClearedNotice": "已清除原国家的地点 — 请在下方添加{country}的地点。"
     },
     "tripDates": {
       "heading": "你是什么时候去的？",
@@ -772,7 +776,7 @@
     },
     "place": {
       "heading": "搜索地点",
-      "placeholder": "输入完整地名，例如 Queenstown",
+      "placeholder": "输入完整地名，例如 {example}",
       "search": "搜索",
       "searching": "搜索中…",
       "unavailable": "地点搜索暂时不可用 — 请改为在下方选择地区。",
@@ -1264,7 +1268,8 @@
       "storiesMetaDescription": "浏览来自新西兰的真实第一人称打工度假签证（WHV）故事，可按地区、标签、出行年份、旅行方式和记录的花费筛选。",
       "costsFraming": "人们在新西兰打工度假签证期间的真实花费，基于贡献者自愿分享的预算整理而成。",
       "aboutText": "Kakinotes 收集并核实来自新西兰打工度假旅人的真实详细故事，让下一位旅人能读到这段经历的真实样貌。",
-      "personalExperienceLabel": "个人经历分享，非专业建议。"
+      "personalExperienceLabel": "个人经历分享，非专业建议。",
+      "placeExample": "皇后镇"
     },
     "china": {
       "name": "中国",
@@ -1275,7 +1280,8 @@
       "costsFraming": "人们在中国旅行的真实花费，基于贡献者自愿分享的预算整理而成。",
       "aboutText": "Kakinotes 的中国板块收集并核实来自中国的真实详细第一人称旅行故事，让下一位旅人能读到这趟旅程的真实样貌。",
       "personalExperienceLabel": "个人经历分享，非专业建议。",
-      "madeFor": "为在中国旅行的人而建"
+      "madeFor": "为在中国旅行的人而建",
+      "placeExample": "广州"
     }
   }
 }

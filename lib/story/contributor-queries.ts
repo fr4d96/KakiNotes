@@ -146,6 +146,23 @@ export type StoryPreview = {
 };
 
 /**
+ * The slug of a draft story's own country (get_story_country(), owner/
+ * editor/admin-only, returns null rather than raising for anyone else or an
+ * unknown story) -- feeds the editor's Country select default and the
+ * published-story read-only country display.
+ */
+export async function getStoryCountry(storyId: string): Promise<string | null> {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_story_country", {
+    p_story_id: storyId,
+  });
+  if (error) throw error;
+  return data ?? null;
+}
+
+/**
  * Wraps get_story_preview() — the only RPC allowed to back both the edit
  * page's attached-media list and the dedicated preview page (never the
  * public get_published_story family, which is wrong for unpublished

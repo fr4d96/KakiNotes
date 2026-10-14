@@ -9812,6 +9812,70 @@ against a real database before this ships.
   `get_published_story_family(p_slug)`, NZ story pages built from `main` error against dev until
   story-map merges. That is not caused by this change.
 
+**Follow-up (same entry): the editor's location picker is now country-aware.** The previous pass
+added the data model and the public-facing routes; the "Places & tags" authoring step
+(`components/story/story-edit-form.tsx`) was still NZ-only — unscoped region list, `countrycodes=nz`
+hard-coded, every new story created as NZ. Fixed:
+
+- `lib/story/active-lookups.ts`: `listActiveRegions()` now always returns each region's
+  `countrySlug` (a second plain query against `countries`, not an embedded join — same reasoning as
+  the existing `resolveCountryId()` comment about not depending on a relationship
+  `types/database.ts` may not describe); new `listActiveCountries()`. `lib/story/contributor-
+queries.ts` gained `getStoryCountry()` (wraps the existing `get_story_country` RPC).
+- New migration `supabase/migrations/20261014205738_set_story_country.sql` —
+  `set_story_country(p_story_id uuid, p_country_slug text)`, `SECURITY DEFINER`, `set search_path =
+''`. Authorizes exactly like `_authorize_revision_edit()`: story owner (`_is_story_owner()`,
+  source-kind-partitioned) or the story's assigned editor (no admin bypass). Refuses outright once
+  `stories.published_revision_id is not null` — country is locked after first publication, because
+  `stories.country_id` is a property of the STORY row, not the revision, so changing it on published
+  content would move it between country sections with no moderation step in between (Engineering
+  Rule 11). Also refuses when the story has no editable draft revision
+  (`_revision_is_editable()`) or the slug is unknown/inactive. On an actual change it deletes the
+  current draft's `story_revision_locations` whose region belongs to the old country (the validate-
+  country trigger would reject them on the new `country_id` anyway) and bumps `stories.version`.
+  `EXECUTE` revoked from `public`/`anon`, granted to `authenticated`. `lib/story/mutations.ts` gained
+  `setStoryCountry()`; `types/database.ts` hand-edited to match (not regenerated — same reason as the
+  prior entry; this RPC does not exist on dev yet).
+- `lib/validation/story.ts`: `countrySlugSchema` (`z.enum(COUNTRY_SLUGS)`), used both by the new
+  `setCountryAction` (`app/(contributor)/stories/[id]/edit/actions.ts`) and by `createDraftAction`
+  (`app/(contributor)/stories/new/actions.ts`, now accepts an optional country from a hidden form
+  field `/stories/new?country=china` would set — validated server-side regardless of the page's own
+  check).
+- `components/story/story-edit-form.tsx`: new Country `<select>` above the location rows, options
+  from `listActiveCountries()`, labelled with `name_zh_cn` when reading in Chinese. Regions/
+  destinations are filtered client-side by the selected country's slug (server still enforces via
+  the trigger and the RPC). Changing country clears every location row that has a region (they all
+  belonged to the old country) with a short inline notice, keeps an empty manually-added row, calls
+  `setCountryAction` on its own mutation-queue slot BEFORE re-saving the (now empty) locations — the
+  location save is only enqueued from inside the country mutation's own success callback, so the
+  RPC's `country_id` update is guaranteed to land first. Reverts the select and the cleared rows if
+  the RPC refuses. Published stories (`lifecycle_status === "published"`) show the country as
+  read-only text with a hint instead of a select.
+- `components/story/location-search.tsx`: `countryCode`/`placeholderExample` props replace the
+  hard-coded `countrycodes=nz` and "e.g. Queenstown" placeholder. Region/destination matching is now
+  tolerant of a Chinese province/municipality's administrative suffix ("Guangdong Province", "Beijing
+  Municipality"/"北京市" against regions seeded as plain "Guangdong"/"Beijing") and matches against
+  `name_zh_cn` as well as `name`.
+- `app/(moderation)/moderation/stories/page.tsx`: the region filter now groups options by country
+  (`<optgroup>`) using the same `countrySlug` field — no behavior change, just usable once regions
+  span more than one country.
+- `i18n`: `editor.fields.country`/`countryLocked`/`countryClearedNotice`,
+  `countryContent.<segment>.placeExample`, `editor.place.placeholder` reparameterized to
+  `{example}` — all added to both `en.json` and `zh-CN.json`.
+- New tests: `components/story/location-search.test.ts` (Chinese suffix-tolerant matching, fixture
+  results only, no network calls), `components/story/story-edit-form.test.tsx` (country select
+  filtering, clearing locations on change with revert-on-failure, published read-only state,
+  placeholder/search scope per country), `lib/validation/story.test.ts` (`countrySlugSchema`),
+  `app/(contributor)/stories/[id]/edit/actions.test.ts` (`setCountryAction` validation and RPC-
+  refusal pass-through).
+- **Not done in this pass:** the contributor and editorial PDF-attach routes
+  (`app/(contributor)/stories/new/pdf-attach/route.ts`, `app/(editor)/editorial/new/pdf-attach/
+route.ts`) still create every draft as `new-zealand` (unchanged `createSelfServiceDraftShell(title)`
+  call with no country) — only the plain `/stories/new` title form threads a `?country=` default
+  through. Both PDF-import entry points reach the same country-aware editor afterward, so a
+  contributor can still fix it on the Places step, but the initial draft briefly exists as NZ.
+  Flagged as a follow-up rather than guessed at under this pass's time budget.
+
 **Not covered / follow-ups:**
 
 - A country-aware `get_expense_aggregates()` (now explicitly NZ-only) and a currency decision for

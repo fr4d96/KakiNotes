@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { extractMediaIds } from "@/lib/story/markdown-media";
+import { COUNTRY_SLUGS } from "@/lib/story/countries";
 
 // --- Safe-link validation -------------------------------------------------
 //
@@ -278,6 +279,18 @@ export const createDraftSchema = z.object({
 });
 
 export type CreateDraftInput = z.infer<typeof createDraftSchema>;
+
+/**
+ * Validated server-side wherever a client names a country for a story
+ * (new-story creation, the editor's Country select on the Places step) --
+ * never passed through to an RPC unchecked. COUNTRY_SLUGS is the same
+ * source of truth create_self_service_draft()/set_story_country() check
+ * against with their own "unknown country" guard; this just fails fast
+ * with a translatable message instead of a raised Postgres exception.
+ */
+export const countrySlugSchema = z.enum(COUNTRY_SLUGS, {
+  error: "story.invalidCountry",
+});
 
 // Locations/tags — same identifiers set_revision_locations /
 // set_revision_tags expect, validated client-side before every call

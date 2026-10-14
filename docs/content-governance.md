@@ -298,6 +298,19 @@ What keeps it safe:
 
 Moderators don't see the link on the review page any more, because it isn't part of a revision.
 
+### A story's country locks after first publication (Rule 11)
+
+`stories.country_id` (added 2026-10-14 for the China section) is a property of the **story** row,
+not the revision — unlike title/content/locations, which are revision-scoped, so an unapproved
+draft edit can never overwrite what is publicly visible. Country has no such revision-scoped shadow
+copy, so once a story has ever been published (`published_revision_id is not null`), its country is
+locked: `set_story_country()` refuses unconditionally, even while the story is reopened for editing
+after publication. Changing it would move already-public content between country sections (NZ
+Working Holiday stories vs. China general-travel stories — different framing, different disclaimer
+copy) with no moderation step in between. The editor's Places step shows the country as read-only
+text, with a short hint, once a story is published; it only offers the `<select>` on a
+never-published draft.
+
 ## Reporting
 
 - Any reader can report a published story or image for review (e.g. suspected impersonation, rights

@@ -2934,6 +2934,13 @@ export type Database = {
         };
         Returns: undefined;
       };
+      set_story_country: {
+        Args: {
+          p_country_slug: string;
+          p_story_id: string;
+        };
+        Returns: undefined;
+      };
       set_story_cover_media: {
         Args: {
           p_expected_version: number;
