@@ -9868,13 +9868,42 @@ queries.ts` gained `getStoryCountry()` (wraps the existing `get_story_country` R
   placeholder/search scope per country), `lib/validation/story.test.ts` (`countrySlugSchema`),
   `app/(contributor)/stories/[id]/edit/actions.test.ts` (`setCountryAction` validation and RPC-
   refusal pass-through).
-- **Not done in this pass:** the contributor and editorial PDF-attach routes
-  (`app/(contributor)/stories/new/pdf-attach/route.ts`, `app/(editor)/editorial/new/pdf-attach/
-route.ts`) still create every draft as `new-zealand` (unchanged `createSelfServiceDraftShell(title)`
-  call with no country) — only the plain `/stories/new` title form threads a `?country=` default
-  through. Both PDF-import entry points reach the same country-aware editor afterward, so a
-  contributor can still fix it on the Places step, but the initial draft briefly exists as NZ.
-  Flagged as a follow-up rather than guessed at under this pass's time budget.
+- **Follow-up (same entry): every draft-creation path now picks a country, not just the plain
+  `/stories/new` title form.**
+  - Contributor PDF path: `app/(contributor)/stories/new/import/page.tsx` resolves the same
+    `?country=` (validated, default `new-zealand`) the title form already uses and passes it to
+    `PdfImportPicker`, which now sends it as a `country` form field. `pdf-attach/route.ts` validates
+    it with `countrySlugSchema` (invalid → 400 with a validation message; missing → `new-zealand`,
+    back-compat) and passes it to `createSelfServiceDraftShell`.
+  - Editorial path: `create_editorial_import_draft` had no country parameter at all, so every
+    editor-created story (plain form and PDF) was NZ regardless of what the contributor path did.
+    New migration `supabase/migrations/20261014214918_editorial_draft_country.sql` adds a trailing
+    `p_country_slug text default 'new-zealand'`, dropping the 11-arg overload first (the same
+    CREATE-OR-REPLACE-creates-a-second-overload hazard `20261014085842_countries.sql` already hit
+    twice) and sets `stories.country_id` from it, rejecting an unknown/inactive slug with
+    `raise exception 'Unknown country: %'` — body otherwise byte-for-byte the live
+    `20260803090700_story_lifecycle_functions.sql` definition. `lib/story/mutations.ts`'s
+    `createEditorialImportDraftShell`/`createEditorialImportDraft` gained an optional `countrySlug`
+    (passed as `p_country_slug` only when given, so every pre-existing call keeps the RPC's own
+    default). `app/(editor)/editorial/new/actions.ts` and its `pdf-attach/route.ts` both validate an
+    optional `country` field with `countrySlugSchema` and pass it through.
+  - `app/(editor)/editorial/new/contributor-fieldset.tsx` (`TitleAndContributorFields`, already
+    shared by the blank-draft form and `PdfImportPicker`) gained a Country `<select>` — options from
+    `listActiveCountries()`, `name_zh_cn` when `locale === "zh-CN"`, default `new-zealand` — so both
+    editorial entry points submit the same field through the one shared `<form>` each owns.
+    `app/(editor)/editorial/new/page.tsx` fetches `listActiveCountries()` and `getLocale()` and
+    threads them through `NewImportForm` to both consumers.
+  - `types/database.ts` hand-edited for `create_editorial_import_draft`'s new `p_country_slug?`
+    (same reason as every other hand-edit in this file: the migration has not been applied to dev).
+  - New/updated tests: `app/(contributor)/stories/new/pdf-attach/route.test.ts` (new),
+    `app/(contributor)/stories/new/pdf-import-picker.test.tsx` (new),
+    `app/(editor)/editorial/new/actions.test.ts` (new), `app/(editor)/editorial/new/pdf-attach/
+route.test.ts` (+3 cases), `app/(editor)/editorial/new/pdf-import-picker.test.tsx` (+1 case, plus
+    every existing render call updated for the now-required `countries`/`locale` props).
+  - **Not applied to dev**: same documented limitation as every prior country-related migration in
+    this entry — no Docker/linked-project access in this worktree. The migration was written against
+    the live, currently-applied body only (not reconstructed from memory), but has not been executed
+    or regenerated into `types/database.ts` from a real schema.
 
 **Not covered / follow-ups:**
 

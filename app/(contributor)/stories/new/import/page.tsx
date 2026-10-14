@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { DEFAULT_COUNTRY_SLUG, isCountrySlug } from "@/lib/story/countries";
 import { PdfImportPicker } from "../pdf-import-picker";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -20,8 +21,20 @@ export const dynamic = "force-dynamic";
  * links across to the other, so a contributor who lands on the wrong one
  * is a single click from the right one.
  */
-export default async function NewStoryImportPage() {
+export default async function NewStoryImportPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ country?: string }>;
+}) {
   const t = await getTranslations("pdfImport");
+  const { country } = await searchParams;
+  // Same `?country=` contract as /stories/new (page.tsx) -- validated
+  // against COUNTRY_SLUGS rather than passed through. Unlike the blank-draft
+  // path this always resolves to a concrete slug (DEFAULT_COUNTRY_SLUG when
+  // absent/invalid) since PdfImportPicker sends it as a plain required form
+  // field, not an optional hidden one.
+  const countrySlug =
+    country && isCountrySlug(country) ? country : DEFAULT_COUNTRY_SLUG;
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -34,7 +47,7 @@ export default async function NewStoryImportPage() {
         </Link>
         .
       </p>
-      <PdfImportPicker />
+      <PdfImportPicker countrySlug={countrySlug} />
     </div>
   );
 }

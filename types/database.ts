@@ -1874,6 +1874,7 @@ export type Database = {
           p_content_json?: Json;
           p_contributor_id: string;
           p_contributor_note?: string;
+          p_country_slug?: string;
           p_excerpt?: string;
           p_title: string;
           p_total_expense_nzd_cents?: number;

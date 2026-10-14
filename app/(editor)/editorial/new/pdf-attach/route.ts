@@ -6,7 +6,7 @@ import {
   recordPdfImportAttempt,
   tooManyRequestsResponse,
 } from "@/lib/rate-limit";
-import { createDraftSchema } from "@/lib/validation/story";
+import { createDraftSchema, countrySlugSchema } from "@/lib/validation/story";
 import {
   pdfImportFileSchema,
   pdfImportPageNumbersSchema,
@@ -205,6 +205,26 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Same Country select as createEditorialImportAction
+  // (app/(editor)/editorial/new/actions.ts) -- re-validated here regardless
+  // of the page's own <select> (Engineering Rule 2). Missing entirely falls
+  // back to create_editorial_import_draft()'s own default ('new-zealand');
+  // present but invalid IS a request failure.
+  const countryField = formData.get("country");
+  let countrySlug: string | undefined;
+  if (countryField !== null) {
+    const countryParsed = countrySlugSchema.safeParse(countryField);
+    if (!countryParsed.success) {
+      return NextResponse.json(
+        {
+          error: countryParsed.error.issues[0]?.message ?? "Invalid country.",
+        },
+        { status: 400 },
+      );
+    }
+    countrySlug = countryParsed.data;
+  }
+
   const resolvedContributor = await resolveContributorIdFromFormData(formData);
   if (!resolvedContributor.ok) {
     return NextResponse.json(
@@ -219,6 +239,8 @@ export async function POST(request: NextRequest) {
     const created = await createEditorialImportDraftShell(
       resolvedContributor.contributorId,
       titleParsed.data.title,
+      undefined,
+      countrySlug,
     );
     if (!created) {
       return NextResponse.json(

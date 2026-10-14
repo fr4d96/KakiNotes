@@ -72,6 +72,7 @@ export async function createEditorialImportDraft(
   contributorId: string,
   input: RevisionInput,
   assignedEditorId?: string,
+  countrySlug?: string,
 ) {
   await requireUser();
   const supabase = await createClient();
@@ -79,6 +80,9 @@ export async function createEditorialImportDraft(
     p_contributor_id: contributorId,
     ...revisionArgs(input),
     p_assigned_editor_id: assignedEditorId,
+    // Omitted => RPC default ('new-zealand'), matching historical behaviour
+    // for every call site that predates countries.
+    ...(countrySlug ? { p_country_slug: countrySlug } : {}),
   });
   if (error) throw error;
   return data?.[0] ?? null;
@@ -95,6 +99,7 @@ export async function createEditorialImportDraftShell(
   contributorId: string,
   title: string,
   assignedEditorId?: string,
+  countrySlug?: string,
 ) {
   await requireUser();
   const supabase = await createClient();
@@ -102,6 +107,9 @@ export async function createEditorialImportDraftShell(
     p_contributor_id: contributorId,
     p_title: title,
     p_assigned_editor_id: assignedEditorId,
+    // Omitted => RPC default ('new-zealand'), matching historical behaviour
+    // for every call site that predates countries.
+    ...(countrySlug ? { p_country_slug: countrySlug } : {}),
   });
   if (error) throw error;
   return data?.[0] ?? null;

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { ContributorForEditorial } from "@/lib/story/editorial-queries";
+import type { ActiveCountry } from "@/lib/story/active-lookups";
+import { DEFAULT_COUNTRY_SLUG } from "@/lib/story/countries";
 
 /**
  * Title + "existing vs. new contributor" fields, factored out of
@@ -15,12 +17,26 @@ import type { ContributorForEditorial } from "@/lib/story/editorial-queries";
  * `resolveContributorIdFromFormData()` helper
  * (app/(editor)/editorial/new/actions.ts), so validation can never diverge
  * between the two entry points.
+ *
+ * Also carries the Country select (2026-10-14, China): same reasoning --
+ * a `<select name="country">` here is read by both consumers' own
+ * `FormData` and re-validated identically by
+ * `createEditorialImportAction`/the PDF-attach Route Handler
+ * (`countrySlugSchema`), so an editor picks the country once regardless of
+ * which import mode they use.
  */
 export function TitleAndContributorFields({
   contributors,
+  countries,
+  locale,
   idPrefix,
 }: {
   contributors: ContributorForEditorial[];
+  /** Options for the Country select -- listActiveCountries(). */
+  countries: ActiveCountry[];
+  /** "zh-CN" shows each country's name_zh_cn when present; anything else
+   * shows `name`. */
+  locale: string;
   /** Distinguishes DOM ids between the two forms when both could
    * theoretically be mounted (they aren't, today, since the parent only
    * renders one mode at a time — but distinct ids are cheap insurance
@@ -48,6 +64,27 @@ export function TitleAndContributorFields({
           maxLength={200}
           className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2 dark:bg-transparent"
         />
+      </div>
+
+      <div>
+        <label
+          htmlFor={`${idPrefix}-country`}
+          className="block text-sm font-medium"
+        >
+          Country
+        </label>
+        <select
+          id={`${idPrefix}-country`}
+          name="country"
+          defaultValue={DEFAULT_COUNTRY_SLUG}
+          className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2 dark:bg-transparent"
+        >
+          {countries.map((c) => (
+            <option key={c.id} value={c.slug}>
+              {locale === "zh-CN" && c.name_zh_cn ? c.name_zh_cn : c.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <fieldset>
