@@ -93,4 +93,18 @@ describe("StoryCard", () => {
     const links = container.querySelectorAll("a");
     expect(links).toHaveLength(1);
   });
+
+  it("links to /stories/<slug> by default (NZ, unchanged)", () => {
+    render(<StoryCard story={baseStory} />);
+    expect(
+      screen.getByRole("link", { name: /picking apples in hawke's bay/i }),
+    ).toHaveAttribute("href", `/stories/${baseStory.slug}`);
+  });
+
+  it("links under a custom basePath, for a /cn (China) card", () => {
+    render(<StoryCard story={baseStory} basePath="/cn/stories" />);
+    expect(
+      screen.getByRole("link", { name: /picking apples in hawke's bay/i }),
+    ).toHaveAttribute("href", `/cn/stories/${baseStory.slug}`);
+  });
 });

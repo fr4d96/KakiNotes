@@ -93,6 +93,14 @@ export type StoryEditFormProps = {
   initialMedia: RevisionMediaItem[];
   regions: ActiveRegion[];
   destinations: ActiveDestination[];
+  /**
+   * Display name of the story's own country, for the location-match-failure
+   * copy (editor.fields.unmatchedPlace(Named), now `{country}`-parameterized
+   * rather than hard-coding "New Zealand"). Defaults to New Zealand's name
+   * so every call site that predates China (editorial import, moderation
+   * preview) keeps its exact previous copy without passing anything new.
+   */
+  countryName?: string;
   /** Suggestions only -- a contributor may add any label they like. */
   tags: ActiveTag[];
   /**
@@ -298,6 +306,7 @@ export function StoryEditForm({
   initialMedia,
   regions,
   destinations,
+  countryName,
   tags,
   expenseCategories,
   showContentImport,
@@ -305,6 +314,8 @@ export function StoryEditForm({
   initialStep = "title",
 }: StoryEditFormProps) {
   const t = useTranslations("editor");
+  const tCountry = useTranslations("countryContent");
+  const resolvedCountryName = countryName ?? tCountry("newZealand.name");
   const tValidation = useTranslations("validation");
   const versionRef = useRef(initialVersion);
   const [conflict, setConflict] = useState(false);
@@ -982,8 +993,11 @@ export function StoryEditForm({
     if (!match) {
       setLocationSearchNotice(
         label
-          ? t("fields.unmatchedPlaceNamed", { label })
-          : t("fields.unmatchedPlace"),
+          ? t("fields.unmatchedPlaceNamed", {
+              label,
+              country: resolvedCountryName,
+            })
+          : t("fields.unmatchedPlace", { country: resolvedCountryName }),
       );
       return;
     }

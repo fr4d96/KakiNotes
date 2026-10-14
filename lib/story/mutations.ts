@@ -41,11 +41,17 @@ function revisionArgs(input: RevisionInput) {
  * blocked on. create_self_service_draft() itself defaults content_json to
  * '[]'::jsonb server-side.
  */
-export async function createSelfServiceDraftShell(title: string) {
+export async function createSelfServiceDraftShell(
+  title: string,
+  countrySlug?: string,
+) {
   await requireUser();
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("create_self_service_draft", {
     p_title: title,
+    // Omitted => RPC default ('new-zealand'), matching historical
+    // behaviour for every call site that predates countries.
+    ...(countrySlug ? { p_country_slug: countrySlug } : {}),
   });
   if (error) throw error;
   return data?.[0] ?? null;

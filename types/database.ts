@@ -473,9 +473,43 @@ export type Database = {
         };
         Relationships: [];
       };
+      countries: {
+        Row: {
+          active: boolean;
+          code: string;
+          created_at: string;
+          id: string;
+          name: string;
+          name_zh_cn: string | null;
+          slug: string;
+          updated_at: string;
+        };
+        Insert: {
+          active?: boolean;
+          code: string;
+          created_at?: string;
+          id?: string;
+          name: string;
+          name_zh_cn?: string | null;
+          slug: string;
+          updated_at?: string;
+        };
+        Update: {
+          active?: boolean;
+          code?: string;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          name_zh_cn?: string | null;
+          slug?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       regions: {
         Row: {
           active: boolean;
+          country_id: string;
           created_at: string;
           id: string;
           island_or_grouping: string | null;
@@ -486,6 +520,7 @@ export type Database = {
         };
         Insert: {
           active?: boolean;
+          country_id: string;
           created_at?: string;
           id?: string;
           island_or_grouping?: string | null;
@@ -496,6 +531,7 @@ export type Database = {
         };
         Update: {
           active?: boolean;
+          country_id?: string;
           created_at?: string;
           id?: string;
           island_or_grouping?: string | null;
@@ -504,7 +540,15 @@ export type Database = {
           slug?: string;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "regions_country_id_fkey";
+            columns: ["country_id"];
+            isOneToOne: false;
+            referencedRelation: "countries";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       stories: {
         Row: {
@@ -513,6 +557,7 @@ export type Database = {
           consent_revoked_at: string | null;
           consent_revoked_by: string | null;
           contributor_id: string;
+          country_id: string;
           created_at: string;
           created_by: string | null;
           current_draft_revision_id: string | null;
@@ -536,6 +581,7 @@ export type Database = {
           consent_revoked_at?: string | null;
           consent_revoked_by?: string | null;
           contributor_id: string;
+          country_id: string;
           created_at?: string;
           created_by?: string | null;
           current_draft_revision_id?: string | null;
@@ -559,6 +605,7 @@ export type Database = {
           consent_revoked_at?: string | null;
           consent_revoked_by?: string | null;
           contributor_id?: string;
+          country_id?: string;
           created_at?: string;
           created_by?: string | null;
           current_draft_revision_id?: string | null;
@@ -582,6 +629,13 @@ export type Database = {
             columns: ["contributor_id"];
             isOneToOne: false;
             referencedRelation: "contributors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "stories_country_id_fkey";
+            columns: ["country_id"];
+            isOneToOne: false;
+            referencedRelation: "countries";
             referencedColumns: ["id"];
           },
           {
@@ -1841,6 +1895,7 @@ export type Database = {
         Args: {
           p_content_json?: Json;
           p_contributor_note?: string;
+          p_country_slug?: string;
           p_excerpt?: string;
           p_title: string;
           p_total_expense_nzd_cents?: number;
@@ -2137,13 +2192,14 @@ export type Database = {
         }[];
       };
       get_published_story: {
-        Args: { p_slug: string };
+        Args: { p_country_slug?: string; p_slug: string };
         Returns: {
           attribution_type: Database["public"]["Enums"]["attribution_type"];
           attribution_value: string;
           content_json: Json;
           contributor_avatar_emoji: string;
           contributor_slug: string;
+          country_slug: string;
           excerpt: string;
           expenses: Json;
           published_at: string;
@@ -2159,6 +2215,10 @@ export type Database = {
           trip_year: number;
           work_types: Json;
         }[];
+      };
+      get_story_country: {
+        Args: { p_story_id: string };
+        Returns: string;
       };
       get_published_story_family: {
         Args: { p_slug: string };
@@ -2548,6 +2608,7 @@ export type Database = {
         Args: {
           p_contributor_id?: string;
           p_cost_band?: string;
+          p_country_slug?: string;
           p_cursor_id?: string;
           p_cursor_published_at?: string;
           p_destination_id?: string;

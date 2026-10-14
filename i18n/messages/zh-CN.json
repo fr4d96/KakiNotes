@@ -45,6 +45,9 @@
       "previous": "上一张",
       "next": "下一张",
       "counter": "第 {current} 张，共 {total} 张"
+    },
+    "countryToggle": {
+      "label": "选择国家板块"
     }
   },
   "nav": {
@@ -739,9 +742,9 @@
       "remove": "移除",
       "noteToEditors": "给编辑的备注",
       "addLocationManually": "手动添加地点",
-      "unmatchedPlace": "无法把这个地点匹配到新西兰的某个地区 — 请使用下方的「手动添加地点」。",
+      "unmatchedPlace": "无法把这个地点匹配到{country}的某个地区 — 请使用下方的「手动添加地点」。",
       "photosHint": "在这里添加照片。照片会以相册形式显示在你的故事中。",
-      "unmatchedPlaceNamed": "无法把「{label}」匹配到新西兰的某个地区 — 请使用下方的「手动添加地点」。",
+      "unmatchedPlaceNamed": "无法把「{label}」匹配到{country}的某个地区 — 请使用下方的「手动添加地点」。",
       "noteToEditorsHint": "（可选，私密，不会公开）"
     },
     "tripDates": {
@@ -1251,5 +1254,28 @@
     "fullQuality": "原图画质",
     "downloadFull": "下载原图画质",
     "downloadFullLabel": "下载{photo}（原图画质）"
+  },
+  "countryContent": {
+    "newZealand": {
+      "name": "新西兰",
+      "tagline": "来自新西兰打工度假签证（WHV）旅人的第一人称故事。",
+      "siteDescription": "Kakinotes 是一个公开档案库，收录了正在或已经完成新西兰打工度假签证（WHV）经历的旅人所撰写的详细第一人称故事。",
+      "storiesIntro": "来自亲历者的真实打工度假记录 — 按地区、标签、出行年份、旅行方式或记录的花费筛选，找到与你相似的那一篇。",
+      "storiesMetaDescription": "浏览来自新西兰的真实第一人称打工度假签证（WHV）故事，可按地区、标签、出行年份、旅行方式和记录的花费筛选。",
+      "costsFraming": "人们在新西兰打工度假签证期间的真实花费，基于贡献者自愿分享的预算整理而成。",
+      "aboutText": "Kakinotes 收集并核实来自新西兰打工度假旅人的真实详细故事，让下一位旅人能读到这段经历的真实样貌。",
+      "personalExperienceLabel": "个人经历分享，非专业建议。"
+    },
+    "china": {
+      "name": "中国",
+      "tagline": "来自中国的第一人称旅行故事。",
+      "siteDescription": "Kakinotes 的中国板块是一个公开档案库，收录来自中国的详细第一人称旅行故事 —— 是一般旅行记录，而非打工度假签证故事。",
+      "storiesIntro": "浏览所有已发布的中国旅行故事，可按地区和旅行年份搜索。",
+      "storiesMetaDescription": "来自中国的已发布第一人称旅行故事，可按地区和旅行年份搜索。",
+      "costsFraming": "人们在中国旅行的真实花费，基于贡献者自愿分享的预算整理而成。",
+      "aboutText": "Kakinotes 的中国板块收集并核实来自中国的真实详细第一人称旅行故事，让下一位旅人能读到这趟旅程的真实样貌。",
+      "personalExperienceLabel": "个人经历分享，非专业建议。",
+      "madeFor": "为在中国旅行的人而建"
+    }
   }
 }

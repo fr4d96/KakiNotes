@@ -39,13 +39,55 @@ export type ActiveTag = {
   slug: string;
 };
 
-export async function listActiveRegions(): Promise<ActiveRegion[]> {
+/**
+ * Resolves a country slug to id. `countries` is the same lookup-table
+ * access shape as regions/destinations/tags (anon- and authenticated-
+ * readable where `active = true`), so this is a plain typed table read, not
+ * an RPC. Returns null for an unknown/inactive slug rather than throwing --
+ * callers treat that as "scope to nothing", not a hard error.
+ */
+export async function resolveCountryId(
+  countrySlug: string,
+): Promise<string | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
+    .from("countries")
+    .select("id")
+    .eq("slug", countrySlug)
+    .eq("active", true)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.id ?? null;
+}
+
+/**
+ * `countrySlug` scopes the picker to one country's regions (product
+ * decision 4: "the region picker only shows that country's regions").
+ * Resolves the slug to `regions.country_id` first rather than an embedded
+ * join, so this keeps working against a hand-edited types/database.ts that
+ * may not yet describe the `regions -> countries` relationship. Omitted
+ * entirely => every active region across every country, which is still
+ * correct for any reader that doesn't (yet) know which country it's scoped
+ * to. An unknown/inactive country slug returns an empty list, never "every
+ * region" -- the picker must not silently widen on a bad slug.
+ */
+export async function listActiveRegions(
+  countrySlug?: string,
+): Promise<ActiveRegion[]> {
+  const supabase = await createClient();
+  let countryId: string | null = null;
+  if (countrySlug) {
+    countryId = await resolveCountryId(countrySlug);
+    if (!countryId) return [];
+  }
+  let query = supabase
     .from("regions")
     .select("id, name, slug, island_or_grouping, name_zh_cn")
-    .eq("active", true)
-    .order("name");
+    .eq("active", true);
+  if (countryId) {
+    query = query.eq("country_id", countryId);
+  }
+  const { data, error } = await query.order("name");
   if (error) throw error;
   return (data ?? []).map((r) => ({
     id: r.id,
@@ -56,13 +98,25 @@ export async function listActiveRegions(): Promise<ActiveRegion[]> {
   }));
 }
 
-export async function listActiveDestinations(): Promise<ActiveDestination[]> {
+/**
+ * `regionIds` scopes destinations to the regions already returned by a
+ * country-scoped `listActiveRegions()` call -- destinations have no direct
+ * `country_id` of their own (they inherit it through `region_id`), so this
+ * avoids a second countries join and keeps destinations and regions from
+ * ever disagreeing about which country they belong to.
+ */
+export async function listActiveDestinations(
+  regionIds?: readonly string[],
+): Promise<ActiveDestination[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("destinations")
     .select("id, name, slug, region_id, name_zh_cn")
-    .eq("active", true)
-    .order("name");
+    .eq("active", true);
+  if (regionIds) {
+    query = query.in("region_id", [...regionIds]);
+  }
+  const { data, error } = await query.order("name");
   if (error) throw error;
   return (data ?? []).map((d) => ({
     id: d.id,

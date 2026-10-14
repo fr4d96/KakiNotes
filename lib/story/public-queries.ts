@@ -90,13 +90,33 @@ export type PublishedStoriesFilter = {
   hasReportedExpense?: boolean;
   excludeStoryId?: string;
   search?: string;
+  /**
+   * Scopes the listing to one country (Rule 10/12: a /cn page must never
+   * show NZ stories and vice versa). Every call site in app/ passes this
+   * explicitly -- 'new-zealand' for the existing NZ routes, 'china' for the
+   * /cn routes -- rather than relying on the RPC's own 'new-zealand'
+   * default, so the filter is visible at the call site, not implicit.
+   */
+  countrySlug?: string;
 };
 
-/** Anonymous-safe: get_published_story() re-verifies every invariant itself. */
-export async function getPublishedStoryBySlug(slug: string) {
+/**
+ * Anonymous-safe: get_published_story() re-verifies every invariant itself.
+ * `countrySlug` scopes the lookup to one country -- a slug belonging to the
+ * other country returns no rows, identical to an unknown slug, which is
+ * what keeps /stories/[id] from ever rendering a China story by slug
+ * guessing and /cn/stories/[id] from ever rendering an NZ one (Rule 12).
+ * Omitted entirely => no country filter (used only by callers that don't
+ * yet know which country surface they're on).
+ */
+export async function getPublishedStoryBySlug(
+  slug: string,
+  countrySlug?: string,
+) {
   const supabase = createPublicClient();
   const { data, error } = await supabase.rpc("get_published_story", {
     p_slug: slug,
+    ...(countrySlug ? { p_country_slug: countrySlug } : {}),
   });
   if (error) throw error;
   return data?.[0] ?? null;
@@ -203,6 +223,7 @@ async function listPublishedStoriesRaw(filter: PublishedStoriesFilter = {}) {
     p_has_reported_expense: filter.hasReportedExpense,
     p_exclude_story_id: filter.excludeStoryId,
     p_search: filter.search,
+    p_country_slug: filter.countrySlug,
   });
   if (error) throw error;
   return data ?? [];
@@ -300,24 +321,71 @@ export type PublicDestination = {
 };
 export type PublicTag = { id: string; name: string };
 
-export async function listPublicRegions(): Promise<PublicRegion[]> {
+/**
+ * Resolves a country slug to id, cookie-free (same lookup-table shape as
+ * countries/regions/destinations/tags: anon-readable where `active = true`).
+ * Returns null for an unknown/inactive slug rather than throwing.
+ */
+export async function getPublicCountryId(
+  countrySlug: string,
+): Promise<string | null> {
   const supabase = createPublicClient();
   const { data, error } = await supabase
+    .from("countries")
+    .select("id")
+    .eq("slug", countrySlug)
+    .eq("active", true)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.id ?? null;
+}
+
+/**
+ * `countrySlug` scopes the filter picker to one country's regions (the
+ * /stories and /cn/stories filter bars must never offer the other
+ * country's places, Rule 10/12). Omitted => every active region. An
+ * unknown/inactive slug returns an empty list rather than widening to
+ * "every region".
+ */
+export async function listPublicRegions(
+  countrySlug?: string,
+): Promise<PublicRegion[]> {
+  const supabase = createPublicClient();
+  let countryId: string | null = null;
+  if (countrySlug) {
+    countryId = await getPublicCountryId(countrySlug);
+    if (!countryId) return [];
+  }
+  let query = supabase
     .from("regions")
     .select("id, name, slug, name_zh_cn")
-    .eq("active", true)
-    .order("name");
+    .eq("active", true);
+  if (countryId) {
+    query = query.eq("country_id", countryId);
+  }
+  const { data, error } = await query.order("name");
   if (error) throw error;
   return data ?? [];
 }
 
-export async function listPublicDestinations(): Promise<PublicDestination[]> {
+/**
+ * `regionIds` scopes destinations to a prior country-scoped
+ * `listPublicRegions()` call, the same pattern as
+ * lib/story/active-lookups.ts's listActiveDestinations() -- destinations
+ * have no direct country_id of their own, only through region_id.
+ */
+export async function listPublicDestinations(
+  regionIds?: readonly string[],
+): Promise<PublicDestination[]> {
   const supabase = createPublicClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("destinations")
     .select("id, name, slug, region_id, name_zh_cn")
-    .eq("active", true)
-    .order("name");
+    .eq("active", true);
+  if (regionIds) {
+    query = query.in("region_id", [...regionIds]);
+  }
+  const { data, error } = await query.order("name");
   if (error) throw error;
   return (data ?? []).map((d) => ({
     id: d.id,

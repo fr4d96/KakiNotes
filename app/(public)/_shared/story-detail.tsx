@@ -1,0 +1,403 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
+import {
+  getPublishedStoryBySlugDeduped,
+  getPublishedStoryMediaDeduped,
+  getPublicContributorDeduped,
+  coverOf,
+  listPublishedStories,
+  listPublicRegions,
+} from "@/lib/story/public-queries";
+import { getImageUrl } from "@/lib/story/image-url";
+import { imageBlockMediaIds } from "@/lib/validation/story";
+import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
+import { prefixedVocabName, vocabName } from "@/lib/i18n/vocab";
+import type { Locale } from "@/i18n/locales";
+import {
+  ContentBlockRenderer,
+  type ContentBlockMediaMap,
+} from "@/components/story/content-block-renderer";
+import { StoryGallery } from "@/components/story/story-gallery";
+import { PartOfStory, SubStoryList } from "@/components/story/story-family";
+import {
+  getPublishedStoryFamilyDeduped,
+  matchSubStoryCards,
+} from "@/lib/story/sub-stories";
+import { StoryCard } from "@/components/story/story-card";
+import { AttributionChip } from "@/components/story/attribution-chip";
+import { PersonalExperienceLabel } from "@/components/story/personal-experience-label";
+import { ReportStoryForm } from "@/components/story/report-story-form";
+import {
+  PublicExpenses,
+  type PublicExpense,
+} from "@/components/story/public-expenses";
+import { countryUrlPrefix, type CountrySlug } from "@/lib/story/countries";
+
+// Shared by /stories/[id] (NZ) and /cn/stories/[id] (China), parameterized
+// by `country` -- every data read below is scoped to it (Rule 10/12: a /cn
+// reader must never reach an NZ story by slug, and vice versa;
+// get_published_story()'s p_country_slug is what actually enforces that,
+// not just this page not linking to it). See ../stories/page.tsx /
+// ../cn/stories/page.tsx and the StoriesIndex shared component for the same
+// pattern on the index route.
+//
+// No `export const revalidate` -- unchanged reasoning from before this
+// split: this route never had a cacheable window (see the original
+// comment history in git blame of app/(public)/stories/[id]/page.tsx).
+
+type RegionEntry = {
+  region_name?: string;
+  region_name_zh_cn?: string | null;
+  destination_name?: string | null;
+  destination_name_zh_cn?: string | null;
+};
+
+/** Display labels ("destination, region"), in the visitor's language. */
+function regionLabels(regions: unknown, locale: Locale): string[] {
+  if (!Array.isArray(regions)) return [];
+  return regions
+    .map((entry) => {
+      const region = prefixedVocabName(entry, "region", locale);
+      if (!region) return null;
+      const destination = prefixedVocabName(entry, "destination", locale);
+      return destination ? `${destination}, ${region}` : region;
+    })
+    .filter((v): v is string => v !== null);
+}
+
+/** Bare region names only (no destination suffix) -- used to resolve a
+ * region id for the related-stories lookup, since get_published_story()
+ * returns region names, not ids (public-shape curation, docs/architecture.md). */
+function regionLabelsRaw(regions: unknown): string[] {
+  if (!Array.isArray(regions)) return [];
+  return regions
+    .map((r: RegionEntry) => r?.region_name)
+    .filter((v): v is string => Boolean(v));
+}
+
+function stringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v): v is string => typeof v === "string");
+}
+
+/**
+ * The expense breakdown, name-localized. get_published_story() emits each
+ * entry as `{name, name_zh_cn, amount_nzd_cents, note}` (Json), so this
+ * narrows defensively -- a malformed entry is dropped rather than rendered
+ * as "undefined". PublicExpenses only knows about the plain `name` field, so
+ * the Chinese pick happens here, before the data reaches it.
+ */
+function localizedExpenses(expenses: unknown, locale: Locale): PublicExpense[] {
+  if (!Array.isArray(expenses)) return [];
+  return expenses
+    .map((entry): PublicExpense | null => {
+      if (!entry || typeof entry !== "object") return null;
+      const row = entry as {
+        name?: unknown;
+        name_zh_cn?: unknown;
+        amount_nzd_cents?: unknown;
+        note?: unknown;
+      };
+      if (
+        typeof row.name !== "string" ||
+        typeof row.amount_nzd_cents !== "number"
+      ) {
+        return null;
+      }
+      return {
+        name: vocabName(
+          {
+            name: row.name,
+            name_zh_cn:
+              typeof row.name_zh_cn === "string" ? row.name_zh_cn : null,
+          },
+          locale,
+        ),
+        amount_nzd_cents: row.amount_nzd_cents,
+        note: typeof row.note === "string" ? row.note : null,
+      };
+    })
+    .filter((e): e is PublicExpense => e !== null);
+}
+
+function jsonLdScript(value: unknown) {
+  // Never string-concatenate JSON-LD -- build from a controlled object and
+  // escape "<" so a value containing "</script>" can't break out of the
+  // script tag. This is metadata output, not rendered story body content,
+  // but the same "never trust raw injected strings" discipline as
+  // Engineering Rule 7 applies.
+  return JSON.stringify(value).replace(/</g, "\\u003c");
+}
+
+export async function generateStoryDetailMetadata(
+  country: CountrySlug,
+  slug: string,
+): Promise<Metadata> {
+  const story = await getPublishedStoryBySlugDeduped(slug, country);
+  if (!story) return {};
+
+  // coverOf(), not `.find(is_cover)`: a story whose contributor never opened
+  // the per-photo Details panel had no cover at all, so it shipped no
+  // og:image and shared as a bare text card. See that helper for the rule,
+  // which the SQL readers now share.
+  //
+  // Only ever published media: getPublishedStoryMediaDeduped() wraps
+  // get_published_story_media(), which is scoped to the story's
+  // published_revision_id specifically (Rule 10) -- a draft/pending Drive
+  // (or supabase) photo can never appear in this list regardless of
+  // backend, so it can never end up in an og:image either.
+  const ogCoverMedia = coverOf(
+    await getPublishedStoryMediaDeduped(story.story_id),
+  );
+  const coverUrl = ogCoverMedia
+    ? getImageUrl({
+        id: ogCoverMedia.media_id,
+        storage_backend: ogCoverMedia.storage_backend ?? "supabase",
+        public_url: ogCoverMedia.public_url,
+      })
+    : null;
+
+  return {
+    title: story.title,
+    description: story.excerpt ?? undefined,
+    alternates: {
+      canonical: `${countryUrlPrefix(country)}/stories/${story.slug}`,
+    },
+    robots: { index: true, follow: true },
+    openGraph: {
+      type: "article",
+      title: story.title,
+      description: story.excerpt ?? undefined,
+      publishedTime: story.published_at,
+      images: coverUrl ? [{ url: coverUrl }] : undefined,
+    },
+  };
+}
+
+export async function StoryDetail({
+  country,
+  slug,
+}: {
+  country: CountrySlug;
+  slug: string;
+}) {
+  const [story, t, tCommon, locale] = await Promise.all([
+    getPublishedStoryBySlugDeduped(slug, country),
+    getTranslations("story"),
+    getTranslations("common"),
+    getLocale(),
+  ]);
+  if (!story) notFound();
+
+  const [media, activeRegions, family] = await Promise.all([
+    getPublishedStoryMediaDeduped(story.story_id),
+    listPublicRegions(country),
+    getPublishedStoryFamilyDeduped(story.slug),
+  ]);
+
+  // Sub stories as full cards. A sub story always has the same contributor
+  // as its main story, so one page of that contributor's published cards
+  // covers it -- uncached, like every read on this page. The family read
+  // decides WHICH stories show; the cards only add display fields.
+  const subStoryContributor =
+    family.subStories.length > 0 && story.contributor_slug
+      ? await getPublicContributorDeduped(story.contributor_slug)
+      : null;
+  const subStoryCards = matchSubStoryCards(
+    family.subStories,
+    subStoryContributor
+      ? await listPublishedStories({
+          countrySlug: country,
+          contributorId: subStoryContributor.contributor_id,
+          limit: 50,
+        })
+      : [],
+  );
+  const subStoryIds = new Set(subStoryCards.cards.map((s) => s.story_id));
+
+  const firstRegionName = regionLabelsRaw(story.regions)[0] ?? null;
+  const matchedRegionId = firstRegionName
+    ? activeRegions.find((r) => r.name === firstRegionName)?.id
+    : undefined;
+
+  const sameRegionMatches = matchedRegionId
+    ? await listPublishedStories({
+        countrySlug: country,
+        regionId: matchedRegionId,
+        excludeStoryId: story.story_id,
+        limit: 3,
+      })
+    : [];
+
+  const relatedStories =
+    sameRegionMatches.length >= 3
+      ? sameRegionMatches
+      : [
+          ...sameRegionMatches,
+          ...(await listPublishedStories({
+            countrySlug: country,
+            excludeStoryId: story.story_id,
+            limit: 3,
+          })),
+        ]
+          .filter(
+            (s, i, arr) =>
+              arr.findIndex((x) => x.story_id === s.story_id) === i,
+          )
+          .slice(0, 3);
+  // Already shown as sub story cards at the end of the story -- don't repeat them.
+  const relatedWithoutSubStories = relatedStories.filter(
+    (s) => !subStoryIds.has(s.story_id),
+  );
+
+  const parsedContent = normalizeStoryContentJson(story.content_json);
+
+  // Images placed inline (an "image" block referencing a mediaId) render
+  // via ContentBlockRenderer's own media map; the trailing StoryGallery
+  // only shows what's NOT already placed in the text, so nothing appears
+  // twice (see components/story/content-block-renderer.tsx's
+  // ContentBlockMediaMap comment and story-gallery.tsx's updated header).
+  const inlineMediaIds = new Set(
+    parsedContent ? imageBlockMediaIds(parsedContent) : [],
+  );
+  const contentMedia: ContentBlockMediaMap = {};
+  for (const m of media) {
+    const url = getImageUrl({
+      id: m.media_id,
+      storage_backend: m.storage_backend ?? "supabase",
+      public_url: m.public_url,
+    });
+    if (url) {
+      contentMedia[m.media_id] = {
+        url,
+        altText: m.alt_text,
+        decorative: m.decorative,
+      };
+    }
+  }
+  const galleryMedia = media.filter((m) => !inlineMediaIds.has(m.media_id));
+
+  const regions = regionLabels(story.regions, locale);
+  const tripLabel =
+    story.trip_start_date && story.trip_end_date
+      ? `${story.trip_start_date} – ${story.trip_end_date}`
+      : story.trip_year
+        ? String(story.trip_year)
+        : null;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: story.title,
+    description: story.excerpt ?? undefined,
+    datePublished: story.published_at,
+    // Untranslated on purpose: JSON-LD is machine-readable metadata for
+    // search engines, not page copy, and "Anonymous" is its stable value.
+    author: { "@type": "Person", name: story.attribution_value ?? "Anonymous" },
+  };
+
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
+      {/* Controlled JSON-LD only, see jsonLdScript() above -- never user content. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
+      />
+
+      <PartOfStory
+        parent={family.parent}
+        basePath={`${countryUrlPrefix(country)}/stories`}
+      />
+
+      <div className="mb-4">
+        <PersonalExperienceLabel countrySlug={country} />
+      </div>
+
+      <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+        {story.title}
+      </h1>
+      {story.excerpt ? (
+        <p className="mt-3 text-lg text-foreground/70">{story.excerpt}</p>
+      ) : null}
+
+      <div className="mt-6 flex flex-wrap items-center gap-6">
+        <AttributionChip
+          name={story.attribution_value ?? tCommon("anonymous")}
+          contributorSlug={story.contributor_slug}
+          avatarEmoji={story.contributor_avatar_emoji}
+          tripYear={tripLabel ? undefined : story.trip_year}
+          destination={regions[0] ?? null}
+        />
+        {tripLabel ? (
+          <span className="text-sm text-foreground/60">
+            {t("trip", { range: tripLabel })}
+          </span>
+        ) : null}
+      </div>
+
+      {(regions.length > 0 || stringList(story.tags).length > 0) && (
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {Array.from(new Set([...regions, ...stringList(story.tags)])).map(
+            (label) => (
+              <span
+                key={label}
+                className="rounded-full bg-tag-background px-2 py-0.5 text-xs text-tag-foreground"
+              >
+                {label}
+              </span>
+            ),
+          )}
+        </div>
+      )}
+
+      <div className="mt-8">
+        {parsedContent ? (
+          <ContentBlockRenderer blocks={parsedContent} media={contentMedia} />
+        ) : (
+          <p className="text-destructive">{t("contentUnavailable")}</p>
+        )}
+      </div>
+
+      {galleryMedia.length > 0 ? (
+        <div className="mt-10">
+          <StoryGallery images={galleryMedia} />
+        </div>
+      ) : null}
+
+      <PublicExpenses
+        totalCents={story.total_expense_nzd_cents}
+        tripStartDate={story.trip_start_date}
+        tripEndDate={story.trip_end_date}
+        expenses={localizedExpenses(story.expenses, locale)}
+      />
+
+      <SubStoryList
+        cards={subStoryCards.cards}
+        subStories={subStoryCards.unmatched}
+        basePath={`${countryUrlPrefix(country)}/stories`}
+      />
+
+      <div className="mt-10 border-t border-border-subtle pt-6">
+        <ReportStoryForm storyId={story.story_id} storySlug={story.slug} />
+      </div>
+
+      {relatedWithoutSubStories.length > 0 ? (
+        <div className="mt-16">
+          <h2 className="text-xl font-semibold tracking-tight">
+            {t("relatedStories")}
+          </h2>
+          <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-3">
+            {relatedWithoutSubStories.map((s) => (
+              <StoryCard
+                key={s.story_id}
+                story={s}
+                basePath={`${countryUrlPrefix(country)}/stories`}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
