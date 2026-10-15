@@ -1269,25 +1269,28 @@ export type Database = {
       story_revision_locations: {
         Row: {
           custom_destination_label: string | null;
+          custom_region_label: string | null;
           destination_id: string | null;
           id: string;
-          region_id: string;
+          region_id: string | null;
           revision_id: string;
           sort_order: number;
         };
         Insert: {
           custom_destination_label?: string | null;
+          custom_region_label?: string | null;
           destination_id?: string | null;
           id?: string;
-          region_id: string;
+          region_id?: string | null;
           revision_id: string;
           sort_order?: number;
         };
         Update: {
           custom_destination_label?: string | null;
+          custom_region_label?: string | null;
           destination_id?: string | null;
           id?: string;
-          region_id?: string;
+          region_id?: string | null;
           revision_id?: string;
           sort_order?: number;
         };

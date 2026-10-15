@@ -88,7 +88,13 @@ export type StoryEditFormProps = {
   initialTotalExpenseNzdCents: number | null;
   initialContributorNote: string;
   initialLocations: Array<{
-    regionId: string;
+    regionId: string | null;
+    /**
+     * A typed region/area, for one not in the curated `regions` table
+     * (20261015_custom_region_labels.sql). Mutually exclusive with
+     * regionId.
+     */
+    customRegionLabel: string | null;
     destinationId: string | null;
     /** A typed place, for somewhere not in `destinations` (20260903140000). */
     customDestinationLabel: string | null;
@@ -524,12 +530,14 @@ export function StoryEditForm({
   const resolvedCountryName = countryDisplayName(countrySlug);
 
   const [locations, setLocations] = useState(initialLocations);
-  // A manually-added row carries no region until the contributor picks one.
-  // Such a row must not tick the "Places" step or satisfy the submit gate --
-  // it is not a location yet, and saveLocations() does not persist it either.
-  // Everything that asks "how many locations are there" means this, not
-  // locations.length.
-  const completeLocationCount = locations.filter((l) => l.regionId).length;
+  // A manually-added row carries no region (curated OR typed) until the
+  // contributor picks/types one. Such a row must not tick the "Places" step
+  // or satisfy the submit gate -- it is not a location yet, and
+  // saveLocations() does not persist it either. Everything that asks "how
+  // many locations are there" means this, not locations.length.
+  const completeLocationCount = locations.filter(
+    (l) => l.regionId || l.customRegionLabel?.trim(),
+  ).length;
   const [locationSearchNotice, setLocationSearchNotice] = useState<
     string | null
   >(null);
@@ -1032,7 +1040,13 @@ export function StoryEditForm({
     setLocations([
       ...locations,
       {
-        regionId: "",
+        // No regionId -- the discriminant the render below, saveLocations()
+        // and completeLocationCount all use to tell a manual (typed-region)
+        // row from a curated one. Starts as an empty string, not null, so
+        // typing immediately updates a real string rather than replacing a
+        // null.
+        regionId: null,
+        customRegionLabel: "",
         destinationId: null,
         customDestinationLabel: null,
         sortOrder: locations.length,
@@ -1049,17 +1063,26 @@ export function StoryEditForm({
   }
 
   /**
-   * A manually-added row starts with NO region (see addManualLocation), and
-   * revisionLocationSchema requires `regionId: z.uuid()` -- so a half-filled
-   * row would fail validation and take the whole autosave down with it.
-   * Incomplete rows are therefore held in local state only and dropped here,
-   * with sortOrder renumbered over what actually gets sent so the saved
-   * order has no gaps. The row becomes real the moment a region is chosen.
+   * A manually-added row starts with NO region, curated or typed (see
+   * addManualLocation), and revisionLocationSchema requires exactly one of
+   * regionId/customRegionLabel -- so a half-filled row would fail
+   * validation and take the whole autosave down with it. Incomplete rows
+   * are therefore held in local state only and dropped here, with
+   * sortOrder renumbered over what actually gets sent so the saved order
+   * has no gaps. The row becomes real the moment a region is chosen or
+   * typed. A typed row's label is trimmed here too, so "  " alone still
+   * reads as incomplete rather than saving whitespace.
    */
   function saveLocations(next: typeof locations) {
     const complete = next
-      .filter((l) => l.regionId)
-      .map((l, i) => ({ ...l, sortOrder: i }));
+      .filter((l) => l.regionId || l.customRegionLabel?.trim())
+      .map((l, i) => ({
+        ...l,
+        customRegionLabel: l.regionId
+          ? null
+          : (l.customRegionLabel?.trim() ?? null),
+        sortOrder: i,
+      }));
     setSaving(true);
     queue.enqueue("locations", async () => {
       const result = await setLocationsAction(
@@ -1155,6 +1178,7 @@ export function StoryEditForm({
       ...locations,
       {
         regionId: match.regionId,
+        customRegionLabel: null,
         destinationId: match.destinationId,
         customDestinationLabel: match.customDestinationLabel,
         sortOrder: locations.length,
@@ -1716,77 +1740,132 @@ export function StoryEditForm({
                 )}
               </div>
               <div className="mt-2 space-y-2">
-                {locations.map((loc, i) => (
-                  <div key={i} className="flex flex-wrap items-center gap-2">
-                    <select
-                      aria-label={t("fields.region")}
-                      value={loc.regionId}
-                      onChange={(e) =>
-                        updateLocation(i, {
-                          regionId: e.target.value,
-                          // Changing region invalidates a looked-up
-                          // destination (it belongs to the old region, and
-                          // a trigger enforces that), but NOT a typed one:
-                          // a place name the contributor wrote is still
-                          // theirs, and re-typing it would be a silly tax
-                          // for fixing the region above it.
-                          destinationId: null,
-                        })
-                      }
-                      className="rounded-md border border-border-subtle px-2 py-1.5 text-sm dark:bg-transparent"
-                    >
-                      {/* Only present while the row has no region -- a
-                          manually-added one. It disappears once a real
-                          region is chosen, so it can never be re-selected
-                          to un-set a saved location (Remove does that). */}
-                      {!loc.regionId && (
-                        <option value="">{t("fields.chooseRegion")}</option>
-                      )}
-                      {countryRegions.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name}
-                        </option>
-                      ))}
-                    </select>
-                    {/* The town/place. Free text on purpose: `destinations`
-                        holds a sample of New Zealand's towns, not a list of
-                        them, so a picker here would keep failing the people
-                        who worked somewhere small -- which is most of them.
-                        Disabled when the search already matched a real
-                        destination row, since that row is the better record
-                        and the two are mutually exclusive in the database. */}
-                    <input
-                      type="text"
-                      aria-label={t("fields.townOrPlace")}
-                      value={
-                        loc.destinationId
-                          ? (countryDestinations.find(
-                              (d) => d.id === loc.destinationId,
-                            )?.name ?? "")
-                          : (loc.customDestinationLabel ?? "")
-                      }
-                      disabled={Boolean(loc.destinationId)}
-                      maxLength={120}
-                      placeholder={t("fields.townOrPlace")}
-                      onChange={(e) =>
-                        updateLocation(i, {
-                          customDestinationLabel:
-                            e.target.value.trim() === ""
-                              ? null
-                              : e.target.value,
-                        })
-                      }
-                      className="min-w-0 flex-1 rounded-md border border-border-subtle px-2 py-1.5 text-sm disabled:opacity-60 dark:bg-transparent"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeLocation(i)}
-                      className="text-sm text-destructive underline underline-offset-2"
-                    >
-                      {t("fields.remove")}
-                    </button>
-                  </div>
-                ))}
+                {locations.map((loc, i) => {
+                  // No regionId means this row is the OTHER kind: a manual
+                  // one, either just added (customRegionLabel === "") or
+                  // loaded from a prior save with a typed region
+                  // (customRegionLabel set). Rendered as two plain-text
+                  // inputs and nothing else -- no dropdown, because the
+                  // whole point of this row is that the curated list above
+                  // didn't have what the contributor wanted (2026-10-14
+                  // China entry: five seeded provinces is a much thinner
+                  // list than NZ's sixteen regions, and "the region I want
+                  // isn't in the list" turned out to be common there).
+                  // A row that DID come from a region match (search or a
+                  // prior save) keeps the select + town input exactly as
+                  // before.
+                  if (!loc.regionId) {
+                    return (
+                      <div
+                        key={i}
+                        className="flex flex-wrap items-center gap-2"
+                      >
+                        <input
+                          type="text"
+                          aria-label={t("fields.regionOrArea")}
+                          value={loc.customRegionLabel ?? ""}
+                          required
+                          maxLength={120}
+                          placeholder={t("fields.regionOrArea")}
+                          onChange={(e) =>
+                            updateLocation(i, {
+                              customRegionLabel: e.target.value,
+                            })
+                          }
+                          className="min-w-0 flex-1 rounded-md border border-border-subtle px-2 py-1.5 text-sm dark:bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          aria-label={t("fields.townOrPlace")}
+                          value={loc.customDestinationLabel ?? ""}
+                          maxLength={120}
+                          placeholder={t("fields.townOrPlace")}
+                          onChange={(e) =>
+                            updateLocation(i, {
+                              customDestinationLabel:
+                                e.target.value.trim() === ""
+                                  ? null
+                                  : e.target.value,
+                            })
+                          }
+                          className="min-w-0 flex-1 rounded-md border border-border-subtle px-2 py-1.5 text-sm dark:bg-transparent"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeLocation(i)}
+                          className="text-sm text-destructive underline underline-offset-2"
+                        >
+                          {t("fields.remove")}
+                        </button>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={i} className="flex flex-wrap items-center gap-2">
+                      <select
+                        aria-label={t("fields.region")}
+                        value={loc.regionId}
+                        onChange={(e) =>
+                          updateLocation(i, {
+                            regionId: e.target.value,
+                            // Changing region invalidates a looked-up
+                            // destination (it belongs to the old region,
+                            // and a trigger enforces that), but NOT a
+                            // typed one: a place name the contributor
+                            // wrote is still theirs, and re-typing it
+                            // would be a silly tax for fixing the region
+                            // above it.
+                            destinationId: null,
+                          })
+                        }
+                        className="rounded-md border border-border-subtle px-2 py-1.5 text-sm dark:bg-transparent"
+                      >
+                        {countryRegions.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.name}
+                          </option>
+                        ))}
+                      </select>
+                      {/* The town/place. Free text on purpose: `destinations`
+                          holds a sample of New Zealand's towns, not a list of
+                          them, so a picker here would keep failing the people
+                          who worked somewhere small -- which is most of them.
+                          Disabled when the search already matched a real
+                          destination row, since that row is the better record
+                          and the two are mutually exclusive in the database. */}
+                      <input
+                        type="text"
+                        aria-label={t("fields.townOrPlace")}
+                        value={
+                          loc.destinationId
+                            ? (countryDestinations.find(
+                                (d) => d.id === loc.destinationId,
+                              )?.name ?? "")
+                            : (loc.customDestinationLabel ?? "")
+                        }
+                        disabled={Boolean(loc.destinationId)}
+                        maxLength={120}
+                        placeholder={t("fields.townOrPlace")}
+                        onChange={(e) =>
+                          updateLocation(i, {
+                            customDestinationLabel:
+                              e.target.value.trim() === ""
+                                ? null
+                                : e.target.value,
+                          })
+                        }
+                        className="min-w-0 flex-1 rounded-md border border-border-subtle px-2 py-1.5 text-sm disabled:opacity-60 dark:bg-transparent"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeLocation(i)}
+                        className="text-sm text-destructive underline underline-offset-2"
+                      >
+                        {t("fields.remove")}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
               <button
                 type="button"

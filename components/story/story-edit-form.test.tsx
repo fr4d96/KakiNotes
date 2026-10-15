@@ -128,12 +128,23 @@ afterEach(() => {
 });
 
 describe("StoryEditForm — Country select (Places step)", () => {
-  it("defaults to the story's current country and only lists that country's regions", async () => {
-    const user = userEvent.setup();
-    render(<StoryEditForm {...baseProps()} />);
+  it("defaults to the story's current country and only lists that country's regions, for a curated (search-matched) row", () => {
+    render(
+      <StoryEditForm
+        {...baseProps()}
+        initialLocations={[
+          {
+            regionId: "r-otago",
+            customRegionLabel: null,
+            destinationId: null,
+            customDestinationLabel: null,
+            sortOrder: 0,
+          },
+        ]}
+      />,
+    );
     const countrySelect = screen.getByLabelText("Country");
     expect(countrySelect).toHaveValue("new-zealand");
-    await user.click(screen.getByText("Add a location manually"));
     const regionSelect = screen.getByLabelText("Region");
     expect(
       within(regionSelect).queryByRole("option", { name: "Otago" }),
@@ -143,21 +154,22 @@ describe("StoryEditForm — Country select (Places step)", () => {
     ).toBeNull();
   });
 
-  it("switches the region list when the country changes", async () => {
-    const user = userEvent.setup();
-    render(<StoryEditForm {...baseProps()} />);
-    await user.selectOptions(screen.getByLabelText("Country"), "china");
-
-    await waitFor(() =>
-      expect(setCountryAction).toHaveBeenCalledWith(
-        "11111111-1111-4111-8111-111111111111",
-        "china",
-      ),
+  it("lists only the matching country's regions for a curated row saved under that country", () => {
+    render(
+      <StoryEditForm
+        {...baseProps()}
+        initialCountrySlug="china"
+        initialLocations={[
+          {
+            regionId: "r-guangdong",
+            customRegionLabel: null,
+            destinationId: null,
+            customDestinationLabel: null,
+            sortOrder: 0,
+          },
+        ]}
+      />,
     );
-
-    // Region options rendered inline on manually-added rows only show up
-    // once a row exists; add one to assert the filter.
-    await user.click(screen.getByText("Add a location manually"));
     const regionSelect = screen.getByLabelText("Region");
     expect(
       within(regionSelect).queryByRole("option", { name: "Guangdong" }),
@@ -175,6 +187,7 @@ describe("StoryEditForm — Country select (Places step)", () => {
         initialLocations={[
           {
             regionId: "r-otago",
+            customRegionLabel: null,
             destinationId: null,
             customDestinationLabel: "Queenstown",
             sortOrder: 0,
@@ -244,5 +257,71 @@ describe("StoryEditForm — place search placeholder/search scope per country", 
     expect(
       screen.getByPlaceholderText("Type a full place name, e.g. Guangzhou"),
     ).toBeInTheDocument();
+  });
+});
+
+describe("StoryEditForm — Add a location manually (free-text region row)", () => {
+  it("renders two plain-text inputs, not a region dropdown", async () => {
+    const user = userEvent.setup();
+    render(<StoryEditForm {...baseProps()} />);
+    await user.click(screen.getByText("Add a location manually"));
+
+    expect(screen.queryByLabelText("Region")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Region or area")).toBeInTheDocument();
+    expect(screen.getByLabelText("Region or area").tagName).toBe("INPUT");
+    expect(
+      screen.getByLabelText("Town or place (optional)"),
+    ).toBeInTheDocument();
+  });
+
+  it("marks the region/area input required and the town/place input optional", async () => {
+    const user = userEvent.setup();
+    render(<StoryEditForm {...baseProps()} />);
+    await user.click(screen.getByText("Add a location manually"));
+
+    expect(screen.getByLabelText("Region or area")).toBeRequired();
+    expect(
+      screen.getByLabelText("Town or place (optional)"),
+    ).not.toBeRequired();
+  });
+
+  it("saves the typed region once it has text, not before", async () => {
+    const user = userEvent.setup();
+    render(<StoryEditForm {...baseProps()} />);
+    await user.click(screen.getByText("Add a location manually"));
+
+    // Not yet typed -- nothing to save.
+    expect(setLocationsAction).not.toHaveBeenCalled();
+
+    await user.type(screen.getByLabelText("Region or area"), "Sichuan");
+    await waitFor(() =>
+      expect(setLocationsAction).toHaveBeenCalledWith(
+        "22222222-2222-4222-8222-222222222222",
+        expect.any(Number),
+        [expect.objectContaining({ customRegionLabel: "Sichuan" })],
+      ),
+    );
+  });
+
+  it("loads a previously-saved typed-region row as two text inputs", () => {
+    render(
+      <StoryEditForm
+        {...baseProps()}
+        initialLocations={[
+          {
+            regionId: null,
+            customRegionLabel: "Sichuan",
+            destinationId: null,
+            customDestinationLabel: "A village near Chengdu",
+            sortOrder: 0,
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByDisplayValue("Sichuan")).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue("A village near Chengdu"),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Region")).not.toBeInTheDocument();
   });
 });

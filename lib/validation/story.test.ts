@@ -11,6 +11,8 @@ import {
   submitRevisionSchema,
   createReportSchema,
   revisionTagsSchema,
+  revisionLocationSchema,
+  revisionLocationsSchema,
   revisionExpenseSchema,
   MAX_TAGS_PER_REVISION,
   TAG_MAX_LENGTH,
@@ -427,6 +429,88 @@ describe("revisionTagsSchema", () => {
     const result = revisionTagsSchema.safeParse([
       { customLabel: "x".repeat(TAG_MAX_LENGTH + 1) },
     ]);
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("revisionLocationSchema / revisionLocationsSchema", () => {
+  const regionId = "11111111-1111-4111-8111-111111111111";
+  const destinationId = "22222222-2222-4222-8222-222222222222";
+
+  it("accepts a curated region reference, region-only", () => {
+    expect(revisionLocationSchema.safeParse({ regionId }).success).toBe(true);
+  });
+
+  it("accepts a curated region with a looked-up destination", () => {
+    expect(
+      revisionLocationSchema.safeParse({ regionId, destinationId }).success,
+    ).toBe(true);
+  });
+
+  it("accepts a curated region with a typed destination label", () => {
+    expect(
+      revisionLocationSchema.safeParse({
+        regionId,
+        customDestinationLabel: "Kaikohe",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("accepts a contributor-typed region, with or without a typed place", () => {
+    expect(
+      revisionLocationSchema.safeParse({ customRegionLabel: "Sichuan" })
+        .success,
+    ).toBe(true);
+    expect(
+      revisionLocationSchema.safeParse({
+        customRegionLabel: "Sichuan",
+        customDestinationLabel: "A small village near Chengdu",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects neither a region reference nor a typed region", () => {
+    expect(revisionLocationSchema.safeParse({}).success).toBe(false);
+  });
+
+  it("rejects both a region reference and a typed region", () => {
+    expect(
+      revisionLocationSchema.safeParse({
+        regionId,
+        customRegionLabel: "Sichuan",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a typed region paired with a looked-up destination -- a custom region has no destinations FK to be a child of", () => {
+    expect(
+      revisionLocationSchema.safeParse({
+        customRegionLabel: "Sichuan",
+        destinationId,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a typed region label longer than the stored column allows", () => {
+    expect(
+      revisionLocationSchema.safeParse({
+        customRegionLabel: "x".repeat(121),
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a typed region label that is empty once trimmed", () => {
+    expect(
+      revisionLocationSchema.safeParse({ customRegionLabel: "   " }).success,
+    ).toBe(false);
+  });
+
+  it("caps the list at 20 locations, mirroring set_revision_locations' own cap", () => {
+    const result = revisionLocationsSchema.safeParse(
+      Array.from({ length: 21 }, (_, i) => ({
+        customRegionLabel: `Area ${i}`,
+      })),
+    );
     expect(result.success).toBe(false);
   });
 });

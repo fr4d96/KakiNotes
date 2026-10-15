@@ -311,6 +311,19 @@ copy) with no moderation step in between. The editor's Places step shows the cou
 text, with a short hint, once a story is published; it only offers the `<select>` on a
 never-published draft.
 
+### Free-text region labels are moderated like any other contributor text
+
+`story_revision_locations.custom_region_label` (2026-10-15, alongside the existing
+`custom_destination_label`) is a contributor-typed region/area name, for a place not in the curated
+`regions` table — most relevant to the China section, whose five seeded provinces are a much
+thinner list than New Zealand's sixteen regions. It carries **no separate moderation path**: it is
+stored on the revision like the title, excerpt and body, so a moderator reviewing that revision
+(`get_story_for_moderator()`) sees it in the claimed-regions list and approves or rejects the
+revision as a whole, exactly as they already do for `custom_destination_label` and a tag's
+`custom_label`. There is no mechanism to approve a story while rejecting only its typed region —
+the same "a revision is one unit" rule every other contributor-authored free-text field already
+follows.
+
 ## Reporting
 
 - Any reader can report a published story or image for review (e.g. suspected impersonation, rights

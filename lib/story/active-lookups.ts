@@ -241,7 +241,9 @@ export async function listActiveTags(): Promise<ActiveTag[]> {
  */
 export async function resolveLocationLabels(
   locations: readonly {
-    regionId: string;
+    regionId: string | null;
+    /** A typed region, for one not in the curated `regions` table (20261015). */
+    customRegionLabel?: string | null;
     destinationId: string | null;
     customDestinationLabel: string | null;
     sortOrder: number;
@@ -251,7 +253,13 @@ export async function resolveLocationLabels(
   if (locations.length === 0) return [];
   const supabase = await createClient();
 
-  const regionIds = [...new Set(locations.map((l) => l.regionId))];
+  const regionIds = [
+    ...new Set(
+      locations
+        .map((l) => l.regionId)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
   const destinationIds = [
     ...new Set(
       locations
@@ -261,7 +269,12 @@ export async function resolveLocationLabels(
   ];
 
   const [regions, destinations] = await Promise.all([
-    supabase.from("regions").select("id, name, name_zh_cn").in("id", regionIds),
+    regionIds.length
+      ? supabase
+          .from("regions")
+          .select("id, name, name_zh_cn")
+          .in("id", regionIds)
+      : Promise.resolve({ data: [], error: null }),
     destinationIds.length
       ? supabase
           .from("destinations")
@@ -286,7 +299,9 @@ export async function resolveLocationLabels(
   return [...locations]
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((location) => {
-      const region = regionName.get(location.regionId) ?? null;
+      const region = location.regionId
+        ? (regionName.get(location.regionId) ?? null)
+        : (location.customRegionLabel ?? null);
       const destination = location.destinationId
         ? (destinationName.get(location.destinationId) ?? null)
         : location.customDestinationLabel;

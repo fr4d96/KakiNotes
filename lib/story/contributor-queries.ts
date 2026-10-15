@@ -238,7 +238,9 @@ export type RevisionExpenseSelection = {
 
 export type RevisionSelections = {
   locations: Array<{
-    regionId: string;
+    regionId: string | null;
+    /** Set only when regionId is null (20261015_custom_region_labels.sql). */
+    customRegionLabel: string | null;
     destinationId: string | null;
     /** Set only when destinationId is null (20260903140000). */
     customDestinationLabel: string | null;
@@ -268,7 +270,8 @@ export async function getRevisionSelections(
   const row = data?.[0];
   const locations =
     (row?.locations as Array<{
-      regionId: string;
+      regionId: string | null;
+      customRegionLabel: string | null;
       destinationId: string | null;
       customDestinationLabel: string | null;
       sortOrder: number;

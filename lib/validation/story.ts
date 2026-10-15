@@ -295,25 +295,58 @@ export const countrySlugSchema = z.enum(COUNTRY_SLUGS, {
 // Locations/tags — same identifiers set_revision_locations /
 // set_revision_tags expect, validated client-side before every call
 // (Rule: validate at every trust boundary).
-export const revisionLocationSchema = z.object({
-  regionId: z.uuid(),
-  destinationId: z.uuid().nullable().optional(),
-  /**
-   * A place the contributor typed, for somewhere not in `destinations`
-   * (20260903140000). Mutually exclusive with destinationId, and BOTH being
-   * absent stays valid -- that is a region-only location, which is the most
-   * common shape in the data today. `destinations` holds a sample of New
-   * Zealand's towns, not a list of them.
-   */
-  customDestinationLabel: z
-    .string()
-    .trim()
-    .min(1)
-    .max(120)
-    .nullable()
-    .optional(),
-  sortOrder: z.number().int().min(0).optional(),
-});
+//
+// A location row is a discriminated union: EITHER a curated `regions`
+// reference (regionId), OR a contributor-typed region/area name
+// (customRegionLabel, 20261015_custom_region_labels.sql) -- the same escape
+// hatch customDestinationLabel already gave the destination half of a row,
+// now extended one level up because `regions` is a much thinner curated
+// list for a second country (five China provinces vs sixteen NZ regions;
+// docs/implementation-status.md's 2026-10-14 China entry) and "the region I
+// want isn't in the list" turned out to be common there too. The two
+// `.refine`s below express the union without z.discriminatedUnion (there is
+// no shared literal discriminant field) -- same style revisionTagSchema
+// already uses for its own id-vs-customLabel either/or.
+export const revisionLocationSchema = z
+  .object({
+    regionId: z.uuid().nullable().optional(),
+    /**
+     * A region/area the contributor typed, for one not in the curated
+     * `regions` table for this story's country. Mutually exclusive with
+     * regionId -- exactly one of the two must be set, unlike
+     * customDestinationLabel below (which may be absent for a region-only
+     * location).
+     */
+    customRegionLabel: z.string().trim().min(1).max(120).nullable().optional(),
+    /**
+     * A `destinations` reference. Only ever valid alongside regionId: a
+     * custom region has no curated row, so there is no destinations FK
+     * scoped to it (story_revision_locations_custom_region_no_destination_id).
+     */
+    destinationId: z.uuid().nullable().optional(),
+    /**
+     * A place the contributor typed, for somewhere not in `destinations`
+     * (20260903140000). Mutually exclusive with destinationId, and BOTH
+     * being absent stays valid -- that is a region-only location, which is
+     * the most common shape in the data today. `destinations` holds a
+     * sample of New Zealand's towns, not a list of them. Valid alongside
+     * EITHER regionId or customRegionLabel.
+     */
+    customDestinationLabel: z
+      .string()
+      .trim()
+      .min(1)
+      .max(120)
+      .nullable()
+      .optional(),
+    sortOrder: z.number().int().min(0).optional(),
+  })
+  .refine((v) => Boolean(v.regionId) !== Boolean(v.customRegionLabel), {
+    message: "story.locationEitherOr",
+  })
+  .refine((v) => !(v.customRegionLabel && v.destinationId), {
+    message: "story.customRegionNoDestinationId",
+  });
 
 export const revisionLocationsSchema = z.array(revisionLocationSchema).max(20);
 

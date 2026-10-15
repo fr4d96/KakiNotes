@@ -9916,3 +9916,111 @@ route.test.ts` (+3 cases), `app/(editor)/editorial/new/pdf-import-picker.test.ts
   from it, to confirm the hand-edited types and the SQL bodies actually match what gets applied.
 - `npm run verify:full` (Playwright) was not run — no new e2e coverage for the country toggle or the
   `/cn` routes beyond the unit/component tests listed above.
+
+### 2026-10-15 — "Add a location manually" accepts a typed region, not just a typed destination
+
+**Owner decision.** China's curated `regions` list is five provinces/municipalities vs. New
+Zealand's sixteen, so "the region I want isn't in the list" turned out to be common for it too —
+the same gap `custom_destination_label` (2026-09-03) already closed one level down. The manual-add
+row in the editor's Places step is now two plain-text inputs — "Region or area" (required, 1-120
+chars) and "Town or place" (optional, ≤120 chars) — with **no dropdown**. A row created from a
+successful place search (a curated region matched by name/state/county) keeps working exactly as
+before: a `<select>` of that country's regions plus the town/place text input, pre-filled by the
+match.
+
+**Data model.** New migration `supabase/migrations/20261015063409_custom_region_labels.sql`,
+following `20260903140000_custom_destination_labels.sql`'s shape:
+
+- `story_revision_locations.region_id` is now nullable; new `custom_region_label text` column.
+  `story_revision_locations_region_one_of` CHECK enforces exactly one of the two is set (stricter
+  than the destination pair's constraint, because a location row has always needed _some_ region).
+  `story_revision_locations_custom_region_label_length` mirrors the destination label's trim/length
+  rule (1-120 chars after trimming). `story_revision_locations_custom_region_no_destination_id`
+  forbids a custom-region row from carrying a `destinations` FK (there is no curated region row for
+  that FK to be scoped to) — it may still carry a typed `custom_destination_label`.
+- `story_revision_locations_validate_destination()` and `story_revision_locations_validate_country()`
+  (both triggers) now return early when `new.region_id is null` — a custom-region row has no
+  `regions` row to validate a destination or a country against, and inherits the story's own
+  `country_id` instead of carrying one of its own.
+- `set_revision_locations()` accepts `custom_region_label` in its JSON input, with the same
+  "an id wins if a client sends both" precedence already applied to `custom_destination_label`.
+  Same signature (`uuid, integer, jsonb`), so `CREATE OR REPLACE` was sufficient — no overload to
+  drop.
+- Every function that joins `regions` while reading `story_revision_locations` switched that join
+  from `inner` to `left` and emits `coalesce(reg.name, loc.custom_region_label)` as the region name
+  (`region_name_zh_cn`/the zh-CN twin stays `reg.name_zh_cn`, null for a custom row — a contributor's
+  own words are never machine-translated, per `lib/i18n/vocab.ts`'s header):
+  `get_revision_selections`, `create_next_draft_revision` (copies the new column alongside the rest
+  of the per-revision child-table checklist), `list_published_stories`, `get_published_story`,
+  `list_my_stories`, `contributor_public_facts`, `get_story_for_moderator`. Every one of these kept
+  its existing signature, so `CREATE OR REPLACE` was sufficient throughout — no signature changes,
+  nothing to drop. `get_expense_aggregates()`'s `by_region` breakdown and `list_published_stories()`/
+  `get_moderation_queue()`'s `p_region_id` filter are deliberately **not** touched: region filters and
+  aggregates stay curated-only (a custom label is free text one contributor typed once, not a bucket
+  other stories' custom labels can land in too), same as the destination side already decided.
+- Since the public RPCs already emit a generic `region_name`/`region_name_zh_cn` pair that every
+  reader (`lib/i18n/vocab.ts`'s `prefixedVocabName`, `lib/story/card-fields.ts`'s `regionNames`) picks
+  a display string from without caring where it came from, **no frontend rendering code changed** —
+  a custom region label shows up on story cards, the story detail page, My Stories, the contributor
+  byline, the moderation review page and the contributor's own PDF export automatically, once the SQL
+  emits it.
+
+**App layer.**
+
+- `lib/validation/story.ts`'s `revisionLocationSchema` is now a discriminated union (expressed as two
+  `.refine()`s, the same style `revisionTagSchema` already uses, since there is no shared literal
+  discriminant field): `{ regionId, destinationId?, customDestinationLabel? }` or
+  `{ customRegionLabel, customDestinationLabel? }` — exactly one of `regionId`/`customRegionLabel`,
+  and `customRegionLabel` may never pair with `destinationId`. New `validation.story.*` message keys:
+  `customRegionNoDestinationId` (both locales).
+- `lib/story/mutations.ts`'s `setRevisionLocations()`, `lib/story/contributor-queries.ts`'s
+  `RevisionSelections`/`getRevisionSelections()`, and `lib/story/active-lookups.ts`'s
+  `resolveLocationLabels()` (the contributor's own PDF export path) all carry `regionId: string | null`
+  plus `customRegionLabel: string | null` now, mirroring the destination pair.
+- `types/database.ts` hand-edited for the new nullable `region_id` and `custom_region_label` column,
+  matching the generated style (not regenerated from a live schema — see this entry's existing
+  "not applied to dev" limitation).
+- `components/story/story-edit-form.tsx`: a location row with no `regionId` is a manual row, rendered
+  as the two plain-text inputs described above; a row with a `regionId` keeps the existing
+  `<select>` + town/place input. `addManualLocation()` now starts a row with `regionId: null,
+customRegionLabel: ""`, instead of the old `regionId: ""` sentinel. `completeLocationCount` and
+  `saveLocations()` treat a row with trimmed `customRegionLabel` text as complete, same as a row with
+  `regionId`. `changeCountry()`'s "keep rows with no region" filter needed no change — a custom-region
+  row already has `regionId: null`, so it is kept (not cleared) across a country switch, consistent
+  with it carrying no country of its own.
+- `i18n/messages/{en,zh-CN}.json`: `editor.fields.chooseRegion` (dead — the manual row no longer has a
+  `<select>`) replaced by `editor.fields.regionOrArea`; `editor.fields.townOrPlace` is reused
+  unchanged for the manual row's second input. The search-unmatched fallback copy
+  (`unmatchedPlace`/`unmatchedPlaceNamed`, pointing at "Add a location manually") is unchanged.
+- `docs/content-governance.md`: new "Free-text region labels are moderated like any other
+  contributor text" note under the country section — a typed region has no separate moderation path,
+  reviewed as part of the revision like `custom_destination_label` and a tag's `custom_label` already
+  are.
+
+**Tests added:** `lib/validation/story.test.ts` (`revisionLocationSchema`/`revisionLocationsSchema` —
+the union's accept/reject cases, the 20-location cap); `components/story/story-edit-form.test.tsx`
+(two existing Country-select tests reworked to seed a curated row via `initialLocations` rather than
+via the now-dropdown-less manual-add button, which otherwise tested nothing after this change; new
+"Add a location manually" describe block — two text inputs with no `<select>`, required region/
+optional place, autosave only once the region text is non-empty, loading a previously-saved typed
+row back into the two inputs).
+
+**Not covered / follow-ups:**
+
+- No test added directly for `setRevisionLocations()`/`getRevisionSelections()`
+  (`lib/story/mutations.ts`/`lib/story/contributor-queries.ts`) — neither had direct unit coverage
+  before this change either (both are thin RPC wrappers exercised indirectly through the edit-form
+  and action tests).
+- Same "not applied to dev" limitation as every other migration in this entry: no Docker/linked-
+  project access in this worktree, so the migration was written and reviewed against the live,
+  currently-applied function bodies (not reconstructed from memory) but not executed, and
+  `types/database.ts` was hand-edited rather than regenerated.
+
+**Typed regions: review and dev apply (2026-10-15).** All re-created function bodies were diffed
+against their latest repo versions and against dev (identical apart from the intended changes).
+`list_my_stories` now also shows a typed town (`coalesce(dest.name, loc.custom_destination_label)`);
+before, My Stories never showed typed towns, which would have hidden the town on every manual
+location. Applied to dev and recorded as `20261015063409`. A rolled-back test as a draft owner
+saved "West Coast backcountry" / "Hut 7" (trimmed, no region_id), read it back through
+`get_revision_selections` and `list_my_stories`, and confirmed a blank label and a row with both a
+listed and a typed region are rejected by `story_revision_locations_region_one_of`.
