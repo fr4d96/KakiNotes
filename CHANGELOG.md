@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.9.0](https://github.com/fr4d96/KakiNotes/compare/v1.8.0...v1.9.0) (2026-10-21)
+
+
+### What's new for contributors
+
+**Story folders.** You can now group your published stories into folders. A main story works like a folder, and you can file other stories under it as its sub stories. Go to My Stories and choose "Open story folders" to organise them.
+
+**Drag a story into a folder.** Drag a story onto a main story to file it there. On a phone, press and hold the story first, then drag. Every story also has a "Move to" menu that does the same thing without dragging, and you can take a story out of its folder at any time.
+
+**Readers see them together.** A main story's page now lists its sub stories under "More in this story", and each sub story shows "Part of" with a link back to its main story.
+
+### Good to know
+
+**One level, published stories only.** A sub story can't have its own sub stories, and only published stories can go into a folder. Drafts and private stories show up greyed out until you publish them. Changes show on your public pages straight away, with no review.
+
+**Your existing links carried over.** Stories you had linked before have become a folder under the story they were linked to most.
+
+**Story pages are working again.** Since 13 October, some public story pages showed "Something went wrong" instead of the story. That's fixed in this release.
+
+
+
+### Features
+
+* **stories:** story folders page for main and sub stories ([538ab5b](https://github.com/fr4d96/KakiNotes/commit/538ab5b88e11b4858c3d391237c7b57aa4b262e2))
+
 ## [1.8.0](https://github.com/fr4d96/KakiNotes/compare/v1.7.0...v1.8.0) (2026-10-12)
 
 ### What's new for contributors
