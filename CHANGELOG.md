@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/fr4d96/KakiNotes/compare/v1.8.0...v1.9.0) (2026-10-21)
+
+
+### Features
+
+* **stories:** story folders page for main and sub stories ([538ab5b](https://github.com/fr4d96/KakiNotes/commit/538ab5b88e11b4858c3d391237c7b57aa4b262e2))
+
 ## [1.8.0](https://github.com/fr4d96/KakiNotes/compare/v1.7.0...v1.8.0) (2026-10-12)
 
 ### What's new for contributors
