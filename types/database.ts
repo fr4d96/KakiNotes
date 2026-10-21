@@ -1673,10 +1673,6 @@ export type Database = {
         };
         Returns: undefined;
       };
-      _story_has_sub_stories: {
-        Args: { p_story_id: string };
-        Returns: boolean;
-      };
       _story_is_publicly_visible: {
         Args: { p_story_id: string };
         Returns: boolean;
@@ -2061,6 +2057,17 @@ export type Database = {
           run_in_progress: boolean;
         }[];
       };
+      get_my_story_folders: {
+        Args: never;
+        Returns: {
+          id: string;
+          lifecycle_status: string;
+          linkable: boolean;
+          parent_story_id: string;
+          slug: string;
+          title: string;
+        }[];
+      };
       get_my_story_with_draft: {
         Args: { p_story_id: string };
         Returns: {
@@ -2161,7 +2168,7 @@ export type Database = {
         }[];
       };
       get_published_story_family: {
-        Args: { p_slug: string };
+        Args: { p_story_id: string };
         Returns: {
           parent: Json;
           sub_stories: Json;
@@ -2297,15 +2304,6 @@ export type Database = {
           previous_status: Database["public"]["Enums"]["story_revision_status"];
           revision_id: string;
           user_facing_reason: string;
-        }[];
-      };
-      get_story_parent_story: {
-        Args: { p_story_id: string };
-        Returns: {
-          has_sub_stories: boolean;
-          parent_slug: string;
-          parent_story_id: string;
-          parent_title: string;
         }[];
       };
       get_story_preview: {
@@ -2515,14 +2513,6 @@ export type Database = {
           requested_at: string;
           status: string;
           story_id: string;
-        }[];
-      };
-      list_parent_story_options: {
-        Args: { p_story_id: string };
-        Returns: {
-          slug: string;
-          story_id: string;
-          title: string;
         }[];
       };
       list_public_contributors: {
@@ -2881,8 +2871,8 @@ export type Database = {
         };
         Returns: undefined;
       };
-      set_story_parent_story: {
-        Args: { p_parent_story_id: string; p_story_id: string };
+      set_story_parent: {
+        Args: { p_parent_id: string; p_story_id: string };
         Returns: undefined;
       };
       submit_revision_with_consent: {

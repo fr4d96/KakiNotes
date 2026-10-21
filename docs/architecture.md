@@ -830,45 +830,68 @@ logic of its own — the UI only ever decides whether to _show_ the button; the 
 enforces who may use it. The `ReopenForEditingButton` component surfaces it in three places: the
 editor's not-editable screen for a submitted story, the preview page, and My Stories.
 
-### Sub stories (2026-09-30, reworked 2026-10-03)
+### Story folders (2026-09-30, reworked 2026-10-03, free links 2026-10-13, folders 2026-10-21)
 
-A **published** story can be linked under another published **main story** by the same contributor
-("Fergburger" under "Food in Queenstown"). Two levels only. The link goes public as soon as it is
-saved — no review round. Migrations `20260930083209_sub_stories.sql` (first version, on revisions),
-`20260930083643_fix_story_is_publicly_visible.sql`, and `20261003051644_story_level_sub_stories.sql`
-(the current design).
+A story is either a **main story** (may have sub stories), a **sub story** (filed under exactly one
+main story), or neither — one level only, no depth limit beyond that, no story both has sub stories
+and is itself one. The link goes public as soon as it is saved — no review round. This is the third
+design for this relationship: a two-level main/sub hierarchy (2026-10-03), then free, undirected,
+Obsidian-style links with no hierarchy at all (2026-10-13), and now back to a one-level folder shape
+(2026-10-21) after the product owner decided free links made "what belongs under what" ambiguous on
+a contributor's own profile. Migrations: `20260930083209_sub_stories.sql` and
+`20261003051644_story_level_sub_stories.sql` (the first hierarchy, fully dropped),
+`20261013004751_story_links.sql` (the free-link design, also fully dropped) and
+`20261021085920_story_folders.sql` (the current design, which converts every existing
+`story_links` row into a parent/child pair — the end with more total links becomes the parent, a
+tie goes to the earlier `published_at` then the lower id, and a conversion is only applied when it
+is one-level-valid — before dropping the link table and its four functions).
 
-- **Where it lives:** `stories.parent_story_id` (FK to `stories`, `on delete restrict`, check
-  `<> id`). It started on `story_revisions` so it would be moderated with the content; on
-  2026-10-03 the product owner chose "only already-published stories, live straight away", so it
-  moved to `stories` and the revision column, `set_revision_parent_story()` and
-  `get_revision_parent_story()` were dropped. This is a documented exception to Engineering Rule 11
-  for this one field — see docs/content-governance.md, "Sub stories". `stories` still has no
-  direct API grants (RLS on, zero policies), so the column is writable only through the function
-  below. Not copied into drafts; editing a published sub story does not touch the link.
-- **Only writer:** `set_story_parent_story(story, parent | null)`, **owner only** (not the assigned
-  editor — this skips review, so it stays the contributor's call). Checks ownership first, then
-  locks both rows in id order so concurrent link changes queue instead of racing the two-level
-  check. Refusals: this story is not published (WHV15); not itself (WHV10); same `contributor_id` —
-  "not found" and "not yours" share one message so ids can't be probed (WHV11); the main story is
-  published (WHV12); the main story is not itself a sub story (WHV13); this story has no sub
-  stories of its own (WHV14). Clearing (null) is always allowed. No `stories.version` bump, so an
-  open editor tab on the same story doesn't go stale.
-- **Readers:** `get_story_parent_story(story)` and `list_parent_story_options(story)`, both owner
-  only — they back the "Link" dialog on My Stories (`app/(contributor)/my-stories/
-link-main-story-dialog.tsx`), which only shows on published rows. The editor, preview and
-  moderation pages no longer show anything about sub stories.
-- **Public read:** `get_published_story_family(slug)`, granted to `anon`. It follows
-  `stories.parent_story_id` and runs **both** ends of every link through
-  `_story_is_publicly_visible()` — the same gate as `get_published_story()`. An archived,
-  taken-down or consent-revoked story on either end just drops out; the link row itself stays.
-  The main story's page shows its sub stories as `StoryCard`s under the description, filling card
-  fields from the contributor's `list_published_stories()` page (`matchSubStoryCards()`); the
-  family read alone decides which stories appear.
-- **Verified 2026-10-03** on the hosted dev project inside a rolled-back transaction, then applied:
-  every refusal fires with its code, another user and anon are refused, anon can still read the
-  family, unlinking removes it publicly, and `stories.version` doesn't change.
-- **Gotcha hit while building it:** `_story_is_publicly_visible()` first ended in
+- **Where it lives:** `public.stories.parent_story_id` (`uuid`, FK to `stories` `on delete set
+null` — deleting a main story orphans its sub stories back to "not in a folder" rather than
+  blocking the delete), checked non-self. `stories` has no direct API grants for any role (same as
+  always) — every read or write goes through a SECURITY DEFINER function. This is a documented
+  exception to Engineering Rule 11 for this one column — see docs/content-governance.md, "Story
+  folders go live without review".
+- **Writer:** `set_story_parent(story_id, parent_id)`, the only writer; `parent_id = null` removes
+  the story from its folder. Requires the caller to **own both** stories (same contributor — not
+  the assigned editor, since this skips review and stays the contributor's call), locks both rows
+  in id order so concurrent filings on the same pair queue rather than race, and requires **both**
+  stories published when setting a parent (not when clearing). Refusals: self (WHV10); not
+  found/not yours — one message for both so ids can't be probed (WHV11); the target is itself a sub
+  story (WHV13); this story already has sub stories of its own (WHV14); either side not published
+  (WHV15). Re-filing a story under a different main story is allowed in one call. WHV16
+  ("already linked", a free-link-only concept) stays retired.
+- **Owner-scoped reader:** `get_my_story_folders()` — no arguments, scoped to `auth.uid()` via the
+  exact same source-kind-partitioned ownership check `list_my_stories()` uses (never
+  `contributor_id` alone, which isn't an authorization check). Returns every one of the caller's own
+  stories (`id`, `slug`, `title` from the published revision else the current draft,
+  `lifecycle_status`, `linkable`, `parent_story_id`). Backs the story folders page
+  (`app/(contributor)/my-stories/map/` — route kept, page retitled).
+- **Public read:** `get_published_story_family(story_id)`, granted to `anon`. Both ends of the
+  relationship pass `_story_is_publicly_visible()` — the same check `get_published_story()` uses —
+  every time: an archived, taken-down or consent-revoked story on either end just drops out,
+  without `parent_story_id` itself changing. A public story's page shows a "Part of: &lt;main
+  story&gt;" breadcrumb (`PartOfStory`) when it's a sub story, and a grid of compact "Sub stories"
+  cards (`SubStoryList`/`SubStoryCard`, `components/story/story-family.tsx`) when it has any,
+  filling card fields from the contributor's `list_published_stories()` page
+  (`matchStoryFamilyCards()`); the family read alone decides which stories appear.
+- **Story folders page:** `app/(contributor)/my-stories/map/` — a list of the contributor's
+  publishable stories as folder rows (any published, not-itself-filed story, even with zero sub
+  stories yet, so there's a row to drop onto); expanding one (a real `<button aria-expanded>`)
+  shows its sub stories with a status badge, an "Open story" link and a "Remove from folder"
+  button behind a confirm dialog. Below the folders, a "Not in a folder" list holds everything
+  else, greyed with a publish hint when not yet published. Drag-and-drop (`@dnd-kit/core`, same
+  sensor pattern as the editor's photo reorder) files a story by dropping it on a folder row, or
+  removes it by dropping on the "Not in a folder" area; a story with sub stories of its own can't be
+  dragged into another folder, and drafts aren't draggable. Every row also carries a "Move to…"
+  select — the keyboard/screen-reader and phone fallback (Engineering Rule 19), calling the exact
+  same `setStoryParentAction` as the drag gesture, with an optimistic update and rollback on
+  refusal.
+- **Verified 2026-10-21** on the hosted dev project inside a rolled-back transaction (not yet
+  applied — see docs/implementation-status.md): the full migration runs end to end; the
+  `story_links` → `parent_story_id` conversion correctly made "Kakiman" the parent of both "Opotiki
+  Trip" and "Trying Something New" (Kakiman had the most total links).
+- **Gotcha hit while building the first design:** `_story_is_publicly_visible()` first ended in
   `consent_row is not null`. For a composite, `IS NOT NULL` means _every_ field is non-null, so it
   said "not public" for every story (fixed in `20260930083643_fix_story_is_publicly_visible.sql`,
   now `not (x is null)`). Same family of bug as the three-valued-logic section below.
@@ -1425,8 +1448,9 @@ numbered by display order inside it.
   and `get_story_drive_sync_state(story_id)` — the one cheap, owner-checked lookup described below.
 - **Naming.** `lib/story/drive-folders.ts#sanitizeStoryFolderName`: trim, collapse whitespace, strip
   `/ \ : * ? " < > |`, cap at 100 chars, empty → "Untitled story". `uniqueFolderName` appends
-  " (2)", " (3)", … against the owner's other story folder names. A sub story gets its own top-level
-  folder inside "Kakinotes" like any other story — never nested under its parent.
+  " (2)", " (3)", … against the owner's other story folder names. A linked story gets its own
+  top-level folder inside "Kakinotes" like any other story — links never nest one story's folder
+  under another's (Drive folders predate story links and were never hierarchical either way).
 - **`ensureStoryFolder(supabase, accessToken, userId, storyId)`** — finds or creates the story's
   folder; renames it in place (same Drive folder id) when the title-implied name has changed. Not
   best-effort: called directly on the upload path, where a Drive failure must fail the upload.

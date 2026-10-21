@@ -278,25 +278,33 @@ what readers currently see. It only works on a revision still genuinely `submitt
 has acted on it, it is no longer `submitted` and the contributor instead gets the normal
 "changes requested → start a new draft" path (`request_editorial_changes()`/`create_next_draft_revision()`).
 
-### Sub stories go live without review (exception to Rule 11)
+### Story folders go live without review (exception to Rule 11)
 
-Linking a story under a main story is **not** moderated (decided 2026-10-03). The product owner
-chose this over "link on a draft, then review": the link only says two stories belong together,
-and both stories have already been approved on their own.
+Filing one of a contributor's own stories under another (as its main story) is **not** moderated
+(decided 2026-10-03; reworked into free, undirected links on 2026-10-13; reworked back into a
+one-level folder shape on 2026-10-21). The product owner chose this over "file on a draft, then
+review": filing only says one story belongs under another, and both stories have already been
+approved on their own. Each rework changed the shape — a two-level hierarchy, then unlimited
+undirected links, now one level of folders — but not this safety story — every point below held
+for every earlier design too.
 
 What keeps it safe:
 
-- **Both stories must already be published** to link them. Drafts and stories in review can't be
-  linked, so nothing unreviewed ever appears through a link.
-- **Only the owner** can set it, and only between their **own** stories, so nobody can attach their
-  story to someone else's. An assigned editor can't set it either.
-- The link adds no new text: readers see the two stories' already-approved titles, excerpts and
+- **Both stories must already be published** to file one under the other. Drafts and stories in
+  review can't be filed, so nothing unreviewed ever appears through a folder.
+- **Only the owner** can file a story, and only involving their **own** stories, so nobody can
+  attach their story to someone else's. An assigned editor can't do this either. Removing a story
+  from its folder is always allowed for the owner, regardless of either story's state — removing
+  can only ever reduce what's shown.
+- **One level only**: a sub story can't have sub stories of its own, and a story that already has
+  sub stories can't be filed under another main story.
+- Filing adds no new text: readers see the two stories' already-approved titles, excerpts and
   covers.
-- If either story is later archived, taken down or loses consent, the link stops showing at once
-  (the public read checks both ends every time).
-- Each change is logged as `story.main_story.set` (story id and "linked"/"cleared" only).
+- If either story is later archived, taken down or loses consent, the folder relationship stops
+  showing at once (the public read checks both ends every time).
+- Each change is logged as `story.folder.set` / `story.folder.cleared` (the two story ids only).
 
-Moderators don't see the link on the review page any more, because it isn't part of a revision.
+Moderators don't see folders on the review page, because they aren't part of a revision.
 
 ## Reporting
 

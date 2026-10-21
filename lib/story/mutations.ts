@@ -395,24 +395,24 @@ export async function setRevisionTags(
 }
 
 /**
- * Links a PUBLISHED story under another of the owner's published stories,
- * or clears that with null. Goes public immediately -- not moderated
- * (20261003051644_story_level_sub_stories.sql). Every rule (owner only,
- * both published, same contributor, two levels, not itself) is
- * set_story_parent_story()'s; it raises WHV10-WHV15 to say which one failed
- * (see subStoryErrorKey in lib/story/rpc-errors.ts).
+ * Files a published story under another of the caller's own published
+ * stories -- one level only, not a hierarchy of hierarchies
+ * (supabase/migrations/20261021085920_story_folders.sql, which replaced
+ * the free-link design). Goes public immediately -- not moderated. Null
+ * parentId removes the story from its folder, always allowed. Every rule
+ * (owner of both, both published, one level only) is set_story_parent()'s;
+ * it raises WHV10/WHV11/WHV13/WHV14/WHV15 to say which one failed (see
+ * storyFolderErrorKey in lib/story/rpc-errors.ts).
  */
-export async function setStoryParentStory(
-  storyId: string,
-  parentStoryId: string | null,
-) {
+export async function setStoryParent(storyId: string, parentId: string | null) {
   await requireUser();
   const supabase = await createClient();
-  const { error } = await supabase.rpc("set_story_parent_story", {
+  const { error } = await supabase.rpc("set_story_parent", {
     p_story_id: storyId,
-    // The generator types every SQL argument as non-null; null clears the
-    // link, which the function handles explicitly.
-    p_parent_story_id: parentStoryId as string,
+    // The generated RPC type marks this as a required string (no SQL
+    // DEFAULT was given), but the underlying uuid parameter happily accepts
+    // NULL -- same cast as updateStoryMediaCaption's altText/caption above.
+    p_parent_id: parentId as string,
   });
   if (error) throw error;
 }

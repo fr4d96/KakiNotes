@@ -1,16 +1,17 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import type { StoryFamilyLink, SubStoryLink } from "@/lib/story/sub-stories";
+import type { StoryFamilyLink } from "@/lib/story/story-folders";
 import type { StoryCardData } from "@/components/story/story-card";
 import { StoryCoverFallback } from "@/components/story/story-cover-fallback";
 import { getCardCoverUrl } from "@/lib/story/image-url";
 
-// Type-only import above: lib/story/sub-stories.ts is "server-only", and
+// Type-only import above: lib/story/story-folders.ts is "server-only", and
 // erased type imports never pull it into a bundle.
 
 /**
  * "Part of: <main story>" -- the small breadcrumb at the top of a sub
- * story's public page. Titles are plain text children, never HTML.
+ * story's public page (supabase/migrations/20261021085920_story_folders.sql).
+ * Titles are plain text children, never HTML.
  */
 export function PartOfStory({ parent }: { parent: StoryFamilyLink | null }) {
   const t = useTranslations("story.family");
@@ -29,9 +30,9 @@ export function PartOfStory({ parent }: { parent: StoryFamilyLink | null }) {
 }
 
 /**
- * The stories linked under this main story, shown at the end of it as
- * small cards: title on the left, cover photo on the right. Card rows
- * (see matchSubStoryCards()) supply the cover; sub stories without one get
+ * The sub stories filed under this main story, shown at the end of it as
+ * small cards: title on the left, cover photo on the right. Card rows (see
+ * matchStoryFamilyCards()) supply the cover; sub stories without one get
  * the usual placeholder image. Renders nothing when empty.
  */
 export function SubStoryList({
@@ -40,7 +41,7 @@ export function SubStoryList({
 }: {
   cards?: StoryCardData[];
   /** Sub stories with no card row -- shown with the placeholder image. */
-  subStories: SubStoryLink[];
+  subStories: StoryFamilyLink[];
 }) {
   const t = useTranslations("story.family");
   const items = [

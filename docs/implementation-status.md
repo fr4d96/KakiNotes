@@ -3,7 +3,14 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-11 (full-quality copies: a Drive-connected contributor's new photos also keep a full-resolution, location-stripped copy in their Drive, downloadable only by them from My Photos; see the entry at the end of this file); earlier the same day (My Photos: a page listing every photo on a contributor's stories, with a Download button per photo; see the entry at the end of this file); earlier, 2026-10-09 (photo tiles: Details sits on the photo, shown on hover, and a zoom icon is always in the corner; see the entry at the end of this file); earlier, 2026-10-08 (drag to reorder photos: contributors drag photos in the editor's Photos step, by mouse or press-and-hold on a phone; see the entry at the end of this file); earlier the same day (move existing photos to Drive: a button on Account → Google Drive moves a contributor's existing Supabase photos into their Drive, one at a time, and fixes the Drive proxy 404ing every published Drive photo for readers; see the entry at the end of this file); earlier the same day (Google Drive slice 3 plus story folders: a Drive-connected contributor's new photos go to their own Google Drive, one folder per story, and nothing is stored in Supabase for them; see the entry at the end of this file); earlier, 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
+Last updated: 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+one-level folder shape — a story is either a main story, a sub story filed under exactly one main
+story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
+"Move to…" select; migration applied to the dev project — see the entry at the end of this
+file); earlier, 2026-10-13 (story map: the main/sub-story hierarchy is replaced with free, undirected
+links between any of a contributor's own published stories, managed from a new story map page with
+a draggable graph; migration applied to the dev project — see the
+entry at the end of this file); earlier, 2026-10-11 (full-quality copies: a Drive-connected contributor's new photos also keep a full-resolution, location-stripped copy in their Drive, downloadable only by them from My Photos; see the entry at the end of this file); earlier the same day (My Photos: a page listing every photo on a contributor's stories, with a Download button per photo; see the entry at the end of this file); earlier, 2026-10-09 (photo tiles: Details sits on the photo, shown on hover, and a zoom icon is always in the corner; see the entry at the end of this file); earlier, 2026-10-08 (drag to reorder photos: contributors drag photos in the editor's Photos step, by mouse or press-and-hold on a phone; see the entry at the end of this file); earlier the same day (move existing photos to Drive: a button on Account → Google Drive moves a contributor's existing Supabase photos into their Drive, one at a time, and fixes the Drive proxy 404ing every published Drive photo for readers; see the entry at the end of this file); earlier the same day (Google Drive slice 3 plus story folders: a Drive-connected contributor's new photos go to their own Google Drive, one folder per story, and nothing is stored in Supabase for them; see the entry at the end of this file); earlier, 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
 review, and a photo upload no longer leaves every later save rejected as stale; see the entry at
 the end of this file); earlier, 2026-09-24 (shipped as 1.0.0: story editor fixes — bold/italic toggle off, a
 "free" travel style, line breaks kept on the review screen, uploads no longer lost to a
@@ -9670,3 +9677,298 @@ Drive files stay in the test account's Drive, since Delete photo never deletes D
 - Deleting a photo leaves both of its Drive files in place (existing behaviour for display copies
   too).
 - Not yet tried with a real 48MP iPhone HEIC on Vercel (the memory and time measurements were local).
+
+## 2026-10-13 — story map: free links between stories
+
+Replaced the two-level main/sub-story hierarchy (one "main story" per sub story,
+`stories.parent_story_id`) with free, undirected, Obsidian-style links between any of a
+contributor's own published stories — any number of links, no depth limit, no direction — managed
+from a new `/my-stories/map` page with a draggable graph. Product decision 2026-10-13. See
+docs/architecture.md, "Story links" (replaces its old "Sub stories" section) and
+docs/content-governance.md, "Story links go live without review" (reworded from "Sub stories go
+live without review" — the safety story is unchanged, only the shape is).
+
+**Database** (`supabase/migrations/20261013004751_story_links.sql` — applied to the hosted dev project — see
+"Applied" below): new table `public.story_links` (`story_a_id`,
+`story_b_id`, canonical order via `check (story_a_id < story_b_id)`, both FK to `stories` `on
+delete cascade`, `created_at`, `created_by`) — RLS enabled, zero policies, no direct grants, same
+pattern as `stories` itself. The migration first carries every existing `parent_story_id` link over
+into `story_links` (least/greatest of the two ids), then drops `stories.parent_story_id`, its
+check constraint and index, and every function that only existed for the old hierarchy:
+`set_story_parent_story()`, `get_story_parent_story()`, `list_parent_story_options()`,
+`get_published_story_family()`, `_story_has_sub_stories()`. Grepped every migration file first to
+confirm nothing else (e.g. the Drive folder-naming functions, which only ever _mention_ "sub
+story" in a comment) reads or writes any of these — nothing did, so nothing needed recreating.
+
+New functions: `link_stories(story, other)` (owner of both, same contributor, both published, not
+itself, not already linked — WHV10/WHV11/WHV15/WHV16), `unlink_stories(story, other)` (owner of
+the `story` side only, always allowed, idempotent), `get_my_story_graph()` (no args, owner-scoped
+via the exact source-kind-partitioned check `list_my_stories()` uses — not `contributor_id` alone —
+returns the caller's own stories as nodes plus `story_links` as edges), and
+`get_published_story_links(story_id)` (anon-callable, mirrors `get_published_story_family()`'s
+`_story_is_publicly_visible()` gate on both ends exactly).
+
+WHV codes: WHV10, WHV11 and WHV15 are reused with the same meaning as the old hierarchy (self-link,
+not found/not yours, not published) — a free link needs exactly the same three refusals, just
+symmetric now. WHV12 (main story not published — subsumed, since both sides now get the same
+WHV15 check), WHV13 (main story is itself a sub story) and WHV14 (this story already has sub
+stories) are retired outright: both were hierarchy-depth rules with no meaning once links are
+unlimited and undirected. WHV16 is new: the pair is already linked.
+
+**App side.** `lib/story/story-links.ts` replaces `lib/story/sub-stories.ts` (deleted, along with
+its test): `getPublishedStoryLinks()`/`getPublishedStoryLinksDeduped()`, `matchStoryLinkCards()`,
+`getMyStoryGraph()`. `lib/story/mutations.ts`'s `setStoryParentStory()` is replaced by
+`linkStories()`/`unlinkStories()`. `lib/story/rpc-errors.ts`'s `subStoryErrorKey()` is replaced by
+`storyLinkErrorKey()`.
+
+**Story map page** (`app/(contributor)/my-stories/map/`): `page.tsx` (server component, loads the
+graph via `getMyStoryGraph()`), `story-map-view.tsx` (client component — the graph and its
+accessible-list fallback), `actions.ts` (`linkStoriesAction`/`unlinkStoriesAction` — Zod uuid
+validation, signed-in check, WHV→translated-message mapping, `logAppEvent` with
+`story.link.created`/`story.link.removed`, re-derives both stories' slugs from the owner-scoped
+`list_my_stories()` to invalidate their public pages via `lib/story/public-cache.ts`'s existing
+helpers — never trusts a client-supplied slug).
+
+The graph itself is a hand-rolled, lightweight force-directed layout (`lib/story/story-map-layout.ts`
+— pure, deterministic given a seed: repulsion between every pair of nodes, a spring along every
+edge, a weak centering force, a fixed tick count, no new dependency) rendered as inline SVG with
+native pointer events (pointer capture, `touch-action: none` — no `@dnd-kit`, which is for
+collision/sorting, not positioning). Layout is computed once per mount and never persisted — every
+visit reflows from scratch; a contributor can drag nodes freely during the session.
+`lib/story/story-map-interactions.ts` holds the two pure decisions the component calls:
+`findDropTarget()` (nearest node within a pixel threshold) and `canLinkNodes()` (self/not-
+linkable/already-linked pre-checks — the RPC is still the real gate; this only decides what the UI
+attempts and what hint it shows). Dropping a node onto another calls `linkStoriesAction`
+optimistically (edge shown immediately, rolled back with a translated toast on refusal); clicking
+an edge or a node's own panel offers Unlink behind a confirm dialog. A non-published story renders
+greyed/dashed and is draggable but never a valid drop target.
+
+**Accessibility / mobile-first.** Beside the graph, `AccessibleStoryLinkList` (inside
+`story-map-view.tsx`) is the full keyboard/screen-reader equivalent (Engineering Rule 19): every
+owned story, a "Link to…" `<select>` + button for published ones, a hint for drafts, and each
+story's current links with their own Unlink buttons — calling the exact same two Server Actions,
+not a separate code path. No `prefers-reduced-motion` branch was needed: nothing about mounting was
+ever animated (final positions are set directly, no tick-by-tick transition), so there was nothing
+to skip.
+
+**My Stories** (`app/(contributor)/my-stories/`): removed the per-row Link action
+(`link-main-story-dialog.tsx` + its test deleted, along with `loadLinkMainStoryDataAction`/
+`linkMainStoryAction` from `actions.ts` + their tests), added an "Open story map" link beside "My
+Photos" at the top of the page. `components/story/parent-story-picker.tsx` + its test deleted
+(nothing else used it).
+
+**Public story page**: `components/story/story-family.tsx`'s `SubStoryCard`/`SubStoryList` are
+renamed `LinkedStoryCard`/`LinkedStoryList`; `PartOfStory` (the old "Part of: …" breadcrumb) is
+removed outright — a link has no direction, so there is nothing to show above the content any
+more, only the "Linked stories" section after content/photos/costs, above the Report box, same
+position as before. Still filtered out of "Related stories" on the same page.
+
+**i18n**: added `storyMap.*` (the whole new page's copy), `myStories.storyMapLink`,
+`actionErrors.storyLink{Self,NotFound,NotPublished,AlreadyLinked}`,
+`story.family.linkedStoriesHeading`; removed `editor.parentStory.*` (now fully unused),
+`myStories.linkMainStoryDialog.*`, `myStories.actions.linkMainStory`,
+`actionErrors.subStory{Self,NotFound,ParentNotPublished,ParentIsSubStory,HasSubStories,
+NotPublished}`, `story.family.{partOfLabel,partOf,subStoriesHeading}`. Both `en.json` and
+`zh-CN.json` updated together; `i18n/messages/messages.test.ts`'s cross-language key/ICU-argument
+checks pass.
+
+**Tests**: new — `lib/story/story-links.test.ts` (replaces `sub-stories.test.ts`),
+`lib/story/story-map-layout.test.ts` (the pure layout helper: deterministic given a seed, stays in
+bounds, settles linked nodes toward the spring's rest length, tolerates an edge referencing an
+unknown node), `lib/story/story-map-interactions.test.ts` (drop-target hit-testing and the
+link/no-link decision, including both edge directions and a different already-linked pair not
+blocking a new one), `app/(contributor)/my-stories/map/actions.test.ts`, `app/(contributor)/
+my-stories/map/story-map-view.test.tsx` (accessible-list link/rollback/unlink flows, scoped by row
+via each row's own label element since a linkable story's title can legitimately also appear as an
+`<option>` inside a DIFFERENT row's picker). Updated: `lib/story/rpc-errors.test.ts`,
+`components/story/story-family.test.tsx`, `app/(contributor)/my-stories/my-stories-view.test.tsx`
+(removed the obsolete per-row Link test, added one for the new "Open story map" link),
+`app/(contributor)/my-stories/actions.test.ts` (removed the deleted actions' tests). Deleted:
+`lib/story/sub-stories.test.ts`, `components/story/parent-story-picker.test.tsx`,
+`app/(contributor)/my-stories/link-main-story-dialog.test.tsx`. Not added to
+`tests/integration/story-rls.integration.test.ts` this round (that suite needs a live linked
+project and the migration isn't applied yet — see below) — flagged as a follow-up once it is.
+
+**Verified 2026-10-13** on the hosted dev project inside a rolled-back transaction: the whole
+migration runs end to end (table, RLS, data migration, drops, new functions, grants) with no
+errors, then — as the real owner of two published stories (`request.jwt.claim.sub` set via
+`set_config`, no edge function involved) — self-link refused WHV10, a duplicate link attempt
+refused WHV16, a different user and anon both refused WHV11, `get_my_story_graph()` showed the new
+edge, `get_published_story_links()` read it back from the public side, unlink succeeded, and a
+second unlink of the same pair was a no-op rather than an error. Rolled back — nothing was
+committed.
+
+**Applied 2026-10-13** to the hosted dev project (`ybhydepjaantkngngvuf`) via the Supabase MCP
+`apply_migration`; hosted recorded it as `20261013004751`, and the local file carries that version.
+`supabase db push` was not usable: the shared dev database has migrations from other branches
+(`countries`, `trips`, ...) that this checkout doesn't have, and the migration history was not
+"repaired" over them. One change from the rolled-back test above, made in review before applying:
+`link_stories()` now checks `_is_story_owner()` on BOTH stories, not ownership of the first plus a
+matching `contributor_id` for the second (contributor_id is a grouping key, not an auth check).
+Security advisor: only the expected INFO/WARN lines for the new objects (RLS-enabled-no-policies on
+`story_links`, same as `stories`; the definer functions callable by `authenticated`; only
+`get_published_story_links` callable by `anon`). `types/database.ts` regenerated with
+`npm run supabase:types:linked`, then cut back to this migration's changes only (the other
+branches' tables were left out on purpose, as in 20261003051644).
+
+**Checked in the browser 2026-10-13** against the dev project, signed in as the owner: the
+migrated Kakiman ↔ Opotiki Trip link showed on the map; dragging Auckland Trip onto Trying Something
+New linked them (toast, edge survived a reload, Auckland Trip's public page listed it under
+"Linked stories"); unlinking from the accessible list's confirm dialog removed it again. No
+horizontal scroll at 375px. Three fixes came out of that pass:
+
+- Hydration mismatch on every node: the force layout ran in both Node and the browser, and the
+  results differed in the last decimal places. The layout now runs once in `page.tsx` and is
+  passed down as `initialPositions`.
+- Fast drags never linked: `handlePointerUp` read the drop point from the last render's
+  `positions`, which a quick drag hadn't updated yet. It now uses the pointerup's own coordinates.
+  `setPointerCapture` is wrapped, since it throws when the pointer is already gone.
+- A node dropped onto a story now returns to where it started, so the new edge is visible
+  instead of hidden under two stacked nodes.
+
+**Unfinished:**
+
+- ~~Phone graph too small~~ — fixed the same day, see the follow-up below.
+- `tests/integration/story-rls.integration.test.ts` was not extended with the new RLS rules this
+  round (see Tests above) — a good next-prompt candidate once the migration is live, using that
+  file's existing `untypedRpc()`/`untypedTable()` escape hatch for functions/tables ahead of
+  regenerated types.
+
+**Follow-up (same day): the story map on phones.** The 640×420 map used to be shrunk to fit the
+screen, which at 375px meant labels around 6px and dots about 11px across. Now the graph has a
+camera (`lib/story/story-map-camera.ts`, unit tested): below 480px of graph width it opens at 1:1
+in a taller 4:5 box (dots 20px, labels 11px) and you drag empty space to pan or pinch to zoom.
+Wider graphs fit the whole map as before. `+` / `−` / `Fit` buttons sit on the graph at every size,
+and a one-line hint under it shows on phones only. Each node has an invisible 44px tap area and
+each link line an 18px-wide invisible tap strip. The first render still draws the whole map
+(`viewBox="0 0 640 420"`), so server HTML and hydration match; the camera takes over once a
+`ResizeObserver` has measured the graph. Checked at 375×812 in the browser: 1:1 on load, panning
+moved the view by exactly the dragged distance and stopped at the map's edge, Fit and Zoom in
+worked, and dragging a node still worked with the view panned and zoomed. Desktop (702px graph)
+is unchanged.
+
+## 2026-10-21 — story folders replace free links
+
+Replaced the free, undirected story-link design (`story_a_id`/`story_b_id` rows, no hierarchy) with
+a one-level folder shape: a story is either a MAIN story (may have sub stories), a SUB story (filed
+under exactly one main story), or neither. Product decision 2026-10-21 — the owner found free links
+left "what belongs under what" ambiguous on a contributor's own profile. See docs/architecture.md,
+"Story folders" (replaces its "Story links" section) and docs/content-governance.md, "Story folders
+go live without review" (reworded from "Story links go live without review" — the safety story is
+unchanged, only the shape is).
+
+**Database** (`supabase/migrations/20261021085920_story_folders.sql` — applied to the hosted dev
+project on 2026-10-21, see "Applied" below): restores
+`stories.parent_story_id` (`uuid`, FK to `stories` `on delete set null`, checked non-self, partial
+index) — no direct API grants, same pattern as every other write-protected column on `stories`. The
+migration converts every existing `story_links` row into a parent/child pair first: for each link,
+the end with MORE total links (across every link it appears in, not just this one) becomes the
+parent; a tie goes to the earlier `published_at`, then the lower id; a conversion is only applied
+when it is one-level-valid AT THE TIME it's processed (the would-be child currently has no children,
+the would-be parent currently has no parent) — anything that would break that is simply skipped.
+Then it drops `story_links` and its four functions: `link_stories()`, `unlink_stories()`,
+`get_my_story_graph()`, `get_published_story_links()`.
+
+New/changed functions: `set_story_parent(story_id, parent_id)` (owner of both, both published when
+setting — not when clearing with `parent_id = null` — one level only: target can't already be a sub
+story, this story can't already have sub stories — WHV10/WHV11/WHV13/WHV14/WHV15),
+`get_my_story_folders()` (no args, owner-scoped via the exact source-kind-partitioned check
+`list_my_stories()` uses — not `contributor_id` alone — returns every one of the caller's own
+stories with its current `parent_story_id`), `get_published_story_family(story_id)` (anon-callable,
+takes a story id now instead of a slug, re-checks `_story_is_publicly_visible()` on both the parent
+and every sub story every time, returns `{parent, sub_stories}` exactly the way the first
+main/sub-story design's function of the same name did).
+
+WHV codes: WHV10, WHV11 and WHV15 keep the meaning every design has given them (self, not
+found/not yours, not published — WHV15 now checked only when setting, not clearing). WHV13 (target
+is itself a sub story) and WHV14 (this story already has sub stories) are restored from the first
+hierarchy — the free-link design had retired them since they had no meaning for unlimited undirected
+links; folders need the one-level rule they exist to enforce. WHV16 ("already linked") stays
+retired — it has no meaning for a single parent pointer. WHV12 ("main story not published") stays
+folded into WHV15, as the free-link design already had it.
+
+**App side.** `lib/story/story-folders.ts` replaces `lib/story/story-links.ts` (deleted, along with
+its test): `getPublishedStoryFamily()`/`getPublishedStoryFamilyDeduped()`,
+`matchStoryFamilyCards()`, `getMyStoryFolders()`. `lib/story/mutations.ts`'s
+`linkStories()`/`unlinkStories()` are replaced by a single `setStoryParent()`.
+`lib/story/rpc-errors.ts`'s `storyLinkErrorKey()` is replaced by `storyFolderErrorKey()`, restoring
+the original `subStory*` i18n key names for WHV10–WHV15 (the free-link design's `storyLink*` names
+are gone).
+
+**Story folders page** (`app/(contributor)/my-stories/map/` — route and nav link kept, only the
+page's own title/copy changed, from "Story map" to "Story folders"): `page.tsx` (server component,
+loads every owned story via `getMyStoryFolders()`), `story-folders-view.tsx` (client component —
+replaces `story-map-view.tsx`, deleted along with its test), `actions.ts`
+(`setStoryParentAction` — Zod uuid/nullable validation, signed-in check, WHV→translated-message
+mapping via `storyFolderErrorKey`, `logAppEvent` with `story.folder.set`/`story.folder.cleared`,
+re-derives every affected story's slug — the story being filed, its new parent, and its OLD parent
+when re-filing — from the owner-scoped `list_my_stories()` to invalidate their public pages via
+`lib/story/public-cache.ts`'s existing helpers; never trusts a client-supplied slug).
+
+The view renders every published, not-itself-filed story as a folder row (even with zero sub
+stories, so there's a row to drop onto); expanding one (`aria-expanded` on a real `<button>`) shows
+its sub stories with a status badge, an "Open story" link and a "Remove from folder" button behind
+`ConfirmDialog`. Everything else sits under "Not in a folder", greyed with a publish hint when not
+yet published. Drag-and-drop uses `@dnd-kit/core`'s `useDraggable`/`useDroppable` (not `sortable` —
+this is cross-container filing, not reordering within one list), with the same sensor pattern as the
+editor's photo reorder (`MouseSensor` at 6px, `TouchSensor` at a 250ms press-and-hold,
+`KeyboardSensor`); the drag handle is a small handle element separate from any row's interactive
+children (the "Move to" select, the "Open story"/"Remove" controls), same discipline
+`SortablePhotoTile` documents, so nothing ends up as a nested-interactive element. Every row also
+carries a "Move to…" `<select>` — the keyboard/screen-reader and phone fallback (Engineering
+Rule 19) — calling the exact same `setStoryParentAction`, with an optimistic update, rollback and
+translated toast on refusal.
+
+**Public story page**: `components/story/story-family.tsx`'s `LinkedStoryList`/`LinkedStoryCard`
+are renamed back to `SubStoryList`/`SubStoryCard`, and `PartOfStory` is restored (a sub story shows
+"Part of: &lt;main story&gt;" near the top, linking to its parent). `app/(public)/stories/[id]/
+page.tsx` reads `getPublishedStoryFamilyDeduped()` instead of the free-link reader, renders
+`PartOfStory` plus `SubStoryList`, and filters sub stories out of "Related stories" the same way the
+free-link design filtered linked stories out.
+
+**i18n.** `story.family.linkedStoriesHeading` is replaced by `partOfLabel`/`partOf`/
+`subStoriesHeading` (restoring the first design's strings). `actionErrors.storyLink*` keys are
+replaced by `actionErrors.subStory*` keys (restoring the first design's wording, lightly reworded
+for "filed"/"folder" instead of "linked"). The `storyMap` message namespace is replaced by
+`storyFolders`. `myStories.storyMapLink`'s text changes from "Open story map" to "Open story
+folders" (the key itself is unchanged, so nothing else needed updating).
+
+**types/database.ts** hand-edited to match: `story_links` table entry removed; `stories`
+Row/Insert/Update gained `parent_story_id: string | null` and a
+`stories_parent_story_id_fkey` self-reference in `Relationships`; `get_my_story_graph`/
+`link_stories`/`unlink_stories`/`get_published_story_links` function entries removed;
+`get_my_story_folders`/`set_story_parent`/`get_published_story_family` added. Pending a real
+`supabase gen types` run once the migration is applied.
+
+**Verified 2026-10-21** on the hosted dev project inside a rolled-back transaction (not applied):
+the full migration ran end to end; before rollback, the dev data's two existing `story_links` rows
+(Opotiki Trip↔Kakiman, Trying Something New↔Kakiman) converted correctly — Kakiman had the most
+total links (2, versus 1 each for the other two), so it became the parent of both, and Kakiman's
+own `parent_story_id` stayed null.
+
+**Unfinished / not yet done this round:**
+
+- ~~Not applied / types hand-written~~ — done, see "Applied" below.
+- `tests/integration/story-rls.integration.test.ts` was not extended with the new RLS rules this
+  round — a good next-prompt candidate once the migration is live, using that file's existing
+  `untypedRpc()`/`untypedTable()` escape hatch for functions/tables ahead of regenerated types.
+
+**Applied 2026-10-21** to the hosted dev project (`ybhydepjaantkngngvuf`) via the Supabase MCP
+`apply_migration` (owner approved), recorded as `20261021085920`; the local file carries that
+version. Reviewed before applying: `set_story_parent()` checks `_is_story_owner()` on both stories
+and reads both rows again only after locking them in id order, so a parallel "file A under B" /
+"file B under C" can't produce two levels. Result: Opotiki Trip and Trying Something New are filed
+under Kakiman, and `story_links` and its four functions are gone. `types/database.ts` was compared
+with `supabase gen types --linked` output: the new column, foreign key and three functions match
+exactly, and the removed table and functions are absent from both, so the hand-written file stands
+(other branches' tables on the shared dev database were left out on purpose, as before).
+
+**Checked in the browser 2026-10-21** against the dev project, signed in as the owner: the folder
+page listed Kakiman ("2 sub stories") and Auckland Trip as folders, drafts greyed with their Move to
+menus disabled, and Kakiman's own menu disabled (it has sub stories). Expanding Kakiman showed
+Opotiki Trip and Trying Something New. "Move to" refiled Opotiki Trip under Auckland Trip, and a
+mouse drag filed it back under Kakiman, so the data ended as it started. Kakiman's public page lists
+both under "More in this story"; Opotiki Trip's shows "Part of: Kakiman". One fix came out of it:
+dnd-kit's default screen-reader announcements read raw ids ("Draggable item 54ec… was dropped over
+droppable area folder-ef3b…"), in English only. They now name the stories, with translated drag
+instructions (`storyFolders.announce.*`, both locales).

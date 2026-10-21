@@ -22,8 +22,8 @@ import { StoryGallery } from "@/components/story/story-gallery";
 import { PartOfStory, SubStoryList } from "@/components/story/story-family";
 import {
   getPublishedStoryFamilyDeduped,
-  matchSubStoryCards,
-} from "@/lib/story/sub-stories";
+  matchStoryFamilyCards,
+} from "@/lib/story/story-folders";
 import { StoryCard } from "@/components/story/story-card";
 import { AttributionChip } from "@/components/story/attribution-chip";
 import { PersonalExperienceLabel } from "@/components/story/personal-experience-label";
@@ -200,7 +200,7 @@ export default async function StoryDetailPage({
   const [media, activeRegions, family] = await Promise.all([
     getPublishedStoryMediaDeduped(story.story_id),
     listPublicRegions(),
-    getPublishedStoryFamilyDeduped(story.slug),
+    getPublishedStoryFamilyDeduped(story.story_id),
   ]);
 
   // Sub stories as full cards. A sub story always has the same contributor
@@ -211,7 +211,7 @@ export default async function StoryDetailPage({
     family.subStories.length > 0 && story.contributor_slug
       ? await getPublicContributorDeduped(story.contributor_slug)
       : null;
-  const subStoryCards = matchSubStoryCards(
+  const subStoryCards = matchStoryFamilyCards(
     family.subStories,
     subStoryContributor
       ? await listPublishedStories({

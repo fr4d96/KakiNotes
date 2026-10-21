@@ -646,18 +646,7 @@
       "delete": "Delete {title}",
       "takeDown": "Take down {title}",
       "cancelTakedown": "Cancel the takedown request for {title}",
-      "takedownPending": "Takedown requested for {title} — awaiting review. Choose to cancel the request.",
-      "linkMainStory": "Set the main story for {title}"
-    },
-    "linkMainStoryDialog": {
-      "title": "Main story for \"{title}\"",
-      "liveNote": "Both stories are already published, so the link shows on both pages straight away — no review needed.",
-      "loading": "Loading…",
-      "save": "Save",
-      "saving": "Saving…",
-      "cancel": "Cancel",
-      "toast": "Linked \"{title}\" to its main story.",
-      "toastCleared": "Removed the main story from \"{title}\"."
+      "takedownPending": "Takedown requested for {title} — awaiting review. Choose to cancel the request."
     },
     "deleteDialog": {
       "title": "Delete this story?",
@@ -682,7 +671,8 @@
       "keptPrivate": "Saved privately. Only you can see it."
     },
     "updatedAt": "Updated {date}",
-    "myPhotosLink": "My Photos"
+    "myPhotosLink": "My Photos",
+    "storyMapLink": "Open story folders"
   },
   "storyStatus": {
     "draft": "Draft",
@@ -944,13 +934,6 @@
       "hide": "Hide",
       "outlineLead": "Know the shape already?",
       "outlineAction": "Start from an outline"
-    },
-    "parentStory": {
-      "label": "Main story (optional)",
-      "none": "None — this is its own story",
-      "help": "Link this story under one of your other published stories, e.g. 'Fergburger' under 'Food in Queenstown'.",
-      "hasSubStories": "Other stories are linked under this one, so it can't become a sub story.",
-      "noOptions": "Publish another story first to file this one under it."
     }
   },
   "publish": {
@@ -1212,12 +1195,11 @@
     "savePrivateFailed": "Could not save this story privately.",
     "requestChangesFailed": "Could not request changes.",
     "declineFailed": "Could not decline.",
-    "subStorySelf": "A story can't be its own main story.",
-    "subStoryNotFound": "That main story couldn't be found.",
-    "subStoryParentNotPublished": "The main story has to be published first.",
+    "subStorySelf": "A story can't be filed under itself.",
+    "subStoryNotFound": "That story couldn't be found.",
     "subStoryParentIsSubStory": "That story is already a sub story, so it can't have sub stories of its own.",
-    "subStoryHasSubStories": "Other stories are already linked under this one, so it can't become a sub story.",
-    "subStoryNotPublished": "Only published stories can be linked."
+    "subStoryHasSubStories": "This story already has sub stories, so it can't be filed into a folder.",
+    "subStoryNotPublished": "Only published stories can be filed into a folder."
   },
   "takedown": {
     "alreadyDown": "This story has already been taken down.",
@@ -1251,5 +1233,44 @@
     "fullQuality": "Full quality",
     "downloadFull": "Download full quality",
     "downloadFullLabel": "Download {photo} in full quality"
+  },
+  "storyFolders": {
+    "metaTitle": "Story folders",
+    "title": "Story folders",
+    "backToMyStories": "Back to My Stories",
+    "intro": "Drag a published story onto a folder to file it there, or use “Move to…”. Only published stories can be filed.",
+    "empty": "Publish at least one story to start making folders.",
+    "dragHint": "Drag a story onto a folder to file it there, or onto “Not in a folder” to remove it.",
+    "folders": {
+      "subStoryCount": "{count, plural, one {# sub story} other {# sub stories}}",
+      "openStory": "Open story",
+      "removeFromFolder": "Remove from folder",
+      "removeDialog": {
+        "title": "Remove from folder?",
+        "description": "“{child}” will no longer show as filed under “{parent}”.",
+        "confirm": "Remove"
+      }
+    },
+    "notInFolder": {
+      "heading": "Not in a folder",
+      "publishHint": "Publish this story to file it.",
+      "notDraggableHint": "This story has sub stories, so it can't be filed under another."
+    },
+    "moveTo": {
+      "label": "Move to",
+      "notInFolderOption": "Not in a folder"
+    },
+    "toasts": {
+      "filed": "Filed “{child}” under “{parent}”.",
+      "removed": "Removed “{child}” from its folder."
+    },
+    "announce": {
+      "instructions": "To pick up a story, press Space or Enter. Use the arrow keys to move it over a folder, then press Space or Enter to drop it there, or Escape to cancel. You can also use the Move to menu.",
+      "start": "Picked up “{story}”.",
+      "over": "“{story}” is over “{target}”.",
+      "outside": "“{story}” is not over a folder.",
+      "dropped": "Dropped “{story}” on “{target}”.",
+      "cancelled": "Stopped moving “{story}”."
+    }
   }
 }
