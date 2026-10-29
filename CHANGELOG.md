@@ -2,6 +2,32 @@
 
 ## [1.10.0](https://github.com/fr4d96/KakiNotes/compare/v1.9.0...v1.10.0) (2026-10-29)
 
+### What's new for readers
+
+**A journey map on stories.** Stories can now show an illustrated map of New Zealand with the route the writer travelled. A little campervan drives from stop to stop (and takes the ferry across Cook Strait), and a timeline beside the map follows along. Press Pause or Play at any time, or tap a stop to jump straight to it.
+
+**Places inside a stop.** Some stops have a "+3 places" badge. Tap one and the map zooms in to show the smaller places the writer visited there, like Arrowtown and Glenorchy inside Queenstown. Tap "Back to whole journey" (or press Esc) to zoom out again.
+
+**Zoom and look around.** Use the + and − buttons, pinch on a phone, or hold Ctrl/⌘ while scrolling to zoom. Drag to look around, and use the re-centre button to follow the van again. The map also works in dark mode.
+
+**Jump to that part of the story.** If the writer linked a stop to a section of their story, "Read this part" takes you straight there.
+
+### What's new for contributors
+
+**Add your journey in the story editor.** Tap the map to drop a pin, or paste a Google Maps link and the pin is placed for you. Give each stop a name and, if you like, link it to one of your story's headings. You can have up to 12 main stops, with up to 8 places inside each one.
+
+**Group places under a main stop.** Use "Part of" on a stop, or tap a main stop's pin and choose "Add places inside", to keep busy areas tidy. Readers only see those places when they open the main stop.
+
+**Easy to fix mistakes.** Tap a pin to remove or rename it, and Undo brings back anything you removed by accident.
+
+### Good to know
+
+**Your exact location is never shown.** Pins are rounded to about 1 km, must be inside New Zealand, and readers only ever see the place names you type, never coordinates.
+
+**Reviewed with your story.** The journey map is part of your story, so changes to it go live once that version of your story is approved, like any other edit.
+
+
+
 
 ### Features
 
