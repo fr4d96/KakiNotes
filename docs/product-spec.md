@@ -75,17 +75,21 @@ Moderators are not the same role as editors, even though one person may hold bot
 - Moderation queue: approve / reject with reason, for both self-service submissions and imports.
 - Reporting: a way for readers to flag a published story or image for review.
 - Search and the filters listed above.
-- Story journey illustration: a contributor may pin up to 12 ordered MAIN stops (a short place-name
-  label, optionally linked to a heading in the story), and inside each main stop up to 8 sub-stops
-  ("places inside", at most 40 stops in total; one level only, grouped by the contributor, never
-  automatically). Readers see the main stops as the route; opening a main stop shows its sub-stops,
-  with a "Back to whole journey" control. Readers see a stylised, illustrated New Zealand
-  with the route and an animated campervan (a ferry across Cook Strait). It is a picture, not a
+- Story journey illustration: each contributor has ONE journey map, shown as the Journey tab on
+  their public New Zealand profile (only when they have at least one pin). Each pin is a place (a
+  short place-name label and a position on New Zealand) tied to one of the contributor's own
+  PUBLISHED New Zealand stories; opening a pin shows the label, the story's title and a "Read this
+  story" link. Main stories are the main pins and appear as the route in trip order; a story's sub
+  stories (story folders) appear inside its main story's pin, with a "Back to whole journey"
+  control. A contributor manages pins from My Stories > Journey map. Pins go public immediately
+  (no moderation, like story folders). Readers see a stylised, illustrated New Zealand
+  with the route and an animated campervan (a ferry across Cook Strait); a single pin shows just
+  the place. It is a picture, not a
   map: no map tiles or third-party map provider, no reader geolocation, no routing, distances or
   itinerary planning. Readers may zoom and pan the illustration itself (zoom buttons, drag,
   Ctrl/⌘-scroll, pinch, keyboard; one-finger touch still scrolls the page) and re-centre it on
   the van. Coordinates are rounded server-side (~1 km), must fall inside New Zealand, and are
-  never shown to readers; stops are reviewed as part of the story revision.
+  never shown to readers.
 - SEO (indexable pages, sitemap, structured metadata) for approved published stories only.
 - Operational tooling needed to actually launch with the first real contributors' content
   (import UI/scripts, moderation queue, basic admin visibility) — no more than that.

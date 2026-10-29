@@ -10,6 +10,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
   JOURNEY_VIEWBOX,
@@ -30,7 +31,6 @@ import {
 } from "@/lib/journey/path";
 import { spreadPins } from "@/lib/journey/pins";
 import type { JourneyStopView } from "@/lib/journey/schema";
-import { sectionDomId } from "@/lib/story/heading-ids";
 import { JourneyBackdrop } from "@/components/story/journey-backdrop";
 import { JourneyCities } from "@/components/story/journey-cities";
 import {
@@ -49,16 +49,16 @@ import { Campervan, Ferry } from "@/components/story/journey-vehicles";
  * The reader-facing "story journey" picture: a stylised illustration
  * of New Zealand with the contributor's route drawn on it and a
  * cartoon campervan (a ferry across Cook Strait) that drives from stop to
- * stop, pausing at each one to show a card that links to that part of the
- * same story.
+ * stop, pausing at each one to show a card that links to the contributor's
+ * story for that place (one pin per published New Zealand story).
  *
  * It is a picture, not a map: no tiles, no geolocation, no routing. Readers
  * may zoom and pan the picture (buttons, wheel with Ctrl/Cmd, pinch, drag,
  * keyboard); that switches the camera from "auto" (follows the van) to
  * "manual" until they re-centre or pick a stop. It only
- * ever receives labels and ~1 km-rounded positions that were already part of
- * the APPROVED published revision (or a preview the viewer is entitled to);
- * coordinates are never printed.
+ * ever receives labels and ~1 km-rounded positions of publicly visible
+ * stories (see lib/journey/contributor-journey.ts); coordinates are never
+ * printed. A single pin is fine: no route and no van, just the place.
  *
  * Accessibility: an ordered text list of the stops is ALWAYS rendered and is
  * the real content; the SVG is a labelled image whose pins are keyboard
@@ -242,20 +242,7 @@ function CountBadge({ n, x, y }: { n: number; x: number; y: number }) {
   );
 }
 
-export function JourneyMap({
-  stops: allStops,
-  availableAnchors,
-  topHref = "#story-title",
-}: {
-  stops: JourneyStopView[];
-  /**
-   * Anchors that really exist in the story. A stop whose anchor is not in
-   * this list (the heading was renamed after the stop was pinned) links to
-   * the top of the story instead of nowhere. Omit to trust every anchor.
-   */
-  availableAnchors?: readonly string[];
-  topHref?: string;
-}) {
+export function JourneyMap({ stops: allStops }: { stops: JourneyStopView[] }) {
   const t = useTranslations("journey");
   const headingId = useId();
   const helpId = useId();
@@ -439,7 +426,7 @@ export function JourneyMap({
     [count, place],
   );
 
-  const showVehicle = !reducedMotion;
+  const showVehicle = !reducedMotion && count >= 2;
 
   // Park the vehicle at the first stop once it exists in the DOM.
   useEffect(() => {
@@ -610,8 +597,10 @@ export function JourneyMap({
         maxZoom: GROUP_MAX_ZOOM,
       });
     }
-    return reducedMotion || finished ? FULL_BOX : cameraBoxFor(points, camLeg);
-  }, [openMain, subPoints, reducedMotion, finished, points, camLeg]);
+    return reducedMotion || finished || count < 2
+      ? FULL_BOX
+      : cameraBoxFor(points, camLeg);
+  }, [openMain, subPoints, reducedMotion, finished, count, points, camLeg]);
 
   useEffect(() => {
     // In manual mode the reader owns the camera; the van keeps driving.
@@ -794,15 +783,7 @@ export function JourneyMap({
     setPlaying(true);
   }
 
-  function hrefFor(stop: JourneyStopView): string {
-    const anchor = stop.sectionAnchor;
-    if (anchor && (!availableAnchors || availableAnchors.includes(anchor))) {
-      return `#${sectionDomId(anchor)}`;
-    }
-    return topHref;
-  }
-
-  if (count < 2) return null;
+  if (count < 1) return null;
 
   const statusText =
     openMain !== null
@@ -814,7 +795,9 @@ export function JourneyMap({
         ? t(travel.ferry ? "onTheFerry" : "onTheRoad", {
             label: stops[travel.to].label,
           })
-        : t("stopOf", { n: current + 1, total: count });
+        : count === 1
+          ? t("singlePlace")
+          : t("stopOf", { n: current + 1, total: count });
 
   return (
     <section
@@ -1232,7 +1215,7 @@ export function JourneyMap({
 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            {!reducedMotion ? (
+            {!reducedMotion && count >= 2 ? (
               <button
                 type="button"
                 onClick={togglePlay}
@@ -1263,10 +1246,6 @@ export function JourneyMap({
                       ? "current"
                       : "upcoming";
                 const isLast = i === count - 1;
-                const linked =
-                  stop.sectionAnchor &&
-                  (!availableAnchors ||
-                    availableAnchors.includes(stop.sectionAnchor));
                 const driving = travel !== null && travel.to === i + 1;
                 return (
                   <li
@@ -1340,7 +1319,7 @@ export function JourneyMap({
                             : ""
                       }`}
                     >
-                      {state === "current" ? (
+                      {state === "current" && count > 1 ? (
                         <p className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           {t("stopOf", { n: i + 1, total: count })}
                         </p>
@@ -1369,29 +1348,27 @@ export function JourneyMap({
                           </span>
                         ) : null}
                       </button>
-                      {/* Only a stop tied to a heading gets a link. */}
-                      {linked ? (
-                        <a
-                          href={hrefFor(stop)}
-                          className={`inline-block rounded-sm text-sm underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                            state === "upcoming" ? "text-muted-foreground" : ""
-                          }`}
-                        >
-                          {t("readThisPart")}
-                        </a>
-                      ) : null}
+                      <p
+                        data-testid="journey-story-title"
+                        className="text-sm text-muted-foreground"
+                      >
+                        {stop.storyTitle}
+                      </p>
+                      <Link
+                        href={stop.href}
+                        className={`inline-block rounded-sm text-sm underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                          state === "upcoming" ? "text-muted-foreground" : ""
+                        }`}
+                      >
+                        {t("readThisStory")}
+                        <span className="sr-only">: {stop.storyTitle}</span>
+                      </Link>
                       {openMain === i ? (
                         <ol
                           aria-label={t("insideList", { label: stop.label })}
                           className="m-0 mt-2 list-none space-y-2 border-l-2 border-dotted border-[#2b6cb0]/50 p-0 pl-3"
                         >
                           {subsByMain[i].map((sub, si) => {
-                            const subLinked =
-                              sub.stop.sectionAnchor &&
-                              (!availableAnchors ||
-                                availableAnchors.includes(
-                                  sub.stop.sectionAnchor,
-                                ));
                             return (
                               <li
                                 key={si}
@@ -1417,14 +1394,18 @@ export function JourneyMap({
                                     {sub.stop.label}
                                   </span>
                                 </button>
-                                {subLinked ? (
-                                  <a
-                                    href={hrefFor(sub.stop)}
-                                    className="inline-block rounded-sm text-sm underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                                  >
-                                    {t("readThisPart")}
-                                  </a>
-                                ) : null}
+                                <p className="pl-8 text-sm text-muted-foreground">
+                                  {sub.stop.storyTitle}
+                                </p>
+                                <Link
+                                  href={sub.stop.href}
+                                  className="ml-8 inline-block rounded-sm text-sm underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                                >
+                                  {t("readThisStory")}
+                                  <span className="sr-only">
+                                    : {sub.stop.storyTitle}
+                                  </span>
+                                </Link>
                               </li>
                             );
                           })}

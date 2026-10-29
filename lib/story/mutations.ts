@@ -711,36 +711,28 @@ export async function createStoryReport(
 }
 
 /**
- * Replaces a revision's journey-map stops
- * (supabase/migrations/20261029042052_story_revision_stops.sql).
+ * Pins a published New Zealand story on the caller's journey map, or clears
+ * the pin when `place` is null
+ * (supabase/migrations/20261029091942_contributor_journey.sql).
  *
- * The RPC authorizes the revision, checks the optimistic version, rounds the
- * coordinates, rejects anything outside New Zealand and caps the count --
- * this wrapper carries no rules of its own, it only renames keys.
+ * The RPC checks ownership (WHV11), that the story is published (WHV15) and
+ * in New Zealand (WHV17), the label and the bounds (WHV18), and rounds the
+ * coordinates -- this wrapper carries no rules of its own. The ids are the
+ * caller's claim; the database re-derives ownership.
  */
-export async function setRevisionStops(
-  revisionId: string,
-  expectedVersion: number,
-  stops: Array<{
-    latitude: number;
-    longitude: number;
-    label: string;
-    sectionAnchor?: string | null;
-    parentIndex?: number | null;
-  }>,
+export async function setStoryJourneyPlace(
+  storyId: string,
+  place: { label: string; latitude: number; longitude: number } | null,
 ) {
   await requireUser();
   const supabase = await createClient();
-  const { error } = await supabase.rpc("set_revision_stops", {
-    p_revision_id: revisionId,
-    p_expected_version: expectedVersion,
-    p_stops: stops.map((s) => ({
-      latitude: s.latitude,
-      longitude: s.longitude,
-      label: s.label,
-      section_anchor: s.sectionAnchor ?? null,
-      parent_index: s.parentIndex ?? null,
-    })),
+  const { error } = await supabase.rpc("set_story_journey_place", {
+    p_story_id: storyId,
+    // Same cast as setStoryParent's null parent: the generated types mark
+    // these required, but a null latitude is how the RPC clears the pin.
+    p_label: (place?.label ?? null) as string,
+    p_latitude: (place?.latitude ?? null) as number,
+    p_longitude: (place?.longitude ?? null) as number,
   });
   if (error) throw error;
 }

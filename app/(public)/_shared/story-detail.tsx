@@ -10,7 +10,7 @@ import {
   listPublicRegions,
 } from "@/lib/story/public-queries";
 import { getImageUrl } from "@/lib/story/image-url";
-import { imageBlockMediaIds, storyContentText } from "@/lib/validation/story";
+import { imageBlockMediaIds } from "@/lib/validation/story";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
 import { prefixedVocabName, vocabName } from "@/lib/i18n/vocab";
 import type { Locale } from "@/i18n/locales";
@@ -18,10 +18,8 @@ import {
   ContentBlockRenderer,
   type ContentBlockMediaMap,
 } from "@/components/story/content-block-renderer";
-import { JourneyMap } from "@/components/story/journey-map";
-import { countMainStops } from "@/lib/journey/schema";
-import { getPublishedStoryStopsDeduped } from "@/lib/story/journey-queries";
-import { extractHeadings } from "@/lib/story/headings";
+import Link from "next/link";
+import { getPublishedContributorJourney } from "@/lib/story/journey-queries";
 import { StoryGallery } from "@/components/story/story-gallery";
 import { PartOfStory, SubStoryList } from "@/components/story/story-family";
 import {
@@ -194,27 +192,37 @@ export async function StoryDetail({
   ]);
   if (!story) notFound();
 
-  const [media, activeRegions, family, journeyStops] = await Promise.all([
+  const [media, activeRegions, family, profileContributor] = await Promise.all([
     getPublishedStoryMediaDeduped(story.story_id),
     listPublicRegions(country),
     getPublishedStoryFamilyDeduped(story.story_id),
-    // Stops of the approved published revision only (Rules 10-12); [] when
-    // the RPC is unavailable, so the story itself always renders. The map
-    // draws New Zealand only (stops are NZ-bounded), so other countries'
-    // story pages never ask for it.
-    country === "new-zealand"
-      ? getPublishedStoryStopsDeduped(slug)
-      : Promise.resolve([]),
+    // The contributor's public profile, for the sub story cards and the
+    // "See this on ... journey" link. The journey map is New Zealand only,
+    // so other countries' story pages never ask for it.
+    story.contributor_slug
+      ? getPublicContributorDeduped(story.contributor_slug)
+      : Promise.resolve(null),
   ]);
+
+  // Is this story a pin on its contributor's journey? Public pins only
+  // (Rules 10-12); [] when the RPC is unavailable, so the story itself
+  // always renders.
+  let journeyContributor: typeof profileContributor = null;
+  if (country === "new-zealand" && profileContributor) {
+    const pins = await getPublishedContributorJourney(
+      profileContributor.contributor_id,
+    );
+    if (pins.some((pin) => pin.slug === story.slug)) {
+      journeyContributor = profileContributor;
+    }
+  }
 
   // Sub stories as full cards. A sub story always has the same contributor
   // as its main story, so one page of that contributor's published cards
   // covers it -- uncached, like every read on this page. The family read
   // decides WHICH stories show; the cards only add display fields.
   const subStoryContributor =
-    family.subStories.length > 0 && story.contributor_slug
-      ? await getPublicContributorDeduped(story.contributor_slug)
-      : null;
+    family.subStories.length > 0 ? profileContributor : null;
   const subStoryCards = matchStoryFamilyCards(
     family.subStories,
     subStoryContributor
@@ -373,17 +381,15 @@ export async function StoryDetail({
         )}
       </div>
 
-      {countMainStops(journeyStops) >= 2 ? (
-        <JourneyMap
-          stops={journeyStops}
-          availableAnchors={
-            parsedContent
-              ? extractHeadings(storyContentText(parsedContent)).map(
-                  (h) => h.anchor,
-                )
-              : []
-          }
-        />
+      {journeyContributor ? (
+        <p className="mt-8">
+          <Link
+            href={`/contributors/${journeyContributor.public_slug}/journey`}
+            className="inline-flex min-h-[44px] items-center text-sm font-medium text-accent underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            {t("seeOnJourney", { name: journeyContributor.display_name })}
+          </Link>
+        </p>
       ) : null}
 
       {galleryMedia.length > 0 ? (

@@ -18,10 +18,6 @@ import {
   ContentBlockRenderer,
   type ContentBlockMediaMap,
 } from "@/components/story/content-block-renderer";
-import { JourneyMap } from "@/components/story/journey-map";
-import { countMainStops } from "@/lib/journey/schema";
-import { getRevisionStops } from "@/lib/story/journey-queries";
-import { extractHeadings } from "@/lib/story/headings";
 import { PreviewContentBody } from "@/components/story/preview-content-body";
 import { PreviewGallery } from "@/components/story/preview-gallery";
 import {
@@ -235,9 +231,6 @@ export default async function ModerationReviewPage({
   const isReplacement = publishedSnapshot !== null;
 
   const parsedContent = normalizeStoryContentJson(detail.content_json);
-  // The submitted revision's journey stops, so the reviewer sees what they
-  // are approving (stops are reviewed with the revision -- no separate queue).
-  const journeyStops = await getRevisionStops(detail.revision_id);
   const parsedPublishedContent = publishedSnapshot
     ? normalizeStoryContentJson(publishedSnapshot.content_json)
     : null;
@@ -465,20 +458,6 @@ export default async function ModerationReviewPage({
             <div className="mt-3 rounded-xl border border-border-subtle p-4 sm:p-6">
               {submittedBody}
             </div>
-          )}
-
-          {countMainStops(journeyStops) >= 2 && (
-            <JourneyMap
-              stops={journeyStops}
-              topHref="#"
-              availableAnchors={
-                parsedContent
-                  ? extractHeadings(storyContentText(parsedContent)).map(
-                      (h) => h.anchor,
-                    )
-                  : []
-              }
-            />
           )}
 
           {media.length > 0 && (

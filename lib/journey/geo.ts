@@ -21,12 +21,6 @@ export const NZ_BOUNDS = {
 /** SVG user-space size of the illustration. */
 export const JOURNEY_VIEWBOX = { width: 220, height: 300 } as const;
 
-/** Main stops (the route the van drives). */
-export const MAX_JOURNEY_MAIN_STOPS = 12;
-/** Sub-stops ("places inside") one main stop can hold. */
-export const MAX_SUB_STOPS_PER_MAIN = 8;
-/** Main stops and sub-stops together. */
-export const MAX_JOURNEY_STOPS = 40;
 export const MAX_JOURNEY_LABEL_LENGTH = 60;
 
 export type LatLng = { latitude: number; longitude: number };

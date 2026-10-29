@@ -8,10 +8,6 @@ import {
 } from "@/lib/story/contributor-queries";
 import { imageBlockMediaIds, storyContentText } from "@/lib/validation/story";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
-import { JourneyMap } from "@/components/story/journey-map";
-import { countMainStops } from "@/lib/journey/schema";
-import { getRevisionStops } from "@/lib/story/journey-queries";
-import { extractHeadings } from "@/lib/story/headings";
 import { PreviewContentBody } from "@/components/story/preview-content-body";
 import { PreviewGallery } from "@/components/story/preview-gallery";
 import { PublishChoicePanel } from "@/components/story/publish-choice-panel";
@@ -59,7 +55,6 @@ export default async function StoryPreviewPage({
   if (!preview) notFound();
 
   const parsedContent = normalizeStoryContentJson(preview.contentJson);
-  const journeyStops = await getRevisionStops(preview.revisionId);
 
   // Same "don't show an inline-placed image twice" rule as the public page
   // (app/(public)/stories/[id]/page.tsx) -- see
@@ -339,20 +334,6 @@ export default async function StoryPreviewPage({
           <p className="text-destructive">{t("contentUnavailable")}</p>
         )}
       </div>
-
-      {countMainStops(journeyStops) >= 2 ? (
-        <JourneyMap
-          stops={journeyStops}
-          topHref="#"
-          availableAnchors={
-            parsedContent
-              ? extractHeadings(storyContentText(parsedContent)).map(
-                  (h) => h.anchor,
-                )
-              : []
-          }
-        />
-      ) : null}
 
       <StickyVisible
         show={isAwaitingThisContributorsApproval || canSubmitOwnConsent}

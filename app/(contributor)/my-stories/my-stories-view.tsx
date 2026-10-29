@@ -1014,6 +1014,12 @@ export function MyStoriesView({
             {t("storyMapLink")}
           </Link>
           <Link
+            href="/my-stories/journey"
+            className="rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium"
+          >
+            {t("journeyLink")}
+          </Link>
+          <Link
             href="/my-photos"
             className="rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium"
           >

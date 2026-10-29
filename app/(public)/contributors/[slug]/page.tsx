@@ -5,8 +5,10 @@ import {
   getPublicContributorDeduped,
   listContributorPublishedStories,
 } from "@/lib/story/public-queries";
+import { getPublishedContributorJourney } from "@/lib/story/journey-queries";
 import { StoryCard } from "@/components/story/story-card";
-import { ContributorAvatar } from "@/components/contributor/contributor-avatar";
+import { ContributorHeader } from "@/components/contributor/contributor-header";
+import { ContributorProfileTabs } from "@/components/contributor/contributor-profile-tabs";
 import { countryName } from "@/lib/countries";
 import { formatCountryName } from "@/lib/i18n/format";
 import { vocabName } from "@/lib/i18n/vocab";
@@ -105,10 +107,11 @@ export default async function ContributorDetailPage({
   ]);
   if (!contributor) notFound();
 
-  const stories = await listContributorPublishedStories(
-    contributor.contributor_id,
-    { limit: 24 },
-  );
+  const [stories, journey] = await Promise.all([
+    listContributorPublishedStories(contributor.contributor_id, { limit: 24 }),
+    // [] when the RPC is unavailable: the profile renders without the tab.
+    getPublishedContributorJourney(contributor.contributor_id),
+  ]);
 
   const from = formatCountryName(
     contributor.home_country_code,
@@ -119,22 +122,17 @@ export default async function ContributorDetailPage({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
-      <div className="flex items-center gap-4">
-        <ContributorAvatar
-          emoji={contributor.avatar_emoji}
-          displayName={contributor.display_name}
-          className="h-16 w-16 text-2xl"
-        />
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            {contributor.display_name}
-          </h1>
-          <p className="text-sm text-foreground/60">
-            {t("storyCountPublished", { count: storyCount })}
-            {from ? ` · ${t("fromCountry", { country: from })}` : ""}
-          </p>
-        </div>
-      </div>
+      <ContributorHeader
+        contributor={contributor}
+        storyCount={storyCount}
+        from={from}
+      />
+
+      <ContributorProfileTabs
+        slug={contributor.public_slug ?? slug}
+        active="stories"
+        showJourney={journey.length > 0}
+      />
 
       {contributor.bio ? (
         <p className="mt-6 max-w-2xl text-foreground/70">{contributor.bio}</p>

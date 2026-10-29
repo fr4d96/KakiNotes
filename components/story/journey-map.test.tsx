@@ -7,21 +7,24 @@ const AUCKLAND: JourneyStopView = {
   latitude: -36.85,
   longitude: 174.76,
   label: "Auckland",
-  sectionAnchor: "arriving",
+  storyTitle: "Arriving in Auckland",
+  href: "/stories/arriving-in-auckland",
   parentIndex: null,
 };
 const WELLINGTON: JourneyStopView = {
   latitude: -41.29,
   longitude: 174.78,
   label: "Wellington",
-  sectionAnchor: null,
+  storyTitle: "A windy week",
+  href: "/stories/a-windy-week",
   parentIndex: null,
 };
 const QUEENSTOWN: JourneyStopView = {
   latitude: -45.03,
   longitude: 168.66,
   label: "Queenstown",
-  sectionAnchor: "gone-missing",
+  storyTitle: "Gone missing in Queenstown",
+  href: "/stories/gone-missing",
   parentIndex: null,
 };
 const STOPS = [AUCKLAND, WELLINGTON, QUEENSTOWN];
@@ -66,18 +69,41 @@ describe("JourneyMap", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders nothing for fewer than two stops", () => {
-    const { container } = render(<JourneyMap stops={[AUCKLAND]} />);
+  it("renders nothing for no stops", () => {
+    const { container } = render(<JourneyMap stops={[]} />);
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("always renders the ordered text list of stops with section links", () => {
-    render(
-      <JourneyMap
-        stops={STOPS}
-        availableAnchors={["arriving", "gone-missing"]}
-      />,
+  it("renders a single pin without a route, van or play button", () => {
+    render(<JourneyMap stops={[AUCKLAND]} />);
+    const items = within(
+      screen.getByRole("list", { name: "Stops" }),
+    ).getAllByRole("listitem");
+    expect(items).toHaveLength(1);
+    expect(items[0]).toHaveTextContent("Auckland");
+    expect(items[0]).toHaveTextContent("Arriving in Auckland");
+    expect(
+      screen.getByRole("link", { name: /Read this story/ }),
+    ).toHaveAttribute("href", "/stories/arriving-in-auckland");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "One place on the map so far.",
     );
+    expect(
+      screen.queryByRole("button", { name: /Play|Pause|Replay/ }),
+    ).toBeNull();
+    expect(screen.queryByTestId("journey-connector")).toBeNull();
+    expect(screen.queryByTestId("journey-campervan")).toBeNull();
+    // The whole of New Zealand stays in view (no zoom onto the lone pin).
+    const svg = screen.getByRole("group", {
+      name: /route through new zealand/i,
+    });
+    expect(
+      svg.getAttribute("viewBox")!.split(" ").map(Number).slice(2),
+    ).toEqual([220, 300]);
+  });
+
+  it("always renders the ordered text list of stops, each linking to its story", () => {
+    render(<JourneyMap stops={STOPS} />);
     const list = screen.getByRole("list");
     const items = within(list).getAllByRole("listitem");
     expect(items.map((li) => li.textContent)).toEqual([
@@ -85,22 +111,19 @@ describe("JourneyMap", () => {
       expect.stringContaining("Wellington"),
       expect.stringContaining("Queenstown"),
     ]);
-    // A stop with no anchor (Wellington) gets no link at all.
+    // The place label sits beside the story's title.
+    expect(items[1]).toHaveTextContent("A windy week");
     const links = within(list).getAllByRole("link");
-    expect(links).toHaveLength(2);
-    expect(links[0]).toHaveAttribute("href", "#section-arriving");
-    expect(links[1]).toHaveAttribute("href", "#section-gone-missing");
-    expect(within(items[1]).queryByRole("link")).toBeNull();
-  });
-
-  it("drops the link when a stop's anchor no longer exists", () => {
-    render(<JourneyMap stops={STOPS} availableAnchors={["arriving"]} />);
-    const links = within(
-      screen.getByRole("list", { name: "Stops" }),
-    ).getAllByRole("link");
-    expect(links).toHaveLength(1);
-    expect(links[0]).toHaveAttribute("href", "#section-arriving");
-    expect(screen.queryByText("Read from the start")).toBeNull();
+    expect(links.map((a) => a.getAttribute("href"))).toEqual([
+      "/stories/arriving-in-auckland",
+      "/stories/a-windy-week",
+      "/stories/gone-missing",
+    ]);
+    expect(links[0]).toHaveTextContent("Read this story");
+    // The link's accessible name says which story.
+    expect(links[2]).toHaveAccessibleName(
+      "Read this story: Gone missing in Queenstown",
+    );
   });
 
   it("labels the picture and never prints coordinates", () => {
@@ -112,7 +135,7 @@ describe("JourneyMap", () => {
   });
 
   it("makes the pins keyboard focusable and selects the stop on Enter", () => {
-    render(<JourneyMap stops={STOPS} availableAnchors={["gone-missing"]} />);
+    render(<JourneyMap stops={STOPS} />);
     const pin = screen.getByRole("button", { name: "Stop 3: Queenstown" });
     expect(pin).toHaveAttribute("tabindex", "0");
     fireEvent.keyDown(pin, { key: "Enter" });
@@ -120,8 +143,8 @@ describe("JourneyMap", () => {
     const current = currentItem();
     expect(current).toHaveTextContent("Queenstown");
     expect(
-      within(current).getByRole("link", { name: "Read this part" }),
-    ).toHaveAttribute("href", "#section-gone-missing");
+      within(current).getByRole("link", { name: /^Read this story/ }),
+    ).toHaveAttribute("href", "/stories/gone-missing");
     // Selecting a stop pauses the animation.
     expect(
       screen.getByRole("button", { name: "Play the journey" }),
@@ -413,7 +436,8 @@ describe("JourneyMap camera and dots", () => {
       latitude: -44.94,
       longitude: 168.83,
       label: "Arrowtown",
-      sectionAnchor: null,
+      storyTitle: "Arrowtown autumn",
+      href: "/stories/arrowtown-autumn",
       parentIndex: null,
     };
     const { container } = render(
@@ -618,7 +642,8 @@ describe("JourneyMap manual mode with the camera following", () => {
       latitude: -44.94,
       longitude: 168.83,
       label: "Arrowtown",
-      sectionAnchor: null,
+      storyTitle: "Arrowtown autumn",
+      href: "/stories/arrowtown-autumn",
       parentIndex: null,
     };
     const { container } = render(
@@ -661,7 +686,8 @@ describe("JourneyMap main stops and sub-stops", () => {
     latitude,
     longitude,
     label,
-    sectionAnchor: null,
+    storyTitle: `${label} story`,
+    href: `/stories/${label.toLowerCase()}`,
     parentIndex,
   });
   // 0 Auckland, 1 Wellington, 2 Queenstown (+ Arrowtown, Glenorchy)
@@ -670,7 +696,7 @@ describe("JourneyMap main stops and sub-stops", () => {
     WELLINGTON,
     QUEENSTOWN,
     sub("Arrowtown", 2, -44.94, 168.83),
-    { ...sub("Glenorchy", 2, -44.85, 168.39), sectionAnchor: "arriving" },
+    sub("Glenorchy", 2, -44.85, 168.39),
   ];
 
   beforeEach(() => {
@@ -682,7 +708,7 @@ describe("JourneyMap main stops and sub-stops", () => {
   });
 
   it("shows only main stops at first, with a count on the main stop", () => {
-    render(<JourneyMap stops={HIERARCHY} availableAnchors={["arriving"]} />);
+    render(<JourneyMap stops={HIERARCHY} />);
     expect(states()).toEqual(["current", "upcoming", "upcoming"]);
     expect(screen.queryByText("Arrowtown")).toBeNull();
     expect(screen.queryByTestId("journey-substops")).toBeNull();
@@ -699,15 +725,22 @@ describe("JourneyMap main stops and sub-stops", () => {
     ).not.toHaveAttribute("aria-expanded");
   });
 
-  it("needs two MAIN stops: sub-stops do not count towards the route", () => {
-    const { container } = render(
+  it("a lone main stop with a place inside still opens, without any route", () => {
+    render(
       <JourneyMap stops={[AUCKLAND, sub("Hamilton", 0, -37.78, 175.28)]} />,
     );
-    expect(container.firstChild).toBeNull();
+    expect(screen.queryByRole("button", { name: /Play|Pause/ })).toBeNull();
+    const opener = screen.getByRole("button", { name: /^Auckland/ });
+    expect(opener).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(opener);
+    expect(opener).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByRole("list", { name: "Places inside Auckland" }),
+    ).toHaveTextContent("Hamilton");
   });
 
   it("opens a main stop: parks the drive, shows lettered sub-stops and a nested list", () => {
-    render(<JourneyMap stops={HIERARCHY} availableAnchors={["arriving"]} />);
+    render(<JourneyMap stops={HIERARCHY} />);
     fireEvent.click(screen.getByRole("button", { name: /^Queenstown/ }));
     expect(screen.getByRole("button", { name: /^Queenstown/ })).toHaveAttribute(
       "aria-expanded",
@@ -724,13 +757,13 @@ describe("JourneyMap main stops and sub-stops", () => {
       name: "Places inside Queenstown",
     });
     expect(within(nested).getAllByRole("listitem")).toHaveLength(2);
-    // Sub-stops link like main stops do: only the one with an anchor.
+    // Sub-stops link to their own stories, with the story title shown.
     const links = within(nested).getAllByRole("link");
-    expect(links).toHaveLength(1);
-    expect(links[0]).toHaveAttribute(
-      "href",
-      expect.stringContaining("arriving"),
-    );
+    expect(links.map((a) => a.getAttribute("href"))).toEqual([
+      "/stories/arrowtown",
+      "/stories/glenorchy",
+    ]);
+    expect(nested).toHaveTextContent("Glenorchy story");
     // Drive paused, van parked at Queenstown; focus on the way back.
     expect(
       screen.getByRole("button", { name: "Play the journey" }),

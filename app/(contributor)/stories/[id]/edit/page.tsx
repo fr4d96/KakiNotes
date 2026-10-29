@@ -15,7 +15,6 @@ import {
   listActiveExpenseCategories,
   listActiveCountries,
 } from "@/lib/story/active-lookups";
-import { getRevisionStops } from "@/lib/story/journey-queries";
 import { StoryEditForm } from "@/components/story/story-edit-form";
 import { ReopenForEditingButton } from "@/components/story/reopen-for-editing-button";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
@@ -132,7 +131,6 @@ export default async function EditStoryPage({
 
   const [
     selections,
-    stops,
     preview,
     regions,
     destinations,
@@ -142,7 +140,6 @@ export default async function EditStoryPage({
     countrySlug,
   ] = await Promise.all([
     getRevisionSelections(draft.revision_id),
-    getRevisionStops(draft.revision_id),
     getStoryPreview(id),
     listActiveRegions(),
     listActiveDestinations(),
@@ -171,7 +168,6 @@ export default async function EditStoryPage({
       initialLocations={selections.locations}
       initialTags={selections.tags}
       initialExpenses={selections.expenses}
-      initialStops={stops}
       initialMedia={preview?.media ?? []}
       regions={regions}
       destinations={destinations}

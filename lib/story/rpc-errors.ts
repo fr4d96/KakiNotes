@@ -57,3 +57,31 @@ export function storyFolderErrorKey(
     ? STORY_FOLDER_ERROR_KEYS[code as keyof typeof STORY_FOLDER_ERROR_KEYS]
     : null;
 }
+
+// set_story_journey_place() (supabase/migrations/20261029091942_contributor_journey.sql)
+// names each refusal with its own SQLSTATE, like set_story_parent() above.
+// WHV11 / WHV15 mean the same thing here as for folders, but the copy is the
+// journey's own ("pin" rather than "file").
+const STORY_JOURNEY_ERROR_KEYS = {
+  WHV11: "journeyStoryNotFound",
+  WHV15: "journeyNotPublished",
+  WHV17: "journeyNotNewZealand",
+  WHV18: "journeyBadPlace",
+} as const;
+
+export type StoryJourneyErrorKey =
+  (typeof STORY_JOURNEY_ERROR_KEYS)[keyof typeof STORY_JOURNEY_ERROR_KEYS];
+
+/** The actionErrors.* key for a journey-pin refusal, or null for anything else. */
+export function storyJourneyErrorKey(
+  error: unknown,
+): StoryJourneyErrorKey | null {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return null;
+  }
+  const code = (error as { code?: unknown }).code;
+  return typeof code === "string" &&
+    Object.hasOwn(STORY_JOURNEY_ERROR_KEYS, code)
+    ? STORY_JOURNEY_ERROR_KEYS[code as keyof typeof STORY_JOURNEY_ERROR_KEYS]
+    : null;
+}

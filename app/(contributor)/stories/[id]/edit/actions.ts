@@ -18,12 +18,6 @@ import {
   countrySlugSchema,
   type RevisionInput,
 } from "@/lib/validation/story";
-import { journeyStopsSchema } from "@/lib/journey/schema";
-import {
-  MAX_LINK_LENGTH,
-  resolveGoogleMapsLink,
-  type ResolveLinkResult,
-} from "@/lib/journey/resolve-google-maps-link";
 import { getErrorMessage } from "@/lib/errors";
 import { firstIssueMessage } from "@/lib/validation/issue-messages";
 import {
@@ -31,7 +25,6 @@ import {
   setRevisionLocations,
   setRevisionTags,
   setRevisionExpenses,
-  setRevisionStops,
   updateStoryMediaCaption,
   reorderStoryMedia,
   setStoryCoverMedia,
@@ -286,38 +279,6 @@ export async function setExpensesAction(
   }
 }
 
-/**
- * The journey-map stops. As with every mutation here, nothing identifying
- * comes from the client except the revisionId, which
- * _authorize_revision_edit() verifies inside set_revision_stops(); the
- * same RPC re-rounds the coordinates, re-checks the New Zealand bounds and
- * the hierarchy rules and caps, so this schema is the friendly early check, not the
- * boundary.
- */
-export async function setJourneyStopsAction(
-  revisionId: string,
-  expectedVersion: number,
-  stops: unknown,
-): Promise<MutationResult> {
-  const tv = await getTranslations("validation");
-  const authError = await requireSignedIn();
-  if (authError) return authError;
-
-  const parsed = journeyStopsSchema.safeParse(stops);
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
-    };
-  }
-  try {
-    await setRevisionStops(revisionId, expectedVersion, parsed.data);
-    return { ok: true };
-  } catch (error) {
-    return { ok: false, error: await errorMessage(error) };
-  }
-}
-
 const mediaCaptionInputSchema = z.object({
   revisionId: z.uuid(),
   mediaId: z.uuid(),
@@ -466,30 +427,4 @@ export async function cancelPendingUploadAction(
   } catch (error) {
     return { ok: false, error: await errorMessage(error) };
   }
-}
-
-const mapsLinkInputSchema = z.string().trim().min(1).max(MAX_LINK_LENGTH);
-
-/**
- * Turns a pasted Google Maps link into a place (coordinates + name) for the
- * journey editor. Needs a signed-in user but no story: it never touches the
- * database. For a short link (maps.app.goo.gl) the server makes one outbound
- * request to Google to read the redirect target (see
- * lib/journey/resolve-google-maps-link.ts for the SSRF guard). The link is
- * never stored or logged; at most the failure reason is.
- */
-export async function resolveGoogleMapsLinkAction(
-  input: unknown,
-): Promise<ResolveLinkResult | { ok: false; reason: "unauthenticated" }> {
-  const user = await getCurrentUser();
-  if (!user) return { ok: false, reason: "unauthenticated" };
-
-  const parsed = mapsLinkInputSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, reason: "invalid" };
-
-  const result = await resolveGoogleMapsLink(parsed.data);
-  if (!result.ok && result.reason === "unreachable") {
-    console.warn("[journey] maps link resolve failed: unreachable");
-  }
-  return result;
 }

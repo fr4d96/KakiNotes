@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { storyFolderErrorKey } from "./rpc-errors";
+import { storyFolderErrorKey, storyJourneyErrorKey } from "./rpc-errors";
 
 describe("storyFolderErrorKey", () => {
   it.each([
@@ -25,5 +25,27 @@ describe("storyFolderErrorKey", () => {
     [undefined],
   ])("returns null for %j", (error) => {
     expect(storyFolderErrorKey(error)).toBeNull();
+  });
+});
+
+describe("storyJourneyErrorKey", () => {
+  it.each([
+    ["WHV11", "journeyStoryNotFound"],
+    ["WHV15", "journeyNotPublished"],
+    ["WHV17", "journeyNotNewZealand"],
+    ["WHV18", "journeyBadPlace"],
+  ])("maps %s to %s", (code, key) => {
+    expect(storyJourneyErrorKey({ code })).toBe(key);
+  });
+
+  it.each([
+    [{ code: "WHV10" }],
+    [{ code: "23505" }],
+    [{ code: 18 }],
+    [new Error("x")],
+    [null],
+    ["WHV18"],
+  ])("returns null for %j", (error) => {
+    expect(storyJourneyErrorKey(error)).toBeNull();
   });
 });

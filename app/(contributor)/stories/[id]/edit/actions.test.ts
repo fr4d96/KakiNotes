@@ -45,7 +45,6 @@ vi.mock("@/lib/story/drive-folders", () => ({
 }));
 
 const mockSaveRevisionDraft = vi.fn();
-const mockSetRevisionStops = vi.fn();
 const mockReorderStoryMedia = vi.fn();
 const mockSetStoryCoverMedia = vi.fn();
 const mockDetachStoryMedia = vi.fn();
@@ -55,7 +54,6 @@ vi.mock("@/lib/story/mutations", () => ({
   setRevisionLocations: vi.fn(),
   setRevisionTags: vi.fn(),
   setRevisionExpenses: vi.fn(),
-  setRevisionStops: (...args: unknown[]) => mockSetRevisionStops(...args),
   updateStoryMediaCaption: vi.fn(),
   reorderStoryMedia: (...args: unknown[]) => mockReorderStoryMedia(...args),
   setStoryCoverMedia: (...args: unknown[]) => mockSetStoryCoverMedia(...args),
@@ -69,8 +67,6 @@ import {
   reorderMediaAction,
   setCoverAction,
   detachMediaAction,
-  setJourneyStopsAction,
-  resolveGoogleMapsLinkAction,
   setCountryAction,
 } from "./actions";
 
@@ -277,109 +273,6 @@ describe("reorderMediaAction / setCoverAction / detachMediaAction -- shared RPCs
 
     expect(afterCalls).toHaveLength(0);
     expect(mockGetDriveSyncGate).not.toHaveBeenCalled();
-  });
-});
-
-describe("setJourneyStopsAction", () => {
-  const stop = {
-    latitude: -45.0312,
-    longitude: 169.1999,
-    label: " Near Cromwell ",
-  };
-
-  beforeEach(() => {
-    mockSetRevisionStops.mockReset();
-    mockGetCurrentUser.mockReset();
-  });
-
-  it("refuses a signed-out caller without touching the RPC", async () => {
-    mockGetCurrentUser.mockResolvedValue(null);
-    const result = await setJourneyStopsAction(revisionId, 3, [stop]);
-    expect(result.ok).toBe(false);
-    expect(mockSetRevisionStops).not.toHaveBeenCalled();
-  });
-
-  it("sends validated, trimmed, rounded stops and the revision id as given", async () => {
-    mockGetCurrentUser.mockResolvedValue(user);
-    mockSetRevisionStops.mockResolvedValue(undefined);
-    const result = await setJourneyStopsAction(revisionId, 3, [stop]);
-    expect(result).toEqual({ ok: true });
-    expect(mockSetRevisionStops).toHaveBeenCalledWith(revisionId, 3, [
-      { latitude: -45.03, longitude: 169.2, label: "Near Cromwell" },
-    ]);
-  });
-
-  it("rejects coordinates outside New Zealand before calling the RPC", async () => {
-    mockGetCurrentUser.mockResolvedValue(user);
-    const result = await setJourneyStopsAction(revisionId, 3, [
-      { ...stop, latitude: -33.8 },
-    ]);
-    expect(result.ok).toBe(false);
-    expect(mockSetRevisionStops).not.toHaveBeenCalled();
-  });
-
-  it("rejects a blank label and more than 12 stops", async () => {
-    mockGetCurrentUser.mockResolvedValue(user);
-    expect(
-      (await setJourneyStopsAction(revisionId, 3, [{ ...stop, label: " " }]))
-        .ok,
-    ).toBe(false);
-    expect(
-      (await setJourneyStopsAction(revisionId, 3, Array(13).fill(stop))).ok,
-    ).toBe(false);
-    expect(mockSetRevisionStops).not.toHaveBeenCalled();
-  });
-
-  it("returns the RPC's failure as a result instead of throwing", async () => {
-    mockGetCurrentUser.mockResolvedValue(user);
-    mockSetRevisionStops.mockRejectedValue(
-      new Error("Stale version for story x"),
-    );
-    const result = await setJourneyStopsAction(revisionId, 3, [stop]);
-    expect(result.ok).toBe(false);
-  });
-});
-
-describe("resolveGoogleMapsLinkAction", () => {
-  const fullLink =
-    "https://www.google.com/maps/place/Taupo/@-38.68,176.07,12z/data=!8m2!3d-38.6857!4d176.0702";
-
-  beforeEach(() => {
-    mockGetCurrentUser.mockReset();
-  });
-
-  it("refuses a signed-out caller without any outbound request", async () => {
-    mockGetCurrentUser.mockResolvedValue(null);
-    const fetchFn = vi.fn();
-    vi.stubGlobal("fetch", fetchFn);
-    expect(
-      await resolveGoogleMapsLinkAction("https://maps.app.goo.gl/a"),
-    ).toEqual({ ok: false, reason: "unauthenticated" });
-    expect(fetchFn).not.toHaveBeenCalled();
-    vi.unstubAllGlobals();
-  });
-
-  it("rejects non-strings and over-long input", async () => {
-    mockGetCurrentUser.mockResolvedValue(user);
-    expect(await resolveGoogleMapsLinkAction(42)).toEqual({
-      ok: false,
-      reason: "invalid",
-    });
-    expect(
-      await resolveGoogleMapsLinkAction(
-        "https://goo.gl/maps/" + "a".repeat(2100),
-      ),
-    ).toEqual({ ok: false, reason: "invalid" });
-  });
-
-  it("resolves a full link for a signed-in user", async () => {
-    mockGetCurrentUser.mockResolvedValue(user);
-    expect(await resolveGoogleMapsLinkAction(fullLink)).toEqual({
-      ok: true,
-      latitude: -38.6857,
-      longitude: 176.0702,
-      placeName: "Taupo",
-    });
   });
 });
 

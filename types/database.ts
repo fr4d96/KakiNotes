@@ -562,6 +562,9 @@ export type Database = {
           created_by: string | null;
           current_draft_revision_id: string | null;
           id: string;
+          journey_label: string | null;
+          journey_latitude: number | null;
+          journey_longitude: number | null;
           kept_private_at: string | null;
           lifecycle_status: Database["public"]["Enums"]["story_lifecycle_status"];
           owner_user_id: string | null;
@@ -586,6 +589,9 @@ export type Database = {
           created_by?: string | null;
           current_draft_revision_id?: string | null;
           id?: string;
+          journey_label?: string | null;
+          journey_latitude?: number | null;
+          journey_longitude?: number | null;
           kept_private_at?: string | null;
           lifecycle_status?: Database["public"]["Enums"]["story_lifecycle_status"];
           owner_user_id?: string | null;
@@ -610,6 +616,9 @@ export type Database = {
           created_by?: string | null;
           current_draft_revision_id?: string | null;
           id?: string;
+          journey_label?: string | null;
+          journey_latitude?: number | null;
+          journey_longitude?: number | null;
           kept_private_at?: string | null;
           lifecycle_status?: Database["public"]["Enums"]["story_lifecycle_status"];
           owner_user_id?: string | null;
@@ -2430,6 +2439,22 @@ export type Database = {
           run_in_progress: boolean;
         }[];
       };
+      get_my_journey: {
+        Args: never;
+        Returns: {
+          id: string;
+          is_new_zealand: boolean;
+          journey_label: string;
+          journey_latitude: number;
+          journey_longitude: number;
+          lifecycle_status: string;
+          parent_story_id: string;
+          pinnable: boolean;
+          slug: string;
+          title: string;
+          trip_start_date: string;
+        }[];
+      };
       get_my_story_folders: {
         Args: never;
         Returns: {
@@ -2500,6 +2525,20 @@ export type Database = {
           regions: Json;
           tags: string[];
           trip_years: number[];
+        }[];
+      };
+      get_published_contributor_journey: {
+        Args: { p_contributor_id: string };
+        Returns: {
+          excerpt: string;
+          journey_label: string;
+          journey_latitude: number;
+          journey_longitude: number;
+          parent_story_id: string;
+          slug: string;
+          story_id: string;
+          title: string;
+          trip_start_date: string;
         }[];
       };
       get_published_revision_snapshot: {
@@ -3290,6 +3329,15 @@ export type Database = {
           p_expected_version: number;
           p_media_id: string;
           p_revision_id: string;
+        };
+        Returns: undefined;
+      };
+      set_story_journey_place: {
+        Args: {
+          p_label: string;
+          p_latitude: number;
+          p_longitude: number;
+          p_story_id: string;
         };
         Returns: undefined;
       };

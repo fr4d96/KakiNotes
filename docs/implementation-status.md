@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+Last updated: 2026-10-29 (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
 one-level folder shape — a story is either a main story, a sub story filed under exactly one main
 story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
 "Move to…" select; migration applied to the dev project — see the entry at the end of this
@@ -10553,3 +10553,57 @@ while its migration was already live on `ybhydepjaantkngngvuf`. It is now commit
   the sweep is ever changed, add `storage_backend = 'supabase'` explicitly.
 - **Next:** unchanged from the 2026-10-03 list — dry-run `npm run media:cleanup:originals`, then
   `-- --execute` to clear the 434-row backlog; it is not live for new uploads until the next release.
+
+## 2026-10-29 — Contributor journey (branch `feat/contributor-journey`)
+
+The journey map is now **one per contributor**, not one per story. Each pin is a place tied to one
+of the contributor's own **published New Zealand stories**; sub stories (story folders) sit inside
+their main story's pin; opening a pin links to the story. Readers get a **Journey** tab on the public
+profile. Pin changes go public immediately (no moderation), the same documented exception as story
+folders. The database side (`20261029091942_contributor_journey.sql`) was already live and was not
+touched here.
+
+**What changed in the app.**
+
+- Data: `lib/story/journey-queries.ts` is now `getPublishedContributorJourney` (public, fail-soft) and
+  `getMyJourney`; `lib/journey/contributor-journey.ts` (pure, tested) maps rows to the map's stops
+  (main pins in trip order, sub pins after their main pin with an earlier `parentIndex`). The stop view
+  is now `{latitude, longitude, label, storyTitle, href, parentIndex}`; `sectionAnchor` is gone.
+- Map: `JourneyMap` shows the story title beside the place and a "Read this story" link per stop; a
+  single main pin renders (whole NZ in view, no route, van or play button).
+- Public: `/contributors/[slug]` has Stories | Journey navigation (Journey only with ≥1 pin);
+  `/contributors/[slug]/journey` is new (NZ only, no `/cn` version). Pinned NZ stories show "See this
+  on <name>'s journey".
+- Contributor: `/my-stories/journey` (linked from My Stories next to Story folders): stories grouped
+  like folders, Add / Change / Remove place, non-pinnable rows greyed with the reason, live preview.
+  `setStoryJourneyPlaceAction` validates with Zod, never trusts ownership (the RPC re-checks), maps
+  WHV11/15/17/18 to translated messages, logs `story.journey.set` / `story.journey.cleared`, and
+  revalidates the profile and journey route patterns and the story page.
+  `components/story/journey-place-picker.tsx` reuses the old editor's map, gestures, arrow-key nudge and
+  Google Maps link paste; `resolveGoogleMapsLinkAction` moved to the new `actions.ts`.
+- Removed: `journey-stops-editor.tsx`, `lib/journey/draft.ts` (+ tests), `setJourneyStopsAction`,
+  `setRevisionStops`, the editor in `story-edit-form.tsx` and its `initialStops`, and the stops on the
+  edit, preview and moderation pages and the public story page. No code references
+  `set_revision_stops`, `get_revision_stops` or `get_published_story_stops` any more.
+- i18n: new `myJourney`, `journey.picker` and contributor-tab keys in en and zh-CN; the old
+  `journey.editor` / `journey.preview` keys and the unused stop-limit validation messages are gone.
+- Tests: Vitest for the mapping, queries, action, view, picker, tabs and the single-pin map;
+  `tests/e2e/story-journey-map.spec.ts` rewritten for the profile Journey tab (not run; it needs the
+  migration and a public contributor profile, and skips itself otherwise).
+
+**Release order (important).** `supabase/migrations/20261029130000_drop_story_revision_stops.sql`
+drops the old table and RPCs and must be applied only **after** this app release is deployed — the
+previous release still calls them. The additive migration is already live.
+
+**Decisions / risks.**
+
+- No cap on pins in the app (the old 12 / 8 / 40 limits belonged to the per-revision editor); the
+  public RPC returns at most 200.
+- The place panel replaces a sub story's pin and its main story's independently; a sub story whose main
+  story is not pinned (or not visible) shows as its own main pin.
+- Revalidation uses the `/contributors/[slug]` route patterns because the action does not know the
+  contributor's public slug; both pages are uncached, so this is cheap.
+- Not run here: Playwright, and the SQL against a real database.
+
+**Next.** After deploying, apply the drop migration; then consider showing the journey on `/cn`
+profiles only if a China map is ever built (it is NZ only today).

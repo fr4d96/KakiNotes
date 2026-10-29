@@ -22,11 +22,6 @@ vi.mock("@/app/(contributor)/stories/[id]/edit/actions", () => ({
   setTagsAction: vi.fn(async () => ({ ok: true })),
   setExpensesAction: vi.fn(async () => ({ ok: true })),
   setCountryAction: (...args: unknown[]) => setCountryAction(...(args as [])),
-  setJourneyStopsAction: vi.fn(async () => ({ ok: true })),
-  resolveGoogleMapsLinkAction: vi.fn(async () => ({
-    ok: false,
-    reason: "invalid",
-  })),
 }));
 
 // Every heavy child not relevant to the Places step is replaced with a
@@ -130,26 +125,6 @@ beforeEach(() => {
 
 afterEach(() => {
   setTestLocale("en");
-});
-
-describe("StoryEditForm — journey map editor", () => {
-  it("is offered on a New Zealand story", () => {
-    render(<StoryEditForm {...baseProps()} initialStops={[]} />);
-    expect(
-      screen.getByRole("group", { name: "Journey map" }),
-    ).toBeInTheDocument();
-  });
-
-  it("is not offered on a China story, since the map only draws New Zealand", () => {
-    render(
-      <StoryEditForm
-        {...baseProps()}
-        initialCountrySlug="china"
-        initialStops={[]}
-      />,
-    );
-    expect(screen.queryByRole("group", { name: "Journey map" })).toBeNull();
-  });
 });
 
 describe("StoryEditForm — Country select (Places step)", () => {

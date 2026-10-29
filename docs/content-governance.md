@@ -314,38 +314,44 @@ What keeps it safe:
 
 Moderators don't see folders on the review page, because they aren't part of a revision.
 
-### Journey-map stops are reviewed with the revision (2026-10-29)
+### Journey pins go live without review (exception to Rule 11) (2026-10-29)
 
-A story can carry up to 12 ordered **main journey stops**, each holding up to 8 **sub-stops**
-("places inside"; 40 stops in total, one level only): a place name the contributor writes, a
-position on New Zealand, and optionally a link to one of the story's headings. The contributor
-chooses which main stop a sub-stop belongs to; nothing is grouped automatically. Readers see the
-main stops as an illustrated route and open one to see the places inside it (see "Story journey
-illustration" in `docs/product-spec.md`). Sub-stops are moderated exactly like main stops: same
-plain-text 60-character labels, same revision review, same privacy rounding.
+A contributor has one **journey map**: each pin is a **place** (a short name they write plus a spot
+on New Zealand) attached to one of their own **published New Zealand stories**. Main stories are
+the main pins; their sub stories (story folders) sit inside the main story's pin. Readers see it as
+the Journey tab on the contributor's public profile, and opening a pin links to that story (see
+"Story journey illustration" in `docs/product-spec.md`).
 
-- **Part of the revision, not a separate queue.** Stops belong to a revision like tags, locations
-  and expenses do, so they go through the normal review: the moderation page shows the submitted
-  revision's route, and approval publishes it with the rest of the revision. A new draft starts
-  with a copy of the published stops; editing them changes nothing readers see until the replacement
-  is approved (Rules 10 and 11). A moderator can request changes on a bad place name like any other
-  text.
-- **Place names are plain text, 60 characters at most**, rendered only through React (no HTML).
-  Moderators should treat one like any other published text: no personal details (a home address, a
-  workplace, a named person), no advertising.
-- **"Add from a Google Maps link" never stores the link.** The pasted link is parsed for a
-  position and a place name only; the link itself (which can carry tracking parameters) is not
-  saved or logged. Short links (`maps.app.goo.gl`) are resolved by the server, which makes one
-  outbound request to Google (Google hosts only, https, at most 3 redirects, only the `Location`
-  header is read) and requires a signed-in user.
-- **Position is privacy-rounded and never shown.** The database rounds each position to two
-  decimals (about 1 km) when it is saved and rejects anything outside New Zealand. Readers only see
-  the contributor's label and a pin on a stylised picture; coordinates are never printed. Because
-  the saved position is only ~1 km accurate and the picture is a few hundred pixels wide, nothing
-  near an exact home or workplace location is ever stored (Rule 15).
-- **Editors cannot pin stops.** Only the story owner or assigned editor can edit a draft's stops,
-  the same rule as every other field on the revision; a moderator can read them once the revision
-  has been submitted, not while it is still a private draft.
+This **replaces** the earlier per-revision design (a story carrying its own stops, reviewed with the
+revision, 2026-10-29 morning). Pins are **not moderated** — the same documented exception to Rule 11
+as story folders, for the same reason: a pin only says where an already-approved story belongs on a
+map, and adds one short label. It was chosen by the product owner over "pin on a draft, then
+review". Every point below mirrors the folders rules:
+
+- **The story must already be published, and in New Zealand**, to be pinned
+  (`set_story_journey_place()` refuses otherwise: WHV15 / WHV17). Drafts and stories in review
+  can't be pinned, so nothing unreviewed ever appears on the map. Clearing a pin is always allowed
+  for the owner, whatever the story's state — clearing can only reduce what's shown.
+- **Only the owner** can pin or clear, and only their own stories (WHV11). An assigned editor
+  can't.
+- **The place name is the one new piece of public text.** Plain text, 60 characters at most,
+  rendered only through React (no HTML). Because it goes live immediately, a moderator who finds a
+  bad one (a personal detail, advertising) takes the _story_ down or asks the contributor to change
+  it; there is no per-label review step. Reports against a story cover its pin.
+- **Position is privacy-rounded and never shown.** The database rounds to two decimals (about 1 km),
+  and rejects (not clamps) anything outside New Zealand (WHV18). Readers only see the label and a
+  pin on a stylised picture; coordinates are never printed (Rule 15).
+- **"Add from a Google Maps link" never stores the link.** The pasted link is parsed for a position
+  and a place name only; the link is not saved or logged. Short links (`maps.app.goo.gl`) are
+  resolved by the server with one outbound request to Google (Google hosts only, https, at most 3
+  redirects, only the `Location` header is read), for a signed-in user only.
+- **If the story is later archived, taken down or loses consent, its pin stops showing at once**
+  (the public read checks `_story_is_publicly_visible()` per story, every time) without the place
+  being cleared. A sub story whose main story drops off becomes a pin of its own.
+- Each change is logged as `story.journey.set` / `story.journey.cleared` (the story id only —
+  never the label or position).
+
+Moderators don't see journey pins on the review page, because they aren't part of a revision.
 
 ### A story's country locks after first publication (Rule 11)
 

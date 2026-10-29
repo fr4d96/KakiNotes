@@ -896,45 +896,54 @@ null` — deleting a main story orphans its sub stories back to "not in a folder
   said "not public" for every story (fixed in `20260930083643_fix_story_is_publicly_visible.sql`,
   now `not (x is null)`). Same family of bug as the three-valued-logic section below.
 
-### Journey map stops (2026-10-29)
+### Contributor journey (2026-10-29)
 
-`story_revision_stops` (`20261029042052_story_revision_stops.sql`) holds a revision's ordered stops
-(`sort_order`, `latitude`/`longitude numeric(5,2)`, `label` 1-60 chars, optional `section_anchor`).
-It follows every other per-revision child table: keyed on `revision_id` (`on delete restrict`),
-frozen by the shared `_protect_revision_child_immutability()` trigger, RLS enabled with **no
-policies and no grants** — `set_revision_stops(revision_id, expected_version, stops jsonb)` is the
-only writer (owner/assigned editor via `_authorize_revision_edit`, optimistic version, max 12 main
-stops / 8 sub-stops per main stop / 40 in total, coordinates rounded to 2 dp and CHECK-bounded to New
-Zealand, array order = route order).
+One journey map per **contributor**, one pin per **story**
+(`20261029091942_contributor_journey.sql`). This replaces the per-revision design
+(`story_revision_stops`, `set_revision_stops` / `get_revision_stops` / `get_published_story_stops`),
+which is dropped by `20261029130000_drop_story_revision_stops.sql`.
 
-**Main stops and sub-stops (one level).** `parent_sort_order integer null` (composite FK
-`(revision_id, parent_sort_order)` → `(revision_id, sort_order)`, `on delete cascade`, CHECK
-`parent_sort_order < sort_order`) makes a row a sub-stop of exactly one main stop. Each
-`set_revision_stops` element may carry `parent_index` (0-based array position); the function checks
-it points at an EARLIER element that is itself a main stop and enforces the caps, then stores the
-parent's `sort_order` — no client ordering or id is trusted. Both read functions return
-`parent_sort_order`; `create_next_draft_revision` copies it. App side: `lib/journey/draft.ts` (pure
-grouping helpers: normalise/letter ids/remove-with-children/move among siblings), `parseStopRows`
-turns `parent_sort_order` into `JourneyStopView.parentIndex` and drops orphaned or nested sub-stops;
-`journeyStopsSchema` mirrors the rules. The editor keeps `parentKey` (a client key, stable under
-reordering) and the form converts it to `parentIndex` on save. The reader map routes and drives over
-main stops only; `cameraBoxForPoints` frames an opened main stop and its sub-stops.
+**Order of release (expand/contract): apply `20261029130000_drop_story_revision_stops.sql` only
+AFTER this app release is deployed.** The first migration only adds, so it could go live early; the
+second removes the functions the previous release still calls.
 
-Reads are two **new** functions rather than extra columns on the existing ones (their return types
-have been drop-and-recreated many times): `get_published_story_stops(slug)` (granted to `anon`;
-gated by `_story_is_publicly_visible()` and reading only `published_revision_id`) and
-`get_revision_stops(revision_id)` (editor, preview and moderation; owner / linked contributor /
-assigned editor / admin, or a moderator once the revision has left `draft`).
-`create_next_draft_revision()` copies the stops and `delete_draft_story()` clears them — the two
-sites of the child-table checklist, both redefined from their latest definitions.
+The pin lives on `stories` (`journey_label`, `journey_latitude`/`journey_longitude numeric(5,2)`,
+all-or-none CHECK, NZ-bounds CHECKs; `stories` has no RLS policies and no grants for
+anon/authenticated). Not revision-scoped, so a pin is public the moment it is set — the documented
+exception to Rule 11 shared with story folders (`docs/content-governance.md`). Functions:
+`set_story_journey_place(story, label, lat, lng)` (authenticated, owner only via `_is_story_owner()`;
+a null latitude clears; WHV11 not found/not yours, WHV15 not published, WHV17 not NZ, WHV18 bad
+label/out of bounds; no version bump), `get_my_journey()` (the caller's own stories with `pinnable`
+and the current pin; trip order) and `get_published_contributor_journey(contributor_id)` (granted to
+`anon`; pinned stories passing `_story_is_publicly_visible()`, trip order, max 200;
+`parent_story_id` only when the main story is also pinned and visible).
 
-App side: `lib/journey/` (NZ bounds, lat/lng → SVG projection, Catmull-Rom → Bezier path, Cook
-Strait leg detection, Zod schema), `lib/story/headings.ts` +
-`heading-ids.ts` (stable heading anchors; `ContentBlockRenderer` puts `section-<anchor>` ids on
-headings), `lib/story/journey-queries.ts` (fail-soft readers via `callUntypedRpc` until types are
-regenerated), `components/story/journey-map.tsx` (reader animation, `"use client"`),
-`journey-stops-editor.tsx` (contributor editor, step "Places"), `journey-backdrop.tsx` and
-`journey-vehicles.tsx` (shared SVG art). `setJourneyStopsAction` is the server action.
+App side:
+
+- `lib/journey/contributor-journey.ts` — pure: Zod-parses RPC rows (numerics may be strings; bad
+  rows dropped) and maps them to `JourneyStopView[]` (`buildJourneyStops`): rows without a visible
+  pinned parent are main pins; sub pins follow their main pin with `parentIndex` pointing at an
+  EARLIER main index. `buildMyJourneyStops` does the same for the contributor's preview.
+  `lib/journey/schema.ts` holds the view type (`label`, `storyTitle`, `href`, `parentIndex`) and
+  `journeyPlaceSchema` for the server action. The map has no cap on pins.
+- `lib/story/journey-queries.ts` — `getPublishedContributorJourney` (cookie-free public client,
+  `cache()` per-request dedupe, fail-soft `[]`) and `getMyJourney` (server client, throws).
+  `setStoryJourneyPlace` is in `lib/story/mutations.ts`; `storyJourneyErrorKey` in
+  `lib/story/rpc-errors.ts`.
+- Routes: `/contributors/[slug]` gains Stories | Journey navigation
+  (`components/contributor/contributor-profile-tabs.tsx`, the Journey link only when there is at
+  least one pin); `/contributors/[slug]/journey` is the new Server Component sub-route (`notFound()`
+  for an unknown contributor; NZ only — there is no `/cn` equivalent). A pinned NZ story page
+  (`app/(public)/_shared/story-detail.tsx`) shows "See this on <name>'s journey". The in-story map,
+  the per-revision editor (`journey-stops-editor.tsx`, `lib/journey/draft.ts`) and the stops on the
+  edit / preview / moderation pages are gone.
+- `app/(contributor)/my-stories/journey/` — contributor management: `page.tsx` (Server Component),
+  `journey-view.tsx` (stories grouped like folders, Add / Change / Remove, live map preview) and
+  `actions.ts` (`setStoryJourneyPlaceAction`: Zod, signed-in check, ids and ownership re-derived by
+  the RPC, logs `story.journey.set` / `story.journey.cleared`, revalidates the profile and journey
+  route patterns and the story page; `resolveGoogleMapsLinkAction` moved here from the edit
+  actions). `components/story/journey-place-picker.tsx` is the single-point picker (tap, "choose the
+  middle of the map", arrow-key nudge, pasted Google Maps link).
 
 Base map: a Google-Maps-style picture, still not a map (no tiles, no live location). The geometry
 is real — `lib/journey/nz-map-data.ts` (land rings, lakes, major/secondary roads, ~50 KB, bundled

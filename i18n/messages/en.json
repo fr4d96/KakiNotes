@@ -180,12 +180,9 @@
       "termsVersionMissing": "Missing terms version.",
       "selectPage": "Select at least one page.",
       "changeNoteRequired": "Describe what needs to change.",
-      "journeyLabelRequired": "Give this stop a place name.",
+      "journeyLabelRequired": "Give this place a name.",
       "journeyLabelTooLong": "Place names must be {max} characters or fewer.",
-      "journeyOutOfBounds": "Stops must be inside New Zealand.",
-      "journeyTooMany": "A story can have at most 12 main stops and 40 stops in total.",
-      "journeyTooManyInside": "A main stop can hold at most 8 places inside it.",
-      "journeyBadParent": "A place inside a stop must belong to an earlier main stop.",
+      "journeyOutOfBounds": "Places must be inside New Zealand.",
       "invalidCountry": "Choose a valid country."
     },
     "pdf": {
@@ -272,7 +269,8 @@
       "partOfLabel": "Part of a larger story",
       "partOf": "Part of:",
       "subStoriesHeading": "More in this story"
-    }
+    },
+    "seeOnJourney": "See this on {name}’s journey"
   },
   "expenses": {
     "donut": {
@@ -295,7 +293,14 @@
     "workedIn": "Worked in",
     "years": "Years",
     "wroteAbout": "Wrote about",
-    "publishedStories": "Published stories"
+    "publishedStories": "Published stories",
+    "tabsLabel": "Profile sections",
+    "tabStories": "Stories",
+    "tabJourney": "Journey",
+    "journeyMetaTitle": "{name}’s journey",
+    "journeyMetaDescription": "The places {name} wrote about on their New Zealand working holiday, mapped. Open a place to read the story.",
+    "journeyIntro": "The places {name} wrote about, in the order they travelled. Open a place to read that story.",
+    "journeyEmpty": "{name} hasn't added any places to a journey map yet."
   },
   "costs": {
     "metaTitle": "What a working holiday cost",
@@ -683,7 +688,8 @@
     },
     "updatedAt": "Updated {date}",
     "myPhotosLink": "My Photos",
-    "storyMapLink": "Open story folders"
+    "storyMapLink": "Open story folders",
+    "journeyLink": "Open journey map"
   },
   "storyStatus": {
     "draft": "Draft",
@@ -1213,7 +1219,11 @@
     "subStoryNotFound": "That story couldn't be found.",
     "subStoryParentIsSubStory": "That story is already a sub story, so it can't have sub stories of its own.",
     "subStoryHasSubStories": "This story already has sub stories, so it can't be filed into a folder.",
-    "subStoryNotPublished": "Only published stories can be filed into a folder."
+    "subStoryNotPublished": "Only published stories can be filed into a folder.",
+    "journeyStoryNotFound": "That story wasn't found, or it isn't yours.",
+    "journeyNotPublished": "Only published stories can be pinned on your journey map.",
+    "journeyNotNewZealand": "Only New Zealand stories can be pinned on your journey map.",
+    "journeyBadPlace": "Give this place a name and choose a spot inside New Zealand."
   },
   "takedown": {
     "alreadyDown": "This story has already been taken down.",
@@ -1287,6 +1297,52 @@
       "cancelled": "Stopped moving “{story}”."
     }
   },
+  "myJourney": {
+    "metaTitle": "Journey map",
+    "title": "Journey map",
+    "backToMyStories": "Back to My Stories",
+    "intro": "Pin each of your published New Zealand stories on a map. Readers see one journey on your profile, and each pin opens its story. Sub stories sit inside their main story’s pin. Pins go public as soon as you save them.",
+    "empty": "Publish a New Zealand story to start your journey map.",
+    "listLabel": "Your stories",
+    "subStoriesOf": "Sub stories of {story}",
+    "rows": {
+      "placeLabel": "Pinned at {place}",
+      "noPlace": "Not on the map yet",
+      "notPublished": "Not on the map: only published stories can be pinned.",
+      "notNewZealand": "Not on the map: only New Zealand stories can be pinned.",
+      "add": "Add place",
+      "change": "Change place",
+      "remove": "Remove",
+      "addNamed": "Add place for {story}",
+      "changeNamed": "Change place for {story}",
+      "removeNamed": "Remove {story} from the map"
+    },
+    "panel": {
+      "label": "Place for {story}",
+      "title": "Where is “{story}”?",
+      "hint": "Tap the map, or paste a Google Maps link. Pick the place readers should find this story at.",
+      "nameField": "Place name",
+      "namePlaceholder": "e.g. Near Cromwell",
+      "nameHelp": "Up to {max} characters. Shown to readers.",
+      "needsPlace": "Choose a spot on the map first.",
+      "needsName": "Give this place a name to save it.",
+      "publicNote": "Readers see the place name and an approximate spot (about 1 km), never exact coordinates. It is public as soon as you save.",
+      "save": "Save place",
+      "saving": "Saving…",
+      "cancel": "Cancel"
+    },
+    "toasts": {
+      "saved": "Pinned “{story}” on your journey map.",
+      "removed": "Removed “{story}” from your journey map."
+    },
+    "removeDialog": {
+      "title": "Remove from the map?",
+      "description": "“{story}” will no longer appear on your journey map. The story itself isn’t changed.",
+      "confirm": "Remove"
+    },
+    "previewTitle": "Preview: how readers will see it",
+    "previewEmpty": "Pin a story to see your journey map here."
+  },
   "journey": {
     "title": "The journey",
     "note": "An illustration on a simplified map, not for navigation — places are approximate and chosen by the author.",
@@ -1298,7 +1354,6 @@
     "stopOf": "Stop {n} of {total}",
     "onTheRoad": "On the road to {label}…",
     "onTheFerry": "On the ferry across Cook Strait to {label}…",
-    "readThisPart": "Read this part",
     "stopsList": "Stops",
     "controls": {
       "help": "Interactive map. Drag to pan, hold Ctrl or Cmd and scroll or pinch to zoom, or use the plus and minus buttons. When the map has focus, arrow keys pan and plus and minus zoom.",
@@ -1312,33 +1367,19 @@
         "touch": "Use two fingers to move the map"
       }
     },
-    "editor": {
-      "title": "Journey map",
-      "hint": "Optional. Tap the map to pin up to {max} main stops in the order you travelled, then add up to {inside} places inside each one. Readers see a cute route with the names you give — never exact coordinates (places are rounded to about 1 km).",
-      "mapLabel": "New Zealand. Tap to add a stop.",
-      "addByKeyboard": "Add a stop in the middle of the map",
-      "empty": "No stops yet. Tap the map to add your first one.",
-      "stopHeading": "Stop {n}",
-      "labelField": "Place name",
-      "labelPlaceholder": "e.g. Near Cromwell",
-      "labelHelp": "Up to {max} characters. Shown to readers.",
-      "sectionField": "Links to part of your story",
-      "sectionNone": "None — link to the start",
-      "moveUp": "Move stop {n} up",
-      "moveDown": "Move stop {n} down",
-      "remove": "Remove stop {n}",
-      "limit": "You've reached the limit of {max} stops in total.",
-      "needsLabel": "Give every stop a place name to save your route.",
-      "saveFailed": "Couldn't save your journey. Please try again.",
-      "mapHelp": "Interactive map. Tap a place to pin a stop. Drag to pan, hold Ctrl or Cmd and scroll or pinch to zoom, or use the plus and minus buttons. When the map has focus, arrow keys pan and plus and minus zoom.",
-      "tapHint": "Tip: zoom in with the plus button, then tap right on the place. Drag to move the map. You can fine-tune the name afterwards.",
-      "linkField": "Or add from a Google Maps link",
+    "picker": {
+      "mapLabel": "New Zealand. Tap to choose the place.",
+      "mapHelp": "Interactive map. Tap a spot to choose the place. Drag to pan, hold Ctrl or Cmd and scroll or pinch to zoom, or use the plus and minus buttons. When the map has focus, arrow keys pan and plus and minus zoom. When the pin has focus, arrow keys move it.",
+      "pinLabel": "Chosen place",
+      "useCentre": "Choose the middle of the map",
+      "tapHint": "Tip: zoom in with the plus button, then tap right on the place. Drag to move the map. Tapping again moves the pin.",
+      "linkField": "Or use a Google Maps link",
       "linkPlaceholder": "Paste a Google Maps link",
-      "linkButton": "Add stop",
-      "linkWorking": "Adding…",
-      "linkPrivacy": "Paste a Google Maps link to a place. We only keep the approximate spot (about 1 km) and the name — not the link.",
-      "linkAdded": "Added “{name}”. Check the name below.",
-      "linkAddedNoName": "Stop added. Give it a place name below.",
+      "linkButton": "Use link",
+      "linkWorking": "Checking…",
+      "linkPrivacy": "Paste a Google Maps link to a place. We only keep the approximate spot (about 1 km) and the name, not the link.",
+      "linkUsed": "Using “{name}”. Check the place name below.",
+      "linkUsedNoName": "Spot chosen. Give it a place name below.",
       "linkErrors": {
         "empty": "Paste a Google Maps link first.",
         "invalid": "That doesn't look like a Google Maps link.",
@@ -1346,47 +1387,16 @@
         "outsideNz": "That place is outside New Zealand.",
         "unreachable": "Couldn't open that link right now. Please try again.",
         "unauthenticated": "Please sign in to use short links."
-      },
-      "pinLabel": "Stop {n}{named, select, yes {: {name}} other {}}{selected, select, yes {, selected} other {}}",
-      "toast": {
-        "added": "Added stop {n}",
-        "removed": "Removed “{name}”",
-        "removedUnnamed": "Removed stop {n}",
-        "undo": "Undo",
-        "addedInside": "Added {id} inside {parent}",
-        "removedWithSubs": "Removed “{name}” and {count, plural, one {# place} other {# places}} inside",
-        "removedUnnamedWithSubs": "Removed stop {n} and {count, plural, one {# place} other {# places}} inside"
-      },
-      "popover": {
-        "label": "Stop {n} actions",
-        "title": "Stop {n}: {name}",
-        "titleUnnamed": "Stop {n}",
-        "remove": "Remove",
-        "edit": "Edit",
-        "addInside": "Add places inside"
-      },
-      "limitMain": "You can have up to {max} main stops. Put extra places inside an existing stop instead.",
-      "limitInside": "A stop can hold up to {max} places inside it.",
-      "subHeading": "Place {id}",
-      "unnamedStop": "Stop {n}",
-      "partOfField": "Part of",
-      "partOfMain": "Main stop",
-      "partOfInside": "Inside: {label}",
-      "partOfInsideFull": "Inside: {label} (full)",
-      "partOfHasPlaces": "This stop has places inside it, so it can't go inside another stop.",
-      "addingBanner": "Adding places inside {label}",
-      "addingDone": "Done",
-      "subPinLabel": "Place {id}{named, select, yes {: {name}} other {}}{selected, select, yes {, selected} other {}}, inside {parent}"
-    },
-    "preview": {
-      "title": "Journey map (as readers will see it)"
+      }
     },
     "pinLabelWithSubs": "Stop {n}: {label}, {count, plural, one {# place inside} other {# places inside}}",
     "subPinLabel": "Place {id}: {label}",
     "morePlaces": "+{count, plural, one {# place} other {# places}}",
     "backToJourney": "Back to whole journey",
     "insideList": "Places inside {label}",
-    "insideStatus": "Exploring {label}: {count, plural, one {# place} other {# places}}"
+    "insideStatus": "Exploring {label}: {count, plural, one {# place} other {# places}}",
+    "readThisStory": "Read this story",
+    "singlePlace": "One place on the map so far."
   },
   "countryContent": {
     "newZealand": {
