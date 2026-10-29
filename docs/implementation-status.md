@@ -9972,3 +9972,98 @@ both under "More in this story"; Opotiki Trip's shows "Part of: Kakiman". One fi
 dnd-kit's default screen-reader announcements read raw ids ("Draggable item 54ec… was dropped over
 droppable area folder-ef3b…"), in English only. They now name the stories, with translated drag
 instructions (`storyFolders.announce.*`, both locales).
+
+## 2026-10-29 — Story journey map (branch `feat/story-journey-map`)
+
+**Status: code complete, NOT applied and NOT live-verified.** Contributors can pin up to 12 ordered
+stops in New Zealand on a story; the public story page shows a pastel illustrated route with a
+campervan that drives stop to stop (a ferry across Cook Strait), pausing at each stop on a card that
+links to a heading in the same story. Also shown on the moderation review page and the contributor
+preview.
+
+**Migration `20261029042052_story_revision_stops.sql` was APPLIED to the hosted project on
+2026-10-29** (`apply_migration`, recorded as `20261029042052`; the hosted project also serves
+production). Before applying, the live definitions of `create_next_draft_revision` and
+`delete_draft_story` were compared with the migration's: the live `create_next_draft_revision`
+also copies `story_revision_locations.custom_region_label`, from
+`20261015063409_custom_region_labels`, which is applied on the hosted database but lives on a
+branch not merged to main. The migration therefore copies that column **when it exists**
+(dynamic `execute`), so it neither drops it in production nor fails on a database built from main
+alone. Checked after applying: anon cannot read the table or call `set_revision_stops` /
+`get_revision_stops`, anon can call `get_published_story_stops`, RLS is on, both checklist
+functions include the stops lines; the security advisors show only the project's existing notices.
+
+- **Schema drift, found while shipping this.** The hosted database has nine migrations that are
+  not on main (`20260924021909_countries`, `20260928100000_trips`,
+  `20260929100000_trip_place_images`, `20260929110000_rate_limit_maps_link_scope`,
+  `20261003120000_story_media_original_retention`, `20261014085842_countries`,
+  `20261014205738_set_story_country`, `20261014214918_editorial_draft_country`,
+  `20261015063409_custom_region_labels`; at least some are on `feat/china-section` /
+  `feat/landing-country-cards`). Any future rewrite of a function they also touch must start
+  from the LIVE definition (`pg_get_functiondef`), not from main's last migration.
+- `types/database.ts` is **not** regenerated: regenerating from the hosted database pulls in that
+  drift (e.g. `regions.country_id` becomes required) and breaks typecheck on main. The three
+  call sites (`lib/story/mutations.ts#setRevisionStops`, `lib/story/journey-queries.ts` x2) stay
+  on `callUntypedRpc()` (rows Zod-validated) until the drifted branches land and types are
+  regenerated; then move them to typed `supabase.rpc(...)`.
+- `tests/e2e/story-journey-map.spec.ts` skips itself when `set_revision_stops` does not exist, and
+  has not been run.
+
+**Decisions** (made with the product owner): custom points rather than a fixed place list; positions
+rounded to 2 dp **in SQL**, outside-NZ rejected; readers see the contributor's label, never
+coordinates; stops are per-revision and reviewed with the revision (no separate queue); a ferry on
+legs that cross Cook Strait. Implementation choices: reads are new functions, not new columns on
+`get_published_story`/`get_revision_selections`/`get_story_for_moderator`; `set_revision_stops` takes
+`p_expected_version` like `set_revision_expenses` so the editor's mutation queue keeps one uniform
+version rule; the interactive-maps non-goal in `docs/product-spec.md` now carves out the
+"story journey illustration" only.
+
+**Reader zoom/pan (follow-up, same branch):** the product owner now allows readers to zoom and pan
+the journey illustration (not tiles, geolocation or routing; `docs/product-spec.md` updated).
+`components/story/journey-map.tsx` has +/−/re-centre buttons, drag, Ctrl/⌘+wheel and trackpad
+pinch (zoom around the cursor), two-finger touch pinch/pan, double-click/tap zoom, and arrow/+/−
+keys. One-finger touch keeps scrolling the page (`touch-action: pan-y`) with a "two fingers" hint;
+a plain wheel scrolls the page with a "Ctrl + scroll" hint. Any manual change switches the camera
+to manual (van keeps driving); Re-centre, a timeline click or a pin returns to auto. Pure helpers
+`zoomAt`/`panBy`/`clampBox` live in `lib/journey/camera.ts` (1x to 8x, clamped to the full view).
+Not verified on a real touch device.
+
+**Risks / follow-ups:** the island outlines are hand-placed approximations (fine for an
+illustration, not a map); the Cook Strait test is one dividing line, not a coastline test; a
+heading renamed after a stop was pinned makes that stop link to the story start rather than the
+section (handled, not prevented); the RLS integration suite was not extended for the new table and
+functions — worth adding once applied (anon cannot read a draft revision's stops, non-owner cannot
+call `set_revision_stops`, out-of-bounds is rejected, rounding happens).
+
+**Add from a Google Maps link (stops editor).** `lib/journey/google-maps-link.ts` parses full links
+(place pin `!3d!4d` first, then `q`/`query`/`ll`/`destination` lat,lng, then the `@lat,lng` viewport);
+`resolveGoogleMapsLinkAction` (edit `actions.ts`, signed-in only, no story id, no DB) resolves short
+links via `lib/journey/resolve-google-maps-link.ts` (Google-host allowlist, manual redirects, max 3,
+5 s timeout, Location header only). The link is never stored or logged. Non-NZ places are rejected;
+the DB still rounds to 2 dp on save.
+
+**Main stops and sub-stops (same branch, same unapplied migration).** A stop is now either a MAIN stop
+(the route; max 12) or a SUB-STOP inside exactly one main stop (max 8 per main, 40 in total). The
+user wanted packed stops to appear only when a main journey is clicked. Decisions:
+
+- The contributor chooses the grouping (card "Part of" select, or the pin popover's "Add places
+  inside" mode); there is no automatic clustering. One level only.
+- Schema was edited IN PLACE in `20261029042052_story_revision_stops.sql` before it was applied:
+  `parent_sort_order` + composite cascade FK + `parent_sort_order < sort_order` CHECK;
+  `set_revision_stops` takes `parent_index` and validates earlier-main-parent and the three caps;
+  both reads return `parent_sort_order`; `create_next_draft_revision` copies it. (Applied
+  2026-10-29, see above; `types/database.ts` deliberately not regenerated.)
+- Reader: the overview shows only main stops (route, van, timeline, a "+N places" badge). Clicking a
+  main stop that has sub-stops (pin, dot, timeline row, Enter) parks the van there, eases the camera
+  to the group (instant with reduced motion), draws lettered pins (4a, 4b) on a dotted line and
+  nests them under the timeline row. "Back to whole journey" or Escape closes it; the drive resumes
+  from that stop only if it was running when opened. One group open at a time. The map shows when
+  there are 2+ MAIN stops (`countMainStops`).
+- Editor: removing a main stop removes its sub-stops through the single undo path; a main stop with
+  sub-stops cannot become a sub-stop; moving up/down moves among siblings (a main stop moves with its
+  places). Saved/emitted order is always each main followed by its subs.
+- Tests: Vitest for schema/parse rules, `lib/journey/draft.ts`, `cameraBoxForPoints`, the editor and
+  the reader map; `tests/e2e/story-journey-map.spec.ts` updated but not run (needs the migration).
+- A timeline row only links ("Read this part") when its stop is tied to a heading that still exists;
+  unlinked stops show no link (the old "Read from the start" fallback was removed as noise).
+- The temporary dev preview page used during design was deleted before commit.

@@ -50,7 +50,16 @@ import {
   setLocationsAction,
   setTagsAction,
   setExpensesAction,
+  setJourneyStopsAction,
 } from "@/app/(contributor)/stories/[id]/edit/actions";
+import {
+  JourneyStopsEditor,
+  draftsFromViews,
+  type JourneyDraftStop,
+} from "@/components/story/journey-stops-editor";
+import { extractHeadings } from "@/lib/story/headings";
+import { normalizeStops, toParentIndexes } from "@/lib/journey/draft";
+import type { JourneyStopView } from "@/lib/journey/schema";
 import { TagEditor } from "@/components/story/tag-editor";
 import {
   ExpenseBreakdown,
@@ -90,6 +99,13 @@ export type StoryEditFormProps = {
   initialTags: RevisionTagSelection[];
   /** The revision's saved per-category expense breakdown, if any. */
   initialExpenses: RevisionExpenseSelection[];
+  /**
+   * The revision's saved journey-map stops. OMITTED by callers that do not
+   * offer the journey map (the editorial import page), which hides the
+   * stops editor entirely rather than showing an empty one that would
+   * replace stops the editor never loaded.
+   */
+  initialStops?: JourneyStopView[];
   initialMedia: RevisionMediaItem[];
   regions: ActiveRegion[];
   destinations: ActiveDestination[];
@@ -295,6 +311,7 @@ export function StoryEditForm({
   initialLocations,
   initialTags,
   initialExpenses,
+  initialStops,
   initialMedia,
   regions,
   destinations,
@@ -447,6 +464,10 @@ export function StoryEditForm({
       amountDollars: String(e.amountNzdCents / 100),
       note: e.note ?? "",
     })),
+  );
+
+  const [journeyStops, setJourneyStops] = useState<JourneyDraftStop[]>(() =>
+    draftsFromViews(initialStops ?? []),
   );
 
   // Which step of the timeline is on screen. Every step's section is
@@ -823,6 +844,54 @@ export function StoryEditForm({
   }
 
   /**
+   * Journey-map stops: discrete edits (tap, reorder, remove) mixed with
+   * typing a place name, so debounced like the expense breakdown and on its
+   * OWN "journey" queue slot. A route with a still-blank place name is kept
+   * in the form but NOT sent (the editor says so); the RPC would reject it,
+   * and half-typed names must not fail an autosave. Removing the last stop
+   * is sent as an empty list, which clears the route.
+   */
+  const journeyDebounceHandle = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  function changeJourneyStops(next: JourneyDraftStop[]) {
+    setJourneyStops(next);
+    if (journeyDebounceHandle.current) {
+      clearTimeout(journeyDebounceHandle.current);
+    }
+    if (next.some((stop) => stop.label.trim() === "")) return;
+    setSaving(true);
+    journeyDebounceHandle.current = setTimeout(() => {
+      // Grouped order (each main stop, then its places); a place's parent is
+      // sent as an array position, never as a client key.
+      const grouped = normalizeStops(next);
+      const parents = toParentIndexes(grouped);
+      const payload = grouped.map((stop, i) => ({
+        latitude: stop.latitude,
+        longitude: stop.longitude,
+        label: stop.label,
+        sectionAnchor: stop.sectionAnchor,
+        parentIndex: parents[i],
+      }));
+      queue.enqueue("journey", async () => {
+        const result = await setJourneyStopsAction(
+          revisionId,
+          versionRef.current,
+          payload,
+        );
+        if (result.ok) {
+          versionRef.current += 1;
+          bumpVersion();
+          setLastSavedAt(Date.now());
+        } else {
+          throw new Error(result.error);
+        }
+      });
+    }, FIELDS_SAVE_DEBOUNCE_MS);
+  }
+
+  /**
    * Adding, removing or retyping a breakdown row also refreshes the headline
    * total -- but only while the total is still FOLLOWING the breakdown.
    *
@@ -1018,6 +1087,16 @@ export function StoryEditForm({
   // a tick here must mean the same thing as "the submit panel will not
   // complain about this". Photos and Trip are genuinely optional: they tick
   // when filled, but their absence never blocks anything.
+  // Only parsed while the Places step (which hosts the journey editor) is
+  // open -- re-parsing the whole document on every keystroke elsewhere
+  // would be wasted work.
+  const storyHeadings = useMemo(
+    () =>
+      step === "places" && initialStops !== undefined
+        ? extractHeadings(storyContentText(content))
+        : [],
+    [step, content, initialStops],
+  );
   const contentFilled = Boolean(storyContentText(content).trim());
   // The starter card (below) wants the same "is there anything here yet"
   // answer plus a word count, both from the same `content` state the tick
@@ -1628,6 +1707,14 @@ export function StoryEditForm({
                 />
               </div>
             </details>
+
+            {initialStops !== undefined ? (
+              <JourneyStopsEditor
+                stops={journeyStops}
+                headings={storyHeadings}
+                onChange={changeJourneyStops}
+              />
+            ) : null}
           </StepSection>
         </div>
 

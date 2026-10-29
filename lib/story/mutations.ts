@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
+import { callUntypedRpc } from "@/lib/supabase/call-untyped-rpc";
 import type {
   KeepStoryPrivateInput,
   RevisionInput,
@@ -672,4 +673,39 @@ export async function createStoryReport(
   });
   if (error) throw error;
   return data;
+}
+
+/**
+ * Replaces a revision's journey-map stops
+ * (supabase/migrations/20261029042052_story_revision_stops.sql).
+ *
+ * Untyped for now (see lib/story/journey-queries.ts for why), so this goes
+ * through callUntypedRpc(). The RPC authorizes the revision, checks the optimistic version, rounds the
+ * coordinates, rejects anything outside New Zealand and caps the count --
+ * this wrapper carries no rules of its own, it only renames keys.
+ */
+export async function setRevisionStops(
+  revisionId: string,
+  expectedVersion: number,
+  stops: Array<{
+    latitude: number;
+    longitude: number;
+    label: string;
+    sectionAnchor?: string | null;
+    parentIndex?: number | null;
+  }>,
+) {
+  await requireUser();
+  const supabase = await createClient();
+  await callUntypedRpc<null>(supabase, "set_revision_stops", {
+    p_revision_id: revisionId,
+    p_expected_version: expectedVersion,
+    p_stops: stops.map((s) => ({
+      latitude: s.latitude,
+      longitude: s.longitude,
+      label: s.label,
+      section_anchor: s.sectionAnchor ?? null,
+      parent_index: s.parentIndex ?? null,
+    })),
+  });
 }

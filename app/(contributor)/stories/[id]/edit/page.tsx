@@ -13,6 +13,7 @@ import {
   listActiveTags,
   listActiveExpenseCategories,
 } from "@/lib/story/active-lookups";
+import { getRevisionStops } from "@/lib/story/journey-queries";
 import { StoryEditForm } from "@/components/story/story-edit-form";
 import { ReopenForEditingButton } from "@/components/story/reopen-for-editing-button";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
@@ -127,15 +128,23 @@ export default async function EditStoryPage({
     );
   }
 
-  const [selections, preview, regions, destinations, tags, expenseCategories] =
-    await Promise.all([
-      getRevisionSelections(draft.revision_id),
-      getStoryPreview(id),
-      listActiveRegions(),
-      listActiveDestinations(),
-      listActiveTags(),
-      listActiveExpenseCategories(),
-    ]);
+  const [
+    selections,
+    stops,
+    preview,
+    regions,
+    destinations,
+    tags,
+    expenseCategories,
+  ] = await Promise.all([
+    getRevisionSelections(draft.revision_id),
+    getRevisionStops(draft.revision_id),
+    getStoryPreview(id),
+    listActiveRegions(),
+    listActiveDestinations(),
+    listActiveTags(),
+    listActiveExpenseCategories(),
+  ]);
 
   const parsedContent = normalizeStoryContentJson(draft.content_json);
 
@@ -156,6 +165,7 @@ export default async function EditStoryPage({
       initialLocations={selections.locations}
       initialTags={selections.tags}
       initialExpenses={selections.expenses}
+      initialStops={stops}
       initialMedia={preview?.media ?? []}
       regions={regions}
       destinations={destinations}

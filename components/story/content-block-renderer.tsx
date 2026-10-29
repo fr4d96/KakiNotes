@@ -5,6 +5,7 @@ import type { StoryContentBlock } from "@/lib/validation/story";
 import { storyContentText } from "@/lib/validation/story";
 import { remarkMediaEmbed } from "@/lib/story/remark-media-embed";
 import { remarkSoftBreaks } from "@/lib/story/remark-soft-breaks";
+import { remarkHeadingIds } from "@/lib/story/heading-ids";
 import { Spinner } from "@/components/ui/spinner";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
 
@@ -112,38 +113,59 @@ function buildComponents(media: ContentBlockMediaMap): Components {
       }
       return <span {...props} />;
     },
-    h1({ children }) {
+    h1({ children, id }) {
       // The Markdown schema itself already rejects `# ` (h1) content
       // (lib/validation/story.ts), but render defensively as an h2 rather
       // than trust that every stored revision passed through that check.
       return (
-        <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+        <h2
+          id={id}
+          className="scroll-mt-20 text-xl font-semibold tracking-tight sm:text-2xl"
+        >
           {children}
         </h2>
       );
     },
-    h2({ children }) {
+    h2({ children, id }) {
       return (
-        <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+        <h2
+          id={id}
+          className="scroll-mt-20 text-xl font-semibold tracking-tight sm:text-2xl"
+        >
           {children}
         </h2>
       );
     },
-    h3({ children }) {
+    h3({ children, id }) {
       return (
-        <h3 className="text-lg font-semibold tracking-tight sm:text-xl">
+        <h3
+          id={id}
+          className="scroll-mt-20 text-lg font-semibold tracking-tight sm:text-xl"
+        >
           {children}
         </h3>
       );
     },
-    h4({ children }) {
-      return <h4 className="text-lg font-semibold sm:text-lg">{children}</h4>;
+    h4({ children, id }) {
+      return (
+        <h4 id={id} className="text-lg font-semibold sm:text-lg">
+          {children}
+        </h4>
+      );
     },
-    h5({ children }) {
-      return <h5 className="text-base font-semibold">{children}</h5>;
+    h5({ children, id }) {
+      return (
+        <h5 id={id} className="text-base font-semibold">
+          {children}
+        </h5>
+      );
     },
-    h6({ children }) {
-      return <h6 className="text-base font-semibold">{children}</h6>;
+    h6({ children, id }) {
+      return (
+        <h6 id={id} className="text-base font-semibold">
+          {children}
+        </h6>
+      );
     },
     p({ children }) {
       return <p className="text-base leading-relaxed sm:text-lg">{children}</p>;
@@ -226,10 +248,17 @@ function buildComponents(media: ContentBlockMediaMap): Components {
 export function ContentBlockRenderer({
   blocks,
   media = {},
+  anchorHeadings = true,
 }: {
   blocks: StoryContentBlock[];
   /** See ContentBlockMediaMap's own comment. Optional: content without image embeds needs nothing here. */
   media?: ContentBlockMediaMap;
+  /**
+   * Give each heading its journey-map anchor id (lib/story/heading-ids.ts).
+   * Turn off for a SECOND copy of a story on the same page (the moderation
+   * page's "currently published" column) so ids stay unique.
+   */
+  anchorHeadings?: boolean;
 }) {
   const text = storyContentText(blocks);
   return (
@@ -238,7 +267,12 @@ export function ContentBlockRenderer({
         // remarkSoftBreaks runs last: by then the `![[mediaId]]` tokens have
         // already been lifted out into their own nodes, so it only ever sees
         // real prose text.
-        remarkPlugins={[remarkGfm, remarkMediaEmbed, remarkSoftBreaks]}
+        remarkPlugins={[
+          remarkGfm,
+          ...(anchorHeadings ? [remarkHeadingIds] : []),
+          remarkMediaEmbed,
+          remarkSoftBreaks,
+        ]}
         components={buildComponents(media)}
       >
         {text}

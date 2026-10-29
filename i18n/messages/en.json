@@ -175,7 +175,13 @@
       "consentRequired": "You must confirm you have permission to publish this story.",
       "termsVersionMissing": "Missing terms version.",
       "selectPage": "Select at least one page.",
-      "changeNoteRequired": "Describe what needs to change."
+      "changeNoteRequired": "Describe what needs to change.",
+      "journeyLabelRequired": "Give this stop a place name.",
+      "journeyLabelTooLong": "Place names must be {max} characters or fewer.",
+      "journeyOutOfBounds": "Stops must be inside New Zealand.",
+      "journeyTooMany": "A story can have at most 12 main stops and 40 stops in total.",
+      "journeyTooManyInside": "A main stop can hold at most 8 places inside it.",
+      "journeyBadParent": "A place inside a stop must belong to an earlier main stop."
     },
     "pdf": {
       "empty": "The PDF file is empty.",
@@ -1272,5 +1278,106 @@
       "dropped": "Dropped “{story}” on “{target}”.",
       "cancelled": "Stopped moving “{story}”."
     }
+  },
+  "journey": {
+    "title": "The journey",
+    "note": "An illustration on a simplified map, not for navigation — places are approximate and chosen by the author.",
+    "mapLabel": "Illustrated route through New Zealand with {count} stops",
+    "pinLabel": "Stop {n}: {label}",
+    "play": "Play the journey",
+    "pause": "Pause",
+    "replay": "Replay the journey",
+    "stopOf": "Stop {n} of {total}",
+    "onTheRoad": "On the road to {label}…",
+    "onTheFerry": "On the ferry across Cook Strait to {label}…",
+    "readThisPart": "Read this part",
+    "stopsList": "Stops",
+    "controls": {
+      "help": "Interactive map. Drag to pan, hold Ctrl or Cmd and scroll or pinch to zoom, or use the plus and minus buttons. When the map has focus, arrow keys pan and plus and minus zoom.",
+      "follow": "Re-centre and follow the van",
+      "reset": "Reset map view",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "hint": {
+        "wheel": "Use Ctrl + scroll to zoom the map",
+        "wheelMac": "Use ⌘ + scroll to zoom the map",
+        "touch": "Use two fingers to move the map"
+      }
+    },
+    "editor": {
+      "title": "Journey map",
+      "hint": "Optional. Tap the map to pin up to {max} main stops in the order you travelled, then add up to {inside} places inside each one. Readers see a cute route with the names you give — never exact coordinates (places are rounded to about 1 km).",
+      "mapLabel": "New Zealand. Tap to add a stop.",
+      "addByKeyboard": "Add a stop in the middle of the map",
+      "empty": "No stops yet. Tap the map to add your first one.",
+      "stopHeading": "Stop {n}",
+      "labelField": "Place name",
+      "labelPlaceholder": "e.g. Near Cromwell",
+      "labelHelp": "Up to {max} characters. Shown to readers.",
+      "sectionField": "Links to part of your story",
+      "sectionNone": "None — link to the start",
+      "moveUp": "Move stop {n} up",
+      "moveDown": "Move stop {n} down",
+      "remove": "Remove stop {n}",
+      "limit": "You've reached the limit of {max} stops in total.",
+      "needsLabel": "Give every stop a place name to save your route.",
+      "saveFailed": "Couldn't save your journey. Please try again.",
+      "mapHelp": "Interactive map. Tap a place to pin a stop. Drag to pan, hold Ctrl or Cmd and scroll or pinch to zoom, or use the plus and minus buttons. When the map has focus, arrow keys pan and plus and minus zoom.",
+      "tapHint": "Tip: zoom in with the plus button, then tap right on the place. Drag to move the map. You can fine-tune the name afterwards.",
+      "linkField": "Or add from a Google Maps link",
+      "linkPlaceholder": "Paste a Google Maps link",
+      "linkButton": "Add stop",
+      "linkWorking": "Adding…",
+      "linkPrivacy": "Paste a Google Maps link to a place. We only keep the approximate spot (about 1 km) and the name — not the link.",
+      "linkAdded": "Added “{name}”. Check the name below.",
+      "linkAddedNoName": "Stop added. Give it a place name below.",
+      "linkErrors": {
+        "empty": "Paste a Google Maps link first.",
+        "invalid": "That doesn't look like a Google Maps link.",
+        "notFound": "We couldn't find a place in that link. Try the Share link for a specific place.",
+        "outsideNz": "That place is outside New Zealand.",
+        "unreachable": "Couldn't open that link right now. Please try again.",
+        "unauthenticated": "Please sign in to use short links."
+      },
+      "pinLabel": "Stop {n}{named, select, yes {: {name}} other {}}{selected, select, yes {, selected} other {}}",
+      "toast": {
+        "added": "Added stop {n}",
+        "removed": "Removed “{name}”",
+        "removedUnnamed": "Removed stop {n}",
+        "undo": "Undo",
+        "addedInside": "Added {id} inside {parent}",
+        "removedWithSubs": "Removed “{name}” and {count, plural, one {# place} other {# places}} inside",
+        "removedUnnamedWithSubs": "Removed stop {n} and {count, plural, one {# place} other {# places}} inside"
+      },
+      "popover": {
+        "label": "Stop {n} actions",
+        "title": "Stop {n}: {name}",
+        "titleUnnamed": "Stop {n}",
+        "remove": "Remove",
+        "edit": "Edit",
+        "addInside": "Add places inside"
+      },
+      "limitMain": "You can have up to {max} main stops. Put extra places inside an existing stop instead.",
+      "limitInside": "A stop can hold up to {max} places inside it.",
+      "subHeading": "Place {id}",
+      "unnamedStop": "Stop {n}",
+      "partOfField": "Part of",
+      "partOfMain": "Main stop",
+      "partOfInside": "Inside: {label}",
+      "partOfInsideFull": "Inside: {label} (full)",
+      "partOfHasPlaces": "This stop has places inside it, so it can't go inside another stop.",
+      "addingBanner": "Adding places inside {label}",
+      "addingDone": "Done",
+      "subPinLabel": "Place {id}{named, select, yes {: {name}} other {}}{selected, select, yes {, selected} other {}}, inside {parent}"
+    },
+    "preview": {
+      "title": "Journey map (as readers will see it)"
+    },
+    "pinLabelWithSubs": "Stop {n}: {label}, {count, plural, one {# place inside} other {# places inside}}",
+    "subPinLabel": "Place {id}: {label}",
+    "morePlaces": "+{count, plural, one {# place} other {# places}}",
+    "backToJourney": "Back to whole journey",
+    "insideList": "Places inside {label}",
+    "insideStatus": "Exploring {label}: {count, plural, one {# place} other {# places}}"
   }
 }

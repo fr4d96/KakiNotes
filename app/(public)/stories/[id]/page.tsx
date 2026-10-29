@@ -10,7 +10,7 @@ import {
   listPublicRegions,
 } from "@/lib/story/public-queries";
 import { getImageUrl } from "@/lib/story/image-url";
-import { imageBlockMediaIds } from "@/lib/validation/story";
+import { imageBlockMediaIds, storyContentText } from "@/lib/validation/story";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
 import { prefixedVocabName, vocabName } from "@/lib/i18n/vocab";
 import type { Locale } from "@/i18n/locales";
@@ -18,6 +18,10 @@ import {
   ContentBlockRenderer,
   type ContentBlockMediaMap,
 } from "@/components/story/content-block-renderer";
+import { JourneyMap } from "@/components/story/journey-map";
+import { countMainStops } from "@/lib/journey/schema";
+import { getPublishedStoryStopsDeduped } from "@/lib/story/journey-queries";
+import { extractHeadings } from "@/lib/story/headings";
 import { StoryGallery } from "@/components/story/story-gallery";
 import { PartOfStory, SubStoryList } from "@/components/story/story-family";
 import {
@@ -197,10 +201,13 @@ export default async function StoryDetailPage({
   ]);
   if (!story) notFound();
 
-  const [media, activeRegions, family] = await Promise.all([
+  const [media, activeRegions, family, journeyStops] = await Promise.all([
     getPublishedStoryMediaDeduped(story.story_id),
     listPublicRegions(),
     getPublishedStoryFamilyDeduped(story.story_id),
+    // Stops of the approved published revision only (Rules 10-12); [] when
+    // the RPC is unavailable, so the story itself always renders.
+    getPublishedStoryStopsDeduped(slug),
   ]);
 
   // Sub stories as full cards. A sub story always has the same contributor
@@ -315,7 +322,10 @@ export default async function StoryDetailPage({
         <PersonalExperienceLabel />
       </div>
 
-      <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+      <h1
+        id="story-title"
+        className="scroll-mt-20 text-3xl font-semibold tracking-tight sm:text-4xl"
+      >
         {story.title}
       </h1>
       {story.excerpt ? (
@@ -359,6 +369,19 @@ export default async function StoryDetailPage({
           <p className="text-destructive">{t("contentUnavailable")}</p>
         )}
       </div>
+
+      {countMainStops(journeyStops) >= 2 ? (
+        <JourneyMap
+          stops={journeyStops}
+          availableAnchors={
+            parsedContent
+              ? extractHeadings(storyContentText(parsedContent)).map(
+                  (h) => h.anchor,
+                )
+              : []
+          }
+        />
+      ) : null}
 
       {galleryMedia.length > 0 ? (
         <div className="mt-10">
