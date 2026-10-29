@@ -28,7 +28,9 @@ import {
  *
  * Three operations, each independently idempotent/retryable:
  *   - processStoryMedia: decode + strip + resize the original upload,
- *     stage the result privately. Never touches the public bucket.
+ *     stage the result privately, then delete the raw original (it is
+ *     never read again once processing has succeeded). Never touches the
+ *     public bucket.
  *   - copyStoryMediaToPublic: copy an already-processed derivative to the
  *     public bucket for one publication attempt. Only ever called after a
  *     moderator has begun a publication attempt.
@@ -134,11 +136,28 @@ export async function processStoryMedia(
   const admin = createAdminClient();
   const { data: media, error: fetchError } = await admin
     .from("story_media")
-    .select("story_id, private_storage_path, processing_state")
+    .select(
+      "story_id, private_storage_path, processing_state, original_deleted_at",
+    )
     .eq("id", mediaId)
     .single();
   if (fetchError || !media) {
     throw new Error(`No such media: ${mediaId}`);
+  }
+
+  // The raw original is deleted once it is past retention (see
+  // deleteRetainedOriginal below and 20261003120000_story_media_original_
+  // retention.sql). For a failed row that means there is nothing left to
+  // reprocess from -- and no derivative to fall back on either, since a
+  // failed row never has one. Say so plainly instead of surfacing a storage
+  // 404 as a generic processing error.
+  if (media.original_deleted_at) {
+    await recordProcessingFailure(
+      mediaId,
+      "original_deleted",
+      "The original upload is no longer stored. Please upload the photo again.",
+    );
+    return;
   }
 
   try {
@@ -286,6 +305,41 @@ export async function processStoryMedia(
       err instanceof Error ? err.message : "Unknown processing error.",
     );
     throw err;
+  }
+
+  // Outside the try on purpose: the media is already `processed` at this
+  // point, so a cleanup problem must never be recorded as a processing
+  // failure (record_story_media_processing_failed would reject it anyway).
+  await deleteRetainedOriginal(mediaId, media.private_storage_path);
+}
+
+/**
+ * Deletes a media item's raw original (full EXIF/GPS) from the private
+ * bucket and records that it is gone. Only ever called right after
+ * record_processed_story_media succeeded: from then on the transition
+ * trigger guarantees the row never returns to a state that reads the raw.
+ *
+ * Best-effort by design. The upload has succeeded and the contributor
+ * should see that; if either step fails here, the row simply stays due and
+ * scripts/purge-media-originals.mjs deletes it on its next run. The order --
+ * delete first, mark second -- is what makes that retry safe: a row is never
+ * marked deleted while its object might still exist.
+ */
+async function deleteRetainedOriginal(
+  mediaId: string,
+  originalPath: string,
+): Promise<void> {
+  const admin = createAdminClient();
+  try {
+    const { error: removeError } = await admin.storage
+      .from(PRIVATE_BUCKET)
+      .remove([originalPath]);
+    if (removeError) return;
+    await admin.rpc("mark_story_media_original_deleted", {
+      p_media_id: mediaId,
+    });
+  } catch {
+    // Left for the retention sweep; see above.
   }
 }
 

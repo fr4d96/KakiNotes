@@ -616,6 +616,7 @@ export type Database = {
           failure_reason: string | null;
           id: string;
           metadata_removed_at: string | null;
+          original_deleted_at: string | null;
           owner_user_id: string | null;
           private_storage_path: string;
           processed_file_size_bytes: number | null;
@@ -642,6 +643,7 @@ export type Database = {
           failure_reason?: string | null;
           id?: string;
           metadata_removed_at?: string | null;
+          original_deleted_at?: string | null;
           owner_user_id?: string | null;
           private_storage_path: string;
           processed_file_size_bytes?: number | null;
@@ -668,6 +670,7 @@ export type Database = {
           failure_reason?: string | null;
           id?: string;
           metadata_removed_at?: string | null;
+          original_deleted_at?: string | null;
           owner_user_id?: string | null;
           private_storage_path?: string;
           processed_file_size_bytes?: number | null;
@@ -1585,6 +1588,13 @@ export type Database = {
         Args: { p_story_id: string };
         Returns: boolean;
       };
+      _story_media_original_is_due: {
+        Args: {
+          p_created_at: string;
+          p_processing_state: Database["public"]["Enums"]["story_media_processing_state"];
+        };
+        Returns: boolean;
+      };
       _terminalize_active_revision: {
         Args: { p_story_id: string };
         Returns: undefined;
@@ -2357,6 +2367,14 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      list_story_media_originals_due_for_deletion: {
+        Args: { p_limit?: number };
+        Returns: {
+          media_id: string;
+          private_storage_path: string;
+          processing_state: Database["public"]["Enums"]["story_media_processing_state"];
+        }[];
+      };
       list_story_takedown_requests: {
         Args: { p_limit?: number; p_offset?: number };
         Returns: {
@@ -2413,6 +2431,10 @@ export type Database = {
       mark_my_notifications_read: {
         Args: { p_ids?: string[] };
         Returns: number;
+      };
+      mark_story_media_original_deleted: {
+        Args: { p_media_id: string };
+        Returns: undefined;
       };
       moderate_revision: {
         Args: {

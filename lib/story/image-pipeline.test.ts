@@ -22,7 +22,14 @@ let mediaRow: {
   story_id: string;
   private_storage_path: string;
   processing_state: string;
+  original_deleted_at?: string | null;
 } | null = null;
+
+// Raw-original retention: what processStoryMedia removed, and switches to
+// make that removal (or a given RPC) fail the way a real outage would.
+const removedPaths: string[] = [];
+let removeError: { message: string } | null = null;
+const rpcErrors: Record<string, string> = {};
 
 function key(bucket: string, path: string) {
   return `${bucket}/${path}`;
@@ -44,7 +51,15 @@ const fakeAdmin = {
   // directly (by copyStoryMediaToPublic/mintMediaPreviewSignedUrl, neither
   // exercised by this file's tests, kept for shape-completeness).
   storage: {
-    from: () => ({
+    from: (bucket: string) => ({
+      remove: async (paths: string[]) => {
+        if (removeError) return { data: null, error: removeError };
+        for (const path of paths) {
+          removedPaths.push(key(bucket, path));
+          objects.delete(key(bucket, path));
+        }
+        return { data: [], error: null };
+      },
       list: async () => ({ data: [] }),
       createSignedUrl: async () => ({
         data: { signedUrl: "https://example.com/signed" },
@@ -54,7 +69,8 @@ const fakeAdmin = {
   },
   rpc: vi.fn(async (name: string, args: Record<string, unknown>) => {
     rpcCalls.push({ name, args });
-    return { data: null, error: null };
+    const message = rpcErrors[name];
+    return { data: null, error: message ? { message } : null };
   }),
 };
 
@@ -132,6 +148,9 @@ beforeEach(() => {
   downloadedPaths.length = 0;
   uploadedPaths.length = 0;
   corruptUploadsRemaining = 0;
+  removedPaths.length = 0;
+  removeError = null;
+  for (const name of Object.keys(rpcErrors)) delete rpcErrors[name];
 });
 
 async function jpegWithExif(): Promise<Buffer> {
@@ -323,6 +342,127 @@ describe("processStoryMedia", () => {
   // source would have silently passed the check undetected. Fixed above;
   // a real-fixture regression test for the full rejection path is tracked
   // for Sub-phase 5, not skipped silently.
+});
+
+// The raw original carries full EXIF/GPS and is never read again once
+// processing has succeeded (see 20261003120000_story_media_original_
+// retention.sql), so processStoryMedia deletes it -- but only then, and
+// never in a way that can turn a good upload into a failed one.
+describe("processStoryMedia raw-original retention", () => {
+  const ORIGINAL = "story/media/original.jpg";
+  const originalKey = key("story-images-private", ORIGINAL);
+
+  async function seedUploaded(bytes?: Buffer) {
+    mediaRow = {
+      story_id: "11111111-1111-4111-8111-111111111111",
+      private_storage_path: ORIGINAL,
+      processing_state: "uploaded",
+      original_deleted_at: null,
+    };
+    objects.set(originalKey, bytes ?? (await jpegWithExif()));
+  }
+
+  const callNames = () => rpcCalls.map((c) => c.name);
+
+  it("deletes the raw original after a successful process, then records it", async () => {
+    await seedUploaded();
+
+    await processStoryMedia("media-ok");
+
+    expect(removedPaths).toEqual([originalKey]);
+    expect(objects.has(originalKey)).toBe(false);
+    // Recorded as processed FIRST, marked deleted only after the delete.
+    const names = callNames();
+    expect(
+      names.indexOf("record_processed_story_media"),
+    ).toBeGreaterThanOrEqual(0);
+    expect(names.indexOf("mark_story_media_original_deleted")).toBeGreaterThan(
+      names.indexOf("record_processed_story_media"),
+    );
+    expect(
+      rpcCalls.find((c) => c.name === "mark_story_media_original_deleted")!
+        .args,
+    ).toEqual({ p_media_id: "media-ok" });
+    // The derivative is untouched.
+    const recorded = rpcCalls.find(
+      (c) => c.name === "record_processed_story_media",
+    )!;
+    expect(
+      objects.has(
+        key(
+          "story-images-private",
+          recorded.args.p_processed_private_storage_path as string,
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it("keeps the raw original when processing fails, so it can be reprocessed", async () => {
+    await seedUploaded(Buffer.from("not an image at all"));
+
+    await processStoryMedia("media-bad");
+
+    expect(removedPaths).toEqual([]);
+    expect(objects.has(originalKey)).toBe(true);
+    expect(callNames()).not.toContain("mark_story_media_original_deleted");
+  });
+
+  it("keeps the raw original when recording the processed result fails", async () => {
+    await seedUploaded();
+    rpcErrors.record_processed_story_media = "boom";
+
+    await expect(processStoryMedia("media-record-fails")).rejects.toThrow(
+      /record_processed_story_media failed/,
+    );
+
+    expect(removedPaths).toEqual([]);
+    expect(objects.has(originalKey)).toBe(true);
+  });
+
+  it("still succeeds, unmarked, when the delete itself fails", async () => {
+    await seedUploaded();
+    removeError = { message: "storage down" };
+
+    await expect(
+      processStoryMedia("media-remove-fails"),
+    ).resolves.toBeUndefined();
+
+    // Not marked: the object may still exist, so the sweep must find it.
+    expect(callNames()).not.toContain("mark_story_media_original_deleted");
+    expect(callNames()).not.toContain("record_story_media_processing_failed");
+  });
+
+  it("still succeeds when the delete worked but recording it failed", async () => {
+    await seedUploaded();
+    rpcErrors.mark_story_media_original_deleted = "db hiccup";
+
+    await expect(
+      processStoryMedia("media-mark-fails"),
+    ).resolves.toBeUndefined();
+
+    expect(objects.has(originalKey)).toBe(false);
+    expect(callNames()).not.toContain("record_story_media_processing_failed");
+  });
+
+  it("fails clearly, without downloading, when the original is already gone", async () => {
+    mediaRow = {
+      story_id: "11111111-1111-4111-8111-111111111111",
+      private_storage_path: ORIGINAL,
+      processing_state: "failed",
+      original_deleted_at: "2026-09-01T00:00:00Z",
+    };
+
+    await processStoryMedia("media-gone");
+
+    expect(downloadedPaths).toEqual([]);
+    const failed = rpcCalls.find(
+      (c) => c.name === "record_story_media_processing_failed",
+    );
+    expect(failed!.args.p_error_code).toBe("original_deleted");
+    expect(failed!.args.p_failure_reason).toMatch(/upload the photo again/);
+    expect(callNames()).not.toContain("record_processed_story_media");
+    expect(removedPaths).toEqual([]);
+  });
 });
 
 describe("encodeJpegUnderBudget", () => {
