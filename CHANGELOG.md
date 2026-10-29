@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.11.0](https://github.com/fr4d96/KakiNotes/compare/v1.10.0...v1.11.0) (2026-10-29)
+
+### What's new for readers
+
+**A China section.** Kakinotes now has first-person travel stories from China, alongside the New Zealand Working Holiday stories. Use the NZ | China switch on the home page, or go straight to /cn. The China section has its own stories, contributors, costs and about pages, in English and Chinese.
+
+**New Zealand is unchanged.** All New Zealand pages and links work exactly as before. The China section is general travel stories, not Working Holiday Visa stories.
+
+### What's new for contributors
+
+**Choose your story's country.** The Places step in the story editor now starts with a Country choice. The regions, towns and place search all follow the country you pick. You can change the country until the story is first published; after that it stays fixed.
+
+**Type in any place.** "Add a location manually" now lets you type a region or area (and, if you like, a town or place) instead of picking from a list, so you can add places that aren't listed.
+
+**PDF imports know the country too.** Starting a story from a PDF, from either the New Zealand or the China section, records the right country.
+
+### Good to know
+
+**The journey map is New Zealand only.** It draws a map of New Zealand, so it's offered on New Zealand stories and doesn't appear on China stories.
+
+
+
+
+### Features
+
+* **china:** China travel-stories section under /cn ([d6d7b53](https://github.com/fr4d96/KakiNotes/commit/d6d7b53200fb6f05978f92e0dbfba86804179db2))
+
 ## [1.10.0](https://github.com/fr4d96/KakiNotes/compare/v1.9.0...v1.10.0) (2026-10-29)
 
 ### What's new for readers
