@@ -105,8 +105,14 @@ Explicitly out of scope for MVP — do not build:
   planning). The one permitted exception is the **story journey illustration** described under MVP
   scope, whose reader zoom/pan applies to that stylised illustration only.
 - Native mobile apps.
-- Support for other visa-country programs (Australia, Canada, etc.) — data model may be
-  country-agnostic where cheap to do so, but no second-country product surface ships in MVP.
+- Support for other **WHV-country programs** (Australia, Canada, etc.) — the data model stays
+  country-agnostic where cheap to do so, but no second WHV-visa-country product surface ships in
+  MVP. **Overridden for China specifically, 2026-10-14** (owner decision, recorded in
+  [docs/implementation-status.md](implementation-status.md)): China ships as a second country
+  section, framed as general first-person travel stories — not WHV, since China has no Working
+  Holiday Visa program relevant to this product's Malaysian audience. This is a narrow,
+  named exception for one country under its own non-WHV framing, not a reopening of
+  multi-country WHV support in general.
 - Personalised immigration, legal, employment, tax, or financial advice, or anything that reads as such.
   Every story is explicitly labeled as one person's personal experience (Engineering Rule 17).
 

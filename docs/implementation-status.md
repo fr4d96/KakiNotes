@@ -10001,11 +10001,9 @@ functions include the stops lines; the security advisors show only the project's
   `20261015063409_custom_region_labels`; at least some are on `feat/china-section` /
   `feat/landing-country-cards`). Any future rewrite of a function they also touch must start
   from the LIVE definition (`pg_get_functiondef`), not from main's last migration.
-- `types/database.ts` is **not** regenerated: regenerating from the hosted database pulls in that
-  drift (e.g. `regions.country_id` becomes required) and breaks typecheck on main. The three
-  call sites (`lib/story/mutations.ts#setRevisionStops`, `lib/story/journey-queries.ts` x2) stay
-  on `callUntypedRpc()` (rows Zod-validated) until the drifted branches land and types are
-  regenerated; then move them to typed `supabase.rpc(...)`.
+- `types/database.ts` was at first **not** regenerated, because the drift broke typecheck on main
+  (e.g. `regions.country_id` required). Resolved the same day by merging `feat/china-section` —
+  see "Merged feat/china-section into main" below.
 - `tests/e2e/story-journey-map.spec.ts` skips itself when `set_revision_stops` does not exist, and
   has not been run.
 
@@ -10067,3 +10065,395 @@ user wanted packed stops to appear only when a main journey is clicked. Decision
 - A timeline row only links ("Read this part") when its stop is tied to a heading that still exists;
   unlinked stops show no link (the old "Read from the start" fallback was removed as noise).
 - The temporary dev preview page used during design was deleted before commit.
+
+## 2026-10-14 — China: second country section
+
+**Owner decision, recorded here per docs/product-spec.md's MVP non-goal on multi-country support.**
+Spec non-goal at docs/product-spec.md:94–100 is narrowly overridden: China ships as a second country
+section, under its own `/cn` URL prefix, framed as **general first-person travel stories** — not
+Working Holiday Visa stories. New Zealand stays WHV-framed exactly as before, unprefixed. This is not
+a reopening of multi-country WHV support; it's one named exception for one country under a different
+(non-WHV) framing, driven by the owner's own upcoming trip to Guangzhou.
+
+**Data model.** New migration `supabase/migrations/20261014085842_countries.sql`:
+
+- `countries` and `regions.country_id` already existed on the hosted database
+  (`20260924021909_countries.sql`, applied from the unmerged itinerary-builder work but missing from
+  the repo). That file is now restored verbatim, so the repo matches the hosted migration history.
+  This migration only inserts the `china` row (`code` `cn`, `name_zh_cn` 中国).
+- `stories.country_id`, `NOT NULL`, backfilled to New Zealand so every existing row keeps meaning
+  exactly what it already meant.
+- `story_revision_locations_validate_country()` — a new `BEFORE INSERT OR UPDATE` trigger on
+  `story_revision_locations`, same shape as the existing
+  `story_revision_locations_validate_destination()` trigger: a selected region must belong to the
+  same country as the story itself, or the write is rejected. This is the structural guarantee behind
+  "a story's regions must belong to the same country as the story" — enforced in the database, not
+  just by which picker the UI happens to show.
+- Seeded China regions (Guangdong, Beijing, Shanghai, Sichuan, Yunnan) and destinations (Guangzhou,
+  Shenzhen, Foshan, Dongguan, Zhuhai under Guangdong; Beijing; Shanghai; Chengdu; Kunming, Lijiang) —
+  reference/lookup data, not contributor content, consistent with how the original NZ regions were
+  seeded directly in a migration.
+- `list_published_stories()` and `get_published_story()` each gain an additive `p_country_slug`
+  parameter (`CREATE OR REPLACE`, trailing defaulted parameter — no existing call site's resolution
+  changes). `list_published_stories()` defaults to `'new-zealand'` for full backward compatibility;
+  every call site in `app/` now passes `countrySlug` explicitly rather than relying on that default,
+  so the filter is visible at the call site. `get_published_story()` defaults to `null` (no filter)
+  and, when a country is given, treats a cross-country slug exactly like an unknown one — no rows —
+  which is what stops `/stories/<china-slug>` and `/cn/stories/<nz-slug>` from ever resolving
+  (Engineering Rule 10/12).
+- `create_self_service_draft()` gains an additive `p_country_slug` parameter (default
+  `'new-zealand'`), so a contributor picks their story's country at creation time.
+- New `get_story_country(story_id)` RPC (owner/linked-contributor or editor/admin only) lets the
+  authoring UI scope its region/destination picker to the story's own country.
+
+**App layer.**
+
+- `lib/story/countries.ts` — the only place the list of countries, their `/cn` URL prefix, and their
+  `countryContent` message-namespace segment live. No UI copy in it.
+- `lib/story/public-queries.ts` / `lib/story/active-lookups.ts` — `listPublishedStories`,
+  `getPublishedStoryBySlug`, `listPublicRegions`/`listActiveRegions` (and the destinations readers,
+  scoped by region id) all take an optional country slug/scope. An unknown/inactive country slug
+  returns an empty list rather than silently widening to "every region".
+- Routing: `app/(public)/cn/` mirrors `page.tsx`, `stories/`, `stories/[id]/`, `contributors/`,
+  `contributors/[slug]/`, `costs/`, `about/`. The stories index and story detail pages are shared
+  server components (`app/(public)/_shared/stories-index.tsx`,
+  `app/(public)/_shared/story-detail.tsx`) parameterized by `country`, used by both the NZ and `/cn`
+  routes, rather than two copies that could silently drift. `StoryCard`/`PartOfStory`/`SubStoryList`
+  gained an optional `basePath` prop (default `/stories`, unchanged for every existing caller) so a
+  China card's title link points at `/cn/stories/<slug>`, not `/stories/<slug>`.
+  `app/(public)/cn/contributors*` re-export the NZ contributor directory/detail pages unchanged — the
+  contributor directory is not country-scoped in the data model (nationality vs. which country's
+  stories someone wrote are independent concepts).
+- `components/country-toggle.tsx` — the NZ | China switch on the landing page: a plain two-link
+  `<nav>` (no client JS required to work, real keyboard navigation, `aria-current="page"` on the
+  active one). Added near the top of `app/(public)/page.tsx`'s hero and as the first element of
+  `app/(public)/cn/page.tsx`.
+- `app/(public)/cn/page.tsx` is a new, simpler landing page, not a reuse of the NZ home page's "Night
+  Field" art direction (`app/(public)/page.tsx`'s hero-field/featured-story-stack/destination-quiz
+  components carry WHV- and NZ-specific prose and visual direction baked into their own design
+  contract) — built from the same generic building blocks the rest of the app already uses.
+- `components/story/personal-experience-label.tsx` gained an optional `countrySlug` prop: NZ keeps
+  its existing WHV-framed disclaimer (`common.personalExperienceLabel`, names immigration/employment/
+  tax advice specifically); China gets a shorter, general-travel variant
+  (`countryContent.china.personalExperienceLabel`) rather than the NZ wording with the country name
+  swapped in, since the categories of advice being disclaimed genuinely differ.
+- `components/story/story-edit-form.tsx` gained an optional `countryName` prop (default: New
+  Zealand's name) so the location-match-failure copy (`editor.fields.unmatchedPlace(Named)`) reads
+  "…does not belong to a {country} region" rather than a hard-coded "New Zealand" — the message is
+  now `{country}`-parameterized in both `en.json` and `zh-CN.json`.
+- `i18n/messages/en.json` / `zh-CN.json` gained a `countryContent` namespace (`newZealand`/`china`),
+  holding every country-varying copy string: `name`, `tagline`, `siteDescription`, `storiesIntro`,
+  `storiesMetaDescription`, `costsFraming`, `aboutText`, `personalExperienceLabel`. NZ's variants are
+  copied byte-for-byte from the pre-existing `stories.intro`/`stories.metaDescription` strings, so
+  the NZ-visible copy is unchanged. No country name is hard-coded in any component touched by this
+  work; every one reads from `countryContent` or takes the resolved string as a prop.
+
+**Known limitation, not fixed in this pass:** `/cn/costs` does **not** reuse `/costs`'s
+`get_expense_aggregates()` numbers. That RPC aggregates across every published story regardless of
+country, and `total_expense_nzd_cents` is NZD-denominated throughout the schema — mixing it into a
+page framed as "what people spent in China" would misreport NZ-trip medians under a China heading.
+`/cn/costs` instead keeps the same section structure and shows the honest "not enough published
+stories yet" state for every section until a real country-aware aggregate (and a currency decision
+for non-NZD trips) is built. A contributor on the same contributor page who has published both NZ and
+China stories will also see every story card link to `/stories/<slug>` (the NZ path) regardless of
+which country it's in — `/contributors/[slug]` isn't country-scoped and `list_published_stories()`'s
+card shape doesn't carry a per-row country slug yet. Both are flagged as follow-ups rather than
+guessed at without being able to run the migration against a live database.
+
+**Verification.** `npm run verify`'s `format:check`, `lint`, `typecheck`, and `test` all pass (1,485
+tests, 19 new: `lib/story/countries.test.ts`, `components/country-toggle.test.tsx`,
+`lib/story/public-queries.country.test.ts`, plus new cases in `components/story/story-card.test.tsx`).
+`build` could not be run: this worktree's own `node_modules` is empty (format/lint/typecheck/test all
+resolved packages by walking up to the parent checkout's `node_modules`, which plain Node module
+resolution allows but Next's Turbopack build explicitly refuses, since it binds resolution to its
+detected workspace root) — a pre-existing environment limitation of this worktree, unrelated to this
+change, not fixed here since fixing it would mean installing dependencies, which this task's
+instructions explicitly rule out. The migration itself was also never applied against a live or local
+Supabase instance (Docker unavailable here, same documented limitation as every prior prompt — see
+"Local vs. hosted Supabase development" in docs/architecture.md) — it was written as a careful
+`CREATE OR REPLACE`/additive-only change against the real, currently-live bodies of
+`list_published_stories()`, `get_published_story()`, and `create_self_service_draft()` (copied
+verbatim from their most recent migrations, not reconstructed from memory), but it has not been
+executed, and `types/database.ts` was hand-edited to match rather than regenerated
+(`npm run supabase:types:linked`) for the same reason. Both should be the first things re-verified
+against a real database before this ships.
+
+**Review fixes (same day).**
+
+- `get_published_story` and `create_self_service_draft` gained a parameter via `CREATE OR REPLACE`,
+  which in Postgres creates a second overload, not a replacement. Every named-argument call that
+  omits `p_country_slug` would then fail with "function is not unique", breaking NZ story pages and
+  new-story creation. The old signatures are now dropped first.
+- `get_expense_aggregates()` is now NZ-only, so China stories never mix into `/costs`' NZD
+  working-holiday figures.
+- `app/sitemap.ts` lists the `/cn` routes and China stories, under their `/cn/stories/...` URLs.
+- The shared header and footer now follow the URL: under `/cn` their Stories/Contributors/About
+  links and logo point into `/cn`, and the footer tagline and "made for" line use China copy
+  (`countryContent.china.madeFor`). `SiteFooter` became a client component for `usePathname()`.
+- Fixed `RETURNS TABLE` column ambiguity (`slug`/`id` vs `public.countries` columns) in the three
+  country lookups. It broke `list_published_stories` on dev for a couple of minutes after the first
+  apply; the corrected definitions were re-applied and the migration file matches them.
+- `story_revision_locations_validate_country()` has `EXECUTE` revoked from `public`, `anon` and
+  `authenticated` (trigger-only; flagged by the Supabase security advisor).
+- **Applied to dev (2026-10-15)** via `supabase db query --linked` in one transaction, then
+  `migration repair --status applied 20261014085842`. Verified on dev: 2 countries, 5 China regions,
+  10 destinations, no story without a country, NZ list 27 / China list 0, an NZ slug requested with
+  `p_country_slug => 'china'` returns nothing, and the trigger rejects a Guangdong region on an NZ
+  draft. `types/database.ts` matches the generated types for every China-related table and function.
+- `npm run verify` (including `build`) passes once the migration is on dev.
+- **Dev drift to know about:** dev also carries five migrations not in this branch (`20260928100000`,
+  `20260929100000`, `20260929110000`, `20261003120000`, `20261013004751` story_links from the
+  unmerged story-map work), so `supabase db push` refuses to run. Because `story_links` replaced
+  `get_published_story_family(p_slug)`, NZ story pages built from `main` error against dev until
+  story-map merges. That is not caused by this change.
+
+**Follow-up (same entry): the editor's location picker is now country-aware.** The previous pass
+added the data model and the public-facing routes; the "Places & tags" authoring step
+(`components/story/story-edit-form.tsx`) was still NZ-only — unscoped region list, `countrycodes=nz`
+hard-coded, every new story created as NZ. Fixed:
+
+- `lib/story/active-lookups.ts`: `listActiveRegions()` now always returns each region's
+  `countrySlug` (a second plain query against `countries`, not an embedded join — same reasoning as
+  the existing `resolveCountryId()` comment about not depending on a relationship
+  `types/database.ts` may not describe); new `listActiveCountries()`. `lib/story/contributor-
+queries.ts` gained `getStoryCountry()` (wraps the existing `get_story_country` RPC).
+- New migration `supabase/migrations/20261014205738_set_story_country.sql` —
+  `set_story_country(p_story_id uuid, p_country_slug text)`, `SECURITY DEFINER`, `set search_path =
+''`. Authorizes exactly like `_authorize_revision_edit()`: story owner (`_is_story_owner()`,
+  source-kind-partitioned) or the story's assigned editor (no admin bypass). Refuses outright once
+  `stories.published_revision_id is not null` — country is locked after first publication, because
+  `stories.country_id` is a property of the STORY row, not the revision, so changing it on published
+  content would move it between country sections with no moderation step in between (Engineering
+  Rule 11). Also refuses when the story has no editable draft revision
+  (`_revision_is_editable()`) or the slug is unknown/inactive. On an actual change it deletes the
+  current draft's `story_revision_locations` whose region belongs to the old country (the validate-
+  country trigger would reject them on the new `country_id` anyway) and bumps `stories.version`.
+  `EXECUTE` revoked from `public`/`anon`, granted to `authenticated`. `lib/story/mutations.ts` gained
+  `setStoryCountry()`; `types/database.ts` hand-edited to match (not regenerated — same reason as the
+  prior entry; this RPC does not exist on dev yet).
+- `lib/validation/story.ts`: `countrySlugSchema` (`z.enum(COUNTRY_SLUGS)`), used both by the new
+  `setCountryAction` (`app/(contributor)/stories/[id]/edit/actions.ts`) and by `createDraftAction`
+  (`app/(contributor)/stories/new/actions.ts`, now accepts an optional country from a hidden form
+  field `/stories/new?country=china` would set — validated server-side regardless of the page's own
+  check).
+- `components/story/story-edit-form.tsx`: new Country `<select>` above the location rows, options
+  from `listActiveCountries()`, labelled with `name_zh_cn` when reading in Chinese. Regions/
+  destinations are filtered client-side by the selected country's slug (server still enforces via
+  the trigger and the RPC). Changing country clears every location row that has a region (they all
+  belonged to the old country) with a short inline notice, keeps an empty manually-added row, calls
+  `setCountryAction` on its own mutation-queue slot BEFORE re-saving the (now empty) locations — the
+  location save is only enqueued from inside the country mutation's own success callback, so the
+  RPC's `country_id` update is guaranteed to land first. Reverts the select and the cleared rows if
+  the RPC refuses. Published stories (`lifecycle_status === "published"`) show the country as
+  read-only text with a hint instead of a select.
+- `components/story/location-search.tsx`: `countryCode`/`placeholderExample` props replace the
+  hard-coded `countrycodes=nz` and "e.g. Queenstown" placeholder. Region/destination matching is now
+  tolerant of a Chinese province/municipality's administrative suffix ("Guangdong Province", "Beijing
+  Municipality"/"北京市" against regions seeded as plain "Guangdong"/"Beijing") and matches against
+  `name_zh_cn` as well as `name`.
+- `app/(moderation)/moderation/stories/page.tsx`: the region filter now groups options by country
+  (`<optgroup>`) using the same `countrySlug` field — no behavior change, just usable once regions
+  span more than one country.
+- `i18n`: `editor.fields.country`/`countryLocked`/`countryClearedNotice`,
+  `countryContent.<segment>.placeExample`, `editor.place.placeholder` reparameterized to
+  `{example}` — all added to both `en.json` and `zh-CN.json`.
+- New tests: `components/story/location-search.test.ts` (Chinese suffix-tolerant matching, fixture
+  results only, no network calls), `components/story/story-edit-form.test.tsx` (country select
+  filtering, clearing locations on change with revert-on-failure, published read-only state,
+  placeholder/search scope per country), `lib/validation/story.test.ts` (`countrySlugSchema`),
+  `app/(contributor)/stories/[id]/edit/actions.test.ts` (`setCountryAction` validation and RPC-
+  refusal pass-through).
+- **Follow-up (same entry): every draft-creation path now picks a country, not just the plain
+  `/stories/new` title form.**
+  - Contributor PDF path: `app/(contributor)/stories/new/import/page.tsx` resolves the same
+    `?country=` (validated, default `new-zealand`) the title form already uses and passes it to
+    `PdfImportPicker`, which now sends it as a `country` form field. `pdf-attach/route.ts` validates
+    it with `countrySlugSchema` (invalid → 400 with a validation message; missing → `new-zealand`,
+    back-compat) and passes it to `createSelfServiceDraftShell`.
+  - Editorial path: `create_editorial_import_draft` had no country parameter at all, so every
+    editor-created story (plain form and PDF) was NZ regardless of what the contributor path did.
+    New migration `supabase/migrations/20261014214918_editorial_draft_country.sql` adds a trailing
+    `p_country_slug text default 'new-zealand'`, dropping the 11-arg overload first (the same
+    CREATE-OR-REPLACE-creates-a-second-overload hazard `20261014085842_countries.sql` already hit
+    twice) and sets `stories.country_id` from it, rejecting an unknown/inactive slug with
+    `raise exception 'Unknown country: %'` — body otherwise byte-for-byte the live
+    `20260803090700_story_lifecycle_functions.sql` definition. `lib/story/mutations.ts`'s
+    `createEditorialImportDraftShell`/`createEditorialImportDraft` gained an optional `countrySlug`
+    (passed as `p_country_slug` only when given, so every pre-existing call keeps the RPC's own
+    default). `app/(editor)/editorial/new/actions.ts` and its `pdf-attach/route.ts` both validate an
+    optional `country` field with `countrySlugSchema` and pass it through.
+  - `app/(editor)/editorial/new/contributor-fieldset.tsx` (`TitleAndContributorFields`, already
+    shared by the blank-draft form and `PdfImportPicker`) gained a Country `<select>` — options from
+    `listActiveCountries()`, `name_zh_cn` when `locale === "zh-CN"`, default `new-zealand` — so both
+    editorial entry points submit the same field through the one shared `<form>` each owns.
+    `app/(editor)/editorial/new/page.tsx` fetches `listActiveCountries()` and `getLocale()` and
+    threads them through `NewImportForm` to both consumers.
+  - `types/database.ts` hand-edited for `create_editorial_import_draft`'s new `p_country_slug?`
+    (same reason as every other hand-edit in this file: the migration has not been applied to dev).
+  - New/updated tests: `app/(contributor)/stories/new/pdf-attach/route.test.ts` (new),
+    `app/(contributor)/stories/new/pdf-import-picker.test.tsx` (new),
+    `app/(editor)/editorial/new/actions.test.ts` (new), `app/(editor)/editorial/new/pdf-attach/
+route.test.ts` (+3 cases), `app/(editor)/editorial/new/pdf-import-picker.test.tsx` (+1 case, plus
+    every existing render call updated for the now-required `countries`/`locale` props).
+  - **Not applied to dev**: same documented limitation as every prior country-related migration in
+    this entry — no Docker/linked-project access in this worktree. The migration was written against
+    the live, currently-applied body only (not reconstructed from memory), but has not been executed
+    or regenerated into `types/database.ts` from a real schema.
+
+**Not covered / follow-ups:**
+
+- A country-aware `get_expense_aggregates()` (now explicitly NZ-only) and a currency decision for
+  `/cn/costs`.
+- A per-row country slug on `list_published_stories()`'s card shape, so `/contributors/[slug]` (and
+  any other surface that lists a mix of a contributor's stories) can link each card to the right
+  country's path.
+- Running this migration against a live/local Supabase project and regenerating `types/database.ts`
+  from it, to confirm the hand-edited types and the SQL bodies actually match what gets applied.
+- `npm run verify:full` (Playwright) was not run — no new e2e coverage for the country toggle or the
+  `/cn` routes beyond the unit/component tests listed above.
+
+### 2026-10-15 — "Add a location manually" accepts a typed region, not just a typed destination
+
+**Owner decision.** China's curated `regions` list is five provinces/municipalities vs. New
+Zealand's sixteen, so "the region I want isn't in the list" turned out to be common for it too —
+the same gap `custom_destination_label` (2026-09-03) already closed one level down. The manual-add
+row in the editor's Places step is now two plain-text inputs — "Region or area" (required, 1-120
+chars) and "Town or place" (optional, ≤120 chars) — with **no dropdown**. A row created from a
+successful place search (a curated region matched by name/state/county) keeps working exactly as
+before: a `<select>` of that country's regions plus the town/place text input, pre-filled by the
+match.
+
+**Data model.** New migration `supabase/migrations/20261015063409_custom_region_labels.sql`,
+following `20260903140000_custom_destination_labels.sql`'s shape:
+
+- `story_revision_locations.region_id` is now nullable; new `custom_region_label text` column.
+  `story_revision_locations_region_one_of` CHECK enforces exactly one of the two is set (stricter
+  than the destination pair's constraint, because a location row has always needed _some_ region).
+  `story_revision_locations_custom_region_label_length` mirrors the destination label's trim/length
+  rule (1-120 chars after trimming). `story_revision_locations_custom_region_no_destination_id`
+  forbids a custom-region row from carrying a `destinations` FK (there is no curated region row for
+  that FK to be scoped to) — it may still carry a typed `custom_destination_label`.
+- `story_revision_locations_validate_destination()` and `story_revision_locations_validate_country()`
+  (both triggers) now return early when `new.region_id is null` — a custom-region row has no
+  `regions` row to validate a destination or a country against, and inherits the story's own
+  `country_id` instead of carrying one of its own.
+- `set_revision_locations()` accepts `custom_region_label` in its JSON input, with the same
+  "an id wins if a client sends both" precedence already applied to `custom_destination_label`.
+  Same signature (`uuid, integer, jsonb`), so `CREATE OR REPLACE` was sufficient — no overload to
+  drop.
+- Every function that joins `regions` while reading `story_revision_locations` switched that join
+  from `inner` to `left` and emits `coalesce(reg.name, loc.custom_region_label)` as the region name
+  (`region_name_zh_cn`/the zh-CN twin stays `reg.name_zh_cn`, null for a custom row — a contributor's
+  own words are never machine-translated, per `lib/i18n/vocab.ts`'s header):
+  `get_revision_selections`, `create_next_draft_revision` (copies the new column alongside the rest
+  of the per-revision child-table checklist), `list_published_stories`, `get_published_story`,
+  `list_my_stories`, `contributor_public_facts`, `get_story_for_moderator`. Every one of these kept
+  its existing signature, so `CREATE OR REPLACE` was sufficient throughout — no signature changes,
+  nothing to drop. `get_expense_aggregates()`'s `by_region` breakdown and `list_published_stories()`/
+  `get_moderation_queue()`'s `p_region_id` filter are deliberately **not** touched: region filters and
+  aggregates stay curated-only (a custom label is free text one contributor typed once, not a bucket
+  other stories' custom labels can land in too), same as the destination side already decided.
+- Since the public RPCs already emit a generic `region_name`/`region_name_zh_cn` pair that every
+  reader (`lib/i18n/vocab.ts`'s `prefixedVocabName`, `lib/story/card-fields.ts`'s `regionNames`) picks
+  a display string from without caring where it came from, **no frontend rendering code changed** —
+  a custom region label shows up on story cards, the story detail page, My Stories, the contributor
+  byline, the moderation review page and the contributor's own PDF export automatically, once the SQL
+  emits it.
+
+**App layer.**
+
+- `lib/validation/story.ts`'s `revisionLocationSchema` is now a discriminated union (expressed as two
+  `.refine()`s, the same style `revisionTagSchema` already uses, since there is no shared literal
+  discriminant field): `{ regionId, destinationId?, customDestinationLabel? }` or
+  `{ customRegionLabel, customDestinationLabel? }` — exactly one of `regionId`/`customRegionLabel`,
+  and `customRegionLabel` may never pair with `destinationId`. New `validation.story.*` message keys:
+  `customRegionNoDestinationId` (both locales).
+- `lib/story/mutations.ts`'s `setRevisionLocations()`, `lib/story/contributor-queries.ts`'s
+  `RevisionSelections`/`getRevisionSelections()`, and `lib/story/active-lookups.ts`'s
+  `resolveLocationLabels()` (the contributor's own PDF export path) all carry `regionId: string | null`
+  plus `customRegionLabel: string | null` now, mirroring the destination pair.
+- `types/database.ts` hand-edited for the new nullable `region_id` and `custom_region_label` column,
+  matching the generated style (not regenerated from a live schema — see this entry's existing
+  "not applied to dev" limitation).
+- `components/story/story-edit-form.tsx`: a location row with no `regionId` is a manual row, rendered
+  as the two plain-text inputs described above; a row with a `regionId` keeps the existing
+  `<select>` + town/place input. `addManualLocation()` now starts a row with `regionId: null,
+customRegionLabel: ""`, instead of the old `regionId: ""` sentinel. `completeLocationCount` and
+  `saveLocations()` treat a row with trimmed `customRegionLabel` text as complete, same as a row with
+  `regionId`. `changeCountry()`'s "keep rows with no region" filter needed no change — a custom-region
+  row already has `regionId: null`, so it is kept (not cleared) across a country switch, consistent
+  with it carrying no country of its own.
+- `i18n/messages/{en,zh-CN}.json`: `editor.fields.chooseRegion` (dead — the manual row no longer has a
+  `<select>`) replaced by `editor.fields.regionOrArea`; `editor.fields.townOrPlace` is reused
+  unchanged for the manual row's second input. The search-unmatched fallback copy
+  (`unmatchedPlace`/`unmatchedPlaceNamed`, pointing at "Add a location manually") is unchanged.
+- `docs/content-governance.md`: new "Free-text region labels are moderated like any other
+  contributor text" note under the country section — a typed region has no separate moderation path,
+  reviewed as part of the revision like `custom_destination_label` and a tag's `custom_label` already
+  are.
+
+**Tests added:** `lib/validation/story.test.ts` (`revisionLocationSchema`/`revisionLocationsSchema` —
+the union's accept/reject cases, the 20-location cap); `components/story/story-edit-form.test.tsx`
+(two existing Country-select tests reworked to seed a curated row via `initialLocations` rather than
+via the now-dropdown-less manual-add button, which otherwise tested nothing after this change; new
+"Add a location manually" describe block — two text inputs with no `<select>`, required region/
+optional place, autosave only once the region text is non-empty, loading a previously-saved typed
+row back into the two inputs).
+
+**Not covered / follow-ups:**
+
+- No test added directly for `setRevisionLocations()`/`getRevisionSelections()`
+  (`lib/story/mutations.ts`/`lib/story/contributor-queries.ts`) — neither had direct unit coverage
+  before this change either (both are thin RPC wrappers exercised indirectly through the edit-form
+  and action tests).
+- Same "not applied to dev" limitation as every other migration in this entry: no Docker/linked-
+  project access in this worktree, so the migration was written and reviewed against the live,
+  currently-applied function bodies (not reconstructed from memory) but not executed, and
+  `types/database.ts` was hand-edited rather than regenerated.
+
+**Typed regions: review and dev apply (2026-10-15).** All re-created function bodies were diffed
+against their latest repo versions and against dev (identical apart from the intended changes).
+`list_my_stories` now also shows a typed town (`coalesce(dest.name, loc.custom_destination_label)`);
+before, My Stories never showed typed towns, which would have hidden the town on every manual
+location. Applied to dev and recorded as `20261015063409`. A rolled-back test as a draft owner
+saved "West Coast backcountry" / "Hut 7" (trimmed, no region_id), read it back through
+`get_revision_selections` and `list_my_stories`, and confirmed a blank label and a row with both a
+listed and a typed region are rejected by `story_revision_locations_region_one_of`.
+
+## 2026-10-29 — Merged `feat/china-section` into main
+
+Merged so main's migrations match the hosted database. It brings the five country migrations that
+were already applied there (`20260924021909_countries`, `20261014085842_countries`,
+`20261014205738_set_story_country`, `20261014214918_editorial_draft_country`,
+`20261015063409_custom_region_labels`) and the China section under `/cn` (owner-approved
+exception in docs/product-spec.md). Merging to main does not ship it; it goes live with the next
+`main:release` push.
+
+Conflicts resolved:
+
+- The public story page body moved to `app/(public)/_shared/story-detail.tsx` on the China
+  branch. Main's later edits (story folders via `lib/story/story-folders.ts`, the `story-title` id,
+  the journey map) were carried into that shared file.
+- **Journey map is New Zealand only.** The illustration draws NZ and stops must be inside it, so
+  the shared story page only fetches/shows stops when `country === "new-zealand"`, and the stops
+  editor in `story-edit-form.tsx` is shown only while the story's country is New Zealand (tests in
+  `story-edit-form.test.tsx`). Stops saved before a country switch stay stored but are not shown.
+- Edit page, edit form, action tests, `story-family.tsx` (`StoryFamilyLink` + `basePath`), i18n
+  (journey + folders keys alongside `invalidCountry` / `countryContent`) and this file: both sides
+  kept.
+
+`types/database.ts` regenerated from the hosted project
+(`supabase gen types typescript --project-id ybhydepjaantkngngvuf`; the merge worktree was not
+linked); typecheck is clean, and the three journey RPC call sites now use typed `supabase.rpc(...)`.
+
+**Still drifted (hosted database has, main does not):**
+
+- `20260928100000_trips`, `20260929100000_trip_place_images`,
+  `20260929110000_rate_limit_maps_link_scope` — on `feat/itinerary-builder` (itinerary planning is
+  an MVP non-goal in docs/product-spec.md). Their tables appear in the regenerated types, unused.
+- `20261003120000_story_media_original_retention` — only as an uncommitted file in the
+  `.claude/worktrees/adoring-roentgen-023a79` worktree (branch `claude/loving-poitras-8821c6`).
+
+`feat/landing-country-cards` (2026-09-29, landing country cards + an earlier country/region picker)
+was not merged: its only migration is the same `20260924021909_countries` file, so it adds no
+drift fix, and its picker overlaps the one `feat/china-section` shipped.

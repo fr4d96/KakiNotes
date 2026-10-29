@@ -6,12 +6,14 @@ import {
   getEditableStoryWithDraft,
   getStoryPreview,
   getRevisionSelections,
+  getStoryCountry,
 } from "@/lib/story/contributor-queries";
 import {
   listActiveRegions,
   listActiveDestinations,
   listActiveTags,
   listActiveExpenseCategories,
+  listActiveCountries,
 } from "@/lib/story/active-lookups";
 import { getRevisionStops } from "@/lib/story/journey-queries";
 import { StoryEditForm } from "@/components/story/story-edit-form";
@@ -136,6 +138,8 @@ export default async function EditStoryPage({
     destinations,
     tags,
     expenseCategories,
+    countries,
+    countrySlug,
   ] = await Promise.all([
     getRevisionSelections(draft.revision_id),
     getRevisionStops(draft.revision_id),
@@ -144,6 +148,8 @@ export default async function EditStoryPage({
     listActiveDestinations(),
     listActiveTags(),
     listActiveExpenseCategories(),
+    listActiveCountries(),
+    getStoryCountry(id),
   ]);
 
   const parsedContent = normalizeStoryContentJson(draft.content_json);
@@ -169,6 +175,9 @@ export default async function EditStoryPage({
       initialMedia={preview?.media ?? []}
       regions={regions}
       destinations={destinations}
+      countries={countries}
+      initialCountrySlug={countrySlug ?? undefined}
+      isPublished={draft.lifecycle_status === "published"}
       tags={tags}
       expenseCategories={expenseCategories}
       isNewStory={draft.revision_number === 1}

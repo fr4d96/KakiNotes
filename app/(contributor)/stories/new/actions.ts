@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
-import { createDraftSchema } from "@/lib/validation/story";
+import { createDraftSchema, countrySlugSchema } from "@/lib/validation/story";
 import { getTranslations } from "next-intl/server";
 import { firstIssueMessage } from "@/lib/validation/issue-messages";
 import { createSelfServiceDraftShell } from "@/lib/story/mutations";
@@ -35,9 +35,20 @@ export async function createDraftAction(
     };
   }
 
+  // Optional -- only present when StartNewStory rendered the hidden
+  // "country" field (i.e. /stories/new?country=... carried a valid slug).
+  // Re-validated here regardless of the page's own check (Engineering Rule
+  // 2: never trust client-supplied data unchecked) -- an invalid value just
+  // falls back to create_self_service_draft()'s own default rather than
+  // failing the whole submission over a cosmetic default.
+  const countryParsed = countrySlugSchema.safeParse(formData.get("country"));
+
   let result: { story_id: string; revision_id: string } | null;
   try {
-    result = await createSelfServiceDraftShell(parsed.data.title);
+    result = await createSelfServiceDraftShell(
+      parsed.data.title,
+      countryParsed.success ? countryParsed.data : undefined,
+    );
   } catch (error) {
     // getErrorMessage(), not `error instanceof Error` -- the Supabase
     // client can reject an RPC call with a plain PostgrestError-shaped

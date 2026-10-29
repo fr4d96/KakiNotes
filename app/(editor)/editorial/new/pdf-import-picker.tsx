@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ContributorForEditorial } from "@/lib/story/editorial-queries";
+import type { ActiveCountry } from "@/lib/story/active-lookups";
 import {
   MAX_PDF_IMPORT_INPUT_BYTES,
   isPdfMagicBytes,
@@ -44,8 +45,12 @@ const MAX_MB = Math.round(MAX_PDF_IMPORT_INPUT_BYTES / (1024 * 1024));
  */
 export function PdfImportPicker({
   contributors,
+  countries,
+  locale,
 }: {
   contributors: ContributorForEditorial[];
+  countries: ActiveCountry[];
+  locale: string;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -208,6 +213,8 @@ export function PdfImportPicker({
 
       <TitleAndContributorFields
         contributors={contributors}
+        countries={countries}
+        locale={locale}
         idPrefix="pdf-import"
       />
 

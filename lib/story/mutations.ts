@@ -1,7 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
-import { callUntypedRpc } from "@/lib/supabase/call-untyped-rpc";
 import type {
   KeepStoryPrivateInput,
   RevisionInput,
@@ -42,11 +41,17 @@ function revisionArgs(input: RevisionInput) {
  * blocked on. create_self_service_draft() itself defaults content_json to
  * '[]'::jsonb server-side.
  */
-export async function createSelfServiceDraftShell(title: string) {
+export async function createSelfServiceDraftShell(
+  title: string,
+  countrySlug?: string,
+) {
   await requireUser();
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("create_self_service_draft", {
     p_title: title,
+    // Omitted => RPC default ('new-zealand'), matching historical
+    // behaviour for every call site that predates countries.
+    ...(countrySlug ? { p_country_slug: countrySlug } : {}),
   });
   if (error) throw error;
   return data?.[0] ?? null;
@@ -67,6 +72,7 @@ export async function createEditorialImportDraft(
   contributorId: string,
   input: RevisionInput,
   assignedEditorId?: string,
+  countrySlug?: string,
 ) {
   await requireUser();
   const supabase = await createClient();
@@ -74,6 +80,9 @@ export async function createEditorialImportDraft(
     p_contributor_id: contributorId,
     ...revisionArgs(input),
     p_assigned_editor_id: assignedEditorId,
+    // Omitted => RPC default ('new-zealand'), matching historical behaviour
+    // for every call site that predates countries.
+    ...(countrySlug ? { p_country_slug: countrySlug } : {}),
   });
   if (error) throw error;
   return data?.[0] ?? null;
@@ -90,6 +99,7 @@ export async function createEditorialImportDraftShell(
   contributorId: string,
   title: string,
   assignedEditorId?: string,
+  countrySlug?: string,
 ) {
   await requireUser();
   const supabase = await createClient();
@@ -97,9 +107,29 @@ export async function createEditorialImportDraftShell(
     p_contributor_id: contributorId,
     p_title: title,
     p_assigned_editor_id: assignedEditorId,
+    // Omitted => RPC default ('new-zealand'), matching historical behaviour
+    // for every call site that predates countries.
+    ...(countrySlug ? { p_country_slug: countrySlug } : {}),
   });
   if (error) throw error;
   return data?.[0] ?? null;
+}
+
+/**
+ * Changes an existing draft story's country (set_story_country() —
+ * supabase/migrations/20261014205738_set_story_country.sql). The RPC
+ * re-derives ownership/editor/admin itself and refuses once the story has
+ * ever been published, so storyId is never trusted as proof of ownership
+ * here -- same pattern as every other wrapper in this file.
+ */
+export async function setStoryCountry(storyId: string, countrySlug: string) {
+  await requireUser();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_story_country", {
+    p_story_id: storyId,
+    p_country_slug: countrySlug,
+  });
+  if (error) throw error;
 }
 
 export async function markEditorialDraftAwaitingApproval(storyId: string) {
@@ -340,7 +370,9 @@ export async function setRevisionLocations(
   revisionId: string,
   expectedVersion: number,
   locations: Array<{
-    regionId: string;
+    /** Exactly one of regionId/customRegionLabel is set (20261015). */
+    regionId?: string | null;
+    customRegionLabel?: string | null;
     destinationId?: string | null;
     customDestinationLabel?: string | null;
     sortOrder?: number;
@@ -352,7 +384,10 @@ export async function setRevisionLocations(
     p_revision_id: revisionId,
     p_expected_version: expectedVersion,
     p_locations: locations.map((l) => ({
-      region_id: l.regionId,
+      region_id: l.regionId ?? null,
+      // A looked-up region wins; the RPC re-applies the same precedence,
+      // so this is the courtesy, not the boundary.
+      custom_region_label: l.regionId ? null : (l.customRegionLabel ?? null),
       destination_id: l.destinationId ?? null,
       // A looked-up destination wins; the RPC re-applies the same
       // precedence, so this is the courtesy, not the boundary.
@@ -679,8 +714,7 @@ export async function createStoryReport(
  * Replaces a revision's journey-map stops
  * (supabase/migrations/20261029042052_story_revision_stops.sql).
  *
- * Untyped for now (see lib/story/journey-queries.ts for why), so this goes
- * through callUntypedRpc(). The RPC authorizes the revision, checks the optimistic version, rounds the
+ * The RPC authorizes the revision, checks the optimistic version, rounds the
  * coordinates, rejects anything outside New Zealand and caps the count --
  * this wrapper carries no rules of its own, it only renames keys.
  */
@@ -697,7 +731,7 @@ export async function setRevisionStops(
 ) {
   await requireUser();
   const supabase = await createClient();
-  await callUntypedRpc<null>(supabase, "set_revision_stops", {
+  const { error } = await supabase.rpc("set_revision_stops", {
     p_revision_id: revisionId,
     p_expected_version: expectedVersion,
     p_stops: stops.map((s) => ({
@@ -708,4 +742,5 @@ export async function setRevisionStops(
       parent_index: s.parentIndex ?? null,
     })),
   });
+  if (error) throw error;
 }

@@ -15,6 +15,7 @@ import {
   revisionLocationsSchema,
   revisionTagsSchema,
   revisionExpensesSchema,
+  countrySlugSchema,
   type RevisionInput,
 } from "@/lib/validation/story";
 import { journeyStopsSchema } from "@/lib/journey/schema";
@@ -36,6 +37,7 @@ import {
   setStoryCoverMedia,
   detachStoryMedia,
   cancelPendingStoryMediaUpload,
+  setStoryCountry,
 } from "@/lib/story/mutations";
 
 /**
@@ -187,6 +189,41 @@ export async function setLocationsAction(
   }
   try {
     await setRevisionLocations(revisionId, expectedVersion, parsed.data);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: await errorMessage(error) };
+  }
+}
+
+/**
+ * Changes a draft story's country. Called from the editor's Places step
+ * BEFORE the location rows for the new country are saved (story-edit-
+ * form.tsx), and only when the country actually changed. storyId here is
+ * never trusted for ownership -- set_story_country() re-derives owner/
+ * editor/admin itself and refuses once the story has ever been published
+ * (Engineering Rule 11), same as every other mutation in this file.
+ */
+export async function setCountryAction(
+  storyId: string,
+  countrySlug: string,
+): Promise<MutationResult> {
+  const tv = await getTranslations("validation");
+  const authError = await requireSignedIn();
+  if (authError) return authError;
+
+  const parsedStoryId = z.uuid().safeParse(storyId);
+  const parsedCountry = countrySlugSchema.safeParse(countrySlug);
+  if (!parsedStoryId.success) {
+    return { ok: false, error: tv("common.invalidInput") };
+  }
+  if (!parsedCountry.success) {
+    return {
+      ok: false,
+      error: firstIssueMessage(parsedCountry.error, tv, "common.invalidInput"),
+    };
+  }
+  try {
+    await setStoryCountry(parsedStoryId.data, parsedCountry.data);
     return { ok: true };
   } catch (error) {
     return { ok: false, error: await errorMessage(error) };

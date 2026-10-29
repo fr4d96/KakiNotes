@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getCurrentUserRole, resolveStaffAccess } from "@/lib/auth/roles";
-import { createDraftSchema } from "@/lib/validation/story";
+import { createDraftSchema, countrySlugSchema } from "@/lib/validation/story";
 import { createEditorialImportDraftShell } from "@/lib/story/mutations";
 import { createUnlinkedContributor } from "@/lib/story/editorial-queries";
 import { getErrorMessage } from "@/lib/errors";
@@ -102,6 +102,24 @@ export async function createEditorialImportAction(
     return { error: titleParsed.error.issues[0]?.message ?? "Invalid title." };
   }
 
+  // Sent by the Country select shared between this form and
+  // PdfImportPicker (contributor-fieldset.tsx). Re-validated here
+  // regardless of the page's own <select> (Engineering Rule 2). Missing
+  // entirely falls back to create_editorial_import_draft()'s own default
+  // ('new-zealand'); present but invalid IS a request failure, same as an
+  // invalid title.
+  const countryField = formData.get("country");
+  let countrySlug: string | undefined;
+  if (countryField !== null) {
+    const countryParsed = countrySlugSchema.safeParse(countryField);
+    if (!countryParsed.success) {
+      return {
+        error: countryParsed.error.issues[0]?.message ?? "Invalid country.",
+      };
+    }
+    countrySlug = countryParsed.data;
+  }
+
   const resolved = await resolveContributorIdFromFormData(formData);
   if (!resolved.ok) {
     return { error: resolved.error };
@@ -113,6 +131,8 @@ export async function createEditorialImportAction(
     const created = await createEditorialImportDraftShell(
       contributorId,
       titleParsed.data.title,
+      undefined,
+      countrySlug,
     );
     if (!created) {
       return { error: "Could not create the import draft." };

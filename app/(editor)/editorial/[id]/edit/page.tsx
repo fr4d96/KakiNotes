@@ -4,12 +4,14 @@ import {
   getEditableStoryWithDraft,
   getStoryPreview,
   getRevisionSelections,
+  getStoryCountry,
 } from "@/lib/story/contributor-queries";
 import {
   listActiveRegions,
   listActiveDestinations,
   listActiveTags,
   listActiveExpenseCategories,
+  listActiveCountries,
 } from "@/lib/story/active-lookups";
 import { StoryEditForm } from "@/components/story/story-edit-form";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
@@ -87,6 +89,8 @@ export default async function EditorialEditPage({
     tags,
     expenseCategories,
     editorialHistory,
+    countries,
+    countrySlug,
   ] = await Promise.all([
     getRevisionSelections(draft.revision_id),
     getStoryPreview(id),
@@ -95,6 +99,8 @@ export default async function EditorialEditPage({
     listActiveTags(),
     listActiveExpenseCategories(),
     getStoryEditorialHistory(id),
+    listActiveCountries(),
+    getStoryCountry(id),
   ]);
 
   const parsedContent = normalizeStoryContentJson(draft.content_json);
@@ -127,6 +133,9 @@ export default async function EditorialEditPage({
         initialMedia={preview?.media ?? []}
         regions={regions}
         destinations={destinations}
+        countries={countries}
+        initialCountrySlug={countrySlug ?? undefined}
+        isPublished={draft.lifecycle_status === "published"}
         tags={tags}
         expenseCategories={expenseCategories}
         showContentImport

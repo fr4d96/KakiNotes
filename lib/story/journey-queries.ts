@@ -2,17 +2,12 @@ import "server-only";
 import { cache } from "react";
 import { createPublicClient } from "@/lib/supabase/public";
 import { createClient } from "@/lib/supabase/server";
-import { callUntypedRpc } from "@/lib/supabase/call-untyped-rpc";
 import { parseStopRows, type JourneyStopView } from "@/lib/journey/schema";
 
 // Journey-map stops (supabase/migrations/20261029042052_story_revision_stops.sql).
 //
-// The migration is applied, but these RPCs are not in types/database.ts yet:
-// regenerating it from the hosted database also pulls in schema from
-// branches not merged to main (countries, trips), which breaks typecheck
-// here. So they go through callUntypedRpc() until those branches land, and
-// every row is re-validated with Zod (parseStopRows) -- the cast removes
-// typing, not runtime safety.
+// Every row is still re-validated with Zod (parseStopRows): numeric columns
+// can arrive as strings, and a malformed row is dropped rather than drawn.
 //
 // FAIL SOFT, on purpose. A journey map is a decoration on a story. If the RPC
 // is missing or errors, the story page must still
@@ -29,12 +24,12 @@ async function fetchPublishedStoryStops(
   slug: string,
 ): Promise<JourneyStopView[]> {
   try {
-    const rows = await callUntypedRpc<unknown>(
-      createPublicClient(),
+    const { data, error } = await createPublicClient().rpc(
       "get_published_story_stops",
       { p_slug: slug },
     );
-    return parseStopRows(rows);
+    if (error) return [];
+    return parseStopRows(data);
   } catch {
     return [];
   }
@@ -52,10 +47,11 @@ export async function getRevisionStops(
 ): Promise<JourneyStopView[]> {
   try {
     const supabase = await createClient();
-    const rows = await callUntypedRpc<unknown>(supabase, "get_revision_stops", {
+    const { data, error } = await supabase.rpc("get_revision_stops", {
       p_revision_id: revisionId,
     });
-    return parseStopRows(rows);
+    if (error) return [];
+    return parseStopRows(data);
   } catch {
     return [];
   }

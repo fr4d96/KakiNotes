@@ -131,6 +131,19 @@ describe("SiteHeader", () => {
     );
   });
 
+  it("points the primary nav at the China section under /cn", () => {
+    usePathnameMock.mockReturnValue("/cn/stories");
+    render(<SiteHeader />);
+    expect(screen.getByRole("link", { name: "About" })).toHaveAttribute(
+      "href",
+      "/cn/about",
+    );
+    expect(screen.getByRole("link", { name: "Stories" })).toHaveAttribute(
+      "href",
+      "/cn/stories",
+    );
+  });
+
   it("opens the sign-in modal from the header button instead of navigating", () => {
     render(<SiteHeader />);
     // Not merely hidden: AuthModal mounts its children only while open, so

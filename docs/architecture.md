@@ -3041,3 +3041,36 @@ native-speaker review before launch.
 - No deployment or push is performed as part of this task.
 - Target hosting is assumed to be Vercel (Next.js) + Supabase-hosted Postgres/Auth/Storage — still
   an assumption to confirm, see [docs/implementation-status.md](implementation-status.md).
+
+## China: second country section (2026-10-14)
+
+See [docs/implementation-status.md](implementation-status.md)'s "China: second country section"
+entry for the full account (migration, RPC changes, verification status, follow-ups). Summary of the
+structural pieces, for anyone orienting from this file:
+
+**Schema.** A new `countries` lookup table (`supabase/migrations/20261014085842_countries.sql`), same
+access shape as `regions`/`destinations`/`tags` — plain RLS, `active = true` readable by anyone, admin
+writes. `regions.country_id` and `stories.country_id` are both `NOT NULL`, backfilled to New Zealand.
+A story's selected regions are enforced (by a trigger, not just app code) to belong to the story's own
+country — `story_revision_locations_validate_country()`, the same shape as the pre-existing
+`story_revision_locations_validate_destination()` trigger.
+
+**Public RPCs.** `list_published_stories()` and `get_published_story()` both take an additive,
+optional `p_country_slug`; every public reader in `lib/story/public-queries.ts` passes it explicitly.
+A cross-country slug resolves to no rows, identically to an unknown one.
+
+**Routing.** New Zealand's public routes are unchanged and unprefixed. China's mirror them under
+`/cn` (`app/(public)/cn/...`), inside the same `(public)` route group so they share the existing
+static header/footer layout. The stories index and story detail pages are shared, country-
+parameterized components (`app/(public)/_shared/`) rather than per-country copies; the landing page
+is not shared (NZ's is a bespoke art-directed page; China's is a simpler, generic one built from the
+same card/toggle/label components). `components/country-toggle.tsx` is the NZ | China switch,
+plain server-renderable links, no client JS required.
+
+**Framing, not just data.** New Zealand stays Working Holiday Visa framed throughout, exactly as
+before. China is framed as general first-person travel stories — a product decision
+(docs/product-spec.md's MVP non-goal on multi-country WHV support is narrowly overridden for this one
+case), not a technical default. Every country-varying string (site description, tagline, stories
+intro, costs framing, about text, the "personal experience, not advice" label, the location-match
+failure message) is read from a per-country `countryContent` i18n namespace or passed as a resolved
+prop — never a hard-coded country name inside a shared component.

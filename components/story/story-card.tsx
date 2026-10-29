@@ -41,7 +41,22 @@ export type StoryCardData = {
  * list_published_stories() already returned for the card, no follow-up
  * query per card.
  */
-export function StoryCard({ story }: { story: StoryCardData }) {
+export function StoryCard({
+  story,
+  basePath = "/stories",
+}: {
+  story: StoryCardData;
+  /**
+   * Where the card's title link points, before `/${story.slug}`. Defaults
+   * to the NZ path so every pre-existing call site (home page, /stories,
+   * /contributors/[slug], related-stories lists) is unchanged; /cn's pages
+   * pass "/cn/stories" so a China card never links into the NZ-prefixed
+   * route (it would 404 there anyway -- get_published_story() with
+   * p_country_slug: "new-zealand" would find no matching row for a China
+   * slug, Rule 10/12).
+   */
+  basePath?: string;
+}) {
   const t = useTranslations("common");
   // useLocale(), not the async getLocale(): this component is rendered by
   // CLIENT components too (components/home/featured-story-stack.tsx and
@@ -82,7 +97,7 @@ export function StoryCard({ story }: { story: StoryCardData }) {
           ))}
         </div>
         <h3 className="text-lg font-semibold tracking-tight text-foreground">
-          <Link href={`/stories/${story.slug}`} className="hover:underline">
+          <Link href={`${basePath}/${story.slug}`} className="hover:underline">
             <span className="absolute inset-0" aria-hidden="true" />
             {story.title}
           </Link>

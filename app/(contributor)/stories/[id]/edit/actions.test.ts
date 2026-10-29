@@ -49,6 +49,7 @@ const mockSetRevisionStops = vi.fn();
 const mockReorderStoryMedia = vi.fn();
 const mockSetStoryCoverMedia = vi.fn();
 const mockDetachStoryMedia = vi.fn();
+const mockSetStoryCountry = vi.fn();
 vi.mock("@/lib/story/mutations", () => ({
   saveRevisionDraft: (...args: unknown[]) => mockSaveRevisionDraft(...args),
   setRevisionLocations: vi.fn(),
@@ -60,6 +61,7 @@ vi.mock("@/lib/story/mutations", () => ({
   setStoryCoverMedia: (...args: unknown[]) => mockSetStoryCoverMedia(...args),
   detachStoryMedia: (...args: unknown[]) => mockDetachStoryMedia(...args),
   cancelPendingStoryMediaUpload: vi.fn(),
+  setStoryCountry: (...args: unknown[]) => mockSetStoryCountry(...args),
 }));
 
 import {
@@ -69,6 +71,7 @@ import {
   detachMediaAction,
   setJourneyStopsAction,
   resolveGoogleMapsLinkAction,
+  setCountryAction,
 } from "./actions";
 
 const user = { id: "11111111-1111-4111-8111-111111111111" };
@@ -92,6 +95,7 @@ beforeEach(() => {
   mockReorderStoryMedia.mockReset();
   mockSetStoryCoverMedia.mockReset();
   mockDetachStoryMedia.mockReset();
+  mockSetStoryCountry.mockReset();
 });
 
 async function runScheduled() {
@@ -376,5 +380,49 @@ describe("resolveGoogleMapsLinkAction", () => {
       longitude: 176.0702,
       placeName: "Taupo",
     });
+  });
+});
+
+describe("setCountryAction", () => {
+  it("validates the country slug and calls set_story_country unchanged", async () => {
+    mockSetStoryCountry.mockResolvedValue(undefined);
+
+    const result = await setCountryAction(storyId, "china");
+
+    expect(mockSetStoryCountry).toHaveBeenCalledWith(storyId, "china");
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("rejects an unknown country slug before ever calling the RPC wrapper", async () => {
+    const result = await setCountryAction(storyId, "australia");
+
+    expect(result.ok).toBe(false);
+    expect(mockSetStoryCountry).not.toHaveBeenCalled();
+  });
+
+  it("rejects a malformed storyId before ever calling the RPC wrapper", async () => {
+    const result = await setCountryAction("not-a-uuid", "china");
+
+    expect(result.ok).toBe(false);
+    expect(mockSetStoryCountry).not.toHaveBeenCalled();
+  });
+
+  it("surfaces the RPC's own refusal (e.g. published, or locked after publication)", async () => {
+    mockSetStoryCountry.mockRejectedValue(
+      new Error("Country can't be changed after a story is published"),
+    );
+
+    const result = await setCountryAction(storyId, "china");
+
+    expect(result.ok).toBe(false);
+  });
+
+  it("requires a signed-in caller", async () => {
+    mockGetCurrentUser.mockResolvedValue(null);
+
+    const result = await setCountryAction(storyId, "china");
+
+    expect(result.ok).toBe(false);
+    expect(mockSetStoryCountry).not.toHaveBeenCalled();
   });
 });

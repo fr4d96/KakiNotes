@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import type { ContributorForEditorial } from "@/lib/story/editorial-queries";
+import type { ActiveCountry } from "@/lib/story/active-lookups";
 import {
   createEditorialImportAction,
   type NewImportFormState,
@@ -23,8 +24,12 @@ const initialState: NewImportFormState = {};
  */
 export function NewImportForm({
   contributors,
+  countries,
+  locale,
 }: {
   contributors: ContributorForEditorial[];
+  countries: ActiveCountry[];
+  locale: string;
 }) {
   const [state, formAction, pending] = useActionState(
     createEditorialImportAction,
@@ -70,6 +75,8 @@ export function NewImportForm({
 
           <TitleAndContributorFields
             contributors={contributors}
+            countries={countries}
+            locale={locale}
             idPrefix="new-import"
           />
 
@@ -82,7 +89,11 @@ export function NewImportForm({
           </button>
         </form>
       ) : (
-        <PdfImportPicker contributors={contributors} />
+        <PdfImportPicker
+          contributors={contributors}
+          countries={countries}
+          locale={locale}
+        />
       )}
     </div>
   );

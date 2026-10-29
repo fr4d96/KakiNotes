@@ -45,6 +45,9 @@
       "previous": "Previous photo",
       "next": "Next photo",
       "counter": "Photo {current} of {total}"
+    },
+    "countryToggle": {
+      "label": "Choose a country section"
     }
   },
   "nav": {
@@ -170,6 +173,7 @@
       "singleBlock": "A story has a single content block.",
       "titleRequired": "Title is required.",
       "locationEitherOr": "Provide either a selection or a custom label, not both.",
+      "customRegionNoDestinationId": "A typed region can't use a picked destination — type the town or place instead.",
       "tooManyTags": "You can add up to {max} tags to a story.",
       "expenseNeedsCategory": "An expense row needs a category or a name.",
       "consentRequired": "You must confirm you have permission to publish this story.",
@@ -181,7 +185,8 @@
       "journeyOutOfBounds": "Stops must be inside New Zealand.",
       "journeyTooMany": "A story can have at most 12 main stops and 40 stops in total.",
       "journeyTooManyInside": "A main stop can hold at most 8 places inside it.",
-      "journeyBadParent": "A place inside a stop must belong to an earlier main stop."
+      "journeyBadParent": "A place inside a stop must belong to an earlier main stop.",
+      "invalidCountry": "Choose a valid country."
     },
     "pdf": {
       "empty": "The PDF file is empty.",
@@ -730,15 +735,18 @@
       "totalExpenses": "Total expenses (NZD)",
       "locations": "Locations",
       "region": "Region",
-      "chooseRegion": "Choose a region…",
+      "regionOrArea": "Region or area",
       "townOrPlace": "Town or place (optional)",
       "remove": "Remove",
       "noteToEditors": "Note to editors",
       "addLocationManually": "Add a location manually",
-      "unmatchedPlace": "We could not match that place to a New Zealand region — use \"Add a location manually\" below.",
+      "unmatchedPlace": "We could not match that place to a {country} region — use \"Add a location manually\" below.",
       "photosHint": "Add photos here. They show in a gallery with your story.",
-      "unmatchedPlaceNamed": "We could not match \"{label}\" to a New Zealand region — use \"Add a location manually\" below.",
-      "noteToEditorsHint": "(optional, private, never published)"
+      "unmatchedPlaceNamed": "We could not match \"{label}\" to a {country} region — use \"Add a location manually\" below.",
+      "noteToEditorsHint": "(optional, private, never published)",
+      "country": "Country",
+      "countryLocked": "Country can't be changed after a story is published.",
+      "countryClearedNotice": "Locations for the previous country were cleared — add places in {country} below."
     },
     "tripDates": {
       "heading": "When did you travel?",
@@ -765,7 +773,7 @@
     },
     "place": {
       "heading": "Search for a place",
-      "placeholder": "Type a full place name, e.g. Queenstown",
+      "placeholder": "Type a full place name, e.g. {example}",
       "search": "Search",
       "searching": "Searching…",
       "unavailable": "Place search is unavailable right now — pick the region below instead.",
@@ -1379,5 +1387,30 @@
     "backToJourney": "Back to whole journey",
     "insideList": "Places inside {label}",
     "insideStatus": "Exploring {label}: {count, plural, one {# place} other {# places}}"
+  },
+  "countryContent": {
+    "newZealand": {
+      "name": "New Zealand",
+      "tagline": "First-person Working Holiday Visa stories from New Zealand.",
+      "siteDescription": "Kakinotes is a public archive of detailed, written first-person stories from people who completed or are completing a Working Holiday Visa in New Zealand.",
+      "storiesIntro": "Real Working Holiday accounts from people who've done it — filter by region, tag, trip year, travel style, or reported cost to find one like yours.",
+      "storiesMetaDescription": "Browse real, first-person Working Holiday Visa stories from New Zealand, filterable by region, tag, trip year, travel style, and reported cost.",
+      "costsFraming": "What people actually spent on their Working Holiday Visa in New Zealand, built from the budgets contributors chose to share.",
+      "aboutText": "Kakinotes collects and verifies real, detailed stories from Working Holiday Visa travellers in New Zealand, so the next traveller can read what the experience actually involved.",
+      "personalExperienceLabel": "One person's experience, not advice.",
+      "placeExample": "Queenstown"
+    },
+    "china": {
+      "name": "China",
+      "tagline": "First-person travel stories from China.",
+      "siteDescription": "Kakinotes' China section is a public archive of detailed, written first-person travel stories from China — general travel accounts, not Working Holiday Visa stories.",
+      "storiesIntro": "Browse every published China travel story, searchable by region and trip year.",
+      "storiesMetaDescription": "Published first-person travel stories from China, searchable by region and trip year.",
+      "costsFraming": "What people actually spent travelling in China, built from the budgets contributors chose to share.",
+      "aboutText": "Kakinotes' China section collects and verifies real, detailed first-person travel stories from China, so the next traveller can read what the trip actually involved.",
+      "personalExperienceLabel": "One person's experience, not advice.",
+      "madeFor": "Made for travellers exploring China",
+      "placeExample": "Guangzhou"
+    }
   }
 }

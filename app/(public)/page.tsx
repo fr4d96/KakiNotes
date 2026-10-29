@@ -51,6 +51,7 @@ import {
 } from "@/lib/story/card-fields";
 import type { Locale } from "@/i18n/locales";
 import { ArrowRightIcon } from "@/components/icons";
+import { CountryToggle } from "@/components/country-toggle";
 
 // No `export const revalidate` any more (it was 60). The root layout reads
 // the language cookie, which makes this route render per request, so the
@@ -98,7 +99,10 @@ function SectionHead({
 
 export default async function HomePage() {
   const [stories, t, rawLocale] = await Promise.all([
-    listPublishedStoriesCached({ limit: 24 }).catch(() => []),
+    listPublishedStoriesCached({
+      limit: 24,
+      countrySlug: "new-zealand",
+    }).catch(() => []),
     getTranslations("home"),
     getLocale(),
   ]);
@@ -169,6 +173,14 @@ export default async function HomePage() {
         <div className="nf-dark-band relative isolate mx-auto flex h-[74svh] max-h-[780px] min-h-[520px] w-full max-w-[1440px] overflow-hidden rounded-[20px] bg-[#020617] text-white shadow-2xl sm:rounded-[28px]">
           <HeroField records={heroRecords} listLabel={t("field.listLabel")} />
           <div className="relative flex w-full flex-col justify-end px-6 pb-7 sm:px-10 sm:pb-9 lg:px-14">
+            {/* NZ | China section switch (product decision 3). Sits at the
+                top of the hero plate so it's the first interactive control
+                a reader meets -- clearly visible, not buried in a footer or
+                a menu -- and survives with JavaScript disabled since it's
+                plain links. */}
+            <div className="nf-hero-pull mb-6 sm:mb-8">
+              <CountryToggle current="new-zealand" />
+            </div>
             <div className="max-w-3xl">
               {/* Display caps at 6rem. The previous 6.8rem broke the world's
                   own ceiling and, on a 1440px viewport, pushed the second

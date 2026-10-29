@@ -339,6 +339,32 @@ plain-text 60-character labels, same revision review, same privacy rounding.
   the same rule as every other field on the revision; a moderator can read them once the revision
   has been submitted, not while it is still a private draft.
 
+### A story's country locks after first publication (Rule 11)
+
+`stories.country_id` (added 2026-10-14 for the China section) is a property of the **story** row,
+not the revision — unlike title/content/locations, which are revision-scoped, so an unapproved
+draft edit can never overwrite what is publicly visible. Country has no such revision-scoped shadow
+copy, so once a story has ever been published (`published_revision_id is not null`), its country is
+locked: `set_story_country()` refuses unconditionally, even while the story is reopened for editing
+after publication. Changing it would move already-public content between country sections (NZ
+Working Holiday stories vs. China general-travel stories — different framing, different disclaimer
+copy) with no moderation step in between. The editor's Places step shows the country as read-only
+text, with a short hint, once a story is published; it only offers the `<select>` on a
+never-published draft.
+
+### Free-text region labels are moderated like any other contributor text
+
+`story_revision_locations.custom_region_label` (2026-10-15, alongside the existing
+`custom_destination_label`) is a contributor-typed region/area name, for a place not in the curated
+`regions` table — most relevant to the China section, whose five seeded provinces are a much
+thinner list than New Zealand's sixteen regions. It carries **no separate moderation path**: it is
+stored on the revision like the title, excerpt and body, so a moderator reviewing that revision
+(`get_story_for_moderator()`) sees it in the claimed-regions list and approves or rejects the
+revision as a whole, exactly as they already do for `custom_destination_label` and a tag's
+`custom_label`. There is no mechanism to approve a story while rejecting only its typed region —
+the same "a revision is one unit" rule every other contributor-authored free-text field already
+follows.
+
 ## Reporting
 
 - Any reader can report a published story or image for review (e.g. suspected impersonation, rights

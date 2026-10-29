@@ -13,14 +13,21 @@ import { getCardCoverUrl } from "@/lib/story/image-url";
  * story's public page (supabase/migrations/20261021085920_story_folders.sql).
  * Titles are plain text children, never HTML.
  */
-export function PartOfStory({ parent }: { parent: StoryFamilyLink | null }) {
+export function PartOfStory({
+  parent,
+  basePath = "/stories",
+}: {
+  parent: StoryFamilyLink | null;
+  /** See StoryCard's basePath -- defaults to the NZ path unchanged. */
+  basePath?: string;
+}) {
   const t = useTranslations("story.family");
   if (!parent) return null;
   return (
     <nav aria-label={t("partOfLabel")} className="mb-3 text-sm">
       <span className="text-muted-foreground">{t("partOf")} </span>
       <Link
-        href={`/stories/${parent.slug}`}
+        href={`${basePath}/${parent.slug}`}
         className="font-medium text-accent underline underline-offset-2"
       >
         {parent.title}
@@ -38,10 +45,13 @@ export function PartOfStory({ parent }: { parent: StoryFamilyLink | null }) {
 export function SubStoryList({
   cards = [],
   subStories,
+  basePath = "/stories",
 }: {
   cards?: StoryCardData[];
   /** Sub stories with no card row -- shown with the placeholder image. */
   subStories: StoryFamilyLink[];
+  /** See StoryCard's basePath -- defaults to the NZ path unchanged. */
+  basePath?: string;
 }) {
   const t = useTranslations("story.family");
   const items = [
@@ -68,7 +78,7 @@ export function SubStoryList({
       <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => (
           <li key={item.slug}>
-            <SubStoryCard {...item} />
+            <SubStoryCard {...item} basePath={basePath} />
           </li>
         ))}
       </ul>
@@ -80,16 +90,18 @@ function SubStoryCard({
   slug,
   title,
   coverUrl,
+  basePath,
 }: {
   slug: string;
   title: string;
   coverUrl: string | null;
+  basePath: string;
 }) {
   return (
     <article className="group relative flex items-center gap-2 rounded-lg border border-border-subtle bg-surface p-2 transition-shadow hover:shadow-md">
       <h3 className="min-w-0 flex-1 text-sm font-medium leading-snug">
         <Link
-          href={`/stories/${slug}`}
+          href={`${basePath}/${slug}`}
           className="line-clamp-2 group-hover:underline underline-offset-2"
         >
           {/* Stretched link: the whole card is one click target. */}
