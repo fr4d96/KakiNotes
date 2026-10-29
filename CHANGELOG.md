@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.12.0](https://github.com/fr4d96/KakiNotes/compare/v1.11.0...v1.12.0) (2026-10-29)
+
+### What's new for readers
+
+**Journey maps now belong to the writer, not one story.** A contributor's profile has a new Journey tab showing their whole trip around New Zealand. Each pin is a place they wrote about. The campervan drives from place to place in trip order, and tapping a pin shows the place, the story's title and a "Read this story" link. The tab only appears once a contributor has pinned at least one story.
+
+**Places inside a place.** Some pins have a "+2 places" badge: those are the writer's shorter stories filed under a main story. Tap the pin and the map zooms in to show them, each with its own link. Tap "Back to whole journey" to zoom out.
+
+**From a story to the map.** A story that's on its writer's journey now has a "See this on …'s journey" link. The small map at the bottom of individual stories is gone.
+
+### What's new for contributors
+
+**A Journey map page in My Stories.** Find it next to Story folders. For each of your published New Zealand stories, choose a place: tap the map, use "Choose the middle of the map", or paste a Google Maps link, then give the place a name. Stories you've filed under a main story in Story folders appear inside that story's pin automatically. Changes show on your profile straight away, and you can remove a pin at any time.
+
+**The journey section has left the story editor.** You no longer add stops while editing a story; the Journey map page replaces it.
+
+### Privacy
+
+**Your original photo files are no longer kept.** When you upload a photo, Kakinotes makes a cleaned-up copy with location and camera details removed, and that copy is the only one anyone ever sees. The original file is now deleted as soon as the cleaned-up copy is ready. If a photo fails to process, its original is kept for 30 days so it can be repaired, then deleted.
+
+### Good to know
+
+**Pins are approximate.** A pin's position is rounded to about 1 km and must be inside New Zealand. Readers only see the place name you give it. The journey map is for New Zealand stories only.
+
+
+
+### Features
+
+* **journey:** contributor journey map, one pin per story ([1a6bdc3](https://github.com/fr4d96/KakiNotes/commit/1a6bdc37c9d36a159b141d53f7ccf78e5081a7bd))
+* **media:** delete raw story-image originals after processing ([b341342](https://github.com/fr4d96/KakiNotes/commit/b341342448f148024036450e2db6b1e12c13a5e5))
+* **media:** delete raw story-image originals after processing ([d544d8e](https://github.com/fr4d96/KakiNotes/commit/d544d8efea0afea353185a62da3506e21f94a391))
+
 ## [1.11.0](https://github.com/fr4d96/KakiNotes/compare/v1.10.0...v1.11.0) (2026-10-29)
 
 ### What's new for readers
