@@ -337,6 +337,26 @@ describe("the image-processing/promotion trust boundary is service_role only", (
     );
     expect(error).not.toBeNull();
   });
+
+  // Raw-original retention (20261003120000_story_media_original_retention).
+  // The list function returns private storage paths, and the mark function
+  // would let a caller make a raw original unreprocessable -- both are
+  // service_role only.
+  it("list_story_media_originals_due_for_deletion cannot be called by an admin over the regular client", async () => {
+    const { error } = await admin.client.rpc(
+      "list_story_media_originals_due_for_deletion",
+      { p_limit: 1 },
+    );
+    expect(error).not.toBeNull();
+  });
+
+  it("mark_story_media_original_deleted cannot be called by an admin over the regular client", async () => {
+    const { error } = await admin.client.rpc(
+      "mark_story_media_original_deleted",
+      { p_media_id: "11111111-1111-4111-8111-111111111111" },
+    );
+    expect(error).not.toBeNull();
+  });
 });
 
 describe("self-service first-publication lifecycle", () => {

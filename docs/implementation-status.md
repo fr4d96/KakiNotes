@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+Last updated: 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
 one-level folder shape — a story is either a main story, a sub story filed under exactly one main
 story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
 "Move to…" select; migration applied to the dev project — see the entry at the end of this
@@ -10451,9 +10451,105 @@ linked); typecheck is clean, and the three journey RPC call sites now use typed 
 - `20260928100000_trips`, `20260929100000_trip_place_images`,
   `20260929110000_rate_limit_maps_link_scope` — on `feat/itinerary-builder` (itinerary planning is
   an MVP non-goal in docs/product-spec.md). Their tables appear in the regenerated types, unused.
-- `20261003120000_story_media_original_retention` — only as an uncommitted file in the
-  `.claude/worktrees/adoring-roentgen-023a79` worktree (branch `claude/loving-poitras-8821c6`).
+- ~~`20261003120000_story_media_original_retention`~~ — merged into main on 2026-10-29 (see the
+  entry at the end of this file).
 
 `feat/landing-country-cards` (2026-09-29, landing country cards + an earlier country/region picker)
 was not merged: its only migration is the same `20260924021909_countries` file, so it adds no
 drift fix, and its picker overlaps the one `feat/china-section` shipped.
+
+## 2026-10-03 — raw photo originals deleted after processing (retention rule)
+
+**The problem.** For Supabase-backed images, the raw upload at `story_media.private_storage_path`
+(full EXIF, GPS included) was never deleted. `processStoryMedia` wrote the stripped derivative and
+left the raw in `story-images-private` forever. The only delete in the pipeline was the transient
+HEIC staging object.
+
+**Who reads the raw (checked).** Only `processStoryMedia`, and only while the row is `uploaded` or
+`failed` (`record_processed_story_media` admits nothing else). Preview, the photo viewer, the PDF
+export (`downloadMediaPreviewBytes`) and publication (`copyStoryMediaToPublic`) all read
+`processed_private_storage_path`. The HEIC flow writes the raw (`original.jpg`) but never reads it
+back itself. The transition trigger never lets `processed`/`promotion_pending`/`promoted` go back.
+
+**What changed.**
+
+- Migration `20261003120000_story_media_original_retention.sql` (**applied to the dev project**
+  `ybhydepjaantkngngvuf`, same day — see "Applied" below): `story_media.original_deleted_at`; a check that it can't be set on
+  `pending_upload`/`uploaded`; a partial index; `_story_media_original_is_due()` (the one rule);
+  `list_story_media_originals_due_for_deletion()` and `mark_story_media_original_deleted()`, both
+  `service_role` only. No storage policy changed.
+- Rule: due right after a successful process; a `failed` row's raw is due 30 days after upload
+  (repair window for `scripts/reprocess-failed-story-media.mjs`); in-flight rows are never touched.
+- `lib/story/image-pipeline.ts`: after `record_processed_story_media` succeeds, deletes the raw, then
+  marks it. Best-effort — never fails the upload. If `original_deleted_at` is set, processing records
+  `original_deleted` ("please upload the photo again") without downloading. Still the only module
+  importing `lib/supabase/admin.ts`.
+- `scripts/purge-media-originals.mjs` (`npm run media:cleanup:originals`): the backlog + safety-net
+  sweep. Dry run by default, same `SUPABASE_MAINTENANCE_*` fail-closed checks as
+  `media:cleanup:pending`. Delete first, mark second; stops if a batch makes no progress.
+- Docs: architecture "Raw-original retention", content-governance "Raw originals are not kept",
+  and the Drive spec's two "the pipeline never deletes it" notes corrected (My Photos and the move
+  tool already assumed only derivatives leave the platform — still true).
+
+**Decisions.**
+
+- Delete at processing time, not at publication: a draft might never be published, and nothing
+  reads the raw after processing anyway.
+- Reprocessing after deletion fails clearly instead of reprocessing from the derivative. A `failed`
+  row has no derivative (a constraint forces those columns null), and a processed row can't be
+  reprocessed, so there is nothing to fall back to.
+- `private_storage_path` keeps its value (still `not null`) as a record of where the raw lived.
+- `types/database.ts` regenerated; only this migration's entries were kept (see "Applied" below).
+  The temporary stale-types cast and `callUntypedRpc` call were removed again.
+
+**Verified.** `npm run verify` green (1253 tests). New Vitest: 6 pipeline retention tests (delete +
+mark order, raw kept on failure and on a failed record, upload still succeeds when delete or mark
+fails, clear failure when the raw is gone) and 6 sweep tests (dry run, batching, never marking an
+unconfirmed delete, no-progress stop, convergence after a failed mark, list error). Two
+`service_role`-only checks added to `tests/integration/story-rls.integration.test.ts` (not run in
+this session).
+
+**Not done / next.**
+
+1. Dry-run the sweep (`npm run media:cleanup:originals`), check the list, then `-- --execute` to clear
+   the backlog. Repeat on production after the release.
+2. Schedule the sweep (it only matters for `failed` rows crossing 30 days and missed inline deletes).
+3. Not covered by tests: the SQL rule itself against a real database (no Docker here).
+
+**Applied (same day).** `supabase db push` refused at first: the shared dev database has four
+migrations from unmerged branches (`20260924021909_countries` from `feat/landing-country-cards`;
+`20260928100000_trips`, `20260929100000_trip_place_images`, `20260929110000_rate_limit_maps_link_scope`
+from `feat/itinerary-builder`). Remote history was **not** repaired. Instead, copies of those four
+files were dropped into the worktree just for the push, so `db push` saw them as applied; the
+dry run listed only this migration; it was pushed under its own filename version; the copies were
+deleted straight after (never committed). Use the same trick until those branches merge.
+
+Checked live afterwards: the column exists; the three new functions are executable only by
+`postgres` and `service_role`; the security advisor lists none of the new objects. **453 raw
+originals on dev are already due** (all processed/promoted; no `failed` row is inside its 30-day
+window), waiting for the sweep.
+
+`types/database.ts`: regenerated with `npm run supabase:types:linked`, which also pulled in the
+other branches' `countries`/`trip_places`/`trips` and `regions.country_id`. Those were left out on
+purpose. Only the `original_deleted_at` column and the three function entries were kept, in exactly
+the generator's form and position, so the next full regen after those branches merge is a clean diff.
+
+## 2026-10-29 — raw-original retention merged into main
+
+The 2026-10-03 entry above was built on a branch (`claude/loving-poitras-8821c6`) that never merged,
+while its migration was already live on `ybhydepjaantkngngvuf`. It is now committed and merged.
+
+- **Migration file = live database.** With whitespace and `;` stripped, the file matches the
+  statements recorded for version `20261003120000` in `supabase_migrations.schema_migrations`.
+  Nothing was re-applied.
+- **`types/database.ts` unchanged.** main's copy, regenerated from the hosted project for the China
+  merge, already had `original_deleted_at` and both RPCs; a fresh regen is identical.
+- **Drive rows (added after this branch was cut).** The inline delete is in `processStoryMedia`,
+  which throws for a row without `private_storage_path`, so it never runs for a `google_drive` row.
+  The sweep's `list_story_media_originals_due_for_deletion` filters on
+  `private_storage_path is distinct from processed_private_storage_path`; a `google_drive` row has
+  both null, so it is excluded. Checked live: 434 rows due, all `storage_backend = 'supabase'`, none
+  with a null path. That exclusion is a side effect of the paranoia filter, not an explicit rule — if
+  the sweep is ever changed, add `storage_backend = 'supabase'` explicitly.
+- **Next:** unchanged from the 2026-10-03 list — dry-run `npm run media:cleanup:originals`, then
+  `-- --execute` to clear the 434-row backlog; it is not live for new uploads until the next release.

@@ -852,14 +852,17 @@ resized, re-encoded file a reader would see — never a raw original.
   (`files.delete`, section 4) right after the derivative was written to
   Drive. The derivative is the only file that has ever existed past the
   upload request.
-- For a `supabase`-backend image: today's pipeline (`lib/story/
-image-pipeline.ts`) does **not** delete the raw original from the
-  private bucket after processing — checked directly against the code,
-  there is no delete call for `private_storage_path` anywhere in that
-  module. So a raw original with full EXIF/GPS currently sits in the
-  private bucket indefinitely for every Supabase-mode image.
+- For a `supabase`-backend image: **updated 2026-10-03** — this section
+  was written when the pipeline never deleted the raw original. It now
+  does: `processStoryMedia` deletes it right after a successful process,
+  and `scripts/purge-media-originals.mjs` clears the backlog and any
+  `failed` row's raw 30 days after upload
+  (`story_media.original_deleted_at` records it; see
+  [architecture.md](architecture.md#raw-original-retention-2026-10-03)).
+  A raw original can still exist briefly (mid-processing, or a `failed`
+  row inside its 30 days), which is why the rule below still matters.
 
-Even though a raw original is technically still available for a
+Even where a raw original still briefly exists for a
 Supabase-mode image, **this page only ever offers the processed
 derivative, for both backends, with no "download original" option at
 all.** Three reasons: it keeps the page's behavior identical regardless of
@@ -987,8 +990,11 @@ file in the real app folder, verify, flip `story_media.storage_backend` to
 `google_drive` in the same transaction as recording the new
 `drive_processed_file_id`/`drive_folder_id`, then delete the Supabase
 objects — **including the raw original in the private bucket, if one
-still exists** (per section 7's finding that today's pipeline never
-deletes it) — only after the flip has committed.
+still exists** (normally it won't — the retention rule in section 7
+deletes it after processing — but a `failed` row inside its 30 days, or
+one the sweep hasn't reached, can still have one; if so, delete it and
+call `mark_story_media_original_deleted()` the same way) — only after the
+flip has committed.
 
 ### Drive → Supabase
 

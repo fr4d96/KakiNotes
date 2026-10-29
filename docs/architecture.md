@@ -1925,6 +1925,35 @@ through one of two new, narrow, `service_role`-only RPCs
 rather than raw SQL, so maintenance mutations respect the same transition trigger/state constraints
 as every other path.
 
+### Raw-original retention (2026-10-03)
+
+The raw upload at `story_media.private_storage_path` (full EXIF, GPS included) is deleted once it
+is no longer needed, and `story_media.original_deleted_at` records when
+(`supabase/migrations/20261003120000_story_media_original_retention.sql`). The rule lives in one SQL
+helper, `_story_media_original_is_due()`:
+
+| `processing_state`                           | Raw original                                                                                      |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `processed`, `promotion_pending`, `promoted` | Due immediately — the transition trigger never lets these go back to a state that reads it        |
+| `failed`                                     | Due 30 days after upload — kept so `scripts/reprocess-failed-story-media.mjs` can still repair it |
+| `pending_upload`, `uploaded`, `processing`   | Never touched (still in flight; `pending_upload` belongs to `media:cleanup:pending`)              |
+
+- **Inline:** `processStoryMedia` deletes the raw right after `record_processed_story_media`
+  succeeds, then calls `mark_story_media_original_deleted()`. Best-effort: a failure here never
+  fails the upload; the row just stays due.
+- **Sweep + backlog:** `scripts/purge-media-originals.mjs` (`npm run media:cleanup:originals`), the
+  same fail-closed, dry-run-by-default pattern as above. Candidates come from
+  `list_story_media_originals_due_for_deletion()`; objects are deleted through the Storage API.
+  Loops batches in `--execute` mode and stops if a batch makes no progress. Safe to schedule.
+- **Order is always delete, then mark.** A row is never marked while its object might still exist;
+  removing an already-missing object is a no-op, so a crashed run converges on the next one.
+- **Reprocessing after deletion** fails clearly: `processStoryMedia` records
+  `error_code = 'original_deleted'` ("please upload the photo again") without trying a download.
+  There is no fallback to the derivative — a `failed` row never has one, and a processed row can
+  never be reprocessed anyway.
+- Nothing else reads the raw: preview, the photo viewer, PDF export and publication all read
+  `processed_private_storage_path`. No storage policy changed.
+
 ### A known pre-existing `npm audit` advisory, reconfirmed unaffected
 
 Adding `sharp` as a direct dependency surfaces `GHSA-f88m-g3jw-g9cj` (libvips CVEs, `<0.35.0`) in

@@ -145,6 +145,14 @@ Draft images remain private-bucket-only until this pipeline runs and a moderator
 actually promotes them (Engineering Rules 13–14) — nothing here changes that invariant, it's the
 concrete implementation of it.
 
+**Raw originals are not kept (2026-10-03).** The unprocessed upload — the only copy that still
+carries EXIF/GPS — is deleted from the private bucket as soon as processing succeeds. If processing
+fails, the raw is kept for 30 days from upload so a pipeline problem can be repaired; after that it
+is deleted too, and the contributor is asked to upload the photo again. From then on the processed
+derivative is the only copy of a contributor's photo that the platform holds. Nobody — contributor,
+editor or moderator — can download a raw original through the app. Mechanics:
+[docs/architecture.md](architecture.md#raw-original-retention-2026-10-03).
+
 ## Editorial assistance
 
 - Editors may structure, lightly copyedit, and format a contributor-supplied story into the platform's
