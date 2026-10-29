@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-29 (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+Last updated: 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
 one-level folder shape — a story is either a main story, a sub story filed under exactly one main
 story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
 "Move to…" select; migration applied to the dev project — see the entry at the end of this
@@ -10591,9 +10591,10 @@ touched here.
   `tests/e2e/story-journey-map.spec.ts` rewritten for the profile Journey tab (not run; it needs the
   migration and a public contributor profile, and skips itself otherwise).
 
-**Release order (important).** `supabase/migrations/20261029130000_drop_story_revision_stops.sql`
-drops the old table and RPCs and must be applied only **after** this app release is deployed — the
-previous release still calls them. The additive migration is already live.
+**Release order.** Shipped as 1.12.0. The additive migration went live first; once 1.12.0 was
+serving production, `supabase/migrations/20261029100156_drop_story_revision_stops.sql` (written as
+`20261029130000`, renamed to its recorded version) dropped the old table, its 3 test rows and the
+three RPCs — see the entry at the end of this file.
 
 **Decisions / risks.**
 
@@ -10607,3 +10608,24 @@ previous release still calls them. The additive migration is already live.
 
 **Next.** After deploying, apply the drop migration; then consider showing the journey on `/cn`
 profiles only if a China map is ever built (it is NZ only today).
+
+## 2026-10-29 — 1.12.0 shipped; per-revision journey stops dropped
+
+- **Released** as v1.12.0 (contributor journey map + raw-original retention). Readable notes are in
+  CHANGELOG.md and on the GitHub Release.
+- **Contract step applied** after the deploy was confirmed live (`/contributors/[slug]/journey` and
+  `/my-stories/journey` answering on production, so no deployed code calls the old RPCs):
+  `20261029100156_drop_story_revision_stops` redefines `create_next_draft_revision` and
+  `delete_draft_story` without the stops lines, then drops `get_published_story_stops`,
+  `get_revision_stops`, `set_revision_stops` and `story_revision_stops` (3 test rows on an
+  unpublished draft, never public).
+- **Checked before applying:** both live function bodies, with the stops lines removed, hashed
+  identical to the new definitions; no other function or view referenced the table. **After:** the
+  applied statements match the file (whitespace/`;` normalised); no function references
+  `story_revision_stops`; grants on the two redefined functions unchanged; public pages 200.
+- `types/database.ts` regenerated from the hosted project (old table and RPCs removed).
+- The applied `20261029091942_contributor_journey.sql` still names the drop file by its old
+  `20261029130000` filename in a comment; left as is so the file stays identical to what was applied.
+- **Still open:** the raw-original backlog sweep (434 due, 14 of them `failed` with no other copy —
+  decide on reprocessing those first) and the uncommitted private story folders work on
+  `feat/private-story-folders`.

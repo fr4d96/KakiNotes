@@ -1511,60 +1511,6 @@ export type Database = {
           },
         ];
       };
-      story_revision_stops: {
-        Row: {
-          created_at: string;
-          id: string;
-          label: string;
-          latitude: number;
-          longitude: number;
-          parent_sort_order: number | null;
-          revision_id: string;
-          section_anchor: string | null;
-          sort_order: number;
-          updated_at: string;
-        };
-        Insert: {
-          created_at?: string;
-          id?: string;
-          label: string;
-          latitude: number;
-          longitude: number;
-          parent_sort_order?: number | null;
-          revision_id: string;
-          section_anchor?: string | null;
-          sort_order: number;
-          updated_at?: string;
-        };
-        Update: {
-          created_at?: string;
-          id?: string;
-          label?: string;
-          latitude?: number;
-          longitude?: number;
-          parent_sort_order?: number | null;
-          revision_id?: string;
-          section_anchor?: string | null;
-          sort_order?: number;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "story_revision_stops_parent_fk";
-            columns: ["revision_id", "parent_sort_order"];
-            isOneToOne: false;
-            referencedRelation: "story_revision_stops";
-            referencedColumns: ["revision_id", "sort_order"];
-          },
-          {
-            foreignKeyName: "story_revision_stops_revision_id_fkey";
-            columns: ["revision_id"];
-            isOneToOne: false;
-            referencedRelation: "story_revisions";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       story_revision_tags: {
         Row: {
           custom_label: string | null;
@@ -2600,17 +2546,6 @@ export type Database = {
           storage_backend: string;
         }[];
       };
-      get_published_story_stops: {
-        Args: { p_slug: string };
-        Returns: {
-          label: string;
-          latitude: number;
-          longitude: number;
-          parent_sort_order: number;
-          section_anchor: string;
-          sort_order: number;
-        }[];
-      };
       get_report_notes: {
         Args: { p_report_id: string };
         Returns: {
@@ -2634,17 +2569,6 @@ export type Database = {
           locations: Json;
           tags: Json;
           work_types: Json;
-        }[];
-      };
-      get_revision_stops: {
-        Args: { p_revision_id: string };
-        Returns: {
-          label: string;
-          latitude: number;
-          longitude: number;
-          parent_sort_order: number;
-          section_anchor: string;
-          sort_order: number;
         }[];
       };
       get_story_country: { Args: { p_story_id: string }; Returns: string };
@@ -3293,14 +3217,6 @@ export type Database = {
           p_expected_version: number;
           p_locations: Json;
           p_revision_id: string;
-        };
-        Returns: undefined;
-      };
-      set_revision_stops: {
-        Args: {
-          p_expected_version: number;
-          p_revision_id: string;
-          p_stops: Json;
         };
         Returns: undefined;
       };

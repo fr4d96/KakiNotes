@@ -901,11 +901,11 @@ null` — deleting a main story orphans its sub stories back to "not in a folder
 One journey map per **contributor**, one pin per **story**
 (`20261029091942_contributor_journey.sql`). This replaces the per-revision design
 (`story_revision_stops`, `set_revision_stops` / `get_revision_stops` / `get_published_story_stops`),
-which is dropped by `20261029130000_drop_story_revision_stops.sql`.
+which was dropped by `20261029100156_drop_story_revision_stops.sql`.
 
-**Order of release (expand/contract): apply `20261029130000_drop_story_revision_stops.sql` only
-AFTER this app release is deployed.** The first migration only adds, so it could go live early; the
-second removes the functions the previous release still calls.
+**Order of release (expand/contract), as done for 1.12.0:** the additive migration went live
+first; the drop (`20261029100156_drop_story_revision_stops.sql`) was applied only after the 1.12.0
+app release, which no longer calls the old functions, was serving production.
 
 The pin lives on `stories` (`journey_label`, `journey_latitude`/`journey_longitude numeric(5,2)`,
 all-or-none CHECK, NZ-bounds CHECKs; `stories` has no RLS policies and no grants for
