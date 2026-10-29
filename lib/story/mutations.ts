@@ -41,11 +41,17 @@ function revisionArgs(input: RevisionInput) {
  * blocked on. create_self_service_draft() itself defaults content_json to
  * '[]'::jsonb server-side.
  */
-export async function createSelfServiceDraftShell(title: string) {
+export async function createSelfServiceDraftShell(
+  title: string,
+  countrySlug?: string,
+) {
   await requireUser();
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("create_self_service_draft", {
     p_title: title,
+    // Omitted => RPC default ('new-zealand'), matching historical
+    // behaviour for every call site that predates countries.
+    ...(countrySlug ? { p_country_slug: countrySlug } : {}),
   });
   if (error) throw error;
   return data?.[0] ?? null;
@@ -66,6 +72,7 @@ export async function createEditorialImportDraft(
   contributorId: string,
   input: RevisionInput,
   assignedEditorId?: string,
+  countrySlug?: string,
 ) {
   await requireUser();
   const supabase = await createClient();
@@ -73,6 +80,9 @@ export async function createEditorialImportDraft(
     p_contributor_id: contributorId,
     ...revisionArgs(input),
     p_assigned_editor_id: assignedEditorId,
+    // Omitted => RPC default ('new-zealand'), matching historical behaviour
+    // for every call site that predates countries.
+    ...(countrySlug ? { p_country_slug: countrySlug } : {}),
   });
   if (error) throw error;
   return data?.[0] ?? null;
@@ -89,6 +99,7 @@ export async function createEditorialImportDraftShell(
   contributorId: string,
   title: string,
   assignedEditorId?: string,
+  countrySlug?: string,
 ) {
   await requireUser();
   const supabase = await createClient();
@@ -96,9 +107,29 @@ export async function createEditorialImportDraftShell(
     p_contributor_id: contributorId,
     p_title: title,
     p_assigned_editor_id: assignedEditorId,
+    // Omitted => RPC default ('new-zealand'), matching historical behaviour
+    // for every call site that predates countries.
+    ...(countrySlug ? { p_country_slug: countrySlug } : {}),
   });
   if (error) throw error;
   return data?.[0] ?? null;
+}
+
+/**
+ * Changes an existing draft story's country (set_story_country() —
+ * supabase/migrations/20261014205738_set_story_country.sql). The RPC
+ * re-derives ownership/editor/admin itself and refuses once the story has
+ * ever been published, so storyId is never trusted as proof of ownership
+ * here -- same pattern as every other wrapper in this file.
+ */
+export async function setStoryCountry(storyId: string, countrySlug: string) {
+  await requireUser();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_story_country", {
+    p_story_id: storyId,
+    p_country_slug: countrySlug,
+  });
+  if (error) throw error;
 }
 
 export async function markEditorialDraftAwaitingApproval(storyId: string) {
@@ -118,6 +149,13 @@ export async function markEditorialDraftAwaitingApproval(storyId: string) {
  * as of Prompt 4 Sub-phase 4's save_revision_draft() signature change --
  * previously void). Callers should use this instead of assuming the server
  * incremented by exactly 1.
+ *
+ * Deliberately UNCHANGED signature/return shape -- this RPC is shared with
+ * every other in-flight branch against this dev database (and, in
+ * production, with the currently deployed app); see get_story_drive_sync_
+ * state() (supabase/migrations/20261007190006_story_drive_folders.sql) and
+ * saveRevisionFieldsAction for how the title-save Drive-folder-rename hook
+ * is wired WITHOUT touching this function's shape.
  */
 export async function saveRevisionDraft(
   revisionId: string,
@@ -332,7 +370,9 @@ export async function setRevisionLocations(
   revisionId: string,
   expectedVersion: number,
   locations: Array<{
-    regionId: string;
+    /** Exactly one of regionId/customRegionLabel is set (20261015). */
+    regionId?: string | null;
+    customRegionLabel?: string | null;
     destinationId?: string | null;
     customDestinationLabel?: string | null;
     sortOrder?: number;
@@ -344,7 +384,10 @@ export async function setRevisionLocations(
     p_revision_id: revisionId,
     p_expected_version: expectedVersion,
     p_locations: locations.map((l) => ({
-      region_id: l.regionId,
+      region_id: l.regionId ?? null,
+      // A looked-up region wins; the RPC re-applies the same precedence,
+      // so this is the courtesy, not the boundary.
+      custom_region_label: l.regionId ? null : (l.customRegionLabel ?? null),
       destination_id: l.destinationId ?? null,
       // A looked-up destination wins; the RPC re-applies the same
       // precedence, so this is the courtesy, not the boundary.
@@ -388,24 +431,24 @@ export async function setRevisionTags(
 }
 
 /**
- * Links a PUBLISHED story under another of the owner's published stories,
- * or clears that with null. Goes public immediately -- not moderated
- * (20261003051644_story_level_sub_stories.sql). Every rule (owner only,
- * both published, same contributor, two levels, not itself) is
- * set_story_parent_story()'s; it raises WHV10-WHV15 to say which one failed
- * (see subStoryErrorKey in lib/story/rpc-errors.ts).
+ * Files a published story under another of the caller's own published
+ * stories -- one level only, not a hierarchy of hierarchies
+ * (supabase/migrations/20261021085920_story_folders.sql, which replaced
+ * the free-link design). Goes public immediately -- not moderated. Null
+ * parentId removes the story from its folder, always allowed. Every rule
+ * (owner of both, both published, one level only) is set_story_parent()'s;
+ * it raises WHV10/WHV11/WHV13/WHV14/WHV15 to say which one failed (see
+ * storyFolderErrorKey in lib/story/rpc-errors.ts).
  */
-export async function setStoryParentStory(
-  storyId: string,
-  parentStoryId: string | null,
-) {
+export async function setStoryParent(storyId: string, parentId: string | null) {
   await requireUser();
   const supabase = await createClient();
-  const { error } = await supabase.rpc("set_story_parent_story", {
+  const { error } = await supabase.rpc("set_story_parent", {
     p_story_id: storyId,
-    // The generator types every SQL argument as non-null; null clears the
-    // link, which the function handles explicitly.
-    p_parent_story_id: parentStoryId as string,
+    // The generated RPC type marks this as a required string (no SQL
+    // DEFAULT was given), but the underlying uuid parameter happily accepts
+    // NULL -- same cast as updateStoryMediaCaption's altText/caption above.
+    p_parent_id: parentId as string,
   });
   if (error) throw error;
 }
@@ -599,6 +642,13 @@ export async function updateStoryMediaCaption(params: {
   if (error) throw error;
 }
 
+// reorderStoryMedia/setStoryCoverMedia/detachStoryMedia are deliberately
+// UNCHANGED (same signature, same void return) -- reorder_story_media/
+// set_story_cover_media/detach_story_media are shared editor RPCs; see
+// get_story_drive_sync_state() and app/(contributor)/stories/[id]/edit/
+// actions.ts for how the best-effort Drive sync hook is wired without
+// touching these functions' shape.
+
 export async function reorderStoryMedia(
   revisionId: string,
   expectedVersion: number,
@@ -658,4 +708,39 @@ export async function createStoryReport(
   });
   if (error) throw error;
   return data;
+}
+
+/**
+ * Replaces a revision's journey-map stops
+ * (supabase/migrations/20261029042052_story_revision_stops.sql).
+ *
+ * The RPC authorizes the revision, checks the optimistic version, rounds the
+ * coordinates, rejects anything outside New Zealand and caps the count --
+ * this wrapper carries no rules of its own, it only renames keys.
+ */
+export async function setRevisionStops(
+  revisionId: string,
+  expectedVersion: number,
+  stops: Array<{
+    latitude: number;
+    longitude: number;
+    label: string;
+    sectionAnchor?: string | null;
+    parentIndex?: number | null;
+  }>,
+) {
+  await requireUser();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_revision_stops", {
+    p_revision_id: revisionId,
+    p_expected_version: expectedVersion,
+    p_stops: stops.map((s) => ({
+      latitude: s.latitude,
+      longitude: s.longitude,
+      label: s.label,
+      section_anchor: s.sectionAnchor ?? null,
+      parent_index: s.parentIndex ?? null,
+    })),
+  });
+  if (error) throw error;
 }

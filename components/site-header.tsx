@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { BrandLogo } from "@/components/brand-logo";
 import { MobileNavToggle } from "@/components/mobile-nav-toggle";
@@ -14,6 +15,7 @@ import { UserAvatarMenu } from "@/components/auth/user-avatar-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { createClient } from "@/lib/supabase/client";
 import type { AppRole } from "@/lib/auth/staff-guard";
+import { countryFromPathname, countryUrlPrefix } from "@/lib/story/countries";
 
 // Every item links to a real browsing page, never to a section on the home
 // page -- the old "Destinations" entry was a /#match anchor that did nothing
@@ -83,6 +85,7 @@ type AuthModalKind = "sign-in" | "sign-up" | null;
  */
 export function SiteHeader() {
   const t = useTranslations("nav");
+  const countryPrefix = countryUrlPrefix(countryFromPathname(usePathname()));
   const [authModal, setAuthModal] = useState<AuthModalKind>(null);
   const [signedIn, setSignedIn] = useState(false);
   const [avatarEmoji, setAvatarEmoji] = useState<string | null>(null);
@@ -150,7 +153,7 @@ export function SiteHeader() {
     "journiq-header-solid border-b border-border-subtle text-foreground shadow-sm";
   const signInToneClasses = "border-border-subtle";
   const navItems = primaryNav.map((item) => ({
-    href: item.href,
+    href: `${countryPrefix}${item.href}`,
     label: t(item.key),
   }));
 
@@ -160,7 +163,7 @@ export function SiteHeader() {
     >
       <div className="mx-auto flex min-h-[76px] max-w-[1440px] items-center gap-5 px-4 sm:px-6">
         <Link
-          href="/"
+          href={countryPrefix || "/"}
           className="flex items-center gap-2.5 text-xl font-black tracking-tight"
         >
           <BrandLogo className="border border-current" priority />

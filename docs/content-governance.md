@@ -286,25 +286,92 @@ what readers currently see. It only works on a revision still genuinely `submitt
 has acted on it, it is no longer `submitted` and the contributor instead gets the normal
 "changes requested → start a new draft" path (`request_editorial_changes()`/`create_next_draft_revision()`).
 
-### Sub stories go live without review (exception to Rule 11)
+### Story folders go live without review (exception to Rule 11)
 
-Linking a story under a main story is **not** moderated (decided 2026-10-03). The product owner
-chose this over "link on a draft, then review": the link only says two stories belong together,
-and both stories have already been approved on their own.
+Filing one of a contributor's own stories under another (as its main story) is **not** moderated
+(decided 2026-10-03; reworked into free, undirected links on 2026-10-13; reworked back into a
+one-level folder shape on 2026-10-21). The product owner chose this over "file on a draft, then
+review": filing only says one story belongs under another, and both stories have already been
+approved on their own. Each rework changed the shape — a two-level hierarchy, then unlimited
+undirected links, now one level of folders — but not this safety story — every point below held
+for every earlier design too.
 
 What keeps it safe:
 
-- **Both stories must already be published** to link them. Drafts and stories in review can't be
-  linked, so nothing unreviewed ever appears through a link.
-- **Only the owner** can set it, and only between their **own** stories, so nobody can attach their
-  story to someone else's. An assigned editor can't set it either.
-- The link adds no new text: readers see the two stories' already-approved titles, excerpts and
+- **Both stories must already be published** to file one under the other. Drafts and stories in
+  review can't be filed, so nothing unreviewed ever appears through a folder.
+- **Only the owner** can file a story, and only involving their **own** stories, so nobody can
+  attach their story to someone else's. An assigned editor can't do this either. Removing a story
+  from its folder is always allowed for the owner, regardless of either story's state — removing
+  can only ever reduce what's shown.
+- **One level only**: a sub story can't have sub stories of its own, and a story that already has
+  sub stories can't be filed under another main story.
+- Filing adds no new text: readers see the two stories' already-approved titles, excerpts and
   covers.
-- If either story is later archived, taken down or loses consent, the link stops showing at once
-  (the public read checks both ends every time).
-- Each change is logged as `story.main_story.set` (story id and "linked"/"cleared" only).
+- If either story is later archived, taken down or loses consent, the folder relationship stops
+  showing at once (the public read checks both ends every time).
+- Each change is logged as `story.folder.set` / `story.folder.cleared` (the two story ids only).
 
-Moderators don't see the link on the review page any more, because it isn't part of a revision.
+Moderators don't see folders on the review page, because they aren't part of a revision.
+
+### Journey-map stops are reviewed with the revision (2026-10-29)
+
+A story can carry up to 12 ordered **main journey stops**, each holding up to 8 **sub-stops**
+("places inside"; 40 stops in total, one level only): a place name the contributor writes, a
+position on New Zealand, and optionally a link to one of the story's headings. The contributor
+chooses which main stop a sub-stop belongs to; nothing is grouped automatically. Readers see the
+main stops as an illustrated route and open one to see the places inside it (see "Story journey
+illustration" in `docs/product-spec.md`). Sub-stops are moderated exactly like main stops: same
+plain-text 60-character labels, same revision review, same privacy rounding.
+
+- **Part of the revision, not a separate queue.** Stops belong to a revision like tags, locations
+  and expenses do, so they go through the normal review: the moderation page shows the submitted
+  revision's route, and approval publishes it with the rest of the revision. A new draft starts
+  with a copy of the published stops; editing them changes nothing readers see until the replacement
+  is approved (Rules 10 and 11). A moderator can request changes on a bad place name like any other
+  text.
+- **Place names are plain text, 60 characters at most**, rendered only through React (no HTML).
+  Moderators should treat one like any other published text: no personal details (a home address, a
+  workplace, a named person), no advertising.
+- **"Add from a Google Maps link" never stores the link.** The pasted link is parsed for a
+  position and a place name only; the link itself (which can carry tracking parameters) is not
+  saved or logged. Short links (`maps.app.goo.gl`) are resolved by the server, which makes one
+  outbound request to Google (Google hosts only, https, at most 3 redirects, only the `Location`
+  header is read) and requires a signed-in user.
+- **Position is privacy-rounded and never shown.** The database rounds each position to two
+  decimals (about 1 km) when it is saved and rejects anything outside New Zealand. Readers only see
+  the contributor's label and a pin on a stylised picture; coordinates are never printed. Because
+  the saved position is only ~1 km accurate and the picture is a few hundred pixels wide, nothing
+  near an exact home or workplace location is ever stored (Rule 15).
+- **Editors cannot pin stops.** Only the story owner or assigned editor can edit a draft's stops,
+  the same rule as every other field on the revision; a moderator can read them once the revision
+  has been submitted, not while it is still a private draft.
+
+### A story's country locks after first publication (Rule 11)
+
+`stories.country_id` (added 2026-10-14 for the China section) is a property of the **story** row,
+not the revision — unlike title/content/locations, which are revision-scoped, so an unapproved
+draft edit can never overwrite what is publicly visible. Country has no such revision-scoped shadow
+copy, so once a story has ever been published (`published_revision_id is not null`), its country is
+locked: `set_story_country()` refuses unconditionally, even while the story is reopened for editing
+after publication. Changing it would move already-public content between country sections (NZ
+Working Holiday stories vs. China general-travel stories — different framing, different disclaimer
+copy) with no moderation step in between. The editor's Places step shows the country as read-only
+text, with a short hint, once a story is published; it only offers the `<select>` on a
+never-published draft.
+
+### Free-text region labels are moderated like any other contributor text
+
+`story_revision_locations.custom_region_label` (2026-10-15, alongside the existing
+`custom_destination_label`) is a contributor-typed region/area name, for a place not in the curated
+`regions` table — most relevant to the China section, whose five seeded provinces are a much
+thinner list than New Zealand's sixteen regions. It carries **no separate moderation path**: it is
+stored on the revision like the title, excerpt and body, so a moderator reviewing that revision
+(`get_story_for_moderator()`) sees it in the claimed-regions list and approves or rejects the
+revision as a whole, exactly as they already do for `custom_destination_label` and a tag's
+`custom_label`. There is no mechanism to approve a story while rejecting only its typed region —
+the same "a revision is one unit" rule every other contributor-authored free-text field already
+follows.
 
 ## Reporting
 

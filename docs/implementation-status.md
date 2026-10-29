@@ -3,7 +3,14 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-03 (raw photo originals, with their EXIF/GPS, are now deleted after processing — inline, plus a sweep script for the backlog; migration applied to the dev project and types regenerated; backlog not yet swept; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
+Last updated: 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+one-level folder shape — a story is either a main story, a sub story filed under exactly one main
+story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
+"Move to…" select; migration applied to the dev project — see the entry at the end of this
+file); earlier, 2026-10-13 (story map: the main/sub-story hierarchy is replaced with free, undirected
+links between any of a contributor's own published stories, managed from a new story map page with
+a draggable graph; migration applied to the dev project — see the
+entry at the end of this file); earlier, 2026-10-11 (full-quality copies: a Drive-connected contributor's new photos also keep a full-resolution, location-stripped copy in their Drive, downloadable only by them from My Photos; see the entry at the end of this file); earlier the same day (My Photos: a page listing every photo on a contributor's stories, with a Download button per photo; see the entry at the end of this file); earlier, 2026-10-09 (photo tiles: Details sits on the photo, shown on hover, and a zoom icon is always in the corner; see the entry at the end of this file); earlier, 2026-10-08 (drag to reorder photos: contributors drag photos in the editor's Photos step, by mouse or press-and-hold on a phone; see the entry at the end of this file); earlier the same day (move existing photos to Drive: a button on Account → Google Drive moves a contributor's existing Supabase photos into their Drive, one at a time, and fixes the Drive proxy 404ing every published Drive photo for readers; see the entry at the end of this file); earlier the same day (Google Drive slice 3 plus story folders: a Drive-connected contributor's new photos go to their own Google Drive, one folder per story, and nothing is stored in Supabase for them; see the entry at the end of this file); earlier, 2026-10-07 (Google Drive slice 1: contributors can connect and disconnect Google Drive from Account settings; no photo touches Drive yet; see the entry at the end of this file); earlier, 2026-10-03 (Google Drive photo storage: design spec approved, nothing built yet; CLAUDE.md Rules 13 and 14 reworded to cover it; see the entry at the end of this file); earlier the same day (sub stories reworked: only published stories can be linked, from My Stories, and the link shows straight away; see the entries at the end of this file); earlier, 2026-09-30 (sub stories: a story can be filed under a main story by the same contributor); earlier, 2026-09-26 (My Stories no longer offers Delete on a draft that has been through
 review, and a photo upload no longer leaves every later save rejected as stale; see the entry at
 the end of this file); earlier, 2026-09-24 (shipped as 1.0.0: story editor fixes — bold/italic toggle off, a
 "free" travel style, line breaks kept on the review screen, uploads no longer lost to a
@@ -9264,6 +9271,1193 @@ and costs, just above the Report box. One column on phones, two from `sm`, three
 card with the placeholder image. No excerpt, author or tags. (`SubStoryCard` in
 `components/story/story-family.tsx`.)
 
+## 2026-10-03 — Google Drive photo storage: design spec (not built)
+
+**Design only. No code, migrations, env vars or dependencies have landed.** The owner wants
+contributors to be able to opt in to keeping their story photos only in their own Google Drive,
+with nothing stored in Supabase for those photos. The approved design is
+[docs/google-drive-integration.md](google-drive-integration.md). Every owner decision is recorded in
+its section 12 ("Decisions").
+
+What the design says, in short:
+
+- Opt-in per contributor, tracked per image as `story_media.storage_backend`
+  (`'supabase' | 'google_drive'`). Contributors who don't link Drive are unchanged.
+- OAuth with the `drive.file` scope only. The refresh token is encrypted in a new
+  `contributor_drive_connections` table (service-role only), behind a new `lib/drive/token-store.ts`
+  that only `lib/story/drive-sync.ts` may import. `lib/story/image-pipeline.ts` stays the only
+  importer of the admin client.
+- Upload: the browser sends the raw photo straight to a staging file in the contributor's Drive
+  (resumable session). The server checks it via `appProperties`, strips and resizes it in memory,
+  writes the cleaned photo as a new Drive file, then permanently deletes the raw one. If the browser
+  can't PUT to Google (CORS), the fallback is to shrink in the browser (about 2,400px, JPEG ~0.9)
+  and POST to our server. No raw bytes are ever staged in Supabase.
+- Serving: a new proxy route serves Drive photos only, after a published-revision check, with
+  `s-maxage=300`. It returns 404 for Supabase-backed media. Supabase photos keep their current URLs.
+- New screens: a contributor "My Photos" page (view and download per story; "download all" as a
+  server-streamed zip via `archiver`), and a two-way Supabase ↔ Drive move tool (copy → verify →
+  flip → delete, tracked in `story_media_move_jobs`). One heavy job per contributor at a time.
+
+**Rules changed.** CLAUDE.md Engineering Rules 13 and 14 were reworded (owner-approved) so they
+cover Drive-backed images as well as the Supabase buckets. Nothing changes for Supabase-backed
+images.
+
+**Owner setup needed before any build.** A Google Cloud project with the Drive API enabled, an
+External consent screen in Testing with the `drive.file` scope, and a Web OAuth client with redirect
+URI `http://localhost:3000/account/drive/callback`. Four server-only env vars go in `.env.local`:
+`GOOGLE_DRIVE_OAUTH_CLIENT_ID`, `GOOGLE_DRIVE_OAUTH_CLIENT_SECRET`,
+`GOOGLE_DRIVE_OAUTH_REDIRECT_URI` and `GOOGLE_DRIVE_TOKEN_ENCRYPTION_KEY`. They aren't in
+`.env.example` or `lib/env.server.ts` yet; slice 1 adds them.
+
+**Found along the way (separate task, not fixed here):** for Supabase-backed images, the raw
+original at `story_media.private_storage_path` is never deleted after processing, so every raw
+upload, including its EXIF/GPS, stays in `story-images-private` indefinitely. The only delete in
+`lib/story/image-pipeline.ts` is the transient HEIC staging object.
+
+**Biggest open risk:** nobody has confirmed whether a browser can PUT straight to a Drive resumable
+session URI (CORS). Build slice 2 is a spike that settles it and picks the upload path.
+
+**Next:** slice 2, the CORS spike, once the owner has set up Google Cloud.
+
+## 2026-10-07 — Google Drive slice 1: connect and disconnect
+
+Slice 1 of [docs/google-drive-integration.md](google-drive-integration.md). A signed-in
+contributor can connect Google Drive from **Account → Google Drive** and disconnect it again.
+**No photo touches Drive yet.** No upload or image behaviour has changed for anyone.
+
+- **Spike first (slice 2, done 2026-10-07):** a browser can `PUT` straight to a Drive resumable
+  session, but only if our server sends `Origin` when it starts the session. Option D is the upload
+  path. Details in the spec, section 4(a); the test is `scripts/spike-drive-cors.mjs`.
+- **Migration** `20261007053505_drive_connections`: `contributor_drive_connections` (RLS on, no
+  policies, all table grants revoked from `anon`/`authenticated`) plus
+  `get_my_drive_connection_status()`, a security-definer function that returns only connected /
+  email / connected-at for `auth.uid()`. The token columns are base64 **text**, not `bytea`: the
+  first draft used `bytea`, which would have stored the base64 string's ASCII bytes and handed back
+  hex, so no saved login would ever have decrypted. Mocked unit tests can't see that; it was caught
+  in review.
+- **Applied to the linked dev project via the Supabase MCP, not `db push`.** The shared dev
+  database holds migrations from unmerged work (`feat/landing-country-cards`,
+  `feat/itinerary-builder`, and `20261003120000_story_media_original_retention`), so `db push`
+  aborts. The local file was renamed to the MCP-recorded version. `types/database.ts` was
+  regenerated but only this table and function were kept; the other branches' tables were left out
+  on purpose.
+- **Code:** `lib/drive/token-store.ts` (AES-256-GCM, random 12-byte IV, key version; the only
+  Drive module allowed to import `lib/supabase/admin.ts`, and only `lib/drive/**` and the drive
+  routes may import it, enforced in `eslint.config.mjs`); `lib/drive/oauth-state.ts`;
+  `lib/drive/connection-status.ts`; `getDriveEnv()` / `isDriveConfigured()` in `lib/env.server.ts`;
+  routes `app/(contributor)/account/drive/connect` and `.../callback`; a disconnect Server Action
+  that needs the warning ticked, revokes at Google (best effort) and deletes the row; the Drive tab
+  in English and Simplified Chinese. Scope is `drive.file` only. The Google email comes from
+  Drive's own `about` endpoint, so no email scope is needed.
+- **Env:** four server-only vars, now in `.env.example`: `GOOGLE_DRIVE_OAUTH_CLIENT_ID`,
+  `GOOGLE_DRIVE_OAUTH_CLIENT_SECRET`, `GOOGLE_DRIVE_OAUTH_REDIRECT_URI`,
+  `GOOGLE_DRIVE_TOKEN_ENCRYPTION_KEY`. Without them (e.g. Vercel previews) the tab says "not
+  available here". Locally the redirect is `http://localhost:3100/account/drive/callback`, matching
+  the `kakinotes-dev` launch config.
+
+**Verified.** `npm run verify` passes (1,282 tests). `npm run test:rls -- drive-connections`
+passes 4 tests against the real dev table: anon can't read, a contributor can't read or insert
+their own row directly, and the status function never returns a token column. Supabase's security
+advisor flags only the expected notes (RLS with no policy; the status function callable by
+`authenticated`, not `anon`). End to end in the running app: connected with a test Google account,
+the stored token decrypted with the env key, Google exchanged it for fresh access with scope
+`drive.file` only, then disconnect deleted the row with no revoke error logged.
+
+**Not covered / follow-ups:** reconnecting with a different Google account replaces the old token
+without revoking it at Google; no Playwright flow (it would need a real Google sign-in). Production
+needs the four vars in Vercel (with its own encryption key) and the
+`https://kakinotes.vercel.app/account/drive/callback` redirect, which is already registered.
+
+**Next:** slice 3, uploading new photos to Drive (Option D). Check a large iPhone photo in Safari
+before calling it done.
+
+## 2026-10-08 — Google Drive slice 3: uploads to Drive, per-story folders
+
+Slice 3 of [docs/google-drive-integration.md](google-drive-integration.md), plus a per-story folder
+layout the owner asked for after testing. A contributor with Drive connected, uploading to **their
+own self-submitted story**, now stores that photo **only in their Google Drive**. Everyone else
+(no connection, editors, admins, editorial imports) keeps the existing Supabase path unchanged.
+
+**Upload (Option D).** The server starts a resumable Drive session in `Kakinotes/.staging` (always
+sending `Origin`, per the CORS spike). The browser PUTs the raw file there in 8 MiB chunks and
+resumes from the 308 `Range` header. Finalize checks the staging file's `appProperties` against the
+reservation (a forged id is rejected before anything is downloaded), runs the existing sharp
+pipeline in memory (`processImageBytesInMemory`, HEIC included), writes the cleaned photo into the
+story's folder, then **permanently deletes** the raw file (`files.delete`, never the bin). The mode
+is decided server-side (`get_story_media_upload_mode`); the browser only follows it.
+
+**Serving.** `app/media/[mediaId]/route.ts` serves Drive photos only: published ones (same check
+as `get_published_story_media`) with `s-maxage=300`, previews for owner/editor/moderator with
+`private, no-store`, and a 404 for Supabase ids and anything else. `getImageUrl()` /
+`getImageBytes()` route every read site (editor, preview, My Stories, public page, OG, gallery,
+cards, home, moderation, PDF) by `storage_backend`; Supabase photos get exactly the URL/bytes they
+did before.
+
+**Publishing.** `finalize_story_publication` promotes a Drive photo straight from `processed` to
+`promoted` (there's no bucket copy), and the moderator approve flow skips the copy step for it. A
+promoted Drive photo's file id is immutable (Rule 11). Public reads (`get_published_story_media`,
+`list_published_stories` with new `cover_media_id` / `cover_storage_backend`) include Drive photos.
+
+**Folders.** `Kakinotes/<story title>/01.jpg, 02.jpg, …` (sanitised title; " (2)" on a clash;
+"Untitled story" if blank; sub stories get their own top-level folder). The folder renames with
+the title and files renumber on upload/reorder/remove, via `next/server` `after()` so the user
+never waits; a Drive failure there is logged, never surfaced. The shared editor RPCs
+(`save_revision_draft`, `reorder_story_media`, `set_story_cover_media`, `detach_story_media`) are
+**unchanged**: a first draft reshaped them, which would have broken autosave on the other branches
+sharing the dev DB, so the check moved to a separate post-response RPC (`get_story_drive_sync_state`).
+`scripts/drive-backfill-story-folders.mjs` (dry-run by default) tidies existing photos in one go.
+
+**Speed.** Access tokens and folder ids are cached in memory, keyed by **connection identity**
+(`userId:connectionId:token_auth_tag`) so a disconnect or reconnect (even with another Google account)
+never reuses an old entry on any server; every use first confirms an active connection row. Measured
+on the dev server: start 4.3 s → 1.9 s; finish 16.9 s → 6.6 s (22 KB, cold) and 8.5 s (1.5 MB PNG).
+
+**Migrations, all applied to the linked dev project via the Supabase MCP** (files renamed to the
+recorded versions; `db push` still can't run, see below): `20261007063355_story_media_drive_backend`,
+`20261007102405_story_media_drive_upload_mode`, `20261007190006_story_drive_folders`,
+`20261007194535_drive_staging_folder_and_sync_gate_fix`. Before applying, each replaced function was
+diffed against its newest prior definition (only the intended Drive lines differ) and grants were
+re-checked. After: all 455 existing `story_media` rows stayed `supabase` with paths intact, and all
+27 published stories still listed with the same 24 covers. `types/database.ts` keeps only this
+work's additions.
+
+**Verified.** `npm run verify` passes (1,409 tests). `npm run test:rls`: 122/123 existing pass (the
+one failure, "rejects a destination that does not belong to the given region", is
+`regions.country_id` from `feat/landing-country-cards` sitting on the shared dev DB, not this work);
+Drive RLS tests 3 pass, 3 skipped because a real Drive row needs a real Google sign-in. End to end
+with a test Google account: uploads land only in Drive (0 Supabase objects), no EXIF/XMP/IPTC in
+the stored photo, sha256 matches, 0 raw files left in staging or the bin, not shared publicly, a
+draft photo is a 404 to a signed-out visitor, and rename/reorder keep the folder name and every
+file number (checked by Drive file id) in step.
+
+**Not covered / follow-ups:**
+
+- A large iPhone photo in **Safari** (HEIC + chunked upload) and the **submit → approve → public
+  page** flow haven't been run for real yet.
+- The shared dev database carries unmerged branches' migrations (`feat/landing-country-cards`,
+  `feat/itinerary-builder`, `20261003120000_story_media_original_retention`), which is why `db
+push` aborts and one existing RLS test fails. Worth fixing (Supabase branching, or merging/rolling
+  back those branches).
+- When the raw-original retention task merges, add an explicit `storage_backend = 'supabase'`
+  filter to its sweep; today it skips Drive rows only because they have no paths.
+- Slices 4 (abandoned-staging sweep) and 5 (placeholder for a missing Drive photo) aren't built.
+  Queued owner tasks: move existing photos to Drive, a My Photos page, drag-to-reorder photos.
+
+## 2026-10-08 — Move existing photos to Google Drive
+
+The Supabase → Drive half of the move tool in
+[docs/google-drive-integration.md](google-drive-integration.md) section 9, started from a
+**"Move N photos to Drive"** button on **Account → Google Drive** (shown once Drive is connected).
+Owner decisions for this task: the browser runs the loop (no background job); a published photo's
+old copies are deleted on a later run, at least 5 minutes after its flip; the raw original (with
+its GPS) is deleted as part of the move; and only self-submitted stories move (same rule as new
+Drive uploads, so editorial imports stay on Supabase). Drive → Supabase is not built.
+
+**How a move works.** One Server Action per photo: claim → download the processed copy (its sha256
+is checked against the row) → upload it into the story's Drive folder → record the Drive id →
+download it back and compare sha256 → flip `story_media` to `google_drive` in one transaction →
+delete the old Supabase objects. A photo is always either fully on Supabase or fully on Drive. A
+failure before the flip deletes the new Drive file and reports the photo as "couldn't be moved" with
+its story title and a reason. A lost Drive connection, a full Drive or rate limiting stops the run
+with one message. If the flip's response is lost, the Drive file is kept, because it may already be
+the live copy. "Stop after this photo" and closing the tab both just pause; pressing the button
+again carries on.
+
+**Database** (`20261008053425_story_media_move_to_drive`): `story_media_move_runs` and
+`story_media_move_jobs` (RLS on, no policies, all grants revoked from `anon`/`authenticated`;
+internal record only, per Decision 14). Only one running run per user, enforced by a partial unique
+index (Decision 13); a run that's been silent for 2 minutes stops blocking. Authenticated RPCs (each
+re-derives the owner, the run and an active connection): `get_my_drive_move_summary`,
+`begin_drive_move_run`, `claim_next_drive_move`, `record_drive_move_copied`,
+`record_drive_move_failed`, `switch_story_media_to_drive`, `finish_drive_move_run`,
+`list_my_drive_move_cleanup_due`. Service-role only: `get_drive_move_cleanup_target` (re-checks
+"due" itself, so nothing can delete a live copy early) and `record_drive_move_old_deleted`.
+**Rule 11 change:** the transition trigger keeps a promoted row immutable except for one case: a
+supabase → google_drive flip with identical mime/size/dimensions/sha256. That case is allowed only
+when the transaction-local `kakinotes.media_move` setting is on, and only
+`switch_story_media_to_drive` turns it on. The trigger body was diffed against the live definition
+before replacing it.
+
+**Pre-existing bug fixed** (`20261008054929_fix_drive_proxy_consent_check`): since slice 3,
+`get_drive_media_for_proxy` checked `_latest_valid_consent_for_revision(...) is not null`. On a row
+value that is false whenever any column is null, so `/media/<id>` returned 404 to readers for
+**every published Drive photo**, while the story page still linked to it. It's the same trap
+`20260930083643` fixed before. Now `not (... is null)`. Production reads the same Supabase project
+(`ybhydepjaantkngngvuf`, checked in the live site's bundle), so the fix took effect for
+production readers the moment it was applied, before any code shipped.
+
+**Code:** `lib/story/media-move.ts` (the orchestrator; holds no secret and only passes bytes
+between the two modules below), two additions at the end of `lib/story/image-pipeline.ts`
+(`downloadProcessedDerivativeForMove`, `deleteMovedSupabaseCopies`, which deletes everything under
+the photo's own `<story>/<media>/` folder plus its public copy), `app/(contributor)/account/drive/
+move-actions.ts`, `drive-move-panel.tsx`, and `maxDuration = 60` on the account page (Server
+Actions use the page's value). After the run, the Drive folders of the stories that had photos moved
+are renumbered via `after()`. When a published photo moves, the listings cache is refreshed so `/`
+points covers at `/media/<id>` well inside the 5-minute window. English and Simplified Chinese.
+`types/database.ts` gains only these RPCs.
+
+**Verified.** `npm run verify` passes (1,430 tests; 21 new: 15 orchestrator, 6 panel).
+`npm run test:rls -- drive-move`: 11/11 against the real dev tables (deny-all for anon and owner,
+service-role RPCs refuse a contributor, a forged run or job id is refused). Probe: an un-gated flip
+of a promoted row is still rejected by the trigger. Security advisor: only the expected notes
+(RLS without policies; RPCs callable by `authenticated`, none by `anon`). **End to end** with the
+dev Google test account at 375px: moved 5 of its 20 photos, then pressed Stop. The 4 unpublished ones
+are on Drive with their sha256 unchanged and 0 objects left in either bucket (raw originals
+included); jobs are `old_deleted`. The published one flipped while `promoted`, kept its 2 private + 1
+public objects, and its job stayed `switched`. The cleanup lookup returned nothing at 3.5 minutes; the next press after 5 minutes deleted all three objects (job `old_deleted`), and readers still got the photo from `/media/<id>`. That press hit Stop during start, so it moved nothing, as intended. A
+signed-out reader gets it from `/media/<id>` (200, `public, s-maxage=300`, sha256 equal to the
+original's, rendered 1500×2000 on the story page). A moved unpublished photo is still a 404 to a
+signed-out visitor.
+
+**Not covered / follow-ups:**
+
+- About 9–10 s per photo on the dev server (download, upload, read back). Fine for a
+  per-contributor, one-off move; a background job is the fallback if it ever times out.
+- The old copies of a moved published photo wait for the contributor's next press of the button.
+  Nothing deletes them on a schedule yet. The slice-4 sweep is the natural place for that.
+- Drive → Supabase, "move back before disconnecting" (section 8) and "download all" (section 7)
+  aren't built.
+- The 15 remaining photos of the dev test account are still on Supabase.
+
+## 2026-10-08 — Drag to reorder photos
+
+In the editor's **Photos** step, a contributor can now drag a photo to a new place in the grid.
+With a mouse, the drag starts after 6px of movement, so a click still opens the photo. On a phone,
+it starts after a 250ms press-and-hold, so a swipe still scrolls the page. A drop saves through the
+same queued, version-checked `reorderMediaAction` as the existing "Move earlier / later" buttons, so
+the server side is unchanged (it already took the whole new order). Dragging is turned off while a
+photo's Details panel is open, and a one-line hint explains it when there are two or more photos.
+
+**New dependency:** `@dnd-kit/core`, `@dnd-kit/sortable` and `@dnd-kit/utilities` (≈ 56 lines in the
+lockfile, peer `react >= 16.8`). Why: dependable touch dragging that still lets the page scroll,
+screen-reader announcements, and a clean split between tap and drag. Plain HTML5 drag-and-drop
+doesn't work on phones. The drag listeners go on the thumbnail only, and useSortable's `attributes`
+are deliberately not spread: they would make the thumbnail a focusable `role="button"` around the
+lightbox button (nested controls). Keyboard users keep the existing buttons. Announcements are in
+English and Simplified Chinese.
+
+**Code:** `components/story/sortable-photo-tile.tsx` (new), `components/story/image-upload-manager.tsx`
+(sensors, `handleDragEnd`, `commitOrder` shared with the buttons, and swallowing the one click a
+mouse drag would otherwise send to the lightbox), and `editor.photos.drag.*` strings.
+
+**Verified.** `npm run verify` passes. 5 new tests (`image-upload-manager.drag.test.tsx`: drop
+order, no save for a drop on itself or outside the grid, chained drops, hint shown and hidden). In
+the browser on the dev test account's 5-photo draft: a mouse drag moved photo 1 to place 3 and the
+database order followed; a plain click still opened the lightbox and a drag didn't. At 375px with
+real `TouchEvent`s: a quick swipe started no drag, and a press-hold-move dropped photo 1 into
+place 2 and saved. The draft is back in its original order.
+
+**Not covered:** checked with emulated touch, not on a physical iPhone. iOS Safari's long-press
+menu is suppressed with `-webkit-touch-callout: none`, but that's worth a quick real-device check.
+
+## 2026-10-09 — Photo tiles: Details on hover, zoom icon always shown
+
+In the editor's Photos step, each photo's **Details** button now sits on the photo itself (bottom
+centre) instead of below it. With a mouse it appears on hover. It also appears on keyboard focus
+(`:focus-visible`), always on touch screens (`@media (hover: none)`), and always when a photo has no
+thumbnail yet: a failed upload still needs Details to be removed. A **zoom icon** (magnifier with a
+plus) is always shown in the top-right corner of every loaded photo. It's decorative and
+click-through (`aria-hidden`, `pointer-events-none`), since the photo underneath is already the
+labelled lightbox button, so there's no second control and no button inside a button. The tile
+badges now stop short of the corner (`right-10`) so they never sit under the icon. The grid is
+shorter because the row under each photo is gone. Code: `components/story/image-upload-manager.tsx`
+only (inline `ZoomIcon` SVG; no icon library).
+
+**Verified.** `npm run verify` passes. 4 new tests (`image-upload-manager.tile-overlay.test.tsx`), and
+all existing manager tests unchanged. In the browser at desktop size: all 5 Details buttons start at
+opacity 0; hovering photo 1 shows only its own; a click opens the details panel (not the lightbox);
+Tab from the photo lands on a visible Details; Enter opens it, and Done returns focus to a visible
+Details. At 375px: `hover: none` matches, all 5 Details are visible, all 5 zoom icons show, and
+there's no sideways scroll.
+
+**Known, accepted:** after closing Details with the **mouse**, focus returns to the Details button but
+it stays invisible until hover. Browsers don't count focus after a mouse click as `:focus-visible`.
+The keyboard path, where it matters (WCAG 2.4.7), shows it.
+
+## 2026-10-11 — My Photos page (per-photo downloads)
+
+Section 7 of [docs/google-drive-integration.md](google-drive-integration.md), minus "Download all":
+the owner chose per-photo downloads only for now, so there's no zip and no `archiver` dependency.
+`/my-photos` lists every photo on the contributor's own stories (the same stories My Stories
+shows: self-submitted, plus editorial imports linked to them), across every status. It's grouped
+by story with the story's status badge. Each photo shows where it lives ("On Kakinotes" / "In your
+Google Drive"), whether it's only in an earlier version, and its own **Download** button. A Drive
+photo whose connection is gone shows "Reconnect Google Drive" (linking to `/account#drive`) instead
+of a download that would fail. Tapping a photo opens the existing lightbox. The page is reached
+from the avatar menu ("My Photos"), a button on My Stories, and a link in the Drive disconnect
+warning (section 8). English and Simplified Chinese.
+
+**Download is always the processed photo** (Rule 14), never a raw original. Kakinotes-stored: a
+120-second signed URL minted with `download: kakinotes-photo-<id8>.<ext>`, after
+`authorize_story_media_preview()`. Drive-stored: `/media/<id>?download=1`. The proxy keeps the same
+authorization and adds `Content-Disposition: attachment` and `Cache-Control: private, no-store`,
+even for a published photo. The file name is built only from the media id and MIME type
+(`lib/story/photo-download-name.ts`), so nothing typed by a user reaches a header.
+
+**Database** (`20261010220948_list_my_photos`, applied via the MCP to the shared project, which
+production also reads; it's additive and nothing deployed calls it): `list_my_photos()`, using
+`list_my_stories()`'s ownership rule. It returns photos with a processed derivative that are
+attached to at least one revision, and never any storage path or Drive id. Thumbnails: one admin
+query plus one `createSignedUrls` call for every Kakinotes photo on the page
+(`mintMediaPreviewSignedUrls`, 10-minute URLs; each tile asks for a fresh one once if it fails), and
+`/media/<id>` for Drive photos. Route protected in `proxy.ts` (`PROTECTED_PATHS` and the matcher)
+and disallowed in `robots.ts`.
+
+**Verified.** `npm run verify` passes (11 new unit and component tests: grouping, view, download
+filename; plus 3 proxy `?download=1` cases). `npm run test:rls -- my-photos`: 2 pass and 2 **skip
+with a reason**, because every RLS test account has 0 processed photos, and getting one there needs
+the service-role pipeline, which that suite never uses; an empty list would have "passed" without
+proving anything. Isolation was therefore proven against real data by impersonating three real users
+in a rolled-back transaction: contributor A sees 25 photos, contributor B sees 337, a moderator sees
+0, no photo appears for two people, and no row comes from a story the viewer doesn't own. In the
+browser as the Drive test account: at 375px, "25 photos across 12 stories", 12 groups, 25 labelled
+Download buttons, all 25 thumbnails load (lazily), and there's no sideways scroll. At desktop there
+are 4 columns and the avatar menu shows My Photos. Downloads were checked without saving files: the
+Kakinotes one is a signed URL to the `processed-…` object answering `200 image/jpeg` with
+`attachment; filename=kakinotes-photo-05bf2804.jpg`; the Drive one (a draft photo) answers `200
+image/png`, `attachment`, `private, no-store`, and **404** to a signed-out request. Signed-out
+`/my-photos` gives a 307 to `/sign-in?next=%2Fmy-photos`.
+
+**Not covered / follow-ups:**
+
+- "Download all" (one zip per story) isn't built; it's the next slice of section 7.
+- The "missing in Drive" status from section 7 isn't shown. A deleted Drive file just shows "can't be
+  shown". Detecting it needs a Drive check per photo.
+- Drive thumbnails are slow on a cold dev server (8–10 s each when 24 load at once through the
+  proxy). Worth watching in production; a smaller thumbnail derivative would be the fix.
+- The "Reconnect" state wasn't triggered in the browser (that would mean disconnecting the test
+  account's real Drive); it's covered by the component test.
+
+## 2026-10-11 — Full-quality copies for Drive-connected contributors
+
+Owner decision ("option B", Drive only). Every **new** photo a Drive-connected contributor uploads now
+gets two cleaned copies in their own Drive. One is the display copy (unchanged: long edge ≤ 2000px,
+what readers see). The other is a **full-resolution** copy in a **"Full quality"** subfolder of the
+story's folder, numbered to match (`03.jpg` ↔ `Full quality/03.jpg`). Both have all metadata (EXIF,
+GPS, XMP, IPTC) removed. The full copy is **never public**: only the photo's own contributor can
+download it, from My Photos, where Download picks it automatically ("Download full quality").
+Kakinotes-stored photos stay display-only. Photos uploaded before today have no full copy, because
+their raw upload was already deleted. The Drive note in the upload area and the Account → Google Drive
+explainer now say this.
+
+**How:** after the upload responds, the server re-encodes the raw upload, which is still in memory,
+at full size (`processFullResolutionBytesInMemory` in `lib/story/image-pipeline.ts`: same sniffing,
+HEIC conversion, 50MP limit and rotation as the display copy; JPEG quality 92 stepping down under 40
+MiB; PNG stays lossless). It uploads that into "Full quality", records it, and **only then** deletes
+the raw staging file. It's best effort: if anything fails, the photo is just display-only and the raw
+file is still deleted. If recording fails, the uploaded full copy is deleted. Folder sync renumbers
+the full copies to match the display order (`renumberStoryMedia` takes explicit positions).
+Measured: a worst-case 48MP photo re-encodes in about 5 s to about 11 MB using about 470 MB of
+memory, well inside the 60 s limit.
+
+**Database** (`20261011021351_story_media_full_quality_copy`, applied via MCP; additive for the live
+app): six nullable `story_media` columns with an all-or-nothing check (Drive rows with a display copy
+only), `record_drive_media_full_copy` (story owner only, once), `list_story_drive_full_copies_for_sync`,
+`get_drive_full_copy_for_owner` (owner only: deliberately not the proxy's reader/staff lookup), and
+`list_my_photos()` recreated with `has_full_copy`. **Serving:** `/media/<id>?full=1` uses only
+`get_drive_full_copy_for_owner` and never falls back to the reader lookup. It always answers
+`attachment` (`kakinotes-photo-<id8>-full.<ext>`) with `private, no-store`, or a 404.
+
+**Verified.** `npm run verify` passes (1,466 tests; new: full-res encoder 6, including the GPS strip
+and HEIC; finalize ordering and failure cases 3; proxy `?full=1` 2; download names 1; view 1). No new
+lint warnings. **End to end** as the Drive test account, uploading a fictional 4032×3024, 4.5 MB
+photo with camera and GPS EXIF through the real editor: the display copy is 2000×1500 (348 KB), the
+full copy is 4032×3024 JPEG (4.5 MB) in the subfolder, and nothing is in Kakinotes storage. Fetched
+as the owner: `200`, `attachment; …-full.jpg`, `private, no-store`, 4032×3024, and **no** EXIF marker
+or camera make/model in the bytes. A signed-out visitor gets 404. SQL impersonation of
+`get_drive_full_copy_for_owner`: owner 1 row, another contributor 0, moderator 0. My Photos showed
+"In your Google Drive · Full quality" and "Download full quality" on that photo only. The test photo
+was then removed with the editor's Delete photo and the draft is back in its original order. Its two
+Drive files stay in the test account's Drive, since Delete photo never deletes Drive files.
+
+**Not covered / follow-ups:**
+
+- The move tool (Supabase → Drive) still moves only the display copy. It could make a full copy from
+  the raw original, which still exists for most Kakinotes photos, before deleting it.
+- Deleting a photo leaves both of its Drive files in place (existing behaviour for display copies
+  too).
+- Not yet tried with a real 48MP iPhone HEIC on Vercel (the memory and time measurements were local).
+
+## 2026-10-13 — story map: free links between stories
+
+Replaced the two-level main/sub-story hierarchy (one "main story" per sub story,
+`stories.parent_story_id`) with free, undirected, Obsidian-style links between any of a
+contributor's own published stories — any number of links, no depth limit, no direction — managed
+from a new `/my-stories/map` page with a draggable graph. Product decision 2026-10-13. See
+docs/architecture.md, "Story links" (replaces its old "Sub stories" section) and
+docs/content-governance.md, "Story links go live without review" (reworded from "Sub stories go
+live without review" — the safety story is unchanged, only the shape is).
+
+**Database** (`supabase/migrations/20261013004751_story_links.sql` — applied to the hosted dev project — see
+"Applied" below): new table `public.story_links` (`story_a_id`,
+`story_b_id`, canonical order via `check (story_a_id < story_b_id)`, both FK to `stories` `on
+delete cascade`, `created_at`, `created_by`) — RLS enabled, zero policies, no direct grants, same
+pattern as `stories` itself. The migration first carries every existing `parent_story_id` link over
+into `story_links` (least/greatest of the two ids), then drops `stories.parent_story_id`, its
+check constraint and index, and every function that only existed for the old hierarchy:
+`set_story_parent_story()`, `get_story_parent_story()`, `list_parent_story_options()`,
+`get_published_story_family()`, `_story_has_sub_stories()`. Grepped every migration file first to
+confirm nothing else (e.g. the Drive folder-naming functions, which only ever _mention_ "sub
+story" in a comment) reads or writes any of these — nothing did, so nothing needed recreating.
+
+New functions: `link_stories(story, other)` (owner of both, same contributor, both published, not
+itself, not already linked — WHV10/WHV11/WHV15/WHV16), `unlink_stories(story, other)` (owner of
+the `story` side only, always allowed, idempotent), `get_my_story_graph()` (no args, owner-scoped
+via the exact source-kind-partitioned check `list_my_stories()` uses — not `contributor_id` alone —
+returns the caller's own stories as nodes plus `story_links` as edges), and
+`get_published_story_links(story_id)` (anon-callable, mirrors `get_published_story_family()`'s
+`_story_is_publicly_visible()` gate on both ends exactly).
+
+WHV codes: WHV10, WHV11 and WHV15 are reused with the same meaning as the old hierarchy (self-link,
+not found/not yours, not published) — a free link needs exactly the same three refusals, just
+symmetric now. WHV12 (main story not published — subsumed, since both sides now get the same
+WHV15 check), WHV13 (main story is itself a sub story) and WHV14 (this story already has sub
+stories) are retired outright: both were hierarchy-depth rules with no meaning once links are
+unlimited and undirected. WHV16 is new: the pair is already linked.
+
+**App side.** `lib/story/story-links.ts` replaces `lib/story/sub-stories.ts` (deleted, along with
+its test): `getPublishedStoryLinks()`/`getPublishedStoryLinksDeduped()`, `matchStoryLinkCards()`,
+`getMyStoryGraph()`. `lib/story/mutations.ts`'s `setStoryParentStory()` is replaced by
+`linkStories()`/`unlinkStories()`. `lib/story/rpc-errors.ts`'s `subStoryErrorKey()` is replaced by
+`storyLinkErrorKey()`.
+
+**Story map page** (`app/(contributor)/my-stories/map/`): `page.tsx` (server component, loads the
+graph via `getMyStoryGraph()`), `story-map-view.tsx` (client component — the graph and its
+accessible-list fallback), `actions.ts` (`linkStoriesAction`/`unlinkStoriesAction` — Zod uuid
+validation, signed-in check, WHV→translated-message mapping, `logAppEvent` with
+`story.link.created`/`story.link.removed`, re-derives both stories' slugs from the owner-scoped
+`list_my_stories()` to invalidate their public pages via `lib/story/public-cache.ts`'s existing
+helpers — never trusts a client-supplied slug).
+
+The graph itself is a hand-rolled, lightweight force-directed layout (`lib/story/story-map-layout.ts`
+— pure, deterministic given a seed: repulsion between every pair of nodes, a spring along every
+edge, a weak centering force, a fixed tick count, no new dependency) rendered as inline SVG with
+native pointer events (pointer capture, `touch-action: none` — no `@dnd-kit`, which is for
+collision/sorting, not positioning). Layout is computed once per mount and never persisted — every
+visit reflows from scratch; a contributor can drag nodes freely during the session.
+`lib/story/story-map-interactions.ts` holds the two pure decisions the component calls:
+`findDropTarget()` (nearest node within a pixel threshold) and `canLinkNodes()` (self/not-
+linkable/already-linked pre-checks — the RPC is still the real gate; this only decides what the UI
+attempts and what hint it shows). Dropping a node onto another calls `linkStoriesAction`
+optimistically (edge shown immediately, rolled back with a translated toast on refusal); clicking
+an edge or a node's own panel offers Unlink behind a confirm dialog. A non-published story renders
+greyed/dashed and is draggable but never a valid drop target.
+
+**Accessibility / mobile-first.** Beside the graph, `AccessibleStoryLinkList` (inside
+`story-map-view.tsx`) is the full keyboard/screen-reader equivalent (Engineering Rule 19): every
+owned story, a "Link to…" `<select>` + button for published ones, a hint for drafts, and each
+story's current links with their own Unlink buttons — calling the exact same two Server Actions,
+not a separate code path. No `prefers-reduced-motion` branch was needed: nothing about mounting was
+ever animated (final positions are set directly, no tick-by-tick transition), so there was nothing
+to skip.
+
+**My Stories** (`app/(contributor)/my-stories/`): removed the per-row Link action
+(`link-main-story-dialog.tsx` + its test deleted, along with `loadLinkMainStoryDataAction`/
+`linkMainStoryAction` from `actions.ts` + their tests), added an "Open story map" link beside "My
+Photos" at the top of the page. `components/story/parent-story-picker.tsx` + its test deleted
+(nothing else used it).
+
+**Public story page**: `components/story/story-family.tsx`'s `SubStoryCard`/`SubStoryList` are
+renamed `LinkedStoryCard`/`LinkedStoryList`; `PartOfStory` (the old "Part of: …" breadcrumb) is
+removed outright — a link has no direction, so there is nothing to show above the content any
+more, only the "Linked stories" section after content/photos/costs, above the Report box, same
+position as before. Still filtered out of "Related stories" on the same page.
+
+**i18n**: added `storyMap.*` (the whole new page's copy), `myStories.storyMapLink`,
+`actionErrors.storyLink{Self,NotFound,NotPublished,AlreadyLinked}`,
+`story.family.linkedStoriesHeading`; removed `editor.parentStory.*` (now fully unused),
+`myStories.linkMainStoryDialog.*`, `myStories.actions.linkMainStory`,
+`actionErrors.subStory{Self,NotFound,ParentNotPublished,ParentIsSubStory,HasSubStories,
+NotPublished}`, `story.family.{partOfLabel,partOf,subStoriesHeading}`. Both `en.json` and
+`zh-CN.json` updated together; `i18n/messages/messages.test.ts`'s cross-language key/ICU-argument
+checks pass.
+
+**Tests**: new — `lib/story/story-links.test.ts` (replaces `sub-stories.test.ts`),
+`lib/story/story-map-layout.test.ts` (the pure layout helper: deterministic given a seed, stays in
+bounds, settles linked nodes toward the spring's rest length, tolerates an edge referencing an
+unknown node), `lib/story/story-map-interactions.test.ts` (drop-target hit-testing and the
+link/no-link decision, including both edge directions and a different already-linked pair not
+blocking a new one), `app/(contributor)/my-stories/map/actions.test.ts`, `app/(contributor)/
+my-stories/map/story-map-view.test.tsx` (accessible-list link/rollback/unlink flows, scoped by row
+via each row's own label element since a linkable story's title can legitimately also appear as an
+`<option>` inside a DIFFERENT row's picker). Updated: `lib/story/rpc-errors.test.ts`,
+`components/story/story-family.test.tsx`, `app/(contributor)/my-stories/my-stories-view.test.tsx`
+(removed the obsolete per-row Link test, added one for the new "Open story map" link),
+`app/(contributor)/my-stories/actions.test.ts` (removed the deleted actions' tests). Deleted:
+`lib/story/sub-stories.test.ts`, `components/story/parent-story-picker.test.tsx`,
+`app/(contributor)/my-stories/link-main-story-dialog.test.tsx`. Not added to
+`tests/integration/story-rls.integration.test.ts` this round (that suite needs a live linked
+project and the migration isn't applied yet — see below) — flagged as a follow-up once it is.
+
+**Verified 2026-10-13** on the hosted dev project inside a rolled-back transaction: the whole
+migration runs end to end (table, RLS, data migration, drops, new functions, grants) with no
+errors, then — as the real owner of two published stories (`request.jwt.claim.sub` set via
+`set_config`, no edge function involved) — self-link refused WHV10, a duplicate link attempt
+refused WHV16, a different user and anon both refused WHV11, `get_my_story_graph()` showed the new
+edge, `get_published_story_links()` read it back from the public side, unlink succeeded, and a
+second unlink of the same pair was a no-op rather than an error. Rolled back — nothing was
+committed.
+
+**Applied 2026-10-13** to the hosted dev project (`ybhydepjaantkngngvuf`) via the Supabase MCP
+`apply_migration`; hosted recorded it as `20261013004751`, and the local file carries that version.
+`supabase db push` was not usable: the shared dev database has migrations from other branches
+(`countries`, `trips`, ...) that this checkout doesn't have, and the migration history was not
+"repaired" over them. One change from the rolled-back test above, made in review before applying:
+`link_stories()` now checks `_is_story_owner()` on BOTH stories, not ownership of the first plus a
+matching `contributor_id` for the second (contributor_id is a grouping key, not an auth check).
+Security advisor: only the expected INFO/WARN lines for the new objects (RLS-enabled-no-policies on
+`story_links`, same as `stories`; the definer functions callable by `authenticated`; only
+`get_published_story_links` callable by `anon`). `types/database.ts` regenerated with
+`npm run supabase:types:linked`, then cut back to this migration's changes only (the other
+branches' tables were left out on purpose, as in 20261003051644).
+
+**Checked in the browser 2026-10-13** against the dev project, signed in as the owner: the
+migrated Kakiman ↔ Opotiki Trip link showed on the map; dragging Auckland Trip onto Trying Something
+New linked them (toast, edge survived a reload, Auckland Trip's public page listed it under
+"Linked stories"); unlinking from the accessible list's confirm dialog removed it again. No
+horizontal scroll at 375px. Three fixes came out of that pass:
+
+- Hydration mismatch on every node: the force layout ran in both Node and the browser, and the
+  results differed in the last decimal places. The layout now runs once in `page.tsx` and is
+  passed down as `initialPositions`.
+- Fast drags never linked: `handlePointerUp` read the drop point from the last render's
+  `positions`, which a quick drag hadn't updated yet. It now uses the pointerup's own coordinates.
+  `setPointerCapture` is wrapped, since it throws when the pointer is already gone.
+- A node dropped onto a story now returns to where it started, so the new edge is visible
+  instead of hidden under two stacked nodes.
+
+**Unfinished:**
+
+- ~~Phone graph too small~~ — fixed the same day, see the follow-up below.
+- `tests/integration/story-rls.integration.test.ts` was not extended with the new RLS rules this
+  round (see Tests above) — a good next-prompt candidate once the migration is live, using that
+  file's existing `untypedRpc()`/`untypedTable()` escape hatch for functions/tables ahead of
+  regenerated types.
+
+**Follow-up (same day): the story map on phones.** The 640×420 map used to be shrunk to fit the
+screen, which at 375px meant labels around 6px and dots about 11px across. Now the graph has a
+camera (`lib/story/story-map-camera.ts`, unit tested): below 480px of graph width it opens at 1:1
+in a taller 4:5 box (dots 20px, labels 11px) and you drag empty space to pan or pinch to zoom.
+Wider graphs fit the whole map as before. `+` / `−` / `Fit` buttons sit on the graph at every size,
+and a one-line hint under it shows on phones only. Each node has an invisible 44px tap area and
+each link line an 18px-wide invisible tap strip. The first render still draws the whole map
+(`viewBox="0 0 640 420"`), so server HTML and hydration match; the camera takes over once a
+`ResizeObserver` has measured the graph. Checked at 375×812 in the browser: 1:1 on load, panning
+moved the view by exactly the dragged distance and stopped at the map's edge, Fit and Zoom in
+worked, and dragging a node still worked with the view panned and zoomed. Desktop (702px graph)
+is unchanged.
+
+## 2026-10-21 — story folders replace free links
+
+Replaced the free, undirected story-link design (`story_a_id`/`story_b_id` rows, no hierarchy) with
+a one-level folder shape: a story is either a MAIN story (may have sub stories), a SUB story (filed
+under exactly one main story), or neither. Product decision 2026-10-21 — the owner found free links
+left "what belongs under what" ambiguous on a contributor's own profile. See docs/architecture.md,
+"Story folders" (replaces its "Story links" section) and docs/content-governance.md, "Story folders
+go live without review" (reworded from "Story links go live without review" — the safety story is
+unchanged, only the shape is).
+
+**Database** (`supabase/migrations/20261021085920_story_folders.sql` — applied to the hosted dev
+project on 2026-10-21, see "Applied" below): restores
+`stories.parent_story_id` (`uuid`, FK to `stories` `on delete set null`, checked non-self, partial
+index) — no direct API grants, same pattern as every other write-protected column on `stories`. The
+migration converts every existing `story_links` row into a parent/child pair first: for each link,
+the end with MORE total links (across every link it appears in, not just this one) becomes the
+parent; a tie goes to the earlier `published_at`, then the lower id; a conversion is only applied
+when it is one-level-valid AT THE TIME it's processed (the would-be child currently has no children,
+the would-be parent currently has no parent) — anything that would break that is simply skipped.
+Then it drops `story_links` and its four functions: `link_stories()`, `unlink_stories()`,
+`get_my_story_graph()`, `get_published_story_links()`.
+
+New/changed functions: `set_story_parent(story_id, parent_id)` (owner of both, both published when
+setting — not when clearing with `parent_id = null` — one level only: target can't already be a sub
+story, this story can't already have sub stories — WHV10/WHV11/WHV13/WHV14/WHV15),
+`get_my_story_folders()` (no args, owner-scoped via the exact source-kind-partitioned check
+`list_my_stories()` uses — not `contributor_id` alone — returns every one of the caller's own
+stories with its current `parent_story_id`), `get_published_story_family(story_id)` (anon-callable,
+takes a story id now instead of a slug, re-checks `_story_is_publicly_visible()` on both the parent
+and every sub story every time, returns `{parent, sub_stories}` exactly the way the first
+main/sub-story design's function of the same name did).
+
+WHV codes: WHV10, WHV11 and WHV15 keep the meaning every design has given them (self, not
+found/not yours, not published — WHV15 now checked only when setting, not clearing). WHV13 (target
+is itself a sub story) and WHV14 (this story already has sub stories) are restored from the first
+hierarchy — the free-link design had retired them since they had no meaning for unlimited undirected
+links; folders need the one-level rule they exist to enforce. WHV16 ("already linked") stays
+retired — it has no meaning for a single parent pointer. WHV12 ("main story not published") stays
+folded into WHV15, as the free-link design already had it.
+
+**App side.** `lib/story/story-folders.ts` replaces `lib/story/story-links.ts` (deleted, along with
+its test): `getPublishedStoryFamily()`/`getPublishedStoryFamilyDeduped()`,
+`matchStoryFamilyCards()`, `getMyStoryFolders()`. `lib/story/mutations.ts`'s
+`linkStories()`/`unlinkStories()` are replaced by a single `setStoryParent()`.
+`lib/story/rpc-errors.ts`'s `storyLinkErrorKey()` is replaced by `storyFolderErrorKey()`, restoring
+the original `subStory*` i18n key names for WHV10–WHV15 (the free-link design's `storyLink*` names
+are gone).
+
+**Story folders page** (`app/(contributor)/my-stories/map/` — route and nav link kept, only the
+page's own title/copy changed, from "Story map" to "Story folders"): `page.tsx` (server component,
+loads every owned story via `getMyStoryFolders()`), `story-folders-view.tsx` (client component —
+replaces `story-map-view.tsx`, deleted along with its test), `actions.ts`
+(`setStoryParentAction` — Zod uuid/nullable validation, signed-in check, WHV→translated-message
+mapping via `storyFolderErrorKey`, `logAppEvent` with `story.folder.set`/`story.folder.cleared`,
+re-derives every affected story's slug — the story being filed, its new parent, and its OLD parent
+when re-filing — from the owner-scoped `list_my_stories()` to invalidate their public pages via
+`lib/story/public-cache.ts`'s existing helpers; never trusts a client-supplied slug).
+
+The view renders every published, not-itself-filed story as a folder row (even with zero sub
+stories, so there's a row to drop onto); expanding one (`aria-expanded` on a real `<button>`) shows
+its sub stories with a status badge, an "Open story" link and a "Remove from folder" button behind
+`ConfirmDialog`. Everything else sits under "Not in a folder", greyed with a publish hint when not
+yet published. Drag-and-drop uses `@dnd-kit/core`'s `useDraggable`/`useDroppable` (not `sortable` —
+this is cross-container filing, not reordering within one list), with the same sensor pattern as the
+editor's photo reorder (`MouseSensor` at 6px, `TouchSensor` at a 250ms press-and-hold,
+`KeyboardSensor`); the drag handle is a small handle element separate from any row's interactive
+children (the "Move to" select, the "Open story"/"Remove" controls), same discipline
+`SortablePhotoTile` documents, so nothing ends up as a nested-interactive element. Every row also
+carries a "Move to…" `<select>` — the keyboard/screen-reader and phone fallback (Engineering
+Rule 19) — calling the exact same `setStoryParentAction`, with an optimistic update, rollback and
+translated toast on refusal.
+
+**Public story page**: `components/story/story-family.tsx`'s `LinkedStoryList`/`LinkedStoryCard`
+are renamed back to `SubStoryList`/`SubStoryCard`, and `PartOfStory` is restored (a sub story shows
+"Part of: &lt;main story&gt;" near the top, linking to its parent). `app/(public)/stories/[id]/
+page.tsx` reads `getPublishedStoryFamilyDeduped()` instead of the free-link reader, renders
+`PartOfStory` plus `SubStoryList`, and filters sub stories out of "Related stories" the same way the
+free-link design filtered linked stories out.
+
+**i18n.** `story.family.linkedStoriesHeading` is replaced by `partOfLabel`/`partOf`/
+`subStoriesHeading` (restoring the first design's strings). `actionErrors.storyLink*` keys are
+replaced by `actionErrors.subStory*` keys (restoring the first design's wording, lightly reworded
+for "filed"/"folder" instead of "linked"). The `storyMap` message namespace is replaced by
+`storyFolders`. `myStories.storyMapLink`'s text changes from "Open story map" to "Open story
+folders" (the key itself is unchanged, so nothing else needed updating).
+
+**types/database.ts** hand-edited to match: `story_links` table entry removed; `stories`
+Row/Insert/Update gained `parent_story_id: string | null` and a
+`stories_parent_story_id_fkey` self-reference in `Relationships`; `get_my_story_graph`/
+`link_stories`/`unlink_stories`/`get_published_story_links` function entries removed;
+`get_my_story_folders`/`set_story_parent`/`get_published_story_family` added. Pending a real
+`supabase gen types` run once the migration is applied.
+
+**Verified 2026-10-21** on the hosted dev project inside a rolled-back transaction (not applied):
+the full migration ran end to end; before rollback, the dev data's two existing `story_links` rows
+(Opotiki Trip↔Kakiman, Trying Something New↔Kakiman) converted correctly — Kakiman had the most
+total links (2, versus 1 each for the other two), so it became the parent of both, and Kakiman's
+own `parent_story_id` stayed null.
+
+**Unfinished / not yet done this round:**
+
+- ~~Not applied / types hand-written~~ — done, see "Applied" below.
+- `tests/integration/story-rls.integration.test.ts` was not extended with the new RLS rules this
+  round — a good next-prompt candidate once the migration is live, using that file's existing
+  `untypedRpc()`/`untypedTable()` escape hatch for functions/tables ahead of regenerated types.
+
+**Applied 2026-10-21** to the hosted dev project (`ybhydepjaantkngngvuf`) via the Supabase MCP
+`apply_migration` (owner approved), recorded as `20261021085920`; the local file carries that
+version. Reviewed before applying: `set_story_parent()` checks `_is_story_owner()` on both stories
+and reads both rows again only after locking them in id order, so a parallel "file A under B" /
+"file B under C" can't produce two levels. Result: Opotiki Trip and Trying Something New are filed
+under Kakiman, and `story_links` and its four functions are gone. `types/database.ts` was compared
+with `supabase gen types --linked` output: the new column, foreign key and three functions match
+exactly, and the removed table and functions are absent from both, so the hand-written file stands
+(other branches' tables on the shared dev database were left out on purpose, as before).
+
+**Checked in the browser 2026-10-21** against the dev project, signed in as the owner: the folder
+page listed Kakiman ("2 sub stories") and Auckland Trip as folders, drafts greyed with their Move to
+menus disabled, and Kakiman's own menu disabled (it has sub stories). Expanding Kakiman showed
+Opotiki Trip and Trying Something New. "Move to" refiled Opotiki Trip under Auckland Trip, and a
+mouse drag filed it back under Kakiman, so the data ended as it started. Kakiman's public page lists
+both under "More in this story"; Opotiki Trip's shows "Part of: Kakiman". One fix came out of it:
+dnd-kit's default screen-reader announcements read raw ids ("Draggable item 54ec… was dropped over
+droppable area folder-ef3b…"), in English only. They now name the stories, with translated drag
+instructions (`storyFolders.announce.*`, both locales).
+
+## 2026-10-29 — Story journey map (branch `feat/story-journey-map`)
+
+**Status: code complete, NOT applied and NOT live-verified.** Contributors can pin up to 12 ordered
+stops in New Zealand on a story; the public story page shows a pastel illustrated route with a
+campervan that drives stop to stop (a ferry across Cook Strait), pausing at each stop on a card that
+links to a heading in the same story. Also shown on the moderation review page and the contributor
+preview.
+
+**Migration `20261029042052_story_revision_stops.sql` was APPLIED to the hosted project on
+2026-10-29** (`apply_migration`, recorded as `20261029042052`; the hosted project also serves
+production). Before applying, the live definitions of `create_next_draft_revision` and
+`delete_draft_story` were compared with the migration's: the live `create_next_draft_revision`
+also copies `story_revision_locations.custom_region_label`, from
+`20261015063409_custom_region_labels`, which is applied on the hosted database but lives on a
+branch not merged to main. The migration therefore copies that column **when it exists**
+(dynamic `execute`), so it neither drops it in production nor fails on a database built from main
+alone. Checked after applying: anon cannot read the table or call `set_revision_stops` /
+`get_revision_stops`, anon can call `get_published_story_stops`, RLS is on, both checklist
+functions include the stops lines; the security advisors show only the project's existing notices.
+
+- **Schema drift, found while shipping this.** The hosted database has nine migrations that are
+  not on main (`20260924021909_countries`, `20260928100000_trips`,
+  `20260929100000_trip_place_images`, `20260929110000_rate_limit_maps_link_scope`,
+  `20261003120000_story_media_original_retention`, `20261014085842_countries`,
+  `20261014205738_set_story_country`, `20261014214918_editorial_draft_country`,
+  `20261015063409_custom_region_labels`; at least some are on `feat/china-section` /
+  `feat/landing-country-cards`). Any future rewrite of a function they also touch must start
+  from the LIVE definition (`pg_get_functiondef`), not from main's last migration.
+- `types/database.ts` was at first **not** regenerated, because the drift broke typecheck on main
+  (e.g. `regions.country_id` required). Resolved the same day by merging `feat/china-section` —
+  see "Merged feat/china-section into main" below.
+- `tests/e2e/story-journey-map.spec.ts` skips itself when `set_revision_stops` does not exist, and
+  has not been run.
+
+**Decisions** (made with the product owner): custom points rather than a fixed place list; positions
+rounded to 2 dp **in SQL**, outside-NZ rejected; readers see the contributor's label, never
+coordinates; stops are per-revision and reviewed with the revision (no separate queue); a ferry on
+legs that cross Cook Strait. Implementation choices: reads are new functions, not new columns on
+`get_published_story`/`get_revision_selections`/`get_story_for_moderator`; `set_revision_stops` takes
+`p_expected_version` like `set_revision_expenses` so the editor's mutation queue keeps one uniform
+version rule; the interactive-maps non-goal in `docs/product-spec.md` now carves out the
+"story journey illustration" only.
+
+**Reader zoom/pan (follow-up, same branch):** the product owner now allows readers to zoom and pan
+the journey illustration (not tiles, geolocation or routing; `docs/product-spec.md` updated).
+`components/story/journey-map.tsx` has +/−/re-centre buttons, drag, Ctrl/⌘+wheel and trackpad
+pinch (zoom around the cursor), two-finger touch pinch/pan, double-click/tap zoom, and arrow/+/−
+keys. One-finger touch keeps scrolling the page (`touch-action: pan-y`) with a "two fingers" hint;
+a plain wheel scrolls the page with a "Ctrl + scroll" hint. Any manual change switches the camera
+to manual (van keeps driving); Re-centre, a timeline click or a pin returns to auto. Pure helpers
+`zoomAt`/`panBy`/`clampBox` live in `lib/journey/camera.ts` (1x to 8x, clamped to the full view).
+Not verified on a real touch device.
+
+**Risks / follow-ups:** the island outlines are hand-placed approximations (fine for an
+illustration, not a map); the Cook Strait test is one dividing line, not a coastline test; a
+heading renamed after a stop was pinned makes that stop link to the story start rather than the
+section (handled, not prevented); the RLS integration suite was not extended for the new table and
+functions — worth adding once applied (anon cannot read a draft revision's stops, non-owner cannot
+call `set_revision_stops`, out-of-bounds is rejected, rounding happens).
+
+**Add from a Google Maps link (stops editor).** `lib/journey/google-maps-link.ts` parses full links
+(place pin `!3d!4d` first, then `q`/`query`/`ll`/`destination` lat,lng, then the `@lat,lng` viewport);
+`resolveGoogleMapsLinkAction` (edit `actions.ts`, signed-in only, no story id, no DB) resolves short
+links via `lib/journey/resolve-google-maps-link.ts` (Google-host allowlist, manual redirects, max 3,
+5 s timeout, Location header only). The link is never stored or logged. Non-NZ places are rejected;
+the DB still rounds to 2 dp on save.
+
+**Main stops and sub-stops (same branch, same unapplied migration).** A stop is now either a MAIN stop
+(the route; max 12) or a SUB-STOP inside exactly one main stop (max 8 per main, 40 in total). The
+user wanted packed stops to appear only when a main journey is clicked. Decisions:
+
+- The contributor chooses the grouping (card "Part of" select, or the pin popover's "Add places
+  inside" mode); there is no automatic clustering. One level only.
+- Schema was edited IN PLACE in `20261029042052_story_revision_stops.sql` before it was applied:
+  `parent_sort_order` + composite cascade FK + `parent_sort_order < sort_order` CHECK;
+  `set_revision_stops` takes `parent_index` and validates earlier-main-parent and the three caps;
+  both reads return `parent_sort_order`; `create_next_draft_revision` copies it. (Applied
+  2026-10-29, see above; `types/database.ts` deliberately not regenerated.)
+- Reader: the overview shows only main stops (route, van, timeline, a "+N places" badge). Clicking a
+  main stop that has sub-stops (pin, dot, timeline row, Enter) parks the van there, eases the camera
+  to the group (instant with reduced motion), draws lettered pins (4a, 4b) on a dotted line and
+  nests them under the timeline row. "Back to whole journey" or Escape closes it; the drive resumes
+  from that stop only if it was running when opened. One group open at a time. The map shows when
+  there are 2+ MAIN stops (`countMainStops`).
+- Editor: removing a main stop removes its sub-stops through the single undo path; a main stop with
+  sub-stops cannot become a sub-stop; moving up/down moves among siblings (a main stop moves with its
+  places). Saved/emitted order is always each main followed by its subs.
+- Tests: Vitest for schema/parse rules, `lib/journey/draft.ts`, `cameraBoxForPoints`, the editor and
+  the reader map; `tests/e2e/story-journey-map.spec.ts` updated but not run (needs the migration).
+- A timeline row only links ("Read this part") when its stop is tied to a heading that still exists;
+  unlinked stops show no link (the old "Read from the start" fallback was removed as noise).
+- The temporary dev preview page used during design was deleted before commit.
+
+## 2026-10-14 — China: second country section
+
+**Owner decision, recorded here per docs/product-spec.md's MVP non-goal on multi-country support.**
+Spec non-goal at docs/product-spec.md:94–100 is narrowly overridden: China ships as a second country
+section, under its own `/cn` URL prefix, framed as **general first-person travel stories** — not
+Working Holiday Visa stories. New Zealand stays WHV-framed exactly as before, unprefixed. This is not
+a reopening of multi-country WHV support; it's one named exception for one country under a different
+(non-WHV) framing, driven by the owner's own upcoming trip to Guangzhou.
+
+**Data model.** New migration `supabase/migrations/20261014085842_countries.sql`:
+
+- `countries` and `regions.country_id` already existed on the hosted database
+  (`20260924021909_countries.sql`, applied from the unmerged itinerary-builder work but missing from
+  the repo). That file is now restored verbatim, so the repo matches the hosted migration history.
+  This migration only inserts the `china` row (`code` `cn`, `name_zh_cn` 中国).
+- `stories.country_id`, `NOT NULL`, backfilled to New Zealand so every existing row keeps meaning
+  exactly what it already meant.
+- `story_revision_locations_validate_country()` — a new `BEFORE INSERT OR UPDATE` trigger on
+  `story_revision_locations`, same shape as the existing
+  `story_revision_locations_validate_destination()` trigger: a selected region must belong to the
+  same country as the story itself, or the write is rejected. This is the structural guarantee behind
+  "a story's regions must belong to the same country as the story" — enforced in the database, not
+  just by which picker the UI happens to show.
+- Seeded China regions (Guangdong, Beijing, Shanghai, Sichuan, Yunnan) and destinations (Guangzhou,
+  Shenzhen, Foshan, Dongguan, Zhuhai under Guangdong; Beijing; Shanghai; Chengdu; Kunming, Lijiang) —
+  reference/lookup data, not contributor content, consistent with how the original NZ regions were
+  seeded directly in a migration.
+- `list_published_stories()` and `get_published_story()` each gain an additive `p_country_slug`
+  parameter (`CREATE OR REPLACE`, trailing defaulted parameter — no existing call site's resolution
+  changes). `list_published_stories()` defaults to `'new-zealand'` for full backward compatibility;
+  every call site in `app/` now passes `countrySlug` explicitly rather than relying on that default,
+  so the filter is visible at the call site. `get_published_story()` defaults to `null` (no filter)
+  and, when a country is given, treats a cross-country slug exactly like an unknown one — no rows —
+  which is what stops `/stories/<china-slug>` and `/cn/stories/<nz-slug>` from ever resolving
+  (Engineering Rule 10/12).
+- `create_self_service_draft()` gains an additive `p_country_slug` parameter (default
+  `'new-zealand'`), so a contributor picks their story's country at creation time.
+- New `get_story_country(story_id)` RPC (owner/linked-contributor or editor/admin only) lets the
+  authoring UI scope its region/destination picker to the story's own country.
+
+**App layer.**
+
+- `lib/story/countries.ts` — the only place the list of countries, their `/cn` URL prefix, and their
+  `countryContent` message-namespace segment live. No UI copy in it.
+- `lib/story/public-queries.ts` / `lib/story/active-lookups.ts` — `listPublishedStories`,
+  `getPublishedStoryBySlug`, `listPublicRegions`/`listActiveRegions` (and the destinations readers,
+  scoped by region id) all take an optional country slug/scope. An unknown/inactive country slug
+  returns an empty list rather than silently widening to "every region".
+- Routing: `app/(public)/cn/` mirrors `page.tsx`, `stories/`, `stories/[id]/`, `contributors/`,
+  `contributors/[slug]/`, `costs/`, `about/`. The stories index and story detail pages are shared
+  server components (`app/(public)/_shared/stories-index.tsx`,
+  `app/(public)/_shared/story-detail.tsx`) parameterized by `country`, used by both the NZ and `/cn`
+  routes, rather than two copies that could silently drift. `StoryCard`/`PartOfStory`/`SubStoryList`
+  gained an optional `basePath` prop (default `/stories`, unchanged for every existing caller) so a
+  China card's title link points at `/cn/stories/<slug>`, not `/stories/<slug>`.
+  `app/(public)/cn/contributors*` re-export the NZ contributor directory/detail pages unchanged — the
+  contributor directory is not country-scoped in the data model (nationality vs. which country's
+  stories someone wrote are independent concepts).
+- `components/country-toggle.tsx` — the NZ | China switch on the landing page: a plain two-link
+  `<nav>` (no client JS required to work, real keyboard navigation, `aria-current="page"` on the
+  active one). Added near the top of `app/(public)/page.tsx`'s hero and as the first element of
+  `app/(public)/cn/page.tsx`.
+- `app/(public)/cn/page.tsx` is a new, simpler landing page, not a reuse of the NZ home page's "Night
+  Field" art direction (`app/(public)/page.tsx`'s hero-field/featured-story-stack/destination-quiz
+  components carry WHV- and NZ-specific prose and visual direction baked into their own design
+  contract) — built from the same generic building blocks the rest of the app already uses.
+- `components/story/personal-experience-label.tsx` gained an optional `countrySlug` prop: NZ keeps
+  its existing WHV-framed disclaimer (`common.personalExperienceLabel`, names immigration/employment/
+  tax advice specifically); China gets a shorter, general-travel variant
+  (`countryContent.china.personalExperienceLabel`) rather than the NZ wording with the country name
+  swapped in, since the categories of advice being disclaimed genuinely differ.
+- `components/story/story-edit-form.tsx` gained an optional `countryName` prop (default: New
+  Zealand's name) so the location-match-failure copy (`editor.fields.unmatchedPlace(Named)`) reads
+  "…does not belong to a {country} region" rather than a hard-coded "New Zealand" — the message is
+  now `{country}`-parameterized in both `en.json` and `zh-CN.json`.
+- `i18n/messages/en.json` / `zh-CN.json` gained a `countryContent` namespace (`newZealand`/`china`),
+  holding every country-varying copy string: `name`, `tagline`, `siteDescription`, `storiesIntro`,
+  `storiesMetaDescription`, `costsFraming`, `aboutText`, `personalExperienceLabel`. NZ's variants are
+  copied byte-for-byte from the pre-existing `stories.intro`/`stories.metaDescription` strings, so
+  the NZ-visible copy is unchanged. No country name is hard-coded in any component touched by this
+  work; every one reads from `countryContent` or takes the resolved string as a prop.
+
+**Known limitation, not fixed in this pass:** `/cn/costs` does **not** reuse `/costs`'s
+`get_expense_aggregates()` numbers. That RPC aggregates across every published story regardless of
+country, and `total_expense_nzd_cents` is NZD-denominated throughout the schema — mixing it into a
+page framed as "what people spent in China" would misreport NZ-trip medians under a China heading.
+`/cn/costs` instead keeps the same section structure and shows the honest "not enough published
+stories yet" state for every section until a real country-aware aggregate (and a currency decision
+for non-NZD trips) is built. A contributor on the same contributor page who has published both NZ and
+China stories will also see every story card link to `/stories/<slug>` (the NZ path) regardless of
+which country it's in — `/contributors/[slug]` isn't country-scoped and `list_published_stories()`'s
+card shape doesn't carry a per-row country slug yet. Both are flagged as follow-ups rather than
+guessed at without being able to run the migration against a live database.
+
+**Verification.** `npm run verify`'s `format:check`, `lint`, `typecheck`, and `test` all pass (1,485
+tests, 19 new: `lib/story/countries.test.ts`, `components/country-toggle.test.tsx`,
+`lib/story/public-queries.country.test.ts`, plus new cases in `components/story/story-card.test.tsx`).
+`build` could not be run: this worktree's own `node_modules` is empty (format/lint/typecheck/test all
+resolved packages by walking up to the parent checkout's `node_modules`, which plain Node module
+resolution allows but Next's Turbopack build explicitly refuses, since it binds resolution to its
+detected workspace root) — a pre-existing environment limitation of this worktree, unrelated to this
+change, not fixed here since fixing it would mean installing dependencies, which this task's
+instructions explicitly rule out. The migration itself was also never applied against a live or local
+Supabase instance (Docker unavailable here, same documented limitation as every prior prompt — see
+"Local vs. hosted Supabase development" in docs/architecture.md) — it was written as a careful
+`CREATE OR REPLACE`/additive-only change against the real, currently-live bodies of
+`list_published_stories()`, `get_published_story()`, and `create_self_service_draft()` (copied
+verbatim from their most recent migrations, not reconstructed from memory), but it has not been
+executed, and `types/database.ts` was hand-edited to match rather than regenerated
+(`npm run supabase:types:linked`) for the same reason. Both should be the first things re-verified
+against a real database before this ships.
+
+**Review fixes (same day).**
+
+- `get_published_story` and `create_self_service_draft` gained a parameter via `CREATE OR REPLACE`,
+  which in Postgres creates a second overload, not a replacement. Every named-argument call that
+  omits `p_country_slug` would then fail with "function is not unique", breaking NZ story pages and
+  new-story creation. The old signatures are now dropped first.
+- `get_expense_aggregates()` is now NZ-only, so China stories never mix into `/costs`' NZD
+  working-holiday figures.
+- `app/sitemap.ts` lists the `/cn` routes and China stories, under their `/cn/stories/...` URLs.
+- The shared header and footer now follow the URL: under `/cn` their Stories/Contributors/About
+  links and logo point into `/cn`, and the footer tagline and "made for" line use China copy
+  (`countryContent.china.madeFor`). `SiteFooter` became a client component for `usePathname()`.
+- Fixed `RETURNS TABLE` column ambiguity (`slug`/`id` vs `public.countries` columns) in the three
+  country lookups. It broke `list_published_stories` on dev for a couple of minutes after the first
+  apply; the corrected definitions were re-applied and the migration file matches them.
+- `story_revision_locations_validate_country()` has `EXECUTE` revoked from `public`, `anon` and
+  `authenticated` (trigger-only; flagged by the Supabase security advisor).
+- **Applied to dev (2026-10-15)** via `supabase db query --linked` in one transaction, then
+  `migration repair --status applied 20261014085842`. Verified on dev: 2 countries, 5 China regions,
+  10 destinations, no story without a country, NZ list 27 / China list 0, an NZ slug requested with
+  `p_country_slug => 'china'` returns nothing, and the trigger rejects a Guangdong region on an NZ
+  draft. `types/database.ts` matches the generated types for every China-related table and function.
+- `npm run verify` (including `build`) passes once the migration is on dev.
+- **Dev drift to know about:** dev also carries five migrations not in this branch (`20260928100000`,
+  `20260929100000`, `20260929110000`, `20261003120000`, `20261013004751` story_links from the
+  unmerged story-map work), so `supabase db push` refuses to run. Because `story_links` replaced
+  `get_published_story_family(p_slug)`, NZ story pages built from `main` error against dev until
+  story-map merges. That is not caused by this change.
+
+**Follow-up (same entry): the editor's location picker is now country-aware.** The previous pass
+added the data model and the public-facing routes; the "Places & tags" authoring step
+(`components/story/story-edit-form.tsx`) was still NZ-only — unscoped region list, `countrycodes=nz`
+hard-coded, every new story created as NZ. Fixed:
+
+- `lib/story/active-lookups.ts`: `listActiveRegions()` now always returns each region's
+  `countrySlug` (a second plain query against `countries`, not an embedded join — same reasoning as
+  the existing `resolveCountryId()` comment about not depending on a relationship
+  `types/database.ts` may not describe); new `listActiveCountries()`. `lib/story/contributor-
+queries.ts` gained `getStoryCountry()` (wraps the existing `get_story_country` RPC).
+- New migration `supabase/migrations/20261014205738_set_story_country.sql` —
+  `set_story_country(p_story_id uuid, p_country_slug text)`, `SECURITY DEFINER`, `set search_path =
+''`. Authorizes exactly like `_authorize_revision_edit()`: story owner (`_is_story_owner()`,
+  source-kind-partitioned) or the story's assigned editor (no admin bypass). Refuses outright once
+  `stories.published_revision_id is not null` — country is locked after first publication, because
+  `stories.country_id` is a property of the STORY row, not the revision, so changing it on published
+  content would move it between country sections with no moderation step in between (Engineering
+  Rule 11). Also refuses when the story has no editable draft revision
+  (`_revision_is_editable()`) or the slug is unknown/inactive. On an actual change it deletes the
+  current draft's `story_revision_locations` whose region belongs to the old country (the validate-
+  country trigger would reject them on the new `country_id` anyway) and bumps `stories.version`.
+  `EXECUTE` revoked from `public`/`anon`, granted to `authenticated`. `lib/story/mutations.ts` gained
+  `setStoryCountry()`; `types/database.ts` hand-edited to match (not regenerated — same reason as the
+  prior entry; this RPC does not exist on dev yet).
+- `lib/validation/story.ts`: `countrySlugSchema` (`z.enum(COUNTRY_SLUGS)`), used both by the new
+  `setCountryAction` (`app/(contributor)/stories/[id]/edit/actions.ts`) and by `createDraftAction`
+  (`app/(contributor)/stories/new/actions.ts`, now accepts an optional country from a hidden form
+  field `/stories/new?country=china` would set — validated server-side regardless of the page's own
+  check).
+- `components/story/story-edit-form.tsx`: new Country `<select>` above the location rows, options
+  from `listActiveCountries()`, labelled with `name_zh_cn` when reading in Chinese. Regions/
+  destinations are filtered client-side by the selected country's slug (server still enforces via
+  the trigger and the RPC). Changing country clears every location row that has a region (they all
+  belonged to the old country) with a short inline notice, keeps an empty manually-added row, calls
+  `setCountryAction` on its own mutation-queue slot BEFORE re-saving the (now empty) locations — the
+  location save is only enqueued from inside the country mutation's own success callback, so the
+  RPC's `country_id` update is guaranteed to land first. Reverts the select and the cleared rows if
+  the RPC refuses. Published stories (`lifecycle_status === "published"`) show the country as
+  read-only text with a hint instead of a select.
+- `components/story/location-search.tsx`: `countryCode`/`placeholderExample` props replace the
+  hard-coded `countrycodes=nz` and "e.g. Queenstown" placeholder. Region/destination matching is now
+  tolerant of a Chinese province/municipality's administrative suffix ("Guangdong Province", "Beijing
+  Municipality"/"北京市" against regions seeded as plain "Guangdong"/"Beijing") and matches against
+  `name_zh_cn` as well as `name`.
+- `app/(moderation)/moderation/stories/page.tsx`: the region filter now groups options by country
+  (`<optgroup>`) using the same `countrySlug` field — no behavior change, just usable once regions
+  span more than one country.
+- `i18n`: `editor.fields.country`/`countryLocked`/`countryClearedNotice`,
+  `countryContent.<segment>.placeExample`, `editor.place.placeholder` reparameterized to
+  `{example}` — all added to both `en.json` and `zh-CN.json`.
+- New tests: `components/story/location-search.test.ts` (Chinese suffix-tolerant matching, fixture
+  results only, no network calls), `components/story/story-edit-form.test.tsx` (country select
+  filtering, clearing locations on change with revert-on-failure, published read-only state,
+  placeholder/search scope per country), `lib/validation/story.test.ts` (`countrySlugSchema`),
+  `app/(contributor)/stories/[id]/edit/actions.test.ts` (`setCountryAction` validation and RPC-
+  refusal pass-through).
+- **Follow-up (same entry): every draft-creation path now picks a country, not just the plain
+  `/stories/new` title form.**
+  - Contributor PDF path: `app/(contributor)/stories/new/import/page.tsx` resolves the same
+    `?country=` (validated, default `new-zealand`) the title form already uses and passes it to
+    `PdfImportPicker`, which now sends it as a `country` form field. `pdf-attach/route.ts` validates
+    it with `countrySlugSchema` (invalid → 400 with a validation message; missing → `new-zealand`,
+    back-compat) and passes it to `createSelfServiceDraftShell`.
+  - Editorial path: `create_editorial_import_draft` had no country parameter at all, so every
+    editor-created story (plain form and PDF) was NZ regardless of what the contributor path did.
+    New migration `supabase/migrations/20261014214918_editorial_draft_country.sql` adds a trailing
+    `p_country_slug text default 'new-zealand'`, dropping the 11-arg overload first (the same
+    CREATE-OR-REPLACE-creates-a-second-overload hazard `20261014085842_countries.sql` already hit
+    twice) and sets `stories.country_id` from it, rejecting an unknown/inactive slug with
+    `raise exception 'Unknown country: %'` — body otherwise byte-for-byte the live
+    `20260803090700_story_lifecycle_functions.sql` definition. `lib/story/mutations.ts`'s
+    `createEditorialImportDraftShell`/`createEditorialImportDraft` gained an optional `countrySlug`
+    (passed as `p_country_slug` only when given, so every pre-existing call keeps the RPC's own
+    default). `app/(editor)/editorial/new/actions.ts` and its `pdf-attach/route.ts` both validate an
+    optional `country` field with `countrySlugSchema` and pass it through.
+  - `app/(editor)/editorial/new/contributor-fieldset.tsx` (`TitleAndContributorFields`, already
+    shared by the blank-draft form and `PdfImportPicker`) gained a Country `<select>` — options from
+    `listActiveCountries()`, `name_zh_cn` when `locale === "zh-CN"`, default `new-zealand` — so both
+    editorial entry points submit the same field through the one shared `<form>` each owns.
+    `app/(editor)/editorial/new/page.tsx` fetches `listActiveCountries()` and `getLocale()` and
+    threads them through `NewImportForm` to both consumers.
+  - `types/database.ts` hand-edited for `create_editorial_import_draft`'s new `p_country_slug?`
+    (same reason as every other hand-edit in this file: the migration has not been applied to dev).
+  - New/updated tests: `app/(contributor)/stories/new/pdf-attach/route.test.ts` (new),
+    `app/(contributor)/stories/new/pdf-import-picker.test.tsx` (new),
+    `app/(editor)/editorial/new/actions.test.ts` (new), `app/(editor)/editorial/new/pdf-attach/
+route.test.ts` (+3 cases), `app/(editor)/editorial/new/pdf-import-picker.test.tsx` (+1 case, plus
+    every existing render call updated for the now-required `countries`/`locale` props).
+  - **Not applied to dev**: same documented limitation as every prior country-related migration in
+    this entry — no Docker/linked-project access in this worktree. The migration was written against
+    the live, currently-applied body only (not reconstructed from memory), but has not been executed
+    or regenerated into `types/database.ts` from a real schema.
+
+**Not covered / follow-ups:**
+
+- A country-aware `get_expense_aggregates()` (now explicitly NZ-only) and a currency decision for
+  `/cn/costs`.
+- A per-row country slug on `list_published_stories()`'s card shape, so `/contributors/[slug]` (and
+  any other surface that lists a mix of a contributor's stories) can link each card to the right
+  country's path.
+- Running this migration against a live/local Supabase project and regenerating `types/database.ts`
+  from it, to confirm the hand-edited types and the SQL bodies actually match what gets applied.
+- `npm run verify:full` (Playwright) was not run — no new e2e coverage for the country toggle or the
+  `/cn` routes beyond the unit/component tests listed above.
+
+### 2026-10-15 — "Add a location manually" accepts a typed region, not just a typed destination
+
+**Owner decision.** China's curated `regions` list is five provinces/municipalities vs. New
+Zealand's sixteen, so "the region I want isn't in the list" turned out to be common for it too —
+the same gap `custom_destination_label` (2026-09-03) already closed one level down. The manual-add
+row in the editor's Places step is now two plain-text inputs — "Region or area" (required, 1-120
+chars) and "Town or place" (optional, ≤120 chars) — with **no dropdown**. A row created from a
+successful place search (a curated region matched by name/state/county) keeps working exactly as
+before: a `<select>` of that country's regions plus the town/place text input, pre-filled by the
+match.
+
+**Data model.** New migration `supabase/migrations/20261015063409_custom_region_labels.sql`,
+following `20260903140000_custom_destination_labels.sql`'s shape:
+
+- `story_revision_locations.region_id` is now nullable; new `custom_region_label text` column.
+  `story_revision_locations_region_one_of` CHECK enforces exactly one of the two is set (stricter
+  than the destination pair's constraint, because a location row has always needed _some_ region).
+  `story_revision_locations_custom_region_label_length` mirrors the destination label's trim/length
+  rule (1-120 chars after trimming). `story_revision_locations_custom_region_no_destination_id`
+  forbids a custom-region row from carrying a `destinations` FK (there is no curated region row for
+  that FK to be scoped to) — it may still carry a typed `custom_destination_label`.
+- `story_revision_locations_validate_destination()` and `story_revision_locations_validate_country()`
+  (both triggers) now return early when `new.region_id is null` — a custom-region row has no
+  `regions` row to validate a destination or a country against, and inherits the story's own
+  `country_id` instead of carrying one of its own.
+- `set_revision_locations()` accepts `custom_region_label` in its JSON input, with the same
+  "an id wins if a client sends both" precedence already applied to `custom_destination_label`.
+  Same signature (`uuid, integer, jsonb`), so `CREATE OR REPLACE` was sufficient — no overload to
+  drop.
+- Every function that joins `regions` while reading `story_revision_locations` switched that join
+  from `inner` to `left` and emits `coalesce(reg.name, loc.custom_region_label)` as the region name
+  (`region_name_zh_cn`/the zh-CN twin stays `reg.name_zh_cn`, null for a custom row — a contributor's
+  own words are never machine-translated, per `lib/i18n/vocab.ts`'s header):
+  `get_revision_selections`, `create_next_draft_revision` (copies the new column alongside the rest
+  of the per-revision child-table checklist), `list_published_stories`, `get_published_story`,
+  `list_my_stories`, `contributor_public_facts`, `get_story_for_moderator`. Every one of these kept
+  its existing signature, so `CREATE OR REPLACE` was sufficient throughout — no signature changes,
+  nothing to drop. `get_expense_aggregates()`'s `by_region` breakdown and `list_published_stories()`/
+  `get_moderation_queue()`'s `p_region_id` filter are deliberately **not** touched: region filters and
+  aggregates stay curated-only (a custom label is free text one contributor typed once, not a bucket
+  other stories' custom labels can land in too), same as the destination side already decided.
+- Since the public RPCs already emit a generic `region_name`/`region_name_zh_cn` pair that every
+  reader (`lib/i18n/vocab.ts`'s `prefixedVocabName`, `lib/story/card-fields.ts`'s `regionNames`) picks
+  a display string from without caring where it came from, **no frontend rendering code changed** —
+  a custom region label shows up on story cards, the story detail page, My Stories, the contributor
+  byline, the moderation review page and the contributor's own PDF export automatically, once the SQL
+  emits it.
+
+**App layer.**
+
+- `lib/validation/story.ts`'s `revisionLocationSchema` is now a discriminated union (expressed as two
+  `.refine()`s, the same style `revisionTagSchema` already uses, since there is no shared literal
+  discriminant field): `{ regionId, destinationId?, customDestinationLabel? }` or
+  `{ customRegionLabel, customDestinationLabel? }` — exactly one of `regionId`/`customRegionLabel`,
+  and `customRegionLabel` may never pair with `destinationId`. New `validation.story.*` message keys:
+  `customRegionNoDestinationId` (both locales).
+- `lib/story/mutations.ts`'s `setRevisionLocations()`, `lib/story/contributor-queries.ts`'s
+  `RevisionSelections`/`getRevisionSelections()`, and `lib/story/active-lookups.ts`'s
+  `resolveLocationLabels()` (the contributor's own PDF export path) all carry `regionId: string | null`
+  plus `customRegionLabel: string | null` now, mirroring the destination pair.
+- `types/database.ts` hand-edited for the new nullable `region_id` and `custom_region_label` column,
+  matching the generated style (not regenerated from a live schema — see this entry's existing
+  "not applied to dev" limitation).
+- `components/story/story-edit-form.tsx`: a location row with no `regionId` is a manual row, rendered
+  as the two plain-text inputs described above; a row with a `regionId` keeps the existing
+  `<select>` + town/place input. `addManualLocation()` now starts a row with `regionId: null,
+customRegionLabel: ""`, instead of the old `regionId: ""` sentinel. `completeLocationCount` and
+  `saveLocations()` treat a row with trimmed `customRegionLabel` text as complete, same as a row with
+  `regionId`. `changeCountry()`'s "keep rows with no region" filter needed no change — a custom-region
+  row already has `regionId: null`, so it is kept (not cleared) across a country switch, consistent
+  with it carrying no country of its own.
+- `i18n/messages/{en,zh-CN}.json`: `editor.fields.chooseRegion` (dead — the manual row no longer has a
+  `<select>`) replaced by `editor.fields.regionOrArea`; `editor.fields.townOrPlace` is reused
+  unchanged for the manual row's second input. The search-unmatched fallback copy
+  (`unmatchedPlace`/`unmatchedPlaceNamed`, pointing at "Add a location manually") is unchanged.
+- `docs/content-governance.md`: new "Free-text region labels are moderated like any other
+  contributor text" note under the country section — a typed region has no separate moderation path,
+  reviewed as part of the revision like `custom_destination_label` and a tag's `custom_label` already
+  are.
+
+**Tests added:** `lib/validation/story.test.ts` (`revisionLocationSchema`/`revisionLocationsSchema` —
+the union's accept/reject cases, the 20-location cap); `components/story/story-edit-form.test.tsx`
+(two existing Country-select tests reworked to seed a curated row via `initialLocations` rather than
+via the now-dropdown-less manual-add button, which otherwise tested nothing after this change; new
+"Add a location manually" describe block — two text inputs with no `<select>`, required region/
+optional place, autosave only once the region text is non-empty, loading a previously-saved typed
+row back into the two inputs).
+
+**Not covered / follow-ups:**
+
+- No test added directly for `setRevisionLocations()`/`getRevisionSelections()`
+  (`lib/story/mutations.ts`/`lib/story/contributor-queries.ts`) — neither had direct unit coverage
+  before this change either (both are thin RPC wrappers exercised indirectly through the edit-form
+  and action tests).
+- Same "not applied to dev" limitation as every other migration in this entry: no Docker/linked-
+  project access in this worktree, so the migration was written and reviewed against the live,
+  currently-applied function bodies (not reconstructed from memory) but not executed, and
+  `types/database.ts` was hand-edited rather than regenerated.
+
+**Typed regions: review and dev apply (2026-10-15).** All re-created function bodies were diffed
+against their latest repo versions and against dev (identical apart from the intended changes).
+`list_my_stories` now also shows a typed town (`coalesce(dest.name, loc.custom_destination_label)`);
+before, My Stories never showed typed towns, which would have hidden the town on every manual
+location. Applied to dev and recorded as `20261015063409`. A rolled-back test as a draft owner
+saved "West Coast backcountry" / "Hut 7" (trimmed, no region_id), read it back through
+`get_revision_selections` and `list_my_stories`, and confirmed a blank label and a row with both a
+listed and a typed region are rejected by `story_revision_locations_region_one_of`.
+
+## 2026-10-29 — Merged `feat/china-section` into main
+
+Merged so main's migrations match the hosted database. It brings the five country migrations that
+were already applied there (`20260924021909_countries`, `20261014085842_countries`,
+`20261014205738_set_story_country`, `20261014214918_editorial_draft_country`,
+`20261015063409_custom_region_labels`) and the China section under `/cn` (owner-approved
+exception in docs/product-spec.md). Merging to main does not ship it; it goes live with the next
+`main:release` push.
+
+Conflicts resolved:
+
+- The public story page body moved to `app/(public)/_shared/story-detail.tsx` on the China
+  branch. Main's later edits (story folders via `lib/story/story-folders.ts`, the `story-title` id,
+  the journey map) were carried into that shared file.
+- **Journey map is New Zealand only.** The illustration draws NZ and stops must be inside it, so
+  the shared story page only fetches/shows stops when `country === "new-zealand"`, and the stops
+  editor in `story-edit-form.tsx` is shown only while the story's country is New Zealand (tests in
+  `story-edit-form.test.tsx`). Stops saved before a country switch stay stored but are not shown.
+- Edit page, edit form, action tests, `story-family.tsx` (`StoryFamilyLink` + `basePath`), i18n
+  (journey + folders keys alongside `invalidCountry` / `countryContent`) and this file: both sides
+  kept.
+
+`types/database.ts` regenerated from the hosted project
+(`supabase gen types typescript --project-id ybhydepjaantkngngvuf`; the merge worktree was not
+linked); typecheck is clean, and the three journey RPC call sites now use typed `supabase.rpc(...)`.
+
+**Still drifted (hosted database has, main does not):**
+
+- `20260928100000_trips`, `20260929100000_trip_place_images`,
+  `20260929110000_rate_limit_maps_link_scope` — on `feat/itinerary-builder` (itinerary planning is
+  an MVP non-goal in docs/product-spec.md). Their tables appear in the regenerated types, unused.
+- ~~`20261003120000_story_media_original_retention`~~ — merged into main on 2026-10-29 (see the
+  entry at the end of this file).
+
+`feat/landing-country-cards` (2026-09-29, landing country cards + an earlier country/region picker)
+was not merged: its only migration is the same `20260924021909_countries` file, so it adds no
+drift fix, and its picker overlaps the one `feat/china-section` shipped.
+
 ## 2026-10-03 — raw photo originals deleted after processing (retention rule)
 
 **The problem.** For Supabase-backed images, the raw upload at `story_media.private_storage_path`
@@ -9339,3 +10533,23 @@ window), waiting for the sweep.
 other branches' `countries`/`trip_places`/`trips` and `regions.country_id`. Those were left out on
 purpose. Only the `original_deleted_at` column and the three function entries were kept, in exactly
 the generator's form and position, so the next full regen after those branches merge is a clean diff.
+
+## 2026-10-29 — raw-original retention merged into main
+
+The 2026-10-03 entry above was built on a branch (`claude/loving-poitras-8821c6`) that never merged,
+while its migration was already live on `ybhydepjaantkngngvuf`. It is now committed and merged.
+
+- **Migration file = live database.** With whitespace and `;` stripped, the file matches the
+  statements recorded for version `20261003120000` in `supabase_migrations.schema_migrations`.
+  Nothing was re-applied.
+- **`types/database.ts` unchanged.** main's copy, regenerated from the hosted project for the China
+  merge, already had `original_deleted_at` and both RPCs; a fresh regen is identical.
+- **Drive rows (added after this branch was cut).** The inline delete is in `processStoryMedia`,
+  which throws for a row without `private_storage_path`, so it never runs for a `google_drive` row.
+  The sweep's `list_story_media_originals_due_for_deletion` filters on
+  `private_storage_path is distinct from processed_private_storage_path`; a `google_drive` row has
+  both null, so it is excluded. Checked live: 434 rows due, all `storage_backend = 'supabase'`, none
+  with a null path. That exclusion is a side effect of the paranoia filter, not an explicit rule — if
+  the sweep is ever changed, add `storage_backend = 'supabase'` explicitly.
+- **Next:** unchanged from the 2026-10-03 list — dry-run `npm run media:cleanup:originals`, then
+  `-- --execute` to clear the 434-row backlog; it is not live for new uploads until the next release.

@@ -18,28 +18,42 @@ export function isTermsChangedError(error: unknown): boolean {
   );
 }
 
-// set_story_parent_story() (20261003051644_story_level_sub_stories.sql)
-// names each refusal with its own SQLSTATE, so My Stories can say what went wrong in
-// the reader's language instead of showing Postgres text.
-const SUB_STORY_ERROR_KEYS = {
+// set_story_parent() (supabase/migrations/20261021085920_story_folders.sql)
+// names each refusal with its own SQLSTATE, so the story folders view and
+// its Move-to fallback can say what went wrong in the reader's language
+// instead of showing Postgres text.
+//
+// These are the same subStory* keys (and the same WHV10/WHV11/WHV13/WHV14/
+// WHV15 codes) the very first main/sub-story design used
+// (20261003051644_story_level_sub_stories.sql) -- the free-link design in
+// between (20261013004751_story_links.sql, now dropped) retired WHV13/WHV14
+// because they had no meaning for symmetric, unlimited links; folders bring
+// back the one-level rule those two codes exist to enforce, so the keys are
+// restored rather than reinvented. WHV12 ("main story not published") is
+// folded into WHV15 now (set_story_parent() checks both sides with one
+// check), and WHV16 ("already linked", a free-link-only concept) stays
+// retired.
+const STORY_FOLDER_ERROR_KEYS = {
   WHV10: "subStorySelf",
   WHV11: "subStoryNotFound",
-  WHV12: "subStoryParentNotPublished",
   WHV13: "subStoryParentIsSubStory",
   WHV14: "subStoryHasSubStories",
   WHV15: "subStoryNotPublished",
 } as const;
 
-export type SubStoryErrorKey =
-  (typeof SUB_STORY_ERROR_KEYS)[keyof typeof SUB_STORY_ERROR_KEYS];
+export type StoryFolderErrorKey =
+  (typeof STORY_FOLDER_ERROR_KEYS)[keyof typeof STORY_FOLDER_ERROR_KEYS];
 
-/** The actionErrors.* key for a sub-story refusal, or null for anything else. */
-export function subStoryErrorKey(error: unknown): SubStoryErrorKey | null {
+/** The actionErrors.* key for a story-folder refusal, or null for anything else. */
+export function storyFolderErrorKey(
+  error: unknown,
+): StoryFolderErrorKey | null {
   if (typeof error !== "object" || error === null || !("code" in error)) {
     return null;
   }
   const code = (error as { code?: unknown }).code;
-  return typeof code === "string" && Object.hasOwn(SUB_STORY_ERROR_KEYS, code)
-    ? SUB_STORY_ERROR_KEYS[code as keyof typeof SUB_STORY_ERROR_KEYS]
+  return typeof code === "string" &&
+    Object.hasOwn(STORY_FOLDER_ERROR_KEYS, code)
+    ? STORY_FOLDER_ERROR_KEYS[code as keyof typeof STORY_FOLDER_ERROR_KEYS]
     : null;
 }

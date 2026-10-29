@@ -82,6 +82,9 @@ describe("messages", () => {
       "editor.nav.back",
       // A format name, not a word.
       "import.html",
+      // "Google Drive" is a product/brand name -- there is nothing to
+      // translate (the tab's description text around it IS translated).
+      "account.tabs.drive",
     ]);
     const identical = [...enFlat]
       .filter(([k, v]) => zhFlat.get(k) === v && !allowed.has(k))

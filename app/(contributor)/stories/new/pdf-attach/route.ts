@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
-import { createDraftSchema } from "@/lib/validation/story";
+import { createDraftSchema, countrySlugSchema } from "@/lib/validation/story";
+import { DEFAULT_COUNTRY_SLUG } from "@/lib/story/countries";
 import {
   pdfImportFileSchema,
   pdfImportPageNumbersSchema,
@@ -69,6 +70,29 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Sent by PdfImportPicker as the same country /stories/new (or
+  // /stories/new/import) already resolved from its own `?country=` -- a
+  // fresh, independently-validated field regardless (Engineering Rule 2).
+  // Missing entirely is back-compat (every call site that predates
+  // countries): falls back to DEFAULT_COUNTRY_SLUG rather than failing the
+  // request. Present but invalid/unknown IS a request failure -- unlike a
+  // missing field, a garbage value is never something this route should
+  // silently paper over.
+  const countryField = formData.get("country");
+  let countrySlug: string = DEFAULT_COUNTRY_SLUG;
+  if (countryField !== null) {
+    const countryParsed = countrySlugSchema.safeParse(countryField);
+    if (!countryParsed.success) {
+      return NextResponse.json(
+        {
+          error: countryParsed.error.issues[0]?.message ?? "Invalid country.",
+        },
+        { status: 400 },
+      );
+    }
+    countrySlug = countryParsed.data;
+  }
+
   let pageNumbersRaw: unknown;
   try {
     const field = formData.get("pageNumbers");
@@ -127,7 +151,10 @@ export async function POST(request: NextRequest) {
   let storyId: string;
   let revisionId: string;
   try {
-    const created = await createSelfServiceDraftShell(titleParsed.data.title);
+    const created = await createSelfServiceDraftShell(
+      titleParsed.data.title,
+      countrySlug,
+    );
     if (!created) {
       return NextResponse.json(
         { error: "Could not create your story." },

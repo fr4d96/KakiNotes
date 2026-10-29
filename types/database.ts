@@ -10,10 +10,58 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5";
+    PostgrestVersion: "14.15";
   };
   public: {
     Tables: {
+      contributor_drive_connections: {
+        Row: {
+          created_at: string;
+          drive_folder_id: string | null;
+          encrypted_refresh_token: string;
+          encryption_key_version: number;
+          google_account_email: string | null;
+          google_account_sub: string | null;
+          id: string;
+          staging_folder_id: string | null;
+          status: string;
+          token_auth_tag: string;
+          token_iv: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          drive_folder_id?: string | null;
+          encrypted_refresh_token: string;
+          encryption_key_version?: number;
+          google_account_email?: string | null;
+          google_account_sub?: string | null;
+          id?: string;
+          staging_folder_id?: string | null;
+          status?: string;
+          token_auth_tag: string;
+          token_iv: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          drive_folder_id?: string | null;
+          encrypted_refresh_token?: string;
+          encryption_key_version?: number;
+          google_account_email?: string | null;
+          google_account_sub?: string | null;
+          id?: string;
+          staging_folder_id?: string | null;
+          status?: string;
+          token_auth_tag?: string;
+          token_iv?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       contributor_links: {
         Row: {
           contributor_id: string;
@@ -96,6 +144,39 @@ export type Database = {
           linked_user_id?: string | null;
           public_slug?: string | null;
           public_status?: Database["public"]["Enums"]["contributor_status"];
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      countries: {
+        Row: {
+          active: boolean;
+          code: string;
+          created_at: string;
+          id: string;
+          name: string;
+          name_zh_cn: string | null;
+          slug: string;
+          updated_at: string;
+        };
+        Insert: {
+          active?: boolean;
+          code: string;
+          created_at?: string;
+          id?: string;
+          name: string;
+          name_zh_cn?: string | null;
+          slug: string;
+          updated_at?: string;
+        };
+        Update: {
+          active?: boolean;
+          code?: string;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          name_zh_cn?: string | null;
+          slug?: string;
           updated_at?: string;
         };
         Relationships: [];
@@ -428,6 +509,7 @@ export type Database = {
       regions: {
         Row: {
           active: boolean;
+          country_id: string;
           created_at: string;
           id: string;
           island_or_grouping: string | null;
@@ -438,6 +520,7 @@ export type Database = {
         };
         Insert: {
           active?: boolean;
+          country_id: string;
           created_at?: string;
           id?: string;
           island_or_grouping?: string | null;
@@ -448,6 +531,7 @@ export type Database = {
         };
         Update: {
           active?: boolean;
+          country_id?: string;
           created_at?: string;
           id?: string;
           island_or_grouping?: string | null;
@@ -456,7 +540,15 @@ export type Database = {
           slug?: string;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "regions_country_id_fkey";
+            columns: ["country_id"];
+            isOneToOne: false;
+            referencedRelation: "countries";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       stories: {
         Row: {
@@ -465,6 +557,7 @@ export type Database = {
           consent_revoked_at: string | null;
           consent_revoked_by: string | null;
           contributor_id: string;
+          country_id: string;
           created_at: string;
           created_by: string | null;
           current_draft_revision_id: string | null;
@@ -488,6 +581,7 @@ export type Database = {
           consent_revoked_at?: string | null;
           consent_revoked_by?: string | null;
           contributor_id: string;
+          country_id: string;
           created_at?: string;
           created_by?: string | null;
           current_draft_revision_id?: string | null;
@@ -511,6 +605,7 @@ export type Database = {
           consent_revoked_at?: string | null;
           consent_revoked_by?: string | null;
           contributor_id?: string;
+          country_id?: string;
           created_at?: string;
           created_by?: string | null;
           current_draft_revision_id?: string | null;
@@ -537,6 +632,13 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "stories_country_id_fkey";
+            columns: ["country_id"];
+            isOneToOne: false;
+            referencedRelation: "countries";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "stories_current_draft_revision_id_fkey";
             columns: ["current_draft_revision_id"];
             isOneToOne: false;
@@ -555,6 +657,41 @@ export type Database = {
             columns: ["published_revision_id"];
             isOneToOne: false;
             referencedRelation: "story_revisions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      story_drive_folders: {
+        Row: {
+          created_at: string;
+          drive_folder_id: string;
+          folder_name: string;
+          owner_user_id: string;
+          story_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          drive_folder_id: string;
+          folder_name: string;
+          owner_user_id: string;
+          story_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          drive_folder_id?: string;
+          folder_name?: string;
+          owner_user_id?: string;
+          story_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "story_drive_folders_story_id_fkey";
+            columns: ["story_id"];
+            isOneToOne: true;
+            referencedRelation: "stories";
             referencedColumns: ["id"];
           },
         ];
@@ -612,13 +749,21 @@ export type Database = {
           approved_public_storage_path: string | null;
           created_at: string;
           deleted_at: string | null;
+          drive_folder_id: string | null;
+          drive_full_file_id: string | null;
+          drive_full_folder_id: string | null;
+          drive_processed_file_id: string | null;
           error_code: string | null;
           failure_reason: string | null;
+          full_file_size_bytes: number | null;
+          full_height: number | null;
+          full_mime_type: string | null;
+          full_width: number | null;
           id: string;
           metadata_removed_at: string | null;
           original_deleted_at: string | null;
           owner_user_id: string | null;
-          private_storage_path: string;
+          private_storage_path: string | null;
           processed_file_size_bytes: number | null;
           processed_height: number | null;
           processed_mime_type: string | null;
@@ -632,6 +777,7 @@ export type Database = {
           source_height: number | null;
           source_mime_type: string;
           source_width: number | null;
+          storage_backend: string;
           story_id: string;
           uploaded_by: string | null;
         };
@@ -639,13 +785,21 @@ export type Database = {
           approved_public_storage_path?: string | null;
           created_at?: string;
           deleted_at?: string | null;
+          drive_folder_id?: string | null;
+          drive_full_file_id?: string | null;
+          drive_full_folder_id?: string | null;
+          drive_processed_file_id?: string | null;
           error_code?: string | null;
           failure_reason?: string | null;
+          full_file_size_bytes?: number | null;
+          full_height?: number | null;
+          full_mime_type?: string | null;
+          full_width?: number | null;
           id?: string;
           metadata_removed_at?: string | null;
           original_deleted_at?: string | null;
           owner_user_id?: string | null;
-          private_storage_path: string;
+          private_storage_path?: string | null;
           processed_file_size_bytes?: number | null;
           processed_height?: number | null;
           processed_mime_type?: string | null;
@@ -659,6 +813,7 @@ export type Database = {
           source_height?: number | null;
           source_mime_type: string;
           source_width?: number | null;
+          storage_backend?: string;
           story_id: string;
           uploaded_by?: string | null;
         };
@@ -666,13 +821,21 @@ export type Database = {
           approved_public_storage_path?: string | null;
           created_at?: string;
           deleted_at?: string | null;
+          drive_folder_id?: string | null;
+          drive_full_file_id?: string | null;
+          drive_full_folder_id?: string | null;
+          drive_processed_file_id?: string | null;
           error_code?: string | null;
           failure_reason?: string | null;
+          full_file_size_bytes?: number | null;
+          full_height?: number | null;
+          full_mime_type?: string | null;
+          full_width?: number | null;
           id?: string;
           metadata_removed_at?: string | null;
           original_deleted_at?: string | null;
           owner_user_id?: string | null;
-          private_storage_path?: string;
+          private_storage_path?: string | null;
           processed_file_size_bytes?: number | null;
           processed_height?: number | null;
           processed_mime_type?: string | null;
@@ -686,6 +849,7 @@ export type Database = {
           source_height?: number | null;
           source_mime_type?: string;
           source_width?: number | null;
+          storage_backend?: string;
           story_id?: string;
           uploaded_by?: string | null;
         };
@@ -705,6 +869,121 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      story_media_move_jobs: {
+        Row: {
+          created_at: string;
+          direction: string;
+          error_code: string | null;
+          id: string;
+          media_id: string;
+          new_drive_file_id: string | null;
+          new_drive_folder_id: string | null;
+          old_deleted_at: string | null;
+          old_private_storage_path: string | null;
+          old_processed_private_storage_path: string | null;
+          old_public_storage_path: string | null;
+          run_id: string;
+          status: string;
+          story_id: string;
+          switched_at: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          direction?: string;
+          error_code?: string | null;
+          id?: string;
+          media_id: string;
+          new_drive_file_id?: string | null;
+          new_drive_folder_id?: string | null;
+          old_deleted_at?: string | null;
+          old_private_storage_path?: string | null;
+          old_processed_private_storage_path?: string | null;
+          old_public_storage_path?: string | null;
+          run_id: string;
+          status?: string;
+          story_id: string;
+          switched_at?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          direction?: string;
+          error_code?: string | null;
+          id?: string;
+          media_id?: string;
+          new_drive_file_id?: string | null;
+          new_drive_folder_id?: string | null;
+          old_deleted_at?: string | null;
+          old_private_storage_path?: string | null;
+          old_processed_private_storage_path?: string | null;
+          old_public_storage_path?: string | null;
+          run_id?: string;
+          status?: string;
+          story_id?: string;
+          switched_at?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "story_media_move_jobs_media_id_fkey";
+            columns: ["media_id"];
+            isOneToOne: false;
+            referencedRelation: "story_media";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "story_media_move_jobs_run_id_fkey";
+            columns: ["run_id"];
+            isOneToOne: false;
+            referencedRelation: "story_media_move_runs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "story_media_move_jobs_story_id_fkey";
+            columns: ["story_id"];
+            isOneToOne: false;
+            referencedRelation: "stories";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      story_media_move_runs: {
+        Row: {
+          created_at: string;
+          direction: string;
+          finished_at: string | null;
+          id: string;
+          last_activity_at: string;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          direction?: string;
+          finished_at?: string | null;
+          id?: string;
+          last_activity_at?: string;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          direction?: string;
+          finished_at?: string | null;
+          id?: string;
+          last_activity_at?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
       };
       story_media_public_copy_attempts: {
         Row: {
@@ -1126,25 +1405,28 @@ export type Database = {
       story_revision_locations: {
         Row: {
           custom_destination_label: string | null;
+          custom_region_label: string | null;
           destination_id: string | null;
           id: string;
-          region_id: string;
+          region_id: string | null;
           revision_id: string;
           sort_order: number;
         };
         Insert: {
           custom_destination_label?: string | null;
+          custom_region_label?: string | null;
           destination_id?: string | null;
           id?: string;
-          region_id: string;
+          region_id?: string | null;
           revision_id: string;
           sort_order?: number;
         };
         Update: {
           custom_destination_label?: string | null;
+          custom_region_label?: string | null;
           destination_id?: string | null;
           id?: string;
-          region_id?: string;
+          region_id?: string | null;
           revision_id?: string;
           sort_order?: number;
         };
@@ -1213,6 +1495,60 @@ export type Database = {
           },
           {
             foreignKeyName: "story_revision_media_revision_id_fkey";
+            columns: ["revision_id"];
+            isOneToOne: false;
+            referencedRelation: "story_revisions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      story_revision_stops: {
+        Row: {
+          created_at: string;
+          id: string;
+          label: string;
+          latitude: number;
+          longitude: number;
+          parent_sort_order: number | null;
+          revision_id: string;
+          section_anchor: string | null;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          label: string;
+          latitude: number;
+          longitude: number;
+          parent_sort_order?: number | null;
+          revision_id: string;
+          section_anchor?: string | null;
+          sort_order: number;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          label?: string;
+          latitude?: number;
+          longitude?: number;
+          parent_sort_order?: number | null;
+          revision_id?: string;
+          section_anchor?: string | null;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "story_revision_stops_parent_fk";
+            columns: ["revision_id", "parent_sort_order"];
+            isOneToOne: false;
+            referencedRelation: "story_revision_stops";
+            referencedColumns: ["revision_id", "sort_order"];
+          },
+          {
+            foreignKeyName: "story_revision_stops_revision_id_fkey";
             columns: ["revision_id"];
             isOneToOne: false;
             referencedRelation: "story_revisions";
@@ -1440,6 +1776,110 @@ export type Database = {
         };
         Relationships: [];
       };
+      trip_places: {
+        Row: {
+          created_at: string;
+          day_date: string | null;
+          display_name: string | null;
+          id: string;
+          image_credit: string | null;
+          image_height: number | null;
+          image_license: string | null;
+          image_source_url: string | null;
+          image_url: string | null;
+          image_width: number | null;
+          latitude: number | null;
+          longitude: number | null;
+          name: string;
+          note: string | null;
+          osm_place_id: number | null;
+          sort_order: number;
+          trip_id: string;
+          updated_at: string;
+          wikidata_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          day_date?: string | null;
+          display_name?: string | null;
+          id?: string;
+          image_credit?: string | null;
+          image_height?: number | null;
+          image_license?: string | null;
+          image_source_url?: string | null;
+          image_url?: string | null;
+          image_width?: number | null;
+          latitude?: number | null;
+          longitude?: number | null;
+          name: string;
+          note?: string | null;
+          osm_place_id?: number | null;
+          sort_order: number;
+          trip_id: string;
+          updated_at?: string;
+          wikidata_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          day_date?: string | null;
+          display_name?: string | null;
+          id?: string;
+          image_credit?: string | null;
+          image_height?: number | null;
+          image_license?: string | null;
+          image_source_url?: string | null;
+          image_url?: string | null;
+          image_width?: number | null;
+          latitude?: number | null;
+          longitude?: number | null;
+          name?: string;
+          note?: string | null;
+          osm_place_id?: number | null;
+          sort_order?: number;
+          trip_id?: string;
+          updated_at?: string;
+          wikidata_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "trip_places_trip_id_fkey";
+            columns: ["trip_id"];
+            isOneToOne: false;
+            referencedRelation: "trips";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      trips: {
+        Row: {
+          created_at: string;
+          end_date: string | null;
+          id: string;
+          owner_id: string;
+          start_date: string | null;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          end_date?: string | null;
+          id?: string;
+          owner_id: string;
+          start_date?: string | null;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          end_date?: string | null;
+          id?: string;
+          owner_id?: string;
+          start_date?: string | null;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       user_roles: {
         Row: {
           created_at: string;
@@ -1532,6 +1972,11 @@ export type Database = {
       };
       _content_json_text_length: { Args: { p_content: Json }; Returns: number };
       _generate_story_slug: { Args: { p_title: string }; Returns: string };
+      _has_active_drive_connection: { Args: never; Returns: boolean };
+      _is_self_submitted_story_owner: {
+        Args: { p_story_id: string };
+        Returns: boolean;
+      };
       _is_story_owner: { Args: { p_story_id: string }; Returns: boolean };
       _latest_valid_consent_for_revision: {
         Args: { p_revision_id: string; p_story_id: string };
@@ -1560,6 +2005,14 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      _my_drive_move_candidates: {
+        Args: never;
+        Returns: {
+          created_at: string;
+          media_id: string;
+          story_id: string;
+        }[];
+      };
       _notification_recipient_for_story: {
         Args: { p_story_id: string };
         Returns: string;
@@ -1580,10 +2033,6 @@ export type Database = {
         };
         Returns: undefined;
       };
-      _story_has_sub_stories: {
-        Args: { p_story_id: string };
-        Returns: boolean;
-      };
       _story_is_publicly_visible: {
         Args: { p_story_id: string };
         Returns: boolean;
@@ -1597,6 +2046,10 @@ export type Database = {
       };
       _terminalize_active_revision: {
         Args: { p_story_id: string };
+        Returns: undefined;
+      };
+      _touch_my_drive_move_run: {
+        Args: { p_run_id: string };
         Returns: undefined;
       };
       admin_set_user_role: {
@@ -1615,6 +2068,14 @@ export type Database = {
         };
         Returns: undefined;
       };
+      authorize_drive_media_finalize: {
+        Args: { p_media_id: string };
+        Returns: undefined;
+      };
+      authorize_drive_media_finalize_v2: {
+        Args: { p_media_id: string };
+        Returns: string;
+      };
       authorize_heic_transcode: {
         Args: { p_media_id: string };
         Returns: {
@@ -1625,6 +2086,19 @@ export type Database = {
       authorize_story_media_preview: {
         Args: { p_media_id: string };
         Returns: undefined;
+      };
+      begin_drive_media_upload: {
+        Args: { p_revision_id: string; p_source_mime_type: string };
+        Returns: {
+          media_id: string;
+        }[];
+      };
+      begin_drive_move_run: {
+        Args: never;
+        Returns: {
+          run_id: string;
+          total: number;
+        }[];
       };
       begin_story_media_copy_attempt: {
         Args: { p_approval_attempt_id: string; p_media_id: string };
@@ -1682,6 +2156,21 @@ export type Database = {
           retry_after_seconds: number;
         }[];
       };
+      claim_next_drive_move: {
+        Args: { p_run_id: string };
+        Returns: {
+          error_code: string;
+          job_id: string;
+          job_status: string;
+          media_id: string;
+          processed_file_size_bytes: number;
+          processed_mime_type: string;
+          sha256: string;
+          stale_drive_file_ids: string[];
+          story_id: string;
+          story_title: string;
+        }[];
+      };
       contributor_public_facts: {
         Args: { p_contributor_id: string };
         Returns: {
@@ -1698,6 +2187,7 @@ export type Database = {
           p_content_json?: Json;
           p_contributor_id: string;
           p_contributor_note?: string;
+          p_country_slug?: string;
           p_excerpt?: string;
           p_title: string;
           p_total_expense_nzd_cents?: number;
@@ -1719,6 +2209,7 @@ export type Database = {
         Args: {
           p_content_json?: Json;
           p_contributor_note?: string;
+          p_country_slug?: string;
           p_excerpt?: string;
           p_title: string;
           p_total_expense_nzd_cents?: number;
@@ -1767,6 +2258,24 @@ export type Database = {
         };
         Returns: undefined;
       };
+      finalize_drive_media_upload: {
+        Args: {
+          p_drive_folder_id: string;
+          p_drive_processed_file_id: string;
+          p_expected_version: number;
+          p_media_id: string;
+          p_processed_file_size_bytes: number;
+          p_processed_height: number;
+          p_processed_mime_type: string;
+          p_processed_width: number;
+          p_sha256: string;
+          p_source_file_size_bytes: number;
+          p_source_height: number;
+          p_source_mime_type: string;
+          p_source_width: number;
+        };
+        Returns: undefined;
+      };
       finalize_story_media_upload: {
         Args: { p_expected_version: number; p_media_id: string };
         Returns: undefined;
@@ -1779,6 +2288,12 @@ export type Database = {
           p_user_facing_reason?: string;
         };
         Returns: undefined;
+      };
+      finish_drive_move_run: {
+        Args: { p_run_id: string };
+        Returns: {
+          story_id: string;
+        }[];
       };
       get_consent_terms_version: {
         Args: { p_revision_id: string };
@@ -1821,6 +2336,34 @@ export type Database = {
           trip_date_or_year_present: boolean;
           updated_at: string;
           work_types_selected: boolean;
+        }[];
+      };
+      get_drive_full_copy_for_owner: {
+        Args: { p_media_id: string };
+        Returns: {
+          drive_full_file_id: string;
+          full_mime_type: string;
+          owner_user_id: string;
+        }[];
+      };
+      get_drive_media_for_proxy: {
+        Args: { p_media_id: string };
+        Returns: {
+          drive_processed_file_id: string;
+          is_published: boolean;
+          media_id: string;
+          owner_user_id: string;
+          processed_mime_type: string;
+        }[];
+      };
+      get_drive_move_cleanup_target: {
+        Args: { p_job_id: string };
+        Returns: {
+          media_id: string;
+          old_private_storage_path: string;
+          old_processed_private_storage_path: string;
+          old_public_storage_path: string;
+          story_id: string;
         }[];
       };
       get_expense_aggregates: {
@@ -1869,6 +2412,33 @@ export type Database = {
           tag_count: number;
           title: string;
           total_count: number;
+        }[];
+      };
+      get_my_drive_connection_status: {
+        Args: never;
+        Returns: {
+          connected: boolean;
+          connected_at: string;
+          google_account_email: string;
+        }[];
+      };
+      get_my_drive_move_summary: {
+        Args: never;
+        Returns: {
+          cleanup_pending_count: number;
+          movable_count: number;
+          run_in_progress: boolean;
+        }[];
+      };
+      get_my_story_folders: {
+        Args: never;
+        Returns: {
+          id: string;
+          lifecycle_status: string;
+          linkable: boolean;
+          parent_story_id: string;
+          slug: string;
+          title: string;
         }[];
       };
       get_my_story_with_draft: {
@@ -1947,13 +2517,14 @@ export type Database = {
         }[];
       };
       get_published_story: {
-        Args: { p_slug: string };
+        Args: { p_country_slug?: string; p_slug: string };
         Returns: {
           attribution_type: Database["public"]["Enums"]["attribution_type"];
           attribution_value: string;
           content_json: Json;
           contributor_avatar_emoji: string;
           contributor_slug: string;
+          country_slug: string;
           excerpt: string;
           expenses: Json;
           published_at: string;
@@ -1971,7 +2542,7 @@ export type Database = {
         }[];
       };
       get_published_story_family: {
-        Args: { p_slug: string };
+        Args: { p_story_id: string };
         Returns: {
           parent: Json;
           sub_stories: Json;
@@ -1986,6 +2557,18 @@ export type Database = {
           is_cover: boolean;
           media_id: string;
           public_url: string;
+          sort_order: number;
+          storage_backend: string;
+        }[];
+      };
+      get_published_story_stops: {
+        Args: { p_slug: string };
+        Returns: {
+          label: string;
+          latitude: number;
+          longitude: number;
+          parent_sort_order: number;
+          section_anchor: string;
           sort_order: number;
         }[];
       };
@@ -2012,6 +2595,32 @@ export type Database = {
           locations: Json;
           tags: Json;
           work_types: Json;
+        }[];
+      };
+      get_revision_stops: {
+        Args: { p_revision_id: string };
+        Returns: {
+          label: string;
+          latitude: number;
+          longitude: number;
+          parent_sort_order: number;
+          section_anchor: string;
+          sort_order: number;
+        }[];
+      };
+      get_story_country: { Args: { p_story_id: string }; Returns: string };
+      get_story_drive_folder: {
+        Args: { p_story_id: string };
+        Returns: {
+          drive_folder_id: string;
+          folder_name: string;
+        }[];
+      };
+      get_story_drive_sync_state: {
+        Args: { p_story_id: string };
+        Returns: {
+          has_drive_media: boolean;
+          has_folder: boolean;
         }[];
       };
       get_story_editorial_history: {
@@ -2077,6 +2686,10 @@ export type Database = {
           trip_year: number;
         }[];
       };
+      get_story_media_upload_mode: {
+        Args: { p_revision_id: string };
+        Returns: string;
+      };
       get_story_moderation_history: {
         Args: { p_story_id: string };
         Returns: {
@@ -2088,15 +2701,6 @@ export type Database = {
           previous_status: Database["public"]["Enums"]["story_revision_status"];
           revision_id: string;
           user_facing_reason: string;
-        }[];
-      };
-      get_story_parent_story: {
-        Args: { p_story_id: string };
-        Returns: {
-          has_sub_stories: boolean;
-          parent_slug: string;
-          parent_story_id: string;
-          parent_title: string;
         }[];
       };
       get_story_preview: {
@@ -2203,6 +2807,12 @@ export type Database = {
           version: number;
         }[];
       };
+      list_my_drive_move_cleanup_due: {
+        Args: never;
+        Returns: {
+          job_id: string;
+        }[];
+      };
       list_my_notifications: {
         Args: { p_limit?: number };
         Returns: {
@@ -2215,6 +2825,26 @@ export type Database = {
           story_id: string;
           story_slug: string;
           story_title: string;
+        }[];
+      };
+      list_my_photos: {
+        Args: never;
+        Returns: {
+          alt_text: string;
+          caption: string;
+          has_full_copy: boolean;
+          in_current_version: boolean;
+          lifecycle_status: string;
+          media_id: string;
+          processed_file_size_bytes: number;
+          processed_height: number;
+          processed_mime_type: string;
+          processed_width: number;
+          storage_backend: string;
+          story_id: string;
+          story_title: string;
+          story_updated_at: string;
+          uploaded_at: string;
         }[];
       };
       list_my_reports: {
@@ -2264,6 +2894,13 @@ export type Database = {
           visibility: Database["public"]["Enums"]["story_visibility"];
         }[];
       };
+      list_my_story_drive_folder_names: {
+        Args: { p_exclude_story_id?: string };
+        Returns: {
+          folder_name: string;
+          story_id: string;
+        }[];
+      };
       list_my_takedown_requests: {
         Args: never;
         Returns: {
@@ -2273,14 +2910,6 @@ export type Database = {
           requested_at: string;
           status: string;
           story_id: string;
-        }[];
-      };
-      list_parent_story_options: {
-        Args: { p_story_id: string };
-        Returns: {
-          slug: string;
-          story_id: string;
-          title: string;
         }[];
       };
       list_public_contributors: {
@@ -2306,6 +2935,7 @@ export type Database = {
         Args: {
           p_contributor_id?: string;
           p_cost_band?: string;
+          p_country_slug?: string;
           p_cursor_id?: string;
           p_cursor_published_at?: string;
           p_destination_id?: string;
@@ -2325,6 +2955,8 @@ export type Database = {
           contributor_avatar_emoji: string;
           contributor_slug: string;
           cover_image_path: string;
+          cover_media_id: string;
+          cover_storage_backend: string;
           excerpt: string;
           published_at: string;
           regions: Json;
@@ -2366,6 +2998,24 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      list_story_drive_full_copies_for_sync: {
+        Args: { p_story_id: string };
+        Returns: {
+          drive_full_file_id: string;
+          full_mime_type: string;
+          media_id: string;
+          sort_order: number;
+        }[];
+      };
+      list_story_drive_media_for_sync: {
+        Args: { p_story_id: string };
+        Returns: {
+          drive_processed_file_id: string;
+          media_id: string;
+          processed_mime_type: string;
+          sort_order: number;
+        }[];
       };
       list_story_media_originals_due_for_deletion: {
         Args: { p_limit?: number };
@@ -2457,6 +3107,34 @@ export type Database = {
           p_note?: string;
           p_story_id: string;
         };
+        Returns: undefined;
+      };
+      record_drive_media_full_copy: {
+        Args: {
+          p_drive_full_file_id: string;
+          p_drive_full_folder_id: string;
+          p_full_file_size_bytes: number;
+          p_full_height: number;
+          p_full_mime_type: string;
+          p_full_width: number;
+          p_media_id: string;
+        };
+        Returns: undefined;
+      };
+      record_drive_move_copied: {
+        Args: {
+          p_drive_file_id: string;
+          p_drive_folder_id: string;
+          p_job_id: string;
+        };
+        Returns: undefined;
+      };
+      record_drive_move_failed: {
+        Args: { p_error_code: string; p_job_id: string };
+        Returns: undefined;
+      };
+      record_drive_move_old_deleted: {
+        Args: { p_job_id: string };
         Returns: undefined;
       };
       record_heic_transcoded_original: {
@@ -2579,6 +3257,14 @@ export type Database = {
         };
         Returns: undefined;
       };
+      set_revision_stops: {
+        Args: {
+          p_expected_version: number;
+          p_revision_id: string;
+          p_stops: Json;
+        };
+        Returns: undefined;
+      };
       set_revision_tags: {
         Args: {
           p_expected_version: number;
@@ -2595,6 +3281,10 @@ export type Database = {
         };
         Returns: undefined;
       };
+      set_story_country: {
+        Args: { p_country_slug: string; p_story_id: string };
+        Returns: undefined;
+      };
       set_story_cover_media: {
         Args: {
           p_expected_version: number;
@@ -2603,8 +3293,8 @@ export type Database = {
         };
         Returns: undefined;
       };
-      set_story_parent_story: {
-        Args: { p_parent_story_id: string; p_story_id: string };
+      set_story_parent: {
+        Args: { p_parent_id: string; p_story_id: string };
         Returns: undefined;
       };
       submit_revision_with_consent: {
@@ -2620,6 +3310,12 @@ export type Database = {
         };
         Returns: undefined;
       };
+      switch_story_media_to_drive: {
+        Args: { p_job_id: string; p_sha256: string };
+        Returns: {
+          had_public_copy: boolean;
+        }[];
+      };
       unlink_contributor_from_user: {
         Args: { p_contributor_id: string; p_note?: string };
         Returns: undefined;
@@ -2632,6 +3328,14 @@ export type Database = {
           p_expected_version: number;
           p_media_id: string;
           p_revision_id: string;
+        };
+        Returns: undefined;
+      };
+      upsert_story_drive_folder: {
+        Args: {
+          p_drive_folder_id: string;
+          p_folder_name: string;
+          p_story_id: string;
         };
         Returns: undefined;
       };

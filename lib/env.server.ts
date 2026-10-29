@@ -65,3 +65,88 @@ export function getAdminEnv() {
   }
   return cachedAdminEnv;
 }
+
+/**
+ * Google Drive OAuth env vars — a third, separate schema from `env`/
+ * `adminEnv` above, for the same reason: importing this module for the
+ * ordinary config should never force these to be present. Only
+ * lib/drive/token-store.ts and the app/(contributor)/account/drive/*
+ * routes/actions ever read `getDriveEnv()`. None of these may be
+ * `NEXT_PUBLIC_`-prefixed — see docs/google-drive-integration.md section 2.
+ *
+ * Preview/CI builds (Vercel previews, this repo's CI) legitimately have no
+ * Drive credentials configured yet, so `isDriveConfigured()` below reports
+ * that honestly instead of `getDriveEnv()` throwing — the UI uses it to
+ * hide the Connect button rather than crash the Account page.
+ */
+const driveEnvSchema = z.object({
+  GOOGLE_DRIVE_OAUTH_CLIENT_ID: z.string().min(1, {
+    message: "GOOGLE_DRIVE_OAUTH_CLIENT_ID is missing.",
+  }),
+  GOOGLE_DRIVE_OAUTH_CLIENT_SECRET: z.string().min(1, {
+    message: "GOOGLE_DRIVE_OAUTH_CLIENT_SECRET is missing.",
+  }),
+  GOOGLE_DRIVE_OAUTH_REDIRECT_URI: z.string().url({
+    message: "GOOGLE_DRIVE_OAUTH_REDIRECT_URI is missing or not a valid URL.",
+  }),
+  // Must decode to exactly 32 bytes — the key size AES-256-GCM requires.
+  // Checked here, at the boundary, so a misconfigured key fails loudly at
+  // startup rather than failing confusingly inside token-store.ts's cipher
+  // call the first time someone connects.
+  GOOGLE_DRIVE_TOKEN_ENCRYPTION_KEY: z
+    .string()
+    .min(1, { message: "GOOGLE_DRIVE_TOKEN_ENCRYPTION_KEY is missing." })
+    .refine(
+      (value) => {
+        try {
+          return Buffer.from(value, "base64").length === 32;
+        } catch {
+          return false;
+        }
+      },
+      {
+        message:
+          "GOOGLE_DRIVE_TOKEN_ENCRYPTION_KEY must be base64 that decodes to exactly 32 bytes (an AES-256 key).",
+      },
+    ),
+});
+
+let cachedDriveEnv: z.infer<typeof driveEnvSchema> | undefined;
+
+function readDriveEnvInput() {
+  return {
+    GOOGLE_DRIVE_OAUTH_CLIENT_ID: process.env.GOOGLE_DRIVE_OAUTH_CLIENT_ID,
+    GOOGLE_DRIVE_OAUTH_CLIENT_SECRET:
+      process.env.GOOGLE_DRIVE_OAUTH_CLIENT_SECRET,
+    GOOGLE_DRIVE_OAUTH_REDIRECT_URI:
+      process.env.GOOGLE_DRIVE_OAUTH_REDIRECT_URI,
+    GOOGLE_DRIVE_TOKEN_ENCRYPTION_KEY:
+      process.env.GOOGLE_DRIVE_TOKEN_ENCRYPTION_KEY,
+  };
+}
+
+export function getDriveEnv() {
+  if (!cachedDriveEnv) {
+    const parsedDrive = driveEnvSchema.safeParse(readDriveEnvInput());
+    if (!parsedDrive.success) {
+      const messages = parsedDrive.error.issues.map(
+        (issue) => `- ${issue.message}`,
+      );
+      throw new Error(
+        `Invalid or missing environment variables:\n${messages.join("\n")}`,
+      );
+    }
+    cachedDriveEnv = parsedDrive.data;
+  }
+  return cachedDriveEnv;
+}
+
+/**
+ * True only when every Drive env var is present and valid. Used by the
+ * Account settings UI to hide the Connect button and show "not available
+ * here" instead of letting getDriveEnv() throw and break the whole page —
+ * Vercel preview builds legitimately have none of these set.
+ */
+export function isDriveConfigured(): boolean {
+  return driveEnvSchema.safeParse(readDriveEnvInput()).success;
+}

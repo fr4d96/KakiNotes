@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { getLocale } from "next-intl/server";
 import { listContributorsForEditorial } from "@/lib/story/editorial-queries";
+import { listActiveCountries } from "@/lib/story/active-lookups";
 import { NewImportForm } from "./new-import-form";
 
 export const metadata: Metadata = {
@@ -10,7 +12,11 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function NewEditorialImportPage() {
-  const contributors = await listContributorsForEditorial();
+  const [contributors, countries, locale] = await Promise.all([
+    listContributorsForEditorial(),
+    listActiveCountries(),
+    getLocale(),
+  ]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
@@ -22,7 +28,11 @@ export default async function NewEditorialImportPage() {
         record. You&apos;ll add the story content, images, and attribution
         details on the next page.
       </p>
-      <NewImportForm contributors={contributors} />
+      <NewImportForm
+        contributors={contributors}
+        countries={countries}
+        locale={locale}
+      />
     </div>
   );
 }

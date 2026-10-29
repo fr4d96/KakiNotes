@@ -45,6 +45,9 @@
       "previous": "Previous photo",
       "next": "Next photo",
       "counter": "Photo {current} of {total}"
+    },
+    "countryToggle": {
+      "label": "Choose a country section"
     }
   },
   "nav": {
@@ -61,7 +64,8 @@
     "account": "Account",
     "signOut": "Sign out",
     "accountMenu": "Account menu",
-    "staff": "Staff"
+    "staff": "Staff",
+    "myPhotos": "My Photos"
   },
   "footer": {
     "tagline": "A storytelling community for honest working-holiday experiences across Aotearoa New Zealand.",
@@ -169,17 +173,28 @@
       "singleBlock": "A story has a single content block.",
       "titleRequired": "Title is required.",
       "locationEitherOr": "Provide either a selection or a custom label, not both.",
+      "customRegionNoDestinationId": "A typed region can't use a picked destination — type the town or place instead.",
       "tooManyTags": "You can add up to {max} tags to a story.",
       "expenseNeedsCategory": "An expense row needs a category or a name.",
       "consentRequired": "You must confirm you have permission to publish this story.",
       "termsVersionMissing": "Missing terms version.",
       "selectPage": "Select at least one page.",
-      "changeNoteRequired": "Describe what needs to change."
+      "changeNoteRequired": "Describe what needs to change.",
+      "journeyLabelRequired": "Give this stop a place name.",
+      "journeyLabelTooLong": "Place names must be {max} characters or fewer.",
+      "journeyOutOfBounds": "Stops must be inside New Zealand.",
+      "journeyTooMany": "A story can have at most 12 main stops and 40 stops in total.",
+      "journeyTooManyInside": "A main stop can hold at most 8 places inside it.",
+      "journeyBadParent": "A place inside a stop must belong to an earlier main stop.",
+      "invalidCountry": "Choose a valid country."
     },
     "pdf": {
       "empty": "The PDF file is empty.",
       "tooLarge": "The PDF file is too large.",
       "notAPdf": "The file is not a PDF (magic bytes did not match)."
+    },
+    "drive": {
+      "confirmationRequired": "Tick the box to confirm before disconnecting."
     }
   },
   "stories": {
@@ -473,7 +488,9 @@
       "signIn": "Sign-in",
       "signInDescription": "Optional. Set a username and you can sign in with either it or your email — your email keeps working either way.",
       "contributorIdentity": "Contributor identity",
-      "contributorIdentityDescription": "How you're attributed on every story, and what readers see on your contributor page. You choose this — it's never inferred from your account."
+      "contributorIdentityDescription": "How you're attributed on every story, and what readers see on your contributor page. You choose this — it's never inferred from your account.",
+      "drive": "Google Drive",
+      "driveDescription": "Optional. Connect your own Google Drive so future photo uploads are stored there instead of on Kakinotes."
     },
     "profile": {
       "nameLabel": "Account name",
@@ -536,6 +553,63 @@
       "alreadyHaveIdentity": "You already have a contributor identity.",
       "identityCreateFailed": "Could not set up your contributor identity. Please try again.",
       "identityUpdateFailed": "Could not update your contributor identity. Please try again."
+    },
+    "drive": {
+      "notAvailableHere": "Google Drive connection isn't available on this deployment yet.",
+      "notConnectedExplainer": "Connect your Google Drive and, from then on, new photos you upload go to your own Drive instead of Kakinotes, and you also keep a full-quality copy of each one there. Nothing changes for photos you've already uploaded, and nothing changes until you connect.",
+      "connect": "Connect Google Drive",
+      "connectedTitle": "Google Drive is connected",
+      "connectedAs": "Connected as {email}",
+      "connectedSince": "Connected on {date}",
+      "warningTitle": "Before you disconnect",
+      "warningBody": "Disconnecting will stop your Drive-stored photos from showing on your published and draft stories. We don't keep a copy of these photos anywhere else, so once you disconnect, we can't bring them back. This can't be undone from our side.",
+      "confirmLabel": "I understand this can't be undone, and I want to disconnect.",
+      "disconnect": "Disconnect Google Drive",
+      "disconnecting": "Disconnecting…",
+      "disconnected": "Google Drive disconnected.",
+      "banners": {
+        "connected": "Google Drive connected.",
+        "cancelled": "You didn't finish connecting, so nothing changed. You can try again anytime.",
+        "failed": "Something went wrong connecting Google Drive. Please try again."
+      },
+      "errors": {
+        "notAvailable": "Google Drive connection isn't available on this deployment yet."
+      },
+      "move": {
+        "title": "Move your existing photos to Drive",
+        "explainer": "{count, plural, one {1 photo is} other {# photos are}} still stored on Kakinotes from before you connected Drive. Moving puts all your photos in your own Drive. Published stories keep showing the whole time. Once a photo is in your Drive, Kakinotes deletes its own copy. Photos in stories an editor imported for you stay on Kakinotes.",
+        "confirmLabel": "I understand Kakinotes won't keep a copy of photos it moves to my Drive.",
+        "start": "{count, plural, one {Move 1 photo to Drive} other {Move # photos to Drive}}",
+        "progress": "Moved {done} of {total}…",
+        "progressLabel": "Move progress",
+        "keepOpen": "Keep this page open. If you leave, the move pauses, and you can carry on later from here.",
+        "stop": "Stop after this photo",
+        "stopping": "Stopping after this photo…",
+        "movedCount": "{count, plural, one {Moved 1 photo to your Drive.} other {Moved # photos to your Drive.}}",
+        "failedCount": "{count, plural, one {1 photo couldn't be moved and is still on Kakinotes:} other {# photos couldn't be moved and are still on Kakinotes:}}",
+        "failedItem": "{story}: {reason}",
+        "untitledStory": "Untitled story",
+        "runningElsewhere": "A move is already running in another tab or window.",
+        "cleanupExplainer": "{count, plural, one {1 published photo has} other {# published photos have}} moved to your Drive. Kakinotes keeps its old copy for 5 minutes after a move so nobody sees a broken image, and deletes it when you press the button below.",
+        "cleanup": "Delete Kakinotes' old copies",
+        "nothingToMove": "There are no photos on Kakinotes to move. All your photos are in your Drive.",
+        "reasons": {
+          "being_published": "its story is being published right now. Try again in a few minutes.",
+          "source_missing": "Kakinotes couldn't read its copy of this photo.",
+          "verify_failed": "the copy in Drive didn't match, so we left it where it was.",
+          "changed_meanwhile": "the photo changed while it was moving. Try again.",
+          "unknown": "something went wrong. Try again later."
+        },
+        "errors": {
+          "notAvailable": "Google Drive connection isn't available on this deployment yet.",
+          "drive_not_connected": "Your Google Drive isn't connected any more. Reconnect it, then try again.",
+          "drive_unavailable": "Google Drive refused the upload (it may be full, or busy). Nothing was lost. Try again later.",
+          "already_running": "A move is already running in another tab or window. Wait for it to finish, then try again.",
+          "run_not_active": "This move stopped. Press the button again to carry on.",
+          "generic": "Something went wrong moving your photos. Nothing was lost. Try again."
+        }
+      },
+      "seeMyPhotos": "Save copies first from My Photos"
     }
   },
   "myStories": {
@@ -583,18 +657,7 @@
       "delete": "Delete {title}",
       "takeDown": "Take down {title}",
       "cancelTakedown": "Cancel the takedown request for {title}",
-      "takedownPending": "Takedown requested for {title} — awaiting review. Choose to cancel the request.",
-      "linkMainStory": "Set the main story for {title}"
-    },
-    "linkMainStoryDialog": {
-      "title": "Main story for \"{title}\"",
-      "liveNote": "Both stories are already published, so the link shows on both pages straight away — no review needed.",
-      "loading": "Loading…",
-      "save": "Save",
-      "saving": "Saving…",
-      "cancel": "Cancel",
-      "toast": "Linked \"{title}\" to its main story.",
-      "toastCleared": "Removed the main story from \"{title}\"."
+      "takedownPending": "Takedown requested for {title} — awaiting review. Choose to cancel the request."
     },
     "deleteDialog": {
       "title": "Delete this story?",
@@ -618,7 +681,9 @@
       "submitted": "Submitted for review.",
       "keptPrivate": "Saved privately. Only you can see it."
     },
-    "updatedAt": "Updated {date}"
+    "updatedAt": "Updated {date}",
+    "myPhotosLink": "My Photos",
+    "storyMapLink": "Open story folders"
   },
   "storyStatus": {
     "draft": "Draft",
@@ -670,15 +735,18 @@
       "totalExpenses": "Total expenses (NZD)",
       "locations": "Locations",
       "region": "Region",
-      "chooseRegion": "Choose a region…",
+      "regionOrArea": "Region or area",
       "townOrPlace": "Town or place (optional)",
       "remove": "Remove",
       "noteToEditors": "Note to editors",
       "addLocationManually": "Add a location manually",
-      "unmatchedPlace": "We could not match that place to a New Zealand region — use \"Add a location manually\" below.",
+      "unmatchedPlace": "We could not match that place to a {country} region — use \"Add a location manually\" below.",
       "photosHint": "Add photos here. They show in a gallery with your story.",
-      "unmatchedPlaceNamed": "We could not match \"{label}\" to a New Zealand region — use \"Add a location manually\" below.",
-      "noteToEditorsHint": "(optional, private, never published)"
+      "unmatchedPlaceNamed": "We could not match \"{label}\" to a {country} region — use \"Add a location manually\" below.",
+      "noteToEditorsHint": "(optional, private, never published)",
+      "country": "Country",
+      "countryLocked": "Country can't be changed after a story is published.",
+      "countryClearedNotice": "Locations for the previous country were cleared — add places in {country} below."
     },
     "tripDates": {
       "heading": "When did you travel?",
@@ -705,7 +773,7 @@
     },
     "place": {
       "heading": "Search for a place",
-      "placeholder": "Type a full place name, e.g. Queenstown",
+      "placeholder": "Type a full place name, e.g. {example}",
       "search": "Search",
       "searching": "Searching…",
       "unavailable": "Place search is unavailable right now — pick the region below instead.",
@@ -792,6 +860,7 @@
     },
     "photos": {
       "dropzone": "Drag and drop images here, or click to browse",
+      "driveNote": "Photos are saved to your Google Drive, with a full-quality copy of each one.",
       "count": "{count, plural, one {# photo} other {# photos}}",
       "placedCount": "{count} in your story",
       "badges": {
@@ -824,6 +893,13 @@
         "uploadFailed": "Upload failed.",
         "uploadFailedStatus": "Upload failed (error {status}).",
         "uploadedToast": "{fileName} uploaded."
+      },
+      "drag": {
+        "hint": "Drag a photo to change its place. On a phone, press and hold first.",
+        "pickedUp": "Picked up the photo in position {position}.",
+        "over": "Moved to position {position} of {total}.",
+        "dropped": "Dropped in position {position}.",
+        "cancelled": "Move cancelled. The photo is back where it was."
       }
     },
     "toolbar": {
@@ -872,13 +948,6 @@
       "hide": "Hide",
       "outlineLead": "Know the shape already?",
       "outlineAction": "Start from an outline"
-    },
-    "parentStory": {
-      "label": "Main story (optional)",
-      "none": "None — this is its own story",
-      "help": "Link this story under one of your other published stories, e.g. 'Fergburger' under 'Food in Queenstown'.",
-      "hasSubStories": "Other stories are linked under this one, so it can't become a sub story.",
-      "noOptions": "Publish another story first to file this one under it."
     }
   },
   "publish": {
@@ -1135,16 +1204,16 @@
     "reserveUploadFailed": "Could not reserve an upload slot.",
     "heicConvertFailed": "Could not convert this HEIC photo. Please try again.",
     "finalizeUploadFailed": "Could not finalize the upload.",
+    "driveDisconnected": "Your Google Drive isn't connected anymore. Reconnect it in Account settings, then try again.",
     "submitFailed": "Could not submit this story for review.",
     "savePrivateFailed": "Could not save this story privately.",
     "requestChangesFailed": "Could not request changes.",
     "declineFailed": "Could not decline.",
-    "subStorySelf": "A story can't be its own main story.",
-    "subStoryNotFound": "That main story couldn't be found.",
-    "subStoryParentNotPublished": "The main story has to be published first.",
+    "subStorySelf": "A story can't be filed under itself.",
+    "subStoryNotFound": "That story couldn't be found.",
     "subStoryParentIsSubStory": "That story is already a sub story, so it can't have sub stories of its own.",
-    "subStoryHasSubStories": "Other stories are already linked under this one, so it can't become a sub story.",
-    "subStoryNotPublished": "Only published stories can be linked."
+    "subStoryHasSubStories": "This story already has sub stories, so it can't be filed into a folder.",
+    "subStoryNotPublished": "Only published stories can be filed into a folder."
   },
   "takedown": {
     "alreadyDown": "This story has already been taken down.",
@@ -1155,5 +1224,193 @@
     "onlyPublished": "Only a published story can be taken down.",
     "gone": "That story no longer exists.",
     "failed": "Could not take this story down. Please try again."
+  },
+  "myPhotos": {
+    "metaTitle": "My Photos",
+    "title": "My Photos",
+    "subtitle": "Every photo on your stories, in one place.",
+    "summary": "{photos, plural, one {1 photo} other {# photos}} across {stories, plural, one {1 story} other {# stories}}.",
+    "empty": "No photos yet. Photos you add to your stories will show up here.",
+    "backToMyStories": "My Stories",
+    "untitledStory": "Untitled story",
+    "photoCount": "{count, plural, one {1 photo} other {# photos}}",
+    "photoLabel": "photo {index} of {story}",
+    "whereKakinotes": "On Kakinotes",
+    "whereDrive": "In your Google Drive",
+    "earlierVersion": "from an earlier version",
+    "download": "Download",
+    "downloadLabel": "Download {photo}",
+    "preparing": "Preparing…",
+    "reconnect": "Reconnect Google Drive",
+    "reconnectToSee": "Reconnect Google Drive to see this photo.",
+    "cantShow": "This photo can't be shown right now.",
+    "fullQuality": "Full quality",
+    "downloadFull": "Download full quality",
+    "downloadFullLabel": "Download {photo} in full quality"
+  },
+  "storyFolders": {
+    "metaTitle": "Story folders",
+    "title": "Story folders",
+    "backToMyStories": "Back to My Stories",
+    "intro": "Drag a published story onto a folder to file it there, or use “Move to…”. Only published stories can be filed.",
+    "empty": "Publish at least one story to start making folders.",
+    "dragHint": "Drag a story onto a folder to file it there, or onto “Not in a folder” to remove it.",
+    "folders": {
+      "subStoryCount": "{count, plural, one {# sub story} other {# sub stories}}",
+      "openStory": "Open story",
+      "removeFromFolder": "Remove from folder",
+      "removeDialog": {
+        "title": "Remove from folder?",
+        "description": "“{child}” will no longer show as filed under “{parent}”.",
+        "confirm": "Remove"
+      }
+    },
+    "notInFolder": {
+      "heading": "Not in a folder",
+      "publishHint": "Publish this story to file it.",
+      "notDraggableHint": "This story has sub stories, so it can't be filed under another."
+    },
+    "moveTo": {
+      "label": "Move to",
+      "notInFolderOption": "Not in a folder"
+    },
+    "toasts": {
+      "filed": "Filed “{child}” under “{parent}”.",
+      "removed": "Removed “{child}” from its folder."
+    },
+    "announce": {
+      "instructions": "To pick up a story, press Space or Enter. Use the arrow keys to move it over a folder, then press Space or Enter to drop it there, or Escape to cancel. You can also use the Move to menu.",
+      "start": "Picked up “{story}”.",
+      "over": "“{story}” is over “{target}”.",
+      "outside": "“{story}” is not over a folder.",
+      "dropped": "Dropped “{story}” on “{target}”.",
+      "cancelled": "Stopped moving “{story}”."
+    }
+  },
+  "journey": {
+    "title": "The journey",
+    "note": "An illustration on a simplified map, not for navigation — places are approximate and chosen by the author.",
+    "mapLabel": "Illustrated route through New Zealand with {count} stops",
+    "pinLabel": "Stop {n}: {label}",
+    "play": "Play the journey",
+    "pause": "Pause",
+    "replay": "Replay the journey",
+    "stopOf": "Stop {n} of {total}",
+    "onTheRoad": "On the road to {label}…",
+    "onTheFerry": "On the ferry across Cook Strait to {label}…",
+    "readThisPart": "Read this part",
+    "stopsList": "Stops",
+    "controls": {
+      "help": "Interactive map. Drag to pan, hold Ctrl or Cmd and scroll or pinch to zoom, or use the plus and minus buttons. When the map has focus, arrow keys pan and plus and minus zoom.",
+      "follow": "Re-centre and follow the van",
+      "reset": "Reset map view",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "hint": {
+        "wheel": "Use Ctrl + scroll to zoom the map",
+        "wheelMac": "Use ⌘ + scroll to zoom the map",
+        "touch": "Use two fingers to move the map"
+      }
+    },
+    "editor": {
+      "title": "Journey map",
+      "hint": "Optional. Tap the map to pin up to {max} main stops in the order you travelled, then add up to {inside} places inside each one. Readers see a cute route with the names you give — never exact coordinates (places are rounded to about 1 km).",
+      "mapLabel": "New Zealand. Tap to add a stop.",
+      "addByKeyboard": "Add a stop in the middle of the map",
+      "empty": "No stops yet. Tap the map to add your first one.",
+      "stopHeading": "Stop {n}",
+      "labelField": "Place name",
+      "labelPlaceholder": "e.g. Near Cromwell",
+      "labelHelp": "Up to {max} characters. Shown to readers.",
+      "sectionField": "Links to part of your story",
+      "sectionNone": "None — link to the start",
+      "moveUp": "Move stop {n} up",
+      "moveDown": "Move stop {n} down",
+      "remove": "Remove stop {n}",
+      "limit": "You've reached the limit of {max} stops in total.",
+      "needsLabel": "Give every stop a place name to save your route.",
+      "saveFailed": "Couldn't save your journey. Please try again.",
+      "mapHelp": "Interactive map. Tap a place to pin a stop. Drag to pan, hold Ctrl or Cmd and scroll or pinch to zoom, or use the plus and minus buttons. When the map has focus, arrow keys pan and plus and minus zoom.",
+      "tapHint": "Tip: zoom in with the plus button, then tap right on the place. Drag to move the map. You can fine-tune the name afterwards.",
+      "linkField": "Or add from a Google Maps link",
+      "linkPlaceholder": "Paste a Google Maps link",
+      "linkButton": "Add stop",
+      "linkWorking": "Adding…",
+      "linkPrivacy": "Paste a Google Maps link to a place. We only keep the approximate spot (about 1 km) and the name — not the link.",
+      "linkAdded": "Added “{name}”. Check the name below.",
+      "linkAddedNoName": "Stop added. Give it a place name below.",
+      "linkErrors": {
+        "empty": "Paste a Google Maps link first.",
+        "invalid": "That doesn't look like a Google Maps link.",
+        "notFound": "We couldn't find a place in that link. Try the Share link for a specific place.",
+        "outsideNz": "That place is outside New Zealand.",
+        "unreachable": "Couldn't open that link right now. Please try again.",
+        "unauthenticated": "Please sign in to use short links."
+      },
+      "pinLabel": "Stop {n}{named, select, yes {: {name}} other {}}{selected, select, yes {, selected} other {}}",
+      "toast": {
+        "added": "Added stop {n}",
+        "removed": "Removed “{name}”",
+        "removedUnnamed": "Removed stop {n}",
+        "undo": "Undo",
+        "addedInside": "Added {id} inside {parent}",
+        "removedWithSubs": "Removed “{name}” and {count, plural, one {# place} other {# places}} inside",
+        "removedUnnamedWithSubs": "Removed stop {n} and {count, plural, one {# place} other {# places}} inside"
+      },
+      "popover": {
+        "label": "Stop {n} actions",
+        "title": "Stop {n}: {name}",
+        "titleUnnamed": "Stop {n}",
+        "remove": "Remove",
+        "edit": "Edit",
+        "addInside": "Add places inside"
+      },
+      "limitMain": "You can have up to {max} main stops. Put extra places inside an existing stop instead.",
+      "limitInside": "A stop can hold up to {max} places inside it.",
+      "subHeading": "Place {id}",
+      "unnamedStop": "Stop {n}",
+      "partOfField": "Part of",
+      "partOfMain": "Main stop",
+      "partOfInside": "Inside: {label}",
+      "partOfInsideFull": "Inside: {label} (full)",
+      "partOfHasPlaces": "This stop has places inside it, so it can't go inside another stop.",
+      "addingBanner": "Adding places inside {label}",
+      "addingDone": "Done",
+      "subPinLabel": "Place {id}{named, select, yes {: {name}} other {}}{selected, select, yes {, selected} other {}}, inside {parent}"
+    },
+    "preview": {
+      "title": "Journey map (as readers will see it)"
+    },
+    "pinLabelWithSubs": "Stop {n}: {label}, {count, plural, one {# place inside} other {# places inside}}",
+    "subPinLabel": "Place {id}: {label}",
+    "morePlaces": "+{count, plural, one {# place} other {# places}}",
+    "backToJourney": "Back to whole journey",
+    "insideList": "Places inside {label}",
+    "insideStatus": "Exploring {label}: {count, plural, one {# place} other {# places}}"
+  },
+  "countryContent": {
+    "newZealand": {
+      "name": "New Zealand",
+      "tagline": "First-person Working Holiday Visa stories from New Zealand.",
+      "siteDescription": "Kakinotes is a public archive of detailed, written first-person stories from people who completed or are completing a Working Holiday Visa in New Zealand.",
+      "storiesIntro": "Real Working Holiday accounts from people who've done it — filter by region, tag, trip year, travel style, or reported cost to find one like yours.",
+      "storiesMetaDescription": "Browse real, first-person Working Holiday Visa stories from New Zealand, filterable by region, tag, trip year, travel style, and reported cost.",
+      "costsFraming": "What people actually spent on their Working Holiday Visa in New Zealand, built from the budgets contributors chose to share.",
+      "aboutText": "Kakinotes collects and verifies real, detailed stories from Working Holiday Visa travellers in New Zealand, so the next traveller can read what the experience actually involved.",
+      "personalExperienceLabel": "One person's experience, not advice.",
+      "placeExample": "Queenstown"
+    },
+    "china": {
+      "name": "China",
+      "tagline": "First-person travel stories from China.",
+      "siteDescription": "Kakinotes' China section is a public archive of detailed, written first-person travel stories from China — general travel accounts, not Working Holiday Visa stories.",
+      "storiesIntro": "Browse every published China travel story, searchable by region and trip year.",
+      "storiesMetaDescription": "Published first-person travel stories from China, searchable by region and trip year.",
+      "costsFraming": "What people actually spent travelling in China, built from the budgets contributors chose to share.",
+      "aboutText": "Kakinotes' China section collects and verifies real, detailed first-person travel stories from China, so the next traveller can read what the trip actually involved.",
+      "personalExperienceLabel": "One person's experience, not advice.",
+      "madeFor": "Made for travellers exploring China",
+      "placeExample": "Guangzhou"
+    }
   }
 }

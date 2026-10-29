@@ -44,13 +44,29 @@ import type {
   ActiveDestination,
   ActiveTag,
   ActiveExpenseCategory,
+  ActiveCountry,
 } from "@/lib/story/active-lookups";
+import {
+  countryMessageSegment,
+  isCountrySlug,
+  DEFAULT_COUNTRY_SLUG,
+} from "@/lib/story/countries";
 import {
   saveRevisionFieldsAction,
   setLocationsAction,
   setTagsAction,
   setExpensesAction,
+  setJourneyStopsAction,
+  setCountryAction,
 } from "@/app/(contributor)/stories/[id]/edit/actions";
+import {
+  JourneyStopsEditor,
+  draftsFromViews,
+  type JourneyDraftStop,
+} from "@/components/story/journey-stops-editor";
+import { extractHeadings } from "@/lib/story/headings";
+import { normalizeStops, toParentIndexes } from "@/lib/journey/draft";
+import type { JourneyStopView } from "@/lib/journey/schema";
 import { TagEditor } from "@/components/story/tag-editor";
 import {
   ExpenseBreakdown,
@@ -81,7 +97,13 @@ export type StoryEditFormProps = {
   initialTotalExpenseNzdCents: number | null;
   initialContributorNote: string;
   initialLocations: Array<{
-    regionId: string;
+    regionId: string | null;
+    /**
+     * A typed region/area, for one not in the curated `regions` table
+     * (20261015_custom_region_labels.sql). Mutually exclusive with
+     * regionId.
+     */
+    customRegionLabel: string | null;
     destinationId: string | null;
     /** A typed place, for somewhere not in `destinations` (20260903140000). */
     customDestinationLabel: string | null;
@@ -90,9 +112,53 @@ export type StoryEditFormProps = {
   initialTags: RevisionTagSelection[];
   /** The revision's saved per-category expense breakdown, if any. */
   initialExpenses: RevisionExpenseSelection[];
+  /**
+   * The revision's saved journey-map stops. OMITTED by callers that do not
+   * offer the journey map (the editorial import page), which hides the
+   * stops editor entirely rather than showing an empty one that would
+   * replace stops the editor never loaded.
+   */
+  initialStops?: JourneyStopView[];
   initialMedia: RevisionMediaItem[];
+  /** Every active region, across every country -- filtered to the selected country client-side (see `countries` below). */
   regions: ActiveRegion[];
+  /** Every active destination, across every country -- filtered alongside `regions`. */
   destinations: ActiveDestination[];
+  /**
+   * Display name of the story's own country, for the location-match-failure
+   * copy (editor.fields.unmatchedPlace(Named), now `{country}`-parameterized
+   * rather than hard-coding "New Zealand"). Defaults to New Zealand's name
+   * so every call site that predates China (editorial import, moderation
+   * preview) keeps its exact previous copy without passing anything new.
+   */
+  countryName?: string;
+  /**
+   * Active countries for the Country select above the location rows
+   * (product decision: country picked above region). Optional, defaulting
+   * to empty, so a call site that has not been updated yet (there should
+   * be none left after this change, but this keeps the component from
+   * crashing if one is) just renders no country options rather than
+   * throwing.
+   */
+  countries?: ActiveCountry[];
+  /**
+   * The story's country slug right now (get_story_country()). Drives the
+   * Country select's value/default and which regions/destinations are
+   * offered. Falls back to DEFAULT_COUNTRY_SLUG (new-zealand) when absent
+   * -- same "unchanged historical behaviour" default every other
+   * country-aware call site in this codebase uses.
+   */
+  initialCountrySlug?: string;
+  /**
+   * True once a story has ever been published (lifecycle_status ===
+   * "published") -- country.country_id is a property of the STORY row, not
+   * the revision, so changing it on a published story would move already-
+   * public content between country sections with no moderation step in
+   * between (Engineering Rule 11; enforced server-side by
+   * set_story_country()). The Country select becomes read-only text here
+   * the moment this is true.
+   */
+  isPublished?: boolean;
   /** Suggestions only -- a contributor may add any label they like. */
   tags: ActiveTag[];
   /**
@@ -295,9 +361,14 @@ export function StoryEditForm({
   initialLocations,
   initialTags,
   initialExpenses,
+  initialStops,
   initialMedia,
   regions,
   destinations,
+  countryName,
+  countries = [],
+  initialCountrySlug,
+  isPublished = false,
   tags,
   expenseCategories,
   showContentImport,
@@ -305,6 +376,8 @@ export function StoryEditForm({
   initialStep = "title",
 }: StoryEditFormProps) {
   const t = useTranslations("editor");
+  const tCountry = useTranslations("countryContent");
+  const locale = useLocale() as Locale;
   const tValidation = useTranslations("validation");
   const versionRef = useRef(initialVersion);
   const [conflict, setConflict] = useState(false);
@@ -424,13 +497,64 @@ export function StoryEditForm({
   const [contributorNote, setContributorNote] = useState(
     initialContributorNote,
   );
+  // Country lives above the location rows (product decision: country,
+  // then region). Falls back to DEFAULT_COUNTRY_SLUG when the server could
+  // not resolve one (a signed-out render, or a call site that predates
+  // this prop) -- same "new-zealand unless told otherwise" default
+  // create_self_service_draft() itself applies.
+  const [countrySlug, setCountrySlug] = useState<string>(
+    initialCountrySlug && isCountrySlug(initialCountrySlug)
+      ? initialCountrySlug
+      : DEFAULT_COUNTRY_SLUG,
+  );
+  const [countrySaveError, setCountrySaveError] = useState<string | null>(null);
+  const selectedCountry = countries.find((c) => c.slug === countrySlug);
+  // Nominatim's countrycodes / the Chinese-region-matching fallback both
+  // need a real value even before `countries` has loaded (SSR passes it
+  // down synchronously today, but this keeps the search from crashing on
+  // an empty list) -- "nz" mirrors the exact previous hard-coded behaviour.
+  const countryCode = selectedCountry?.code ?? "nz";
+  const countryRegions = useMemo(
+    () => regions.filter((r) => r.countrySlug === countrySlug),
+    [regions, countrySlug],
+  );
+  const countryRegionIds = useMemo(
+    () => new Set(countryRegions.map((r) => r.id)),
+    [countryRegions],
+  );
+  const countryDestinations = useMemo(
+    () => destinations.filter((d) => countryRegionIds.has(d.regionId)),
+    [destinations, countryRegionIds],
+  );
+
+  /**
+   * Localized display name for a country slug -- name_zh_cn when reading
+   * in Chinese and the row has one, `name` otherwise (same null-means-
+   * "show name" contract as every other vocab field in this schema). Falls
+   * back to the `countryName` prop (then New Zealand's own copy) when
+   * `countries` hasn't been passed at all, so a call site that predates
+   * this change keeps its exact previous unmatched-place copy.
+   */
+  function countryDisplayName(slug: string): string {
+    const match = countries.find((c) => c.slug === slug);
+    if (match) {
+      return locale === "zh-CN" && match.name_zh_cn
+        ? match.name_zh_cn
+        : match.name;
+    }
+    return countryName ?? tCountry("newZealand.name");
+  }
+  const resolvedCountryName = countryDisplayName(countrySlug);
+
   const [locations, setLocations] = useState(initialLocations);
-  // A manually-added row carries no region until the contributor picks one.
-  // Such a row must not tick the "Places" step or satisfy the submit gate --
-  // it is not a location yet, and saveLocations() does not persist it either.
-  // Everything that asks "how many locations are there" means this, not
-  // locations.length.
-  const completeLocationCount = locations.filter((l) => l.regionId).length;
+  // A manually-added row carries no region (curated OR typed) until the
+  // contributor picks/types one. Such a row must not tick the "Places" step
+  // or satisfy the submit gate -- it is not a location yet, and
+  // saveLocations() does not persist it either. Everything that asks "how
+  // many locations are there" means this, not locations.length.
+  const completeLocationCount = locations.filter(
+    (l) => l.regionId || l.customRegionLabel?.trim(),
+  ).length;
   const [locationSearchNotice, setLocationSearchNotice] = useState<
     string | null
   >(null);
@@ -447,6 +571,10 @@ export function StoryEditForm({
       amountDollars: String(e.amountNzdCents / 100),
       note: e.note ?? "",
     })),
+  );
+
+  const [journeyStops, setJourneyStops] = useState<JourneyDraftStop[]>(() =>
+    draftsFromViews(initialStops ?? []),
   );
 
   // Which step of the timeline is on screen. Every step's section is
@@ -555,6 +683,7 @@ export function StoryEditForm({
             revisionId,
             versionRef.current,
             parsed.data,
+            storyId,
           );
           if (result.ok) {
             // Authoritative: the server's own new version, not an assumed
@@ -678,6 +807,7 @@ export function StoryEditForm({
               revisionId,
               versionRef.current,
               parsed.data,
+              storyId,
             );
             if (result.ok) {
               versionRef.current = result.version;
@@ -821,6 +951,54 @@ export function StoryEditForm({
   }
 
   /**
+   * Journey-map stops: discrete edits (tap, reorder, remove) mixed with
+   * typing a place name, so debounced like the expense breakdown and on its
+   * OWN "journey" queue slot. A route with a still-blank place name is kept
+   * in the form but NOT sent (the editor says so); the RPC would reject it,
+   * and half-typed names must not fail an autosave. Removing the last stop
+   * is sent as an empty list, which clears the route.
+   */
+  const journeyDebounceHandle = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  function changeJourneyStops(next: JourneyDraftStop[]) {
+    setJourneyStops(next);
+    if (journeyDebounceHandle.current) {
+      clearTimeout(journeyDebounceHandle.current);
+    }
+    if (next.some((stop) => stop.label.trim() === "")) return;
+    setSaving(true);
+    journeyDebounceHandle.current = setTimeout(() => {
+      // Grouped order (each main stop, then its places); a place's parent is
+      // sent as an array position, never as a client key.
+      const grouped = normalizeStops(next);
+      const parents = toParentIndexes(grouped);
+      const payload = grouped.map((stop, i) => ({
+        latitude: stop.latitude,
+        longitude: stop.longitude,
+        label: stop.label,
+        sectionAnchor: stop.sectionAnchor,
+        parentIndex: parents[i],
+      }));
+      queue.enqueue("journey", async () => {
+        const result = await setJourneyStopsAction(
+          revisionId,
+          versionRef.current,
+          payload,
+        );
+        if (result.ok) {
+          versionRef.current += 1;
+          bumpVersion();
+          setLastSavedAt(Date.now());
+        } else {
+          throw new Error(result.error);
+        }
+      });
+    }, FIELDS_SAVE_DEBOUNCE_MS);
+  }
+
+  /**
    * Adding, removing or retyping a breakdown row also refreshes the headline
    * total -- but only while the total is still FOLLOWING the breakdown.
    *
@@ -931,7 +1109,13 @@ export function StoryEditForm({
     setLocations([
       ...locations,
       {
-        regionId: "",
+        // No regionId -- the discriminant the render below, saveLocations()
+        // and completeLocationCount all use to tell a manual (typed-region)
+        // row from a curated one. Starts as an empty string, not null, so
+        // typing immediately updates a real string rather than replacing a
+        // null.
+        regionId: null,
+        customRegionLabel: "",
         destinationId: null,
         customDestinationLabel: null,
         sortOrder: locations.length,
@@ -948,17 +1132,26 @@ export function StoryEditForm({
   }
 
   /**
-   * A manually-added row starts with NO region (see addManualLocation), and
-   * revisionLocationSchema requires `regionId: z.uuid()` -- so a half-filled
-   * row would fail validation and take the whole autosave down with it.
-   * Incomplete rows are therefore held in local state only and dropped here,
-   * with sortOrder renumbered over what actually gets sent so the saved
-   * order has no gaps. The row becomes real the moment a region is chosen.
+   * A manually-added row starts with NO region, curated or typed (see
+   * addManualLocation), and revisionLocationSchema requires exactly one of
+   * regionId/customRegionLabel -- so a half-filled row would fail
+   * validation and take the whole autosave down with it. Incomplete rows
+   * are therefore held in local state only and dropped here, with
+   * sortOrder renumbered over what actually gets sent so the saved order
+   * has no gaps. The row becomes real the moment a region is chosen or
+   * typed. A typed row's label is trimmed here too, so "  " alone still
+   * reads as incomplete rather than saving whitespace.
    */
   function saveLocations(next: typeof locations) {
     const complete = next
-      .filter((l) => l.regionId)
-      .map((l, i) => ({ ...l, sortOrder: i }));
+      .filter((l) => l.regionId || l.customRegionLabel?.trim())
+      .map((l, i) => ({
+        ...l,
+        customRegionLabel: l.regionId
+          ? null
+          : (l.customRegionLabel?.trim() ?? null),
+        sortOrder: i,
+      }));
     setSaving(true);
     queue.enqueue("locations", async () => {
       const result = await setLocationsAction(
@@ -976,12 +1169,65 @@ export function StoryEditForm({
     });
   }
 
+  /**
+   * The Country select changed. Every saved location row's region belongs
+   * to the OLD country (the select above only ever offered that country's
+   * regions), so every row that has a region is cleared outright --
+   * story_revision_locations_validate_country() would reject them against
+   * the new country_id anyway (supabase/migrations/20261014085842_
+   * countries.sql). A manually-added row with no region yet is kept: it
+   * has not picked a country-specific anything, so there is nothing to
+   * clear.
+   *
+   * set_story_country() runs BEFORE the (now empty) locations are saved,
+   * on its own "country" queue slot -- the location clear is only enqueued
+   * from inside that mutation's own success branch, not merely scheduled
+   * afterwards, so the RPC's country_id update is guaranteed to have
+   * landed before anything tries to insert a location against it.
+   */
+  function changeCountry(nextSlug: string) {
+    if (nextSlug === countrySlug) return;
+    const previousSlug = countrySlug;
+    const previousLocations = locations;
+    const hadRealLocations = locations.some((l) => l.regionId);
+    const kept = locations.filter((l) => !l.regionId);
+
+    setCountrySlug(nextSlug);
+    setLocations(kept);
+    setLocationSearchNotice(
+      hadRealLocations
+        ? t("fields.countryClearedNotice", {
+            country: countryDisplayName(nextSlug),
+          })
+        : null,
+    );
+    setCountrySaveError(null);
+    setSaving(true);
+    queue.enqueue("country", async () => {
+      const result = await setCountryAction(storyId, nextSlug);
+      if (!result.ok) {
+        // Revert -- the story's actual country_id never changed.
+        setCountrySlug(previousSlug);
+        setLocations(previousLocations);
+        setCountrySaveError(result.error);
+        throw new Error(result.error);
+      }
+      versionRef.current += 1;
+      bumpVersion();
+      setLastSavedAt(Date.now());
+      if (hadRealLocations) saveLocations(kept);
+    });
+  }
+
   function handleLocationMatch(match: LocationMatch | null, label: string) {
     if (!match) {
       setLocationSearchNotice(
         label
-          ? t("fields.unmatchedPlaceNamed", { label })
-          : t("fields.unmatchedPlace"),
+          ? t("fields.unmatchedPlaceNamed", {
+              label,
+              country: resolvedCountryName,
+            })
+          : t("fields.unmatchedPlace", { country: resolvedCountryName }),
       );
       return;
     }
@@ -1001,6 +1247,7 @@ export function StoryEditForm({
       ...locations,
       {
         regionId: match.regionId,
+        customRegionLabel: null,
         destinationId: match.destinationId,
         customDestinationLabel: match.customDestinationLabel,
         sortOrder: locations.length,
@@ -1016,12 +1263,21 @@ export function StoryEditForm({
   // a tick here must mean the same thing as "the submit panel will not
   // complain about this". Photos and Trip are genuinely optional: they tick
   // when filled, but their absence never blocks anything.
+  // Only parsed while the Places step (which hosts the journey editor) is
+  // open -- re-parsing the whole document on every keystroke elsewhere
+  // would be wasted work.
+  const storyHeadings = useMemo(
+    () =>
+      step === "places" && initialStops !== undefined
+        ? extractHeadings(storyContentText(content))
+        : [],
+    [step, content, initialStops],
+  );
   const contentFilled = Boolean(storyContentText(content).trim());
   // The starter card (below) wants the same "is there anything here yet"
   // answer plus a word count, both from the same `content` state the tick
   // uses, so the card and the tick can never disagree about emptiness.
   const contentWordCount = markdownWordCount(storyContentText(content));
-  const locale = useLocale() as Locale;
   const outline = useMemo(
     () => outlineMarkdown(getStoryStarters(locale).outline),
     [locale],
@@ -1491,6 +1747,52 @@ export function StoryEditForm({
           </StepSection>
 
           <StepSection id="places" activeStep={step}>
+            <div>
+              <label
+                htmlFor="edit-country"
+                className="block text-sm font-medium"
+              >
+                {t("fields.country")}
+              </label>
+              {/* Locked to read-only text once the story has ever been
+                  published -- stories.country_id is not revision-scoped,
+                  so changing it on a published story would move already-
+                  public content between country sections with no
+                  moderation step in between (Engineering Rule 11). Enforced
+                  server-side by set_story_country(); this is only the UI
+                  half. */}
+              {isPublished ? (
+                <>
+                  <p id="edit-country" className="mt-1 text-sm">
+                    {resolvedCountryName}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t("fields.countryLocked")}
+                  </p>
+                </>
+              ) : (
+                <select
+                  id="edit-country"
+                  value={countrySlug}
+                  onChange={(e) => changeCountry(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2 dark:bg-transparent"
+                >
+                  {countries.map((c) => (
+                    <option key={c.id} value={c.slug}>
+                      {locale === "zh-CN" && c.name_zh_cn
+                        ? c.name_zh_cn
+                        : c.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {countrySaveError && (
+                <p role="alert" className="mt-1 text-sm text-destructive">
+                  {countrySaveError}
+                </p>
+              )}
+            </div>
+
             <fieldset>
               <legend className="text-sm font-medium">
                 {t("fields.locations")}
@@ -1498,9 +1800,17 @@ export function StoryEditForm({
               </legend>
               <div className="mt-1">
                 <LocationSearch
-                  regions={regions}
-                  destinations={destinations}
+                  regions={countryRegions}
+                  destinations={countryDestinations}
                   onMatch={handleLocationMatch}
+                  countryCode={countryCode}
+                  placeholderExample={tCountry(
+                    `${countryMessageSegment(
+                      isCountrySlug(countrySlug)
+                        ? countrySlug
+                        : DEFAULT_COUNTRY_SLUG,
+                    )}.placeExample`,
+                  )}
                 />
                 {locationSearchNotice && (
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -1509,77 +1819,132 @@ export function StoryEditForm({
                 )}
               </div>
               <div className="mt-2 space-y-2">
-                {locations.map((loc, i) => (
-                  <div key={i} className="flex flex-wrap items-center gap-2">
-                    <select
-                      aria-label={t("fields.region")}
-                      value={loc.regionId}
-                      onChange={(e) =>
-                        updateLocation(i, {
-                          regionId: e.target.value,
-                          // Changing region invalidates a looked-up
-                          // destination (it belongs to the old region, and
-                          // a trigger enforces that), but NOT a typed one:
-                          // a place name the contributor wrote is still
-                          // theirs, and re-typing it would be a silly tax
-                          // for fixing the region above it.
-                          destinationId: null,
-                        })
-                      }
-                      className="rounded-md border border-border-subtle px-2 py-1.5 text-sm dark:bg-transparent"
-                    >
-                      {/* Only present while the row has no region -- a
-                          manually-added one. It disappears once a real
-                          region is chosen, so it can never be re-selected
-                          to un-set a saved location (Remove does that). */}
-                      {!loc.regionId && (
-                        <option value="">{t("fields.chooseRegion")}</option>
-                      )}
-                      {regions.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name}
-                        </option>
-                      ))}
-                    </select>
-                    {/* The town/place. Free text on purpose: `destinations`
-                        holds a sample of New Zealand's towns, not a list of
-                        them, so a picker here would keep failing the people
-                        who worked somewhere small -- which is most of them.
-                        Disabled when the search already matched a real
-                        destination row, since that row is the better record
-                        and the two are mutually exclusive in the database. */}
-                    <input
-                      type="text"
-                      aria-label={t("fields.townOrPlace")}
-                      value={
-                        loc.destinationId
-                          ? (destinations.find(
-                              (d) => d.id === loc.destinationId,
-                            )?.name ?? "")
-                          : (loc.customDestinationLabel ?? "")
-                      }
-                      disabled={Boolean(loc.destinationId)}
-                      maxLength={120}
-                      placeholder={t("fields.townOrPlace")}
-                      onChange={(e) =>
-                        updateLocation(i, {
-                          customDestinationLabel:
-                            e.target.value.trim() === ""
-                              ? null
-                              : e.target.value,
-                        })
-                      }
-                      className="min-w-0 flex-1 rounded-md border border-border-subtle px-2 py-1.5 text-sm disabled:opacity-60 dark:bg-transparent"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeLocation(i)}
-                      className="text-sm text-destructive underline underline-offset-2"
-                    >
-                      {t("fields.remove")}
-                    </button>
-                  </div>
-                ))}
+                {locations.map((loc, i) => {
+                  // No regionId means this row is the OTHER kind: a manual
+                  // one, either just added (customRegionLabel === "") or
+                  // loaded from a prior save with a typed region
+                  // (customRegionLabel set). Rendered as two plain-text
+                  // inputs and nothing else -- no dropdown, because the
+                  // whole point of this row is that the curated list above
+                  // didn't have what the contributor wanted (2026-10-14
+                  // China entry: five seeded provinces is a much thinner
+                  // list than NZ's sixteen regions, and "the region I want
+                  // isn't in the list" turned out to be common there).
+                  // A row that DID come from a region match (search or a
+                  // prior save) keeps the select + town input exactly as
+                  // before.
+                  if (!loc.regionId) {
+                    return (
+                      <div
+                        key={i}
+                        className="flex flex-wrap items-center gap-2"
+                      >
+                        <input
+                          type="text"
+                          aria-label={t("fields.regionOrArea")}
+                          value={loc.customRegionLabel ?? ""}
+                          required
+                          maxLength={120}
+                          placeholder={t("fields.regionOrArea")}
+                          onChange={(e) =>
+                            updateLocation(i, {
+                              customRegionLabel: e.target.value,
+                            })
+                          }
+                          className="min-w-0 flex-1 rounded-md border border-border-subtle px-2 py-1.5 text-sm dark:bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          aria-label={t("fields.townOrPlace")}
+                          value={loc.customDestinationLabel ?? ""}
+                          maxLength={120}
+                          placeholder={t("fields.townOrPlace")}
+                          onChange={(e) =>
+                            updateLocation(i, {
+                              customDestinationLabel:
+                                e.target.value.trim() === ""
+                                  ? null
+                                  : e.target.value,
+                            })
+                          }
+                          className="min-w-0 flex-1 rounded-md border border-border-subtle px-2 py-1.5 text-sm dark:bg-transparent"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeLocation(i)}
+                          className="text-sm text-destructive underline underline-offset-2"
+                        >
+                          {t("fields.remove")}
+                        </button>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={i} className="flex flex-wrap items-center gap-2">
+                      <select
+                        aria-label={t("fields.region")}
+                        value={loc.regionId}
+                        onChange={(e) =>
+                          updateLocation(i, {
+                            regionId: e.target.value,
+                            // Changing region invalidates a looked-up
+                            // destination (it belongs to the old region,
+                            // and a trigger enforces that), but NOT a
+                            // typed one: a place name the contributor
+                            // wrote is still theirs, and re-typing it
+                            // would be a silly tax for fixing the region
+                            // above it.
+                            destinationId: null,
+                          })
+                        }
+                        className="rounded-md border border-border-subtle px-2 py-1.5 text-sm dark:bg-transparent"
+                      >
+                        {countryRegions.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.name}
+                          </option>
+                        ))}
+                      </select>
+                      {/* The town/place. Free text on purpose: `destinations`
+                          holds a sample of New Zealand's towns, not a list of
+                          them, so a picker here would keep failing the people
+                          who worked somewhere small -- which is most of them.
+                          Disabled when the search already matched a real
+                          destination row, since that row is the better record
+                          and the two are mutually exclusive in the database. */}
+                      <input
+                        type="text"
+                        aria-label={t("fields.townOrPlace")}
+                        value={
+                          loc.destinationId
+                            ? (countryDestinations.find(
+                                (d) => d.id === loc.destinationId,
+                              )?.name ?? "")
+                            : (loc.customDestinationLabel ?? "")
+                        }
+                        disabled={Boolean(loc.destinationId)}
+                        maxLength={120}
+                        placeholder={t("fields.townOrPlace")}
+                        onChange={(e) =>
+                          updateLocation(i, {
+                            customDestinationLabel:
+                              e.target.value.trim() === ""
+                                ? null
+                                : e.target.value,
+                          })
+                        }
+                        className="min-w-0 flex-1 rounded-md border border-border-subtle px-2 py-1.5 text-sm disabled:opacity-60 dark:bg-transparent"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeLocation(i)}
+                        className="text-sm text-destructive underline underline-offset-2"
+                      >
+                        {t("fields.remove")}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
               <button
                 type="button"
@@ -1626,6 +1991,16 @@ export function StoryEditForm({
                 />
               </div>
             </details>
+
+            {/* The journey map draws New Zealand only, and stops must be inside
+              it, so the editor is offered for NZ stories only. */}
+            {initialStops !== undefined && countrySlug === "new-zealand" ? (
+              <JourneyStopsEditor
+                stops={journeyStops}
+                headings={storyHeadings}
+                onChange={changeJourneyStops}
+              />
+            ) : null}
           </StepSection>
         </div>
 

@@ -67,8 +67,19 @@ export async function runApproveOrchestration(
     return { ok: false, stage: "begin", error: errorMessage(err) };
   }
 
+  // Round A review MUST-FIX 1: a google_drive item needs no bucket-copy
+  // step at all -- its processed derivative in Drive already IS the
+  // public file, served by the proxy. finalize_story_publication()
+  // promotes a 'processed' google_drive row directly; calling copyMedia()
+  // for one would fail (there is no processed_private_storage_path to
+  // read -- google_drive rows never have one). storageBackend is optional
+  // on ModeratorMediaItem, so an item that never set it (every existing
+  // caller/test, before this field existed) is treated as supabase here,
+  // unchanged from before this filter gained the second clause.
   const toCopy = params.media.filter(
-    (item) => item.processingState !== "promoted",
+    (item) =>
+      item.processingState !== "promoted" &&
+      item.storageBackend !== "google_drive",
   );
 
   for (const item of toCopy) {

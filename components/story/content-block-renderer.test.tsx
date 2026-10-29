@@ -200,3 +200,39 @@ describe("ContentBlockRenderer", () => {
     expect(items[1].querySelector("br")).not.toBeInTheDocument();
   });
 });
+
+describe("ContentBlockRenderer heading anchors", () => {
+  const md = "## Arriving\n\ntext\n\n### Day *one*\n\n## Arriving\n";
+
+  it("gives each heading the id the journey map links to, with repeats numbered", () => {
+    render(<ContentBlockRenderer blocks={markdownToStoryContent(md)} />);
+    const ids = screen.getAllByRole("heading").map((h) => h.getAttribute("id"));
+    expect(ids).toEqual([
+      "section-arriving",
+      "section-day-one",
+      "section-arriving-2",
+    ]);
+  });
+
+  it("agrees with extractHeadings() so an editor-chosen anchor lands correctly", async () => {
+    const { extractHeadings } = await import("@/lib/story/headings");
+    render(<ContentBlockRenderer blocks={markdownToStoryContent(md)} />);
+    for (const h of extractHeadings(md)) {
+      expect(document.getElementById(`section-${h.anchor}`)).toHaveTextContent(
+        h.text,
+      );
+    }
+  });
+
+  it("can leave ids off for a second copy of the story on one page", () => {
+    render(
+      <ContentBlockRenderer
+        blocks={markdownToStoryContent(md)}
+        anchorHeadings={false}
+      />,
+    );
+    for (const h of screen.getAllByRole("heading")) {
+      expect(h).not.toHaveAttribute("id");
+    }
+  });
+});

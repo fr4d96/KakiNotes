@@ -266,10 +266,15 @@ describe("direct table access is denied for everyone", () => {
   });
 
   it("a direct insert into stories is rejected", async () => {
+    // stories.country_id is NOT NULL (supabase/migrations/20261014085842_
+    // countries.sql) -- this insert must still be rejected well before that
+    // would matter (no grant for authenticated on this table at all), so an
+    // arbitrary non-existent uuid is fine here, never a real country id.
     const { error } = await owner.client.from("stories").insert({
       contributor_id: ownerContributorId,
       source_kind: "self_submitted",
       slug: slug("direct-insert"),
+      country_id: "00000000-0000-0000-0000-000000000000",
     });
     expect(error).not.toBeNull();
   });
@@ -813,12 +818,26 @@ describe("destination/region and cross-story media integrity", () => {
     // deliberately still matches an inactive lookup row (an existing story may
     // already reference one). Inactive fixtures therefore stay invisible to
     // the app while remaining fully exercisable by these tests.
+    //
+    // regions.country_id is NOT NULL as of supabase/migrations/
+    // 20261014085842_countries.sql -- these fixtures don't test anything
+    // country-related, so they're just pinned to New Zealand, the same
+    // country every other fixture in this suite implicitly uses.
+    const { data: nzCountry, error: nzCountryError } = await admin.client
+      .from("countries")
+      .select("id")
+      .eq("slug", "new-zealand")
+      .single();
+    expect(nzCountryError).toBeNull();
+    const nzCountryId = nzCountry!.id;
+
     const { data: regionA, error: regionAError } = await admin.client
       .from("regions")
       .insert({
         slug: slug("region-a"),
         name: "RLS Test Region A",
         active: false,
+        country_id: nzCountryId,
       })
       .select("id")
       .single();
@@ -829,6 +848,7 @@ describe("destination/region and cross-story media integrity", () => {
         slug: slug("region-b"),
         name: "RLS Test Region B",
         active: false,
+        country_id: nzCountryId,
       })
       .select("id")
       .single();

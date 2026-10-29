@@ -34,6 +34,12 @@ Plain-language terms used below:
 
 ## 1. Summary — what changes for a contributor
 
+**Update 2026-10-11 (full-quality copies):** a Drive-connected contributor's new photos now get a
+second stripped derivative, a full-resolution copy in the story folder's "Full quality" subfolder,
+owner-only and never public. Where this doc says the display derivative is "the ONLY form of the
+image ever written to Drive", read it as the only form written _for public use_. See
+docs/implementation-status.md.
+
 Today: every contributor's story images live in Supabase. A device upload
 goes into a private bucket, gets processed, and (once approved) a
 derivative is copied into the public bucket.
@@ -416,6 +422,34 @@ not confirmed either way from official sources, so it is marked a
 **must-verify spike** in the build order (section 11, slice 2) rather than
 assumed to work.
 
+**Spike result (2026-10-07): the browser `PUT` works. Option D is the
+upload path.** Run with `scripts/spike-drive-cors.mjs` (a standalone
+localhost server, not app code) in Chrome, on a test Google account, with
+the `drive.file` scope:
+
+| Test                                                           | Result                                                                                      |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 6 MB single `PUT`, session started **with** an `Origin` header | **Pass.** HTTP 200, and the browser could read the response (the file id).                  |
+| 6 MB single `PUT`, session started **without** `Origin`        | **Blocked** by the browser ("Failed to fetch").                                             |
+| 6 MB in two `Content-Range` chunks, with `Origin`              | **Pass.** The first chunk got 308, the second 200. Resumable uploads work from the browser. |
+| Server check with a forged `kakinotes_reservation`             | **Rejected**, as it should be. The `appProperties` check works.                             |
+| A real JPEG, with `Origin`                                     | **Pass.**                                                                                   |
+
+Every test file was deleted afterwards (`files.delete` returned 204).
+
+**Rule this sets for the build:** the server **must** send
+`Origin: <our site origin>` when it starts the resumable session, or the
+browser's `PUT` is blocked. The origin comes from configuration (the same
+place as `GOOGLE_DRIVE_OAUTH_REDIRECT_URI`), never from the incoming
+request's headers. Test it: a session started without `Origin` should be
+covered by a unit test asserting the header is always set.
+
+**Not covered by the spike:** Safari and Firefox were not tried, and the
+6 MB tests used random bytes, not a large real photo. Slice 3 should check
+one large iPhone photo in Safari before it's called done. Option A stays
+written down below as the fallback, but nothing is built for it unless a
+browser turns out to need it.
+
 If the spike shows the `PUT` is blocked, the approved fallback is **Option
 A**: the browser shrinks the image itself (decode, then resize/re-encode
 via `createImageBitmap` + `OffscreenCanvas`/canvas) until it's comfortably
@@ -770,6 +804,10 @@ broken-image icon and never a bare 404.
 
 ## 7. My Photos page (contributor-only)
 
+**Built 2026-10-11, without "Download all"** (owner's choice: per-photo downloads only for now; see
+docs/implementation-status.md). The per-image status shows where the photo lives and "Reconnect"
+when its Drive connection is gone; "missing in Drive" is not yet detected.
+
 A new page where a contributor sees and downloads every image they've
 uploaded — this is what replaces the old "offer a zip before unlinking"
 idea (section 12, Decisions, Q3): there's no separate one-off flow,
@@ -935,6 +973,13 @@ moves a story's images between `supabase` and `google_drive` deliberately
 (section 12, Decisions, Q4: the owner wants this built now).
 
 ### Supabase → Drive
+
+**Built 2026-10-08** (see docs/implementation-status.md): the "move everything" button on
+Account → Google Drive, driven one photo per request by the browser rather than a background
+job; a published photo's old copies are deleted on the contributor's next run, at least 5 minutes
+after the flip. "Verified" is not a separate job status: the flip RPC only runs after the
+read-back sha256 matched. The job statuses are `pending` / `copied` / `switched` /
+`old_deleted` / `failed`.
 
 Requires an active Drive connection. Moves **only the processed
 derivative** — never a raw original with GPS intact, per Rule 14 (there is
@@ -1312,7 +1357,7 @@ image-validation.ts`) as-is for Drive mode; no stricter Drive-specific
    change is needed, just confirmation that this is intentional, not a gap.
 7. **`s-maxage` — 300 seconds (5 minutes), as recommended.** Section 5's
    caching discussion is confirmed as-is, no change needed.
-8. **CORS on the resumable `PUT` — unchanged, still a slice-2 spike.** The
+8. **CORS on the resumable `PUT` — settled 2026-10-07: it works (with `Origin` set), so Option D is built.** See the spike result in section 4(a). Original note: The
    spike (section 11, slice 2) still decides between Option D and the
    Option A fallback; nothing about the decision process itself changed.
 9. **HEIC handling in the Option A fallback — keep the doc's split.**

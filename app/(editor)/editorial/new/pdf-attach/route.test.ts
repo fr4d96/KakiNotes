@@ -587,4 +587,53 @@ describe("POST /editorial/new/pdf-attach", () => {
     expect(response.status).toBe(400);
     expect(stories.size).toBe(0);
   });
+
+  it("passes a valid country field through to create_editorial_import_draft as p_country_slug", async () => {
+    const { POST } = await import("./route");
+    const bytes = await fixture("valid-two-page.pdf");
+    const response = await POST(
+      requestWithFields(bytes, {
+        ...existingContributorFields([1]),
+        country: "china",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    const createCall = fakeSupabase.rpc.mock.calls.find(
+      ([name]) => name === "create_editorial_import_draft",
+    );
+    expect(createCall?.[1].p_country_slug).toBe("china");
+  });
+
+  it("rejects an invalid country field without creating a draft", async () => {
+    const { POST } = await import("./route");
+    const bytes = await fixture("valid-two-page.pdf");
+    const response = await POST(
+      requestWithFields(bytes, {
+        ...existingContributorFields([1]),
+        country: "not-a-real-country",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(stories.size).toBe(0);
+    expect(fakeSupabase.rpc).not.toHaveBeenCalledWith(
+      "create_editorial_import_draft",
+      expect.anything(),
+    );
+  });
+
+  it("omits p_country_slug (RPC default applies) when the country field is missing", async () => {
+    const { POST } = await import("./route");
+    const bytes = await fixture("valid-two-page.pdf");
+    const response = await POST(
+      requestWithFields(bytes, existingContributorFields([1])),
+    );
+
+    expect(response.status).toBe(200);
+    const createCall = fakeSupabase.rpc.mock.calls.find(
+      ([name]) => name === "create_editorial_import_draft",
+    );
+    expect(createCall?.[1].p_country_slug).toBeUndefined();
+  });
 });

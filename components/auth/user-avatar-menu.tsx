@@ -20,6 +20,7 @@ import { staffMenuItemsForRole } from "@/lib/auth/staff-menu";
 // Labels are keys under `nav`, resolved inside the component.
 const authoringItems = [
   { href: "/my-stories", key: "myStories" },
+  { href: "/my-photos", key: "myPhotos" },
   { href: "/stories/new", key: "newStory" },
 ] as const;
 

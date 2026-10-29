@@ -112,6 +112,14 @@ export type ModeratorMediaItem = {
   caption: string | null;
   decorative: boolean;
   processingState: string;
+  // Optional (round A review, MUST-FIX 1): added to get_story_for_moderator's
+  // per-media jsonb (supabase/migrations/20261007063355_story_media_drive_backend.sql,
+  // section 8c-iii) so lib/story/publish-orchestration.ts can skip a
+  // google_drive item's bucket-copy step. Optional, not required, so a
+  // caller/test that never set it (every one before this field existed)
+  // is treated as "supabase" by every consumer -- see that module's toCopy
+  // filter.
+  storageBackend?: string;
 };
 
 /** Runtime-parses the untyped `media` jsonb column -- never trusts its shape blindly. */

@@ -111,6 +111,12 @@ export type PreviewableMediaItem = {
   caption: string | null;
   decorative: boolean;
   processingState: string;
+  /** "supabase" | "google_drive" — round B addition to get_story_preview()'s
+   * jsonb. Optional so a caller/test predating this field is unaffected;
+   * app/(contributor)/stories/[id]/export/route.ts's collectImages() uses
+   * it to call lib/story/image-bytes.ts#getImageBytes() instead of
+   * assuming every row is supabase-backed. */
+  storageBackend?: string;
 };
 
 export type RevisionMediaItem = PreviewableMediaItem & {
@@ -138,6 +144,23 @@ export type StoryPreview = {
   viewerRelationship: string;
   media: RevisionMediaItem[];
 };
+
+/**
+ * The slug of a draft story's own country (get_story_country(), owner/
+ * editor/admin-only, returns null rather than raising for anyone else or an
+ * unknown story) -- feeds the editor's Country select default and the
+ * published-story read-only country display.
+ */
+export async function getStoryCountry(storyId: string): Promise<string | null> {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_story_country", {
+    p_story_id: storyId,
+  });
+  if (error) throw error;
+  return data ?? null;
+}
 
 /**
  * Wraps get_story_preview() — the only RPC allowed to back both the edit
@@ -215,7 +238,9 @@ export type RevisionExpenseSelection = {
 
 export type RevisionSelections = {
   locations: Array<{
-    regionId: string;
+    regionId: string | null;
+    /** Set only when regionId is null (20261015_custom_region_labels.sql). */
+    customRegionLabel: string | null;
     destinationId: string | null;
     /** Set only when destinationId is null (20260903140000). */
     customDestinationLabel: string | null;
@@ -245,7 +270,8 @@ export async function getRevisionSelections(
   const row = data?.[0];
   const locations =
     (row?.locations as Array<{
-      regionId: string;
+      regionId: string | null;
+      customRegionLabel: string | null;
       destinationId: string | null;
       customDestinationLabel: string | null;
       sortOrder: number;

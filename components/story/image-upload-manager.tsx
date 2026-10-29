@@ -18,6 +18,22 @@ import { getErrorMessage } from "@/lib/errors";
 import { useToast } from "@/components/ui/toast";
 import { Spinner } from "@/components/ui/spinner";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
+import {
+  DndContext,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type Announcements,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortablePhotoTile } from "@/components/story/sortable-photo-tile";
 import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client";
 import {
   reorderMediaAction,
@@ -34,6 +50,21 @@ import {
   finalizeMediaUploadAction,
   transcodeHeicUploadAction,
 } from "@/app/(contributor)/stories/[id]/edit/upload-actions";
+// Drive mode's own actions/upload client are deliberately NOT imported
+// statically here, even though every other Server Action this component
+// calls is. lib/story/drive-sync.ts (which these transitively import)
+// carries `import "server-only"`, and that package throws unconditionally
+// the moment it's evaluated OUTSIDE Next's own bundler (confirmed live:
+// loading this component under Vitest with a static import crashed the
+// whole test file before a single test ran — `server-only`'s guard has no
+// special-case for "being imported by a Client Component test"). A
+// dynamic import() here defers that evaluation until the mode-check
+// effect/Drive branch below actually runs, turning a module-load-time
+// crash into an ordinary rejected promise this component already catches
+// — see the uploadMode effect and the Drive branch of handleFiles.
+type DriveUploadActionsModule =
+  typeof import("@/app/(contributor)/stories/[id]/edit/drive-upload-actions");
+type DriveUploadClientModule = typeof import("@/lib/story/drive-upload-client");
 
 /** Types a browser can render directly in an <img>, for the in-flight tile. */
 const BROWSER_RENDERABLE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -262,6 +293,28 @@ export function ImageUploadManager({
   const [uploading, setUploading] = useState<UploadingItem[]>([]);
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
   const [isDragging, setIsDragging] = useState(false);
+  // The server's own decision (lib/story/drive-sync.ts#getStoryMediaUploadMode),
+  // fetched once per revision — this component NEVER decides its own mode.
+  // Defaults to "supabase" until the check resolves (and forever, if it
+  // fails for any reason): the existing, byte-for-byte-unchanged upload
+  // path is the safe default, never Drive.
+  const [uploadMode, setUploadMode] = useState<"supabase" | "google_drive">(
+    "supabase",
+  );
+  useEffect(() => {
+    let cancelled = false;
+    import("@/app/(contributor)/stories/[id]/edit/drive-upload-actions")
+      .then((mod) => mod.getStoryMediaUploadModeAction(revisionId))
+      .then((mode) => {
+        if (!cancelled) setUploadMode(mode);
+      })
+      .catch(() => {
+        if (!cancelled) setUploadMode("supabase");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [revisionId]);
   // Which photo's detail panel is expanded. One at a time, deliberately:
   // the old panel put a checkbox and two text inputs on EVERY tile, so a
   // dozen photos meant three dozen form controls competing for attention
@@ -447,89 +500,154 @@ export function ImageUploadManager({
         : (file.type as "image/jpeg" | "image/png" | "image/webp");
 
       try {
-        const begun = await beginMediaUploadAction(revisionId, sourceMimeType);
-        if ("error" in begun) throw new Error(begun.error);
-        const { mediaId, reservedPath } = begun;
+        // Drive mode is decided ENTIRELY server-side (uploadMode, fetched
+        // on mount) — this branch is the only place that conditional
+        // appears in this component; everything below it in the non-Drive
+        // branch is the existing code, untouched. See lib/story/drive-
+        // upload-client.ts for why the chunked-PUT-to-Drive logic isn't
+        // inlined here.
+        if (uploadMode === "google_drive") {
+          const [driveActions, driveClient]: [
+            DriveUploadActionsModule,
+            DriveUploadClientModule,
+          ] = await Promise.all([
+            import("@/app/(contributor)/stories/[id]/edit/drive-upload-actions"),
+            import("@/lib/story/drive-upload-client"),
+          ]);
+          const begunDrive = await driveClient.beginAndUploadToDrive(
+            { revisionId, file, mimeType: sourceMimeType },
+            driveActions.beginDriveMediaUploadAction,
+          );
 
-        setUploading((prev) =>
-          prev.map((u) =>
-            u.key === key ? { ...u, progress: "processing" } : u,
-          ),
-        );
+          setUploading((prev) =>
+            prev.map((u) =>
+              u.key === key ? { ...u, progress: "processing" } : u,
+            ),
+          );
 
-        const {
-          data: { session },
-        } = await createBrowserSupabaseClient().auth.getSession();
-        if (!session) throw new Error(tCommon("mustBeSignedIn"));
-
-        await uploadDirectlyToStorage(
-          reservedPath,
-          file,
-          sourceMimeType,
-          session.access_token,
-          {
-            tooLarge: t("errors.tooLarge"),
-            failedWithStatus: (status) =>
-              t("errors.uploadFailedStatus", { status }),
-          },
-        );
-
-        if (isHeic) {
-          const transcoded = await transcodeHeicUploadAction(mediaId);
-          if ("error" in transcoded) throw new Error(transcoded.error);
-        }
-
-        // On the shared mutation queue, exactly like this panel's four other
-        // version-bumping mutations below (reorder, cover, detach, caption).
-        //
-        // It used to be a bare `await` outside the queue, and that was a
-        // real data-loss bug: finalize_story_media_upload takes an
-        // expectedVersion, and so does the editor's 600ms-debounced autosave.
-        // Upload a photo just after typing and the two went out
-        // CONCURRENTLY carrying the same version -- whichever landed second
-        // was rejected with "Stale version", and when the loser was the text
-        // save, the words the contributor had just written were simply never
-        // persisted. Queueing it means the version is only ever read inside a
-        // serialized callback, so the autosave that runs next reads the
-        // version this upload produced instead of racing it.
-        const finalized = await new Promise<
-          Awaited<ReturnType<typeof finalizeMediaUploadAction>>
-        >((resolve) => {
-          queue.enqueue(`media-finalize:${mediaId}`, async () => {
-            const result = await finalizeMediaUploadAction(
-              mediaId,
-              versionRef.current,
-            );
-            if (!("error" in result)) {
-              // The server's own post-bump version, not an assumed "+1":
-              // finalizeMediaUploadAction retries a stale version against
-              // the live one, so the bump can start from a number this tab
-              // never held. Null means it could not be read — leave the
-              // counter alone rather than guess it wrong.
-              if (result.version !== null) versionRef.current = result.version;
-              onVersionBumped();
+          // Same shared-queue reasoning as the Supabase path below: the
+          // version is only ever read inside this serialized callback, so
+          // the next autosave reads the version THIS upload produced
+          // instead of racing it.
+          const finalizedDrive = await new Promise<
+            Awaited<
+              ReturnType<
+                DriveUploadActionsModule["finalizeDriveMediaUploadAction"]
+              >
+            >
+          >((resolve) => {
+            queue.enqueue(`media-finalize:${begunDrive.mediaId}`, async () => {
+              const result = await driveActions.finalizeDriveMediaUploadAction(
+                begunDrive.mediaId,
+                versionRef.current,
+                begunDrive.driveFileId,
+              );
+              if (!("error" in result)) {
+                if (result.version !== null) {
+                  versionRef.current = result.version;
+                }
+                onVersionBumped();
+                resolve(result);
+                return;
+              }
               resolve(result);
-              return;
-            }
-            resolve(result);
-            // Every OTHER mutation on this shared queue throws on failure,
-            // which is what lets the queue's own onVersionConflict callback
-            // (story-edit-form.tsx) show the "this draft changed elsewhere —
-            // reload to continue" banner instead of a plain toast that just
-            // invites retrying into the same wall. This one used to swallow
-            // its own error and resolve unconditionally, so a genuine
-            // version conflict on a photo upload never reached that banner
-            // — only a generic "failed to upload" toast, with nothing
-            // telling the contributor their local version was stale. Rethrow
-            // for a version conflict specifically (not every finalize
-            // failure — an unsupported format or a decode failure is not
-            // "reload this page", it's "pick a different photo").
-            if (isStaleVersionConflict(result.error)) {
-              throw new Error(result.error);
-            }
+              if (isStaleVersionConflict(result.error)) {
+                throw new Error(result.error);
+              }
+            });
           });
-        });
-        if ("error" in finalized) throw new Error(finalized.error);
+          if ("error" in finalizedDrive) {
+            throw new Error(finalizedDrive.error);
+          }
+        } else {
+          const begun = await beginMediaUploadAction(
+            revisionId,
+            sourceMimeType,
+          );
+          if ("error" in begun) throw new Error(begun.error);
+          const { mediaId, reservedPath } = begun;
+
+          setUploading((prev) =>
+            prev.map((u) =>
+              u.key === key ? { ...u, progress: "processing" } : u,
+            ),
+          );
+
+          const {
+            data: { session },
+          } = await createBrowserSupabaseClient().auth.getSession();
+          if (!session) throw new Error(tCommon("mustBeSignedIn"));
+
+          await uploadDirectlyToStorage(
+            reservedPath,
+            file,
+            sourceMimeType,
+            session.access_token,
+            {
+              tooLarge: t("errors.tooLarge"),
+              failedWithStatus: (status) =>
+                t("errors.uploadFailedStatus", { status }),
+            },
+          );
+
+          if (isHeic) {
+            const transcoded = await transcodeHeicUploadAction(mediaId);
+            if ("error" in transcoded) throw new Error(transcoded.error);
+          }
+
+          // On the shared mutation queue, exactly like this panel's four other
+          // version-bumping mutations below (reorder, cover, detach, caption).
+          //
+          // It used to be a bare `await` outside the queue, and that was a
+          // real data-loss bug: finalize_story_media_upload takes an
+          // expectedVersion, and so does the editor's 600ms-debounced autosave.
+          // Upload a photo just after typing and the two went out
+          // CONCURRENTLY carrying the same version -- whichever landed second
+          // was rejected with "Stale version", and when the loser was the text
+          // save, the words the contributor had just written were simply never
+          // persisted. Queueing it means the version is only ever read inside a
+          // serialized callback, so the autosave that runs next reads the
+          // version this upload produced instead of racing it.
+          const finalized = await new Promise<
+            Awaited<ReturnType<typeof finalizeMediaUploadAction>>
+          >((resolve) => {
+            queue.enqueue(`media-finalize:${mediaId}`, async () => {
+              const result = await finalizeMediaUploadAction(
+                mediaId,
+                versionRef.current,
+              );
+              if (!("error" in result)) {
+                // The server's own post-bump version, not an assumed "+1":
+                // finalizeMediaUploadAction retries a stale version against
+                // the live one, so the bump can start from a number this tab
+                // never held. Null means it could not be read — leave the
+                // counter alone rather than guess it wrong.
+                if (result.version !== null)
+                  versionRef.current = result.version;
+                onVersionBumped();
+                resolve(result);
+                return;
+              }
+              resolve(result);
+              // Every OTHER mutation on this shared queue throws on failure,
+              // which is what lets the queue's own onVersionConflict callback
+              // (story-edit-form.tsx) show the "this draft changed elsewhere —
+              // reload to continue" banner instead of a plain toast that just
+              // invites retrying into the same wall. This one used to swallow
+              // its own error and resolve unconditionally, so a genuine
+              // version conflict on a photo upload never reached that banner
+              // — only a generic "failed to upload" toast, with nothing
+              // telling the contributor their local version was stale. Rethrow
+              // for a version conflict specifically (not every finalize
+              // failure — an unsupported format or a decode failure is not
+              // "reload this page", it's "pick a different photo").
+              if (isStaleVersionConflict(result.error)) {
+                throw new Error(result.error);
+              }
+            });
+          });
+          if ("error" in finalized) throw new Error(finalized.error);
+        }
         if (previewUrl) {
           URL.revokeObjectURL(previewUrl);
           previewUrlsRef.current.delete(previewUrl);
@@ -571,12 +689,69 @@ export function ImageUploadManager({
     const j = next.findIndex((m) => m.mediaId === swapWithMediaId);
     if (i === -1 || j === -1) return;
     [next[i], next[j]] = [next[j], next[i]];
+    commitOrder(next);
+  }
+
+  // Drag and drop (task #4). Mouse: a drag starts after 6px of movement, so
+  // a plain click still opens the photo. Touch: a 250ms press-and-hold
+  // starts it, so a swipe still scrolls the page. Keyboard users keep the
+  // "Move earlier / Move later" buttons in Details.
+  const dragSensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 8 },
+    }),
+  );
+  // A mouse drag that ends over the same photo still fires a click on it,
+  // which would open the lightbox. Swallow exactly that one click.
+  const justDraggedRef = useRef(false);
+  function markJustDragged() {
+    justDraggedRef.current = true;
+    setTimeout(() => {
+      justDraggedRef.current = false;
+    }, 0);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    markJustDragged();
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = media.findIndex((m) => m.mediaId === active.id);
+    const to = media.findIndex((m) => m.mediaId === over.id);
+    if (from === -1 || to === -1) return;
+    commitOrder(arrayMove(media, from, to));
+  }
+
+  const positionOf = (id: string | number) =>
+    media.findIndex((m) => m.mediaId === id) + 1;
+  const dragAnnouncements: Announcements = {
+    onDragStart: ({ active }) =>
+      t("drag.pickedUp", { position: positionOf(active.id) }),
+    onDragOver: ({ over }) =>
+      over
+        ? t("drag.over", {
+            position: positionOf(over.id),
+            total: media.length,
+          })
+        : undefined,
+    onDragEnd: ({ over }) =>
+      over
+        ? t("drag.dropped", { position: positionOf(over.id) })
+        : t("drag.cancelled"),
+    onDragCancel: () => t("drag.cancelled"),
+  };
+
+  // The one place a new order is applied: optimistic local state, then the
+  // same queued, version-checked reorderMediaAction both the buttons and a
+  // drag use.
+  function commitOrder(next: RevisionMediaItem[]) {
     setMedia(next);
     queue.enqueue("media-reorder", async () => {
       const result = await reorderMediaAction(
         revisionId,
         versionRef.current,
         next.map((m) => m.mediaId),
+        storyId,
       );
       if (result.ok) {
         versionRef.current += 1;
@@ -596,6 +771,7 @@ export function ImageUploadManager({
         revisionId,
         versionRef.current,
         mediaId,
+        storyId,
       );
       if (result.ok) {
         versionRef.current += 1;
@@ -614,6 +790,7 @@ export function ImageUploadManager({
         revisionId,
         versionRef.current,
         mediaId,
+        storyId,
       );
       if (result.ok) {
         versionRef.current += 1;
@@ -678,6 +855,14 @@ export function ImageUploadManager({
             Up to {MAX_IMAGES_PER_REVISION} images, JPEG/PNG/WebP/HEIC (iPhone
             photos), 15 MB each.
           </span>
+          {/* Quiet, not a banner: this is informational, not a decision the
+              contributor makes here (the server already decided the mode --
+              see uploadMode above). */}
+          {uploadMode === "google_drive" && (
+            <span className="text-xs text-muted-foreground">
+              {t("driveNote")}
+            </span>
+          )}
         </label>
         <input
           ref={fileInputRef}
@@ -754,220 +939,309 @@ export function ImageUploadManager({
             </p>
           </div>
 
-          <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {media.map((item, index) => {
-              // Prompt 7: same-story duplicate-image warning -- compares
-              // sha256 hashes of already-processed derivatives (never a
-              // storage path).
-              const duplicateCount = item.sha256
-                ? media.filter((m) => m.sha256 === item.sha256).length
-                : 1;
-              const isDuplicate = duplicateCount > 1;
-              const isPlaced = inlineMediaIds.has(item.mediaId);
-              // Resolved once per tile: it appears in four accessible names
-              // below, and itemName() needs the numbered fallback message.
-              const name = itemName(item, index, (position) =>
-                t("itemName", { index: position }),
-              );
-              const processingLabel = (state: string) =>
-                PROCESSING_LABEL_KEYS[state]
-                  ? t(`state.${PROCESSING_LABEL_KEYS[state]}` as never)
-                  : state;
-              const isOpen = openMediaId === item.mediaId;
-              const detailsId = `media-details-${item.mediaId}`;
+          {media.length > 1 && openMediaId === null && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t("drag.hint")}
+            </p>
+          )}
 
-              const thumb = (
-                <div className="js-image-thumb relative aspect-square overflow-hidden rounded-md border border-border-subtle bg-surface-muted">
-                  {thumbnails[item.mediaId] ? (
-                    <LightboxPhoto
-                      url={thumbnails[item.mediaId]}
-                      alt={item.altText ?? ""}
-                      caption={item.caption}
-                      className="block h-full w-full"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL, not an optimizable static asset */}
-                      <img
-                        src={thumbnails[item.mediaId]}
-                        alt={item.altText ?? ""}
-                        className="h-full w-full object-cover"
-                        onError={() => retryThumbnail(item.mediaId)}
-                      />
-                    </LightboxPhoto>
-                  ) : item.processingState === "failed" ? (
-                    <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
-                      {processingLabel(item.processingState)}
-                    </div>
-                  ) : (
-                    <div
-                      className="flex h-full w-full items-center justify-center text-muted-foreground"
-                      aria-label={processingLabel(item.processingState)}
-                    >
-                      <Spinner className="h-6 w-6" />
-                    </div>
-                  )}
+          <DndContext
+            sensors={dragSensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            onDragCancel={markJustDragged}
+            accessibility={{
+              announcements: dragAnnouncements,
+              screenReaderInstructions: { draggable: t("drag.hint") },
+            }}
+          >
+            <SortableContext
+              items={media.map((m) => m.mediaId)}
+              strategy={rectSortingStrategy}
+            >
+              <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {media.map((item, index) => {
+                  // Prompt 7: same-story duplicate-image warning -- compares
+                  // sha256 hashes of already-processed derivatives (never a
+                  // storage path).
+                  const duplicateCount = item.sha256
+                    ? media.filter((m) => m.sha256 === item.sha256).length
+                    : 1;
+                  const isDuplicate = duplicateCount > 1;
+                  const isPlaced = inlineMediaIds.has(item.mediaId);
+                  // Resolved once per tile: it appears in four accessible names
+                  // below, and itemName() needs the numbered fallback message.
+                  const name = itemName(item, index, (position) =>
+                    t("itemName", { index: position }),
+                  );
+                  const processingLabel = (state: string) =>
+                    PROCESSING_LABEL_KEYS[state]
+                      ? t(`state.${PROCESSING_LABEL_KEYS[state]}` as never)
+                      : state;
+                  const isOpen = openMediaId === item.mediaId;
+                  const detailsId = `media-details-${item.mediaId}`;
 
-                  {/* Status reads off the tile itself, the way a media
+                  const thumb = (
+                    <div className="js-image-thumb group/tile relative aspect-square overflow-hidden rounded-md border border-border-subtle bg-surface-muted">
+                      {thumbnails[item.mediaId] ? (
+                        <LightboxPhoto
+                          url={thumbnails[item.mediaId]}
+                          alt={item.altText ?? ""}
+                          caption={item.caption}
+                          className="block h-full w-full"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL, not an optimizable static asset */}
+                          <img
+                            src={thumbnails[item.mediaId]}
+                            alt={item.altText ?? ""}
+                            className="h-full w-full object-cover"
+                            draggable={false}
+                            onError={() => retryThumbnail(item.mediaId)}
+                          />
+                        </LightboxPhoto>
+                      ) : item.processingState === "failed" ? (
+                        <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
+                          {processingLabel(item.processingState)}
+                        </div>
+                      ) : (
+                        <div
+                          className="flex h-full w-full items-center justify-center text-muted-foreground"
+                          aria-label={processingLabel(item.processingState)}
+                        >
+                          <Spinner className="h-6 w-6" />
+                        </div>
+                      )}
+
+                      {/* Status reads off the tile itself, the way a media
                       library does it -- no field, no sentence, just the
                       three facts that change what you would do next. */}
-                  <div className="pointer-events-none absolute inset-x-1 top-1 flex flex-wrap gap-1">
-                    {item.isCover && <TileBadge>{t("badges.cover")}</TileBadge>}
-                    {isPlaced && <TileBadge>{t("badges.inStory")}</TileBadge>}
-                    {isDuplicate && (
-                      <TileBadge tone="warning">
-                        {t("badges.duplicate")}
-                      </TileBadge>
-                    )}
-                  </div>
-                </div>
-              );
-
-              // ONE element tree for both states, laid out differently by
-              // class. Rendering an `if (isOpen) return <li>…` branch beside
-              // a separate closed-state <li> looked equivalent but was not:
-              // React reconciles by position, so the two branches' <img>
-              // elements are different nodes, and toggling details unmounted
-              // the image and mounted a fresh one. A fresh <img> actually
-              // re-requests its src -- and these are 120-second signed URLs,
-              // so any tile older than two minutes came back blank. Keeping
-              // the thumbnail at a stable position in the tree means the
-              // browser never re-requests it at all.
-              return (
-                <li
-                  key={item.mediaId}
-                  className={
-                    isOpen
-                      ? "col-span-2 flex flex-col gap-4 rounded-lg border border-accent/50 bg-surface-muted/40 p-3 sm:col-span-3 sm:flex-row"
-                      : "flex flex-col gap-1.5"
-                  }
-                >
-                  <div className={isOpen ? "w-full shrink-0 sm:w-40" : ""}>
-                    {thumb}
-                  </div>
-
-                  {isOpen ? (
-                    <div id={detailsId} className="min-w-0 flex-1 space-y-3">
-                      <div>
-                        <label
-                          htmlFor={`caption-${item.mediaId}`}
-                          className="block text-xs font-medium"
-                        >
-                          {t("caption")}{" "}
-                          <span className="font-normal text-muted-foreground">
-                            {t("captionHint")}
-                          </span>
-                        </label>
-                        <input
-                          id={`caption-${item.mediaId}`}
-                          type="text"
-                          value={item.caption ?? ""}
-                          onChange={(e) =>
-                            updateCaption(item.mediaId, e.target.value)
-                          }
-                          className="mt-1 w-full rounded-md border border-border-subtle px-2 py-1.5 text-sm dark:bg-transparent"
-                        />
+                      <div className="pointer-events-none absolute left-1 right-10 top-1 flex flex-wrap gap-1">
+                        {item.isCover && (
+                          <TileBadge>{t("badges.cover")}</TileBadge>
+                        )}
+                        {isPlaced && (
+                          <TileBadge>{t("badges.inStory")}</TileBadge>
+                        )}
+                        {isDuplicate && (
+                          <TileBadge tone="warning">
+                            {t("badges.duplicate")}
+                          </TileBadge>
+                        )}
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-3">
-                        {!item.isCover && (
-                          <TileAction onClick={() => setCover(item.mediaId)}>
-                            {t("setAsCover")}
-                          </TileAction>
-                        )}
-                        {index > 0 && (
-                          <TileAction
-                            onClick={() =>
-                              reorder(item.mediaId, media[index - 1].mediaId)
-                            }
-                            label={t("moveEarlierLabel", { name })}
-                          >
-                            {t("moveEarlier")}
-                          </TileAction>
-                        )}
-                        {index < media.length - 1 && (
-                          <TileAction
-                            onClick={() =>
-                              reorder(item.mediaId, media[index + 1].mediaId)
-                            }
-                            label={t("moveLaterLabel", { name })}
-                          >
-                            {t("moveLater")}
-                          </TileAction>
-                        )}
-                        <TileAction
-                          tone="destructive"
-                          onClick={() => detach(item.mediaId)}
+                      {/* Always-on hint that a tap/click opens the photo large.
+    Decorative and click-through: the photo underneath is
+    already the (labelled) lightbox button. */}
+                      {thumbnails[item.mediaId] && (
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white shadow-sm"
                         >
-                          {t("deletePhoto")}
-                        </TileAction>
+                          <ZoomIcon />
+                        </span>
+                      )}
+
+                      {!isOpen && (
                         <button
                           type="button"
-                          onClick={() => {
-                            // Hand the collapse a target to land on -- see
-                            // the refocusToggleIdRef effect above.
-                            refocusToggleIdRef.current = item.mediaId;
-                            setOpenMediaId(null);
+                          // Registered so closing the panel can put focus back
+                          // here (see the refocusToggleIdRef effect above).
+                          // Braces, not a concise arrow body: React 19 treats a
+                          // ref callback's return value as a cleanup function,
+                          // and Map.set returns the Map.
+                          ref={(node) => {
+                            const map = detailsToggleRefs.current;
+                            if (node) map.set(item.mediaId, node);
+                            else map.delete(item.mediaId);
                           }}
-                          className="ml-auto rounded-md border border-border-subtle px-3 py-1.5 text-xs font-medium"
+                          onClick={() => setOpenMediaId(item.mediaId)}
+                          aria-expanded={false}
+                          aria-controls={detailsId}
+                          // aria-label, NOT visible text plus an sr-only span:
+                          // the accessible-name algorithm trims each element's
+                          // text before joining them with no separator, so
+                          // "Describe" + <span> photo 1</span> is announced as
+                          // "Describephoto 1".
+                          aria-label={t("detailsLabel", { name })}
+                          // Shown on hover with a mouse (Tailwind 4's hover:
+                          // only applies where the device can hover), on keyboard
+                          // focus, always on touch screens (no hover there), and
+                          // always while there's no photo to look at yet -- a
+                          // failed upload still needs Details to be removed.
+                          //
+                          // scroll-mt clears the two stacked sticky bars (site
+                          // header + editor bar, measured together at 215px on a
+                          // 375px viewport); without it the scrollIntoView above
+                          // parks this button underneath both of them.
+                          className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 scroll-mt-[15rem] rounded-md bg-black/70 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-opacity focus-visible:opacity-100 group-hover/tile:opacity-100 [@media(hover:none)]:opacity-100 ${
+                            thumbnails[item.mediaId]
+                              ? "opacity-0"
+                              : "opacity-100"
+                          }`}
                         >
-                          {t("done")}
+                          {t("details")}
                         </button>
-                      </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5">
-                      {/* No "already placed" text: the tile's own "In story"
-                          badge says it, and a second copy of the same fact
-                          truncated to "Placed in your…" next to Details in a
-                          2-column phone grid. */}
-                      <button
-                        type="button"
-                        // Registered so closing the panel can put focus back
-                        // here (see the refocusToggleIdRef effect above).
-                        // Braces, not a concise arrow body: React 19 treats a
-                        // ref callback's return value as a cleanup function,
-                        // and Map.set returns the Map.
-                        ref={(node) => {
-                          const map = detailsToggleRefs.current;
-                          if (node) map.set(item.mediaId, node);
-                          else map.delete(item.mediaId);
-                        }}
-                        onClick={() => setOpenMediaId(item.mediaId)}
-                        aria-expanded={false}
-                        aria-controls={detailsId}
-                        // aria-label, NOT visible text plus an sr-only span:
-                        // the accessible-name algorithm trims each element's
-                        // text before joining them with no separator, so
-                        // "Describe" + <span> photo 1</span> is announced as
-                        // "Describephoto 1". Confirmed against
-                        // dom-accessibility-api, which is what both this
-                        // project's tests and real screen readers implement.
-                        aria-label={t("detailsLabel", { name })}
-                        // scroll-mt clears the two stacked sticky bars above
-                        // (the site header at top-0 and the editor's own bar
-                        // at top-[76px]); without it the scrollIntoView above
-                        // parks this button at y=0, underneath both of them,
-                        // and the contributor lands looking at the header.
-                        //
-                        // 15rem (240px), not the 12rem the Images panel uses
-                        // in story-edit-form.tsx: those two bars were measured
-                        // together at 215px on a 375px-wide viewport, so 12rem
-                        // (192px) actually lands 23px BEHIND them. The extra
-                        // room also absorbs the step-progress row wrapping to
-                        // a second line on a narrower phone.
-                        className={`shrink-0 scroll-mt-[15rem] rounded-md border px-2 py-1.5 text-xs font-medium ${
-                          isPlaced ? "w-full" : ""
-                        } border-border-subtle`}
-                      >
-                        {t("details")}
-                      </button>
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                  );
+
+                  // ONE element tree for both states, laid out differently by
+                  // class. Rendering an `if (isOpen) return <li>…` branch beside
+                  // a separate closed-state <li> looked equivalent but was not:
+                  // React reconciles by position, so the two branches' <img>
+                  // elements are different nodes, and toggling details unmounted
+                  // the image and mounted a fresh one. A fresh <img> actually
+                  // re-requests its src -- and these are 120-second signed URLs,
+                  // so any tile older than two minutes came back blank. Keeping
+                  // the thumbnail at a stable position in the tree means the
+                  // browser never re-requests it at all.
+                  return (
+                    <SortablePhotoTile
+                      key={item.mediaId}
+                      id={item.mediaId}
+                      // Not while a details panel is open: that tile spans the
+                      // whole row, and dragging around it reads as chaos.
+                      disabled={openMediaId !== null}
+                      className={
+                        isOpen
+                          ? "col-span-2 flex flex-col gap-4 rounded-lg border border-accent/50 bg-surface-muted/40 p-3 sm:col-span-3 sm:flex-row"
+                          : "flex flex-col gap-1.5"
+                      }
+                    >
+                      {(drag) => (
+                        <>
+                          <div
+                            ref={drag.ref}
+                            {...drag.listeners}
+                            onClickCapture={(e) => {
+                              if (justDraggedRef.current) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }
+                            }}
+                            className={`${isOpen ? "w-full shrink-0 sm:w-40" : ""} ${
+                              drag.listeners
+                                ? "cursor-grab touch-manipulation select-none [-webkit-touch-callout:none] active:cursor-grabbing"
+                                : ""
+                            } ${
+                              drag.isDragging
+                                ? "[&_.js-image-thumb]:shadow-lg [&_.js-image-thumb]:ring-2 [&_.js-image-thumb]:ring-accent"
+                                : ""
+                            }`}
+                          >
+                            {thumb}
+                          </div>
+
+                          {isOpen ? (
+                            <div
+                              id={detailsId}
+                              className="min-w-0 flex-1 space-y-3"
+                            >
+                              <div>
+                                <label
+                                  htmlFor={`caption-${item.mediaId}`}
+                                  className="block text-xs font-medium"
+                                >
+                                  {t("caption")}{" "}
+                                  <span className="font-normal text-muted-foreground">
+                                    {t("captionHint")}
+                                  </span>
+                                </label>
+                                <input
+                                  id={`caption-${item.mediaId}`}
+                                  type="text"
+                                  value={item.caption ?? ""}
+                                  onChange={(e) =>
+                                    updateCaption(item.mediaId, e.target.value)
+                                  }
+                                  className="mt-1 w-full rounded-md border border-border-subtle px-2 py-1.5 text-sm dark:bg-transparent"
+                                />
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-3">
+                                {!item.isCover && (
+                                  <TileAction
+                                    onClick={() => setCover(item.mediaId)}
+                                  >
+                                    {t("setAsCover")}
+                                  </TileAction>
+                                )}
+                                {index > 0 && (
+                                  <TileAction
+                                    onClick={() =>
+                                      reorder(
+                                        item.mediaId,
+                                        media[index - 1].mediaId,
+                                      )
+                                    }
+                                    label={t("moveEarlierLabel", { name })}
+                                  >
+                                    {t("moveEarlier")}
+                                  </TileAction>
+                                )}
+                                {index < media.length - 1 && (
+                                  <TileAction
+                                    onClick={() =>
+                                      reorder(
+                                        item.mediaId,
+                                        media[index + 1].mediaId,
+                                      )
+                                    }
+                                    label={t("moveLaterLabel", { name })}
+                                  >
+                                    {t("moveLater")}
+                                  </TileAction>
+                                )}
+                                <TileAction
+                                  tone="destructive"
+                                  onClick={() => detach(item.mediaId)}
+                                >
+                                  {t("deletePhoto")}
+                                </TileAction>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    // Hand the collapse a target to land on -- see
+                                    // the refocusToggleIdRef effect above.
+                                    refocusToggleIdRef.current = item.mediaId;
+                                    setOpenMediaId(null);
+                                  }}
+                                  className="ml-auto rounded-md border border-border-subtle px-3 py-1.5 text-xs font-medium"
+                                >
+                                  {t("done")}
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                        </>
+                      )}
+                    </SortablePhotoTile>
+                  );
+                })}
+              </ul>
+            </SortableContext>
+          </DndContext>
         </div>
       )}
     </div>
+  );
+}
+
+/** Magnifier with a plus: "tap to see this photo large". */
+function ZoomIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-4-4M11 8v6M8 11h6" />
+    </svg>
   );
 }

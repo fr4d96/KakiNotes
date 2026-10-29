@@ -51,23 +51,60 @@ type NominatimResult = {
   address?: NominatimAddress;
 };
 
-/** Case/whitespace-insensitive equality, for matching a place name against a lookup row's name. */
+/**
+ * Suffixes Nominatim attaches to a Chinese province/municipality's `state`
+ * field that the curated `regions` rows never carry -- "Guangdong Province"
+ * geocodes, but the seeded region is named plain "Guangdong"
+ * (supabase/migrations/20260924021909_countries.sql), and a municipality
+ * like Beijing comes back as "Beijing Municipality"/"北京市" against a
+ * region named "Beijing"/"北京". Stripped before comparison on BOTH sides
+ * (a no-op for a name that never had the suffix, e.g. every NZ region), so
+ * the same matcher works for every country without a per-country branch.
+ */
+const ENGLISH_ADMIN_SUFFIX = /\s*(province|municipality)\s*$/i;
+const CHINESE_ADMIN_SUFFIX = /(省|市)$/;
+
+function normalizePlaceName(raw: string): string {
+  return raw
+    .trim()
+    .replace(ENGLISH_ADMIN_SUFFIX, "")
+    .replace(CHINESE_ADMIN_SUFFIX, "")
+    .trim();
+}
+
+/** Case/whitespace-insensitive equality, tolerant of a trailing province/municipality (or 省/市) suffix on either side. */
 function namesMatch(a: string, b: string): boolean {
-  return a.trim().toLowerCase() === b.trim().toLowerCase();
+  return (
+    normalizePlaceName(a).toLowerCase() === normalizePlaceName(b).toLowerCase()
+  );
+}
+
+/** A lookup row matches a geocoded name if either its English or its Simplified Chinese name does. */
+function rowNameMatches(
+  row: { name: string; name_zh_cn: string | null },
+  candidate: string,
+): boolean {
+  return (
+    namesMatch(row.name, candidate) ||
+    (row.name_zh_cn != null && namesMatch(row.name_zh_cn, candidate))
+  );
 }
 
 async function searchNominatim(
   query: string,
   signal: AbortSignal,
+  countryCode: string,
 ): Promise<NominatimResult[]> {
   const url = new URL(NOMINATIM_SEARCH_URL);
   url.searchParams.set("q", query);
   url.searchParams.set("format", "jsonv2");
   url.searchParams.set("addressdetails", "1");
   url.searchParams.set("limit", "6");
-  // Scoped to New Zealand -- this platform only covers NZ working-holiday
-  // destinations, and narrowing here also cuts down irrelevant results.
-  url.searchParams.set("countrycodes", "nz");
+  // Scoped to the story's selected country (countries.code, ISO 3166-1
+  // alpha-2 -- exactly Nominatim's own `countrycodes` format) rather than a
+  // hard-coded "nz": narrows results to wherever the contributor is
+  // actually writing about, for every country this platform has.
+  url.searchParams.set("countrycodes", countryCode);
   const res = await fetch(url.toString(), { signal });
   if (!res.ok) throw new Error(`Nominatim search failed: ${res.status}`);
   return res.json();
@@ -97,12 +134,12 @@ export function matchLocation(
   const regionName = address?.state ?? address?.county;
 
   const matchedDestination = localityName
-    ? destinations.find((d) => namesMatch(d.name, localityName))
+    ? destinations.find((d) => rowNameMatches(d, localityName))
     : undefined;
   const matchedRegion = matchedDestination
     ? regions.find((r) => r.id === matchedDestination.regionId)
     : regionName
-      ? regions.find((r) => namesMatch(r.name, regionName))
+      ? regions.find((r) => rowNameMatches(r, regionName))
       : undefined;
 
   if (!matchedRegion) return null;
@@ -132,6 +169,10 @@ export type LocationSearchProps = {
   regions: ActiveRegion[];
   destinations: ActiveDestination[];
   onMatch: (match: LocationMatch | null, searchedLabel: string) => void;
+  /** The selected country's `countries.code` (ISO 3166-1 alpha-2) -- scopes the Nominatim search. */
+  countryCode: string;
+  /** The selected country's `countryContent.<segment>.placeExample` -- the placeholder's "e.g. ..." town name. */
+  placeholderExample: string;
 };
 
 /**
@@ -149,6 +190,8 @@ export function LocationSearch({
   regions,
   destinations,
   onMatch,
+  countryCode,
+  placeholderExample,
 }: LocationSearchProps) {
   const t = useTranslations("editor.place");
   const [query, setQuery] = useState("");
@@ -199,7 +242,11 @@ export function LocationSearch({
     setSearchedTerm(trimmed);
 
     try {
-      const data = await searchNominatim(trimmed, controller.signal);
+      const data = await searchNominatim(
+        trimmed,
+        controller.signal,
+        countryCode,
+      );
       setResults(data);
       setOpen(data.length > 0);
       setStatus(data.length > 0 ? "idle" : "empty");
@@ -248,7 +295,7 @@ export function LocationSearch({
             }
           }}
           onFocus={() => results.length > 0 && setOpen(true)}
-          placeholder={t("placeholder")}
+          placeholder={t("placeholder", { example: placeholderExample })}
           autoComplete="off"
           className="w-full flex-1 rounded-md border border-border-subtle px-3 py-2 text-sm dark:bg-transparent"
         />

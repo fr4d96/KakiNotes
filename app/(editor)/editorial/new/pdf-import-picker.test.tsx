@@ -4,6 +4,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PdfImportPicker } from "./pdf-import-picker";
 import type { ContributorForEditorial } from "@/lib/story/editorial-queries";
+import type { ActiveCountry } from "@/lib/story/active-lookups";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -18,6 +19,23 @@ const CONTRIBUTORS: ContributorForEditorial[] = [
     attributionType: "display_name",
     isLinked: true,
   } as ContributorForEditorial,
+];
+
+const COUNTRIES: ActiveCountry[] = [
+  {
+    id: "country-nz",
+    slug: "new-zealand",
+    code: "nz",
+    name: "New Zealand",
+    name_zh_cn: null,
+  },
+  {
+    id: "country-cn",
+    slug: "china",
+    code: "cn",
+    name: "China",
+    name_zh_cn: "中国",
+  },
 ];
 
 const PREVIEW_RESPONSE = {
@@ -91,7 +109,13 @@ beforeEach(() => {
 describe("PdfImportPicker", () => {
   it("uploads a PDF and renders the returned thumbnails as a selectable grid", async () => {
     const user = userEvent.setup();
-    render(<PdfImportPicker contributors={CONTRIBUTORS} />);
+    render(
+      <PdfImportPicker
+        contributors={CONTRIBUTORS}
+        countries={COUNTRIES}
+        locale="en"
+      />,
+    );
 
     await uploadAndPreview(user);
 
@@ -103,7 +127,13 @@ describe("PdfImportPicker", () => {
 
   it("toggles selection via mouse click and shows a running count", async () => {
     const user = userEvent.setup();
-    render(<PdfImportPicker contributors={CONTRIBUTORS} />);
+    render(
+      <PdfImportPicker
+        contributors={CONTRIBUTORS}
+        countries={COUNTRIES}
+        locale="en"
+      />,
+    );
     await uploadAndPreview(user);
 
     const page1 = screen.getByRole("button", { name: "Page 1" });
@@ -118,7 +148,13 @@ describe("PdfImportPicker", () => {
 
   it("toggles selection via keyboard (Enter/Space on a focused thumbnail)", async () => {
     const user = userEvent.setup();
-    render(<PdfImportPicker contributors={CONTRIBUTORS} />);
+    render(
+      <PdfImportPicker
+        contributors={CONTRIBUTORS}
+        countries={COUNTRIES}
+        locale="en"
+      />,
+    );
     await uploadAndPreview(user);
 
     const page2 = screen.getByRole("button", { name: "Page 2" });
@@ -151,7 +187,13 @@ describe("PdfImportPicker", () => {
       }),
     );
     const user = userEvent.setup();
-    render(<PdfImportPicker contributors={CONTRIBUTORS} />);
+    render(
+      <PdfImportPicker
+        contributors={CONTRIBUTORS}
+        countries={COUNTRIES}
+        locale="en"
+      />,
+    );
     await uploadAndPreview(user);
 
     for (let i = 1; i <= 12; i++) {
@@ -167,7 +209,13 @@ describe("PdfImportPicker", () => {
 
   it("keeps the submit button disabled until every selected page has non-empty alt text", async () => {
     const user = userEvent.setup();
-    render(<PdfImportPicker contributors={CONTRIBUTORS} />);
+    render(
+      <PdfImportPicker
+        contributors={CONTRIBUTORS}
+        countries={COUNTRIES}
+        locale="en"
+      />,
+    );
     await uploadAndPreview(user);
 
     const submit = screen.getByRole("button", { name: "Create Import Draft" });
@@ -186,7 +234,13 @@ describe("PdfImportPicker", () => {
 
   it("submits the original file, selected page numbers, and alt text to pdf-attach, then navigates to the editor", async () => {
     const user = userEvent.setup();
-    render(<PdfImportPicker contributors={CONTRIBUTORS} />);
+    render(
+      <PdfImportPicker
+        contributors={CONTRIBUTORS}
+        countries={COUNTRIES}
+        locale="en"
+      />,
+    );
     await uploadAndPreview(user);
 
     await user.click(screen.getByRole("button", { name: "Page 2" }));
@@ -224,6 +278,45 @@ describe("PdfImportPicker", () => {
       "1": "Cover page",
     });
     expect(body.get("file")).toBeInstanceOf(File);
+    // Country select defaults to new-zealand and is part of the same
+    // <form> TitleAndContributorFields renders into -- captured by the
+    // same `new FormData(e.currentTarget)` as title/contributor fields.
+    expect(body.get("country")).toBe("new-zealand");
+  });
+
+  it("sends the selected country when the editor changes the Country select", async () => {
+    const user = userEvent.setup();
+    render(
+      <PdfImportPicker
+        contributors={CONTRIBUTORS}
+        countries={COUNTRIES}
+        locale="en"
+      />,
+    );
+    await uploadAndPreview(user);
+
+    await user.selectOptions(screen.getByLabelText("Country"), "china");
+    await user.click(screen.getByRole("button", { name: "Page 1" }));
+    await user.type(
+      screen.getByLabelText("Alt text for page 1 (required)"),
+      "Cover page",
+    );
+    await user.type(screen.getByLabelText("Title"), "My Trip");
+
+    await user.click(
+      screen.getByRole("button", { name: "Create Import Draft" }),
+    );
+
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith("/editorial/story-1/edit"),
+    );
+
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    const attachCall = fetchMock.mock.calls.find(
+      ([url]) => url === "/editorial/new/pdf-attach",
+    );
+    const body = attachCall![1].body as FormData;
+    expect(body.get("country")).toBe("china");
   });
 
   it("shows a clear, accessible error when Phase A rejects the upload (e.g. a non-PDF file)", async () => {
@@ -237,7 +330,13 @@ describe("PdfImportPicker", () => {
       ),
     );
     const user = userEvent.setup();
-    render(<PdfImportPicker contributors={CONTRIBUTORS} />);
+    render(
+      <PdfImportPicker
+        contributors={CONTRIBUTORS}
+        countries={COUNTRIES}
+        locale="en"
+      />,
+    );
 
     const input = screen.getByLabelText("PDF file") as HTMLInputElement;
     await user.upload(input, pdfFile());

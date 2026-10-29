@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { getPublicImageUrl } from "@/lib/story/public-image-url";
+import { getCardCoverUrl } from "@/lib/story/image-url";
 import { firstRegionLabel, stringList } from "@/lib/story/card-fields";
 import { AttributionChip } from "@/components/story/attribution-chip";
 import type { StoryCardData } from "@/components/story/story-card";
@@ -29,7 +29,7 @@ export function FeaturedStorySlide({
 }) {
   const t = useTranslations("home.featured");
   const tCommon = useTranslations("common");
-  const coverUrl = getPublicImageUrl(story.cover_image_path);
+  const coverUrl = getCardCoverUrl(story);
   const regionLabel = firstRegionLabel(story.regions);
   const badges = stringList(story.tags).slice(0, 3);
 

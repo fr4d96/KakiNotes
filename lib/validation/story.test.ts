@@ -11,9 +11,12 @@ import {
   submitRevisionSchema,
   createReportSchema,
   revisionTagsSchema,
+  revisionLocationSchema,
+  revisionLocationsSchema,
   revisionExpenseSchema,
   MAX_TAGS_PER_REVISION,
   TAG_MAX_LENGTH,
+  countrySlugSchema,
 } from "./story";
 
 describe("isSafeHref", () => {
@@ -430,6 +433,88 @@ describe("revisionTagsSchema", () => {
   });
 });
 
+describe("revisionLocationSchema / revisionLocationsSchema", () => {
+  const regionId = "11111111-1111-4111-8111-111111111111";
+  const destinationId = "22222222-2222-4222-8222-222222222222";
+
+  it("accepts a curated region reference, region-only", () => {
+    expect(revisionLocationSchema.safeParse({ regionId }).success).toBe(true);
+  });
+
+  it("accepts a curated region with a looked-up destination", () => {
+    expect(
+      revisionLocationSchema.safeParse({ regionId, destinationId }).success,
+    ).toBe(true);
+  });
+
+  it("accepts a curated region with a typed destination label", () => {
+    expect(
+      revisionLocationSchema.safeParse({
+        regionId,
+        customDestinationLabel: "Kaikohe",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("accepts a contributor-typed region, with or without a typed place", () => {
+    expect(
+      revisionLocationSchema.safeParse({ customRegionLabel: "Sichuan" })
+        .success,
+    ).toBe(true);
+    expect(
+      revisionLocationSchema.safeParse({
+        customRegionLabel: "Sichuan",
+        customDestinationLabel: "A small village near Chengdu",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects neither a region reference nor a typed region", () => {
+    expect(revisionLocationSchema.safeParse({}).success).toBe(false);
+  });
+
+  it("rejects both a region reference and a typed region", () => {
+    expect(
+      revisionLocationSchema.safeParse({
+        regionId,
+        customRegionLabel: "Sichuan",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a typed region paired with a looked-up destination -- a custom region has no destinations FK to be a child of", () => {
+    expect(
+      revisionLocationSchema.safeParse({
+        customRegionLabel: "Sichuan",
+        destinationId,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a typed region label longer than the stored column allows", () => {
+    expect(
+      revisionLocationSchema.safeParse({
+        customRegionLabel: "x".repeat(121),
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a typed region label that is empty once trimmed", () => {
+    expect(
+      revisionLocationSchema.safeParse({ customRegionLabel: "   " }).success,
+    ).toBe(false);
+  });
+
+  it("caps the list at 20 locations, mirroring set_revision_locations' own cap", () => {
+    const result = revisionLocationsSchema.safeParse(
+      Array.from({ length: 21 }, (_, i) => ({
+        customRegionLabel: `Area ${i}`,
+      })),
+    );
+    expect(result.success).toBe(false);
+  });
+});
+
 describe("revisionExpenseSchema", () => {
   const id = "11111111-1111-4111-8111-111111111111";
 
@@ -477,5 +562,21 @@ describe("revisionExpenseSchema", () => {
       revisionExpenseSchema.safeParse({ categoryId: id, amountNzdCents: -1 })
         .success,
     ).toBe(false);
+  });
+});
+
+describe("countrySlugSchema", () => {
+  it("accepts every known country slug", () => {
+    expect(countrySlugSchema.safeParse("new-zealand").success).toBe(true);
+    expect(countrySlugSchema.safeParse("china").success).toBe(true);
+  });
+
+  it("rejects an unknown slug", () => {
+    expect(countrySlugSchema.safeParse("australia").success).toBe(false);
+  });
+
+  it("rejects a non-string value", () => {
+    expect(countrySlugSchema.safeParse(null).success).toBe(false);
+    expect(countrySlugSchema.safeParse(42).success).toBe(false);
   });
 });

@@ -1,10 +1,20 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { BrandLogo } from "@/components/brand-logo";
+import { countryFromPathname, countryUrlPrefix } from "@/lib/story/countries";
 
+// A client component only for usePathname(): the footer sits in the shared
+// (public) layout, so the URL is the one place it can learn which country
+// section it is under.
 export function SiteFooter() {
   const t = useTranslations("footer");
   const tNav = useTranslations("nav");
+  const tChina = useTranslations("countryContent.china");
+  const isChina = countryFromPathname(usePathname()) === "china";
+  const prefix = isChina ? countryUrlPrefix("china") : "";
   return (
     // The footer FLIPS with the theme; it is not an always-dark band.
     //
@@ -27,14 +37,14 @@ export function SiteFooter() {
         <div className="grid gap-10 md:grid-cols-[1.4fr_.7fr_.7fr_.7fr]">
           <div>
             <Link
-              href="/"
+              href={prefix || "/"}
               className="flex items-center gap-2.5 text-xl font-black"
             >
               <BrandLogo className="border border-border-subtle" />
               Kakinotes
             </Link>
             <p className="mt-4 max-w-md text-sm text-muted-foreground">
-              {t("tagline")}
+              {isChina ? tChina("tagline") : t("tagline")}
             </p>
             <p className="mt-5 max-w-lg text-xs leading-5 text-foreground/65">
               {t("disclaimer")}
@@ -43,15 +53,17 @@ export function SiteFooter() {
           <div>
             <strong>{t("explore")}</strong>
             <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
-              <Link href="/stories">{tNav("stories")}</Link>
+              <Link href={`${prefix}/stories`}>{tNav("stories")}</Link>
             </div>
           </div>
           <div>
             <strong>{t("community")}</strong>
             <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
               <Link href="/sign-up">{t("shareAStory")}</Link>
-              <Link href="/contributors">{tNav("contributors")}</Link>
-              <Link href="/about">{tNav("about")}</Link>
+              <Link href={`${prefix}/contributors`}>
+                {tNav("contributors")}
+              </Link>
+              <Link href={`${prefix}/about`}>{tNav("about")}</Link>
             </div>
           </div>
           <div>
@@ -66,7 +78,7 @@ export function SiteFooter() {
         </div>
         <div className="mt-10 flex flex-col gap-2 border-t border-border-subtle pt-5 text-xs text-foreground/65 sm:flex-row sm:justify-between">
           <span>{t("copyrightLine", { year: 2026 })}</span>
-          <span>{t("madeFor")}</span>
+          <span>{isChina ? tChina("madeFor") : t("madeFor")}</span>
         </div>
       </div>
     </footer>

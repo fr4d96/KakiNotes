@@ -27,7 +27,18 @@ const MAX_MB = Math.round(MAX_PDF_IMPORT_INPUT_BYTES / (1024 * 1024));
  * fields — the signed-in contributor is the story's author). Lands directly
  * in the contributor's own editor at /stories/:id/edit on success.
  */
-export function PdfImportPicker() {
+export function PdfImportPicker({
+  countrySlug,
+}: {
+  /**
+   * The country this draft will be created in -- resolved by the parent
+   * page from its own `?country=` (validated against COUNTRY_SLUGS there),
+   * same value StartNewStory's hidden field carries on the blank-draft
+   * path. Sent through as a plain form field; the server re-validates it
+   * regardless (Engineering Rule 2).
+   */
+  countrySlug: string;
+}) {
   const t = useTranslations("pdfImport");
   const router = useRouter();
 
@@ -147,6 +158,7 @@ export function PdfImportPicker() {
     const formData = new FormData();
     formData.set("title", title.trim());
     formData.set("file", file);
+    formData.set("country", countrySlug);
     formData.set("pageNumbers", JSON.stringify(selectedPages));
     formData.set(
       "altText",

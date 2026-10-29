@@ -1,5 +1,236 @@
 # Changelog
 
+## [1.11.0](https://github.com/fr4d96/KakiNotes/compare/v1.10.0...v1.11.0) (2026-10-29)
+
+### What's new for readers
+
+**A China section.** Kakinotes now has first-person travel stories from China, alongside the New Zealand Working Holiday stories. Use the NZ | China switch on the home page, or go straight to /cn. The China section has its own stories, contributors, costs and about pages, in English and Chinese.
+
+**New Zealand is unchanged.** All New Zealand pages and links work exactly as before. The China section is general travel stories, not Working Holiday Visa stories.
+
+### What's new for contributors
+
+**Choose your story's country.** The Places step in the story editor now starts with a Country choice. The regions, towns and place search all follow the country you pick. You can change the country until the story is first published; after that it stays fixed.
+
+**Type in any place.** "Add a location manually" now lets you type a region or area (and, if you like, a town or place) instead of picking from a list, so you can add places that aren't listed.
+
+**PDF imports know the country too.** Starting a story from a PDF, from either the New Zealand or the China section, records the right country.
+
+### Good to know
+
+**The journey map is New Zealand only.** It draws a map of New Zealand, so it's offered on New Zealand stories and doesn't appear on China stories.
+
+
+
+
+### Features
+
+* **china:** China travel-stories section under /cn ([d6d7b53](https://github.com/fr4d96/KakiNotes/commit/d6d7b53200fb6f05978f92e0dbfba86804179db2))
+
+## [1.10.0](https://github.com/fr4d96/KakiNotes/compare/v1.9.0...v1.10.0) (2026-10-29)
+
+### What's new for readers
+
+**A journey map on stories.** Stories can now show an illustrated map of New Zealand with the route the writer travelled. A little campervan drives from stop to stop (and takes the ferry across Cook Strait), and a timeline beside the map follows along. Press Pause or Play at any time, or tap a stop to jump straight to it.
+
+**Places inside a stop.** Some stops have a "+3 places" badge. Tap one and the map zooms in to show the smaller places the writer visited there, like Arrowtown and Glenorchy inside Queenstown. Tap "Back to whole journey" (or press Esc) to zoom out again.
+
+**Zoom and look around.** Use the + and − buttons, pinch on a phone, or hold Ctrl/⌘ while scrolling to zoom. Drag to look around, and use the re-centre button to follow the van again. The map also works in dark mode.
+
+**Jump to that part of the story.** If the writer linked a stop to a section of their story, "Read this part" takes you straight there.
+
+### What's new for contributors
+
+**Add your journey in the story editor.** Tap the map to drop a pin, or paste a Google Maps link and the pin is placed for you. Give each stop a name and, if you like, link it to one of your story's headings. You can have up to 12 main stops, with up to 8 places inside each one.
+
+**Group places under a main stop.** Use "Part of" on a stop, or tap a main stop's pin and choose "Add places inside", to keep busy areas tidy. Readers only see those places when they open the main stop.
+
+**Easy to fix mistakes.** Tap a pin to remove or rename it, and Undo brings back anything you removed by accident.
+
+### Good to know
+
+**Your exact location is never shown.** Pins are rounded to about 1 km, must be inside New Zealand, and readers only ever see the place names you type, never coordinates.
+
+**Reviewed with your story.** The journey map is part of your story, so changes to it go live once that version of your story is approved, like any other edit.
+
+
+
+
+### Features
+
+* **stories:** journey map with main stops and places inside ([1d3679f](https://github.com/fr4d96/KakiNotes/commit/1d3679fe7f6dc7db30e476291574aacee880805f))
+
+## [1.9.0](https://github.com/fr4d96/KakiNotes/compare/v1.8.0...v1.9.0) (2026-10-21)
+
+
+### What's new for contributors
+
+**Story folders.** You can now group your published stories into folders. A main story works like a folder, and you can file other stories under it as its sub stories. Go to My Stories and choose "Open story folders" to organise them.
+
+**Drag a story into a folder.** Drag a story onto a main story to file it there. On a phone, press and hold the story first, then drag. Every story also has a "Move to" menu that does the same thing without dragging, and you can take a story out of its folder at any time.
+
+**Readers see them together.** A main story's page now lists its sub stories under "More in this story", and each sub story shows "Part of" with a link back to its main story.
+
+### Good to know
+
+**One level, published stories only.** A sub story can't have its own sub stories, and only published stories can go into a folder. Drafts and private stories show up greyed out until you publish them. Changes show on your public pages straight away, with no review.
+
+**Your existing links carried over.** Stories you had linked before have become a folder under the story they were linked to most.
+
+**Story pages are working again.** Since 13 October, some public story pages showed "Something went wrong" instead of the story. That's fixed in this release.
+
+
+
+### Features
+
+* **stories:** story folders page for main and sub stories ([538ab5b](https://github.com/fr4d96/KakiNotes/commit/538ab5b88e11b4858c3d391237c7b57aa4b262e2))
+
+## [1.8.0](https://github.com/fr4d96/KakiNotes/compare/v1.7.0...v1.8.0) (2026-10-12)
+
+### What's new for contributors
+
+**Keep your photos in full quality.** If you've connected Google Drive, every new photo you upload is now saved twice in your Drive: the version readers see on Kakinotes, and a full-size copy at the photo's original resolution. The full-size copies go in a "Full quality" folder inside each story's folder, numbered to match the others.
+
+**Download them from My Photos.** Photos with a full-size copy are marked "Full quality", and their Download button gives you the full-size version.
+
+**Private to you.** Only you can download a full-size copy. Readers, editors and moderators only ever see the regular version. Location and camera details are removed from both copies.
+
+### Good to know
+
+**Only for Google Drive, and only for new photos.** Photos stored on Kakinotes keep the regular size; connect Google Drive in Account settings to start keeping full-size copies. Photos uploaded before this release don't have a full-size copy, because the original files weren't kept.
+
+
+
+### Features
+
+* **drive:** keep a full-quality copy of each new Drive photo ([7900c08](https://github.com/fr4d96/KakiNotes/commit/7900c08d960cc331fef2fe27507a561a6d48774f))
+
+## [1.7.0](https://github.com/fr4d96/KakiNotes/compare/v1.6.0...v1.7.0) (2026-10-11)
+
+### What's new for contributors
+
+**All your photos in one place.** A new My Photos page shows every photo on your stories, grouped by story, whatever state each story is in: drafts, stories waiting for review, published and private ones. Find it in the menu under your profile picture, or with the My Photos button on My Stories.
+
+**Download any photo.** Each photo has its own Download button that saves it to your device. You always get the same cleaned copy readers see, with location and camera details removed.
+
+**See where each photo is kept.** Every photo says whether it's stored on Kakinotes or in your Google Drive. If you've disconnected Google Drive, photos kept there show a "Reconnect Google Drive" link instead.
+
+### Good to know
+
+**One photo at a time for now.** There's no "download everything as one file" option yet.
+
+
+
+### Features
+
+* **photos:** My Photos page with a download per photo ([a2f75ba](https://github.com/fr4d96/KakiNotes/commit/a2f75ba8bfe0dbd91c9bc75f65274164efdfe1fd))
+
+## [1.6.0](https://github.com/fr4d96/KakiNotes/compare/v1.5.0...v1.6.0) (2026-10-09)
+
+### What's new for contributors
+
+**A tidier photo grid.** In the Photos step of the story editor, each photo's Details button now sits on the photo itself instead of underneath it, so the grid is more compact and you see more of your photos at once.
+
+**Details when you need it.** On a computer, move your mouse over a photo and its Details button appears. On a phone or tablet it's always shown, since there's no mouse to hover with. If you move around with the keyboard, it shows as soon as you reach it.
+
+**See at a glance which photos you can enlarge.** A small magnifier icon in the top-right corner of each photo is a reminder that you can tap or click any photo to see it large.
+
+
+
+### Features
+
+* **editor:** Details on the photo on hover, zoom icon always shown ([8352324](https://github.com/fr4d96/KakiNotes/commit/835232415f556cdb759c7df9115acab017c350ae))
+
+## [1.5.0](https://github.com/fr4d96/KakiNotes/compare/v1.4.1...v1.5.0) (2026-10-08)
+
+### What's new for contributors
+
+**Drag your photos into the order you want.** In the Photos step of the story editor, pick up a photo and drop it where it should go. The other photos make room as you move it, and the new order saves on its own.
+
+**Works on your phone too.** Press and hold a photo for a moment, then drag it. A quick swipe still scrolls the page as normal, so you won't move a photo by accident.
+
+**Tapping still opens the photo.** A plain click or tap shows the photo large, just as before. The "Move earlier" and "Move later" buttons under Details are still there if you'd rather use those, or use a keyboard.
+
+
+
+### Features
+
+* **editor:** drag photos to reorder them ([3f0c4ed](https://github.com/fr4d96/KakiNotes/commit/3f0c4ed042e0ff14a31e614d05073ea1232711e2))
+
+## [1.4.1](https://github.com/fr4d96/KakiNotes/compare/v1.4.0...v1.4.1) (2026-10-08)
+
+### Fixed
+
+**Choose which Google account to connect.** When you press "Connect Google Drive", Google now always asks which account to use, and lets you add another one. Before, if your browser was signed in to a single Google account, Kakinotes connected that one without asking.
+
+### Good to know
+
+**Switching to a different Google account.** Disconnect first from Account → Google Drive, then connect again and pick the other account. Photos already stored in the first account's Drive stop showing on your stories after you switch, because Kakinotes doesn't keep a copy of them.
+
+
+
+### Bug Fixes
+
+* **drive:** always show Google's account chooser when connecting ([862e9fb](https://github.com/fr4d96/KakiNotes/commit/862e9fbe73f06affc40f9ef34130a9f6c6600bb4))
+
+## [1.4.0](https://github.com/fr4d96/KakiNotes/compare/v1.3.0...v1.4.0) (2026-10-08)
+
+### What's new for contributors
+
+**Move your older photos into your Google Drive.** If you connected Google Drive, the Google Drive tab in Account settings now shows a "Move photos to Drive" button for any photos you uploaded before you connected. Press it and Kakinotes moves them into your Drive one by one, into the same tidy per-story folders as your new photos. A progress bar shows how far along it is.
+
+**Your stories keep working while it moves.** Readers never see a broken or missing photo on a published story, before, during or after the move. Once a photo is safely in your Drive, and Kakinotes has checked the copy matches exactly, Kakinotes deletes its own copy, including the original you first uploaded.
+
+**Stop and pick up later.** You can stop after the current photo, or just close the page. Nothing is half-moved: every photo is either still on Kakinotes or fully in your Drive. Press the button again to carry on. If a photo can't be moved, for example because its story is being published at that moment, you'll see which story it belongs to and why, and it stays safely on Kakinotes.
+
+### Fixed
+
+**Photos stored in Google Drive now show to readers.** On published stories, photos kept in a contributor's Google Drive could appear as a broken image to anyone who wasn't signed in. They now show for everyone. This fix was already live before this release.
+
+### Good to know
+
+**Moving is your choice, and it's one-way for now.** Nothing moves unless you press the button. Once a photo is in your Drive, Kakinotes no longer keeps a copy, so keep it in your Drive to keep it showing. Photos in stories an editor imported for you stay on Kakinotes.
+
+**Published photos are tidied up a little later.** Kakinotes keeps its old copy of a published photo for 5 minutes after the move, so no reader ever catches a gap. It's deleted the next time you press the button.
+
+
+
+### Features
+
+* **drive:** move existing photos to Google Drive ([9ea199d](https://github.com/fr4d96/KakiNotes/commit/9ea199dbbcf2cc2bd307013d7c6acefbcad7865f))
+
+
+### Bug Fixes
+
+* **drive:** serve published Drive photos to readers ([9b19540](https://github.com/fr4d96/KakiNotes/commit/9b19540d81e22475d313b12ac99d9f5e34ad2daf))
+
+## [1.3.0](https://github.com/fr4d96/KakiNotes/compare/v1.2.0...v1.3.0) (2026-10-07)
+
+### What's new for contributors
+
+**Keep your story photos in your own Google Drive.** In Account settings there's a new Google Drive tab. Connect your Google account, and from then on any photo you add to one of your own stories is saved in your Google Drive instead of on Kakinotes. Kakinotes only asks for access to the files it creates itself. It can't see anything else in your Drive.
+
+**Your photos are cleaned before they're saved.** Location and camera details are removed from every photo before it lands in your Drive. The original you uploaded is deleted straight after, not left in your Drive's bin.
+
+**Tidy folders, one per story.** Photos go into a "Kakinotes" folder in your Drive, with a folder for each story named after its title, and the photos numbered 01, 02, 03 in the same order as in your story. Rename the story and its folder follows. Reorder or remove photos and the numbers follow too.
+
+**Nothing changes if you don't connect.** Connecting is optional. If you don't, your photos are stored exactly as before. Your published stories look the same either way, and readers never see a Google Drive link.
+
+**You can disconnect at any time** from the same tab. Kakinotes also cancels its access on Google's side.
+
+### Good to know
+
+**Google Drive is in early testing.** For now only a small group of invited test accounts can connect. Everyone else will see a message from Google saying access is blocked. It will open up to everyone later.
+
+**Photos in Drive belong to you.** If you delete or move a story's photo in your Drive, or disconnect, that photo can stop showing on your story. Kakinotes doesn't keep a backup copy.
+
+
+
+### Features
+
+* **drive:** connect and disconnect Google Drive from Account settings ([d5ffcb6](https://github.com/fr4d96/KakiNotes/commit/d5ffcb6418ec370976322c4958b59d39666c1add))
+* **drive:** store a contributor's photos in their own Google Drive ([acabcb8](https://github.com/fr4d96/KakiNotes/commit/acabcb89c0a2dc7335456d4c6e4819764d9e896a))
+
 ## [1.2.0](https://github.com/fr4d96/KakiNotes/compare/v1.1.0...v1.2.0) (2026-10-03)
 
 ### What's new for everyone

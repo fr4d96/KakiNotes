@@ -45,6 +45,9 @@
       "previous": "上一张",
       "next": "下一张",
       "counter": "第 {current} 张，共 {total} 张"
+    },
+    "countryToggle": {
+      "label": "选择国家板块"
     }
   },
   "nav": {
@@ -61,7 +64,8 @@
     "account": "账户",
     "signOut": "退出登录",
     "accountMenu": "账户菜单",
-    "staff": "工作人员"
+    "staff": "工作人员",
+    "myPhotos": "我的照片"
   },
   "footer": {
     "tagline": "一个分享新西兰打工度假真实经历的故事社区。",
@@ -169,17 +173,28 @@
       "singleBlock": "一篇故事只有一个内容块。",
       "titleRequired": "请填写标题。",
       "locationEitherOr": "请选择一个已有地点或自己填写名称，不能同时填写。",
+      "customRegionNoDestinationId": "自己填写的地区不能选择已有的地点 — 请直接填写城镇或地点名称。",
       "tooManyTags": "一篇故事最多可以添加 {max} 个标签。",
       "expenseNeedsCategory": "花费条目需要一个类别或名称。",
       "consentRequired": "你必须确认自己有权发布这篇故事。",
       "termsVersionMissing": "缺少条款版本。",
       "selectPage": "请至少选择一页。",
-      "changeNoteRequired": "请说明需要修改什么。"
+      "changeNoteRequired": "请说明需要修改什么。",
+      "journeyLabelRequired": "请为这个站点填写地名。",
+      "journeyLabelTooLong": "地名不能超过 {max} 个字符。",
+      "journeyOutOfBounds": "站点必须位于新西兰境内。",
+      "journeyTooMany": "一个故事最多可以有 12 个主要站点，站点总数不超过 40 个。",
+      "journeyTooManyInside": "每个主要站点内最多可以放 8 个地点。",
+      "journeyBadParent": "站点内的地点必须属于排在前面的主要站点。",
+      "invalidCountry": "请选择一个有效的国家。"
     },
     "pdf": {
       "empty": "PDF 文件是空的。",
       "tooLarge": "PDF 文件太大。",
       "notAPdf": "这个文件不是 PDF（文件头不匹配）。"
+    },
+    "drive": {
+      "confirmationRequired": "请先勾选确认框，然后再断开连接。"
     }
   },
   "stories": {
@@ -473,7 +488,9 @@
       "signIn": "登录方式",
       "signInDescription": "可选。设置用户名后，你可以用用户名或邮箱登录 — 邮箱始终可用。",
       "contributorIdentity": "投稿人身份",
-      "contributorIdentityDescription": "你在每篇故事上的署名方式，以及读者在你的投稿人主页看到的内容。这由你自己选择 — 我们不会从账户信息推断。"
+      "contributorIdentityDescription": "你在每篇故事上的署名方式，以及读者在你的投稿人主页看到的内容。这由你自己选择 — 我们不会从账户信息推断。",
+      "drive": "Google Drive",
+      "driveDescription": "可选。连接你自己的 Google Drive，以后上传的照片会存到那里，而不是存在 Kakinotes。"
     },
     "profile": {
       "nameLabel": "账户名称",
@@ -536,6 +553,63 @@
       "alreadyHaveIdentity": "你已经有投稿人身份了。",
       "identityCreateFailed": "无法设置你的投稿人身份，请再试一次。",
       "identityUpdateFailed": "无法更新你的投稿人身份，请再试一次。"
+    },
+    "drive": {
+      "notAvailableHere": "此部署环境暂不支持连接 Google Drive。",
+      "notConnectedExplainer": "连接你的 Google Drive 后，以后上传的新照片会存到你自己的 Drive，而不是 Kakinotes，并且每张照片都会在那里保留一份原图画质的副本。你已经上传的照片不受影响，在你连接之前什么都不会改变。",
+      "connect": "连接 Google Drive",
+      "connectedTitle": "已连接 Google Drive",
+      "connectedAs": "已连接账号：{email}",
+      "connectedSince": "连接时间：{date}",
+      "warningTitle": "断开连接前请注意",
+      "warningBody": "断开连接后，存在 Drive 里的照片将无法在你已发布和草稿中的故事里显示。我们没有在别处保留这些照片的副本，所以一旦断开，我们这边无法把它们找回来。这个操作我们这边无法撤销。",
+      "confirmLabel": "我明白这个操作无法撤销，并确定要断开连接。",
+      "disconnect": "断开 Google Drive",
+      "disconnecting": "正在断开…",
+      "disconnected": "已断开 Google Drive。",
+      "banners": {
+        "connected": "Google Drive 已连接。",
+        "cancelled": "你没有完成连接，所以没有任何改变。你可以随时再试一次。",
+        "failed": "连接 Google Drive 时出了点问题，请重试。"
+      },
+      "errors": {
+        "notAvailable": "此部署环境暂不支持连接 Google Drive。"
+      },
+      "move": {
+        "title": "把已有照片移到 Drive",
+        "explainer": "你在连接 Drive 之前上传的 {count} 张照片还存在 Kakinotes。把它们移到你的 Drive，所有照片就都在一个地方了。移动期间，已发布的故事会一直正常显示。照片进入你的 Drive 后，Kakinotes 会删除自己的副本。编辑替你导入的故事里的照片会留在 Kakinotes。",
+        "confirmLabel": "我明白照片移到我的 Drive 后，Kakinotes 不会再保留副本。",
+        "start": "把 {count} 张照片移到 Drive",
+        "progress": "已移动 {done} / {total}…",
+        "progressLabel": "移动进度",
+        "keepOpen": "请保持此页面打开。离开页面会暂停移动，之后可以回到这里继续。",
+        "stop": "移完这张后停止",
+        "stopping": "移完这张后停止…",
+        "movedCount": "已将 {count} 张照片移到你的 Drive。",
+        "failedCount": "有 {count} 张照片没能移动，仍保存在 Kakinotes：",
+        "failedItem": "{story}：{reason}",
+        "untitledStory": "未命名故事",
+        "runningElsewhere": "另一个标签页或窗口正在移动照片。",
+        "cleanupExplainer": "有 {count} 张已发布的照片已移到你的 Drive。为了不让任何人看到加载失败的图片，Kakinotes 会在移动后把旧副本保留 5 分钟，点击下面的按钮即可删除。",
+        "cleanup": "删除 Kakinotes 的旧副本",
+        "nothingToMove": "Kakinotes 上没有需要移动的照片。你的照片都在你的 Drive 里。",
+        "reasons": {
+          "being_published": "它所在的故事正在发布，请几分钟后再试。",
+          "source_missing": "Kakinotes 读取不到这张照片的副本。",
+          "verify_failed": "Drive 里的副本与原图不一致，所以照片保留在原处。",
+          "changed_meanwhile": "照片在移动过程中发生了变化，请重试。",
+          "unknown": "出了点问题，请稍后再试。"
+        },
+        "errors": {
+          "notAvailable": "此部署环境暂不支持连接 Google Drive。",
+          "drive_not_connected": "你的 Google Drive 已断开连接。请重新连接后再试。",
+          "drive_unavailable": "Google Drive 拒绝了上传（可能空间已满或暂时繁忙）。没有丢失任何内容，请稍后再试。",
+          "already_running": "另一个标签页或窗口正在移动照片。请等它完成后再试。",
+          "run_not_active": "这次移动已停止。再点一次按钮即可继续。",
+          "generic": "移动照片时出了点问题。没有丢失任何内容，请重试。"
+        }
+      },
+      "seeMyPhotos": "先到「我的照片」保存副本"
     }
   },
   "myStories": {
@@ -583,18 +657,7 @@
       "delete": "删除《{title}》",
       "takeDown": "申请撤下《{title}》",
       "cancelTakedown": "取消《{title}》的撤下申请",
-      "takedownPending": "《{title}》的撤下申请正在等待处理。点击可取消申请。",
-      "linkMainStory": "设置《{title}》的主故事"
-    },
-    "linkMainStoryDialog": {
-      "title": "《{title}》的主故事",
-      "liveNote": "两篇故事都已发布，所以链接会立即显示在两个页面上，无需审核。",
-      "loading": "加载中…",
-      "save": "保存",
-      "saving": "保存中…",
-      "cancel": "取消",
-      "toast": "已将《{title}》链接到它的主故事。",
-      "toastCleared": "已移除《{title}》的主故事。"
+      "takedownPending": "《{title}》的撤下申请正在等待处理。点击可取消申请。"
     },
     "deleteDialog": {
       "title": "确定删除这篇故事？",
@@ -618,7 +681,9 @@
       "submitted": "已提交审核。",
       "keptPrivate": "已保存为私密，只有你能看到。"
     },
-    "updatedAt": "更新于 {date}"
+    "updatedAt": "更新于 {date}",
+    "myPhotosLink": "我的照片",
+    "storyMapLink": "打开故事文件夹"
   },
   "storyStatus": {
     "draft": "草稿",
@@ -670,15 +735,18 @@
       "totalExpenses": "总花费（新西兰元）",
       "locations": "地点",
       "region": "地区",
-      "chooseRegion": "选择一个地区…",
+      "regionOrArea": "地区",
       "townOrPlace": "城镇或地点（可选）",
       "remove": "移除",
       "noteToEditors": "给编辑的备注",
       "addLocationManually": "手动添加地点",
-      "unmatchedPlace": "无法把这个地点匹配到新西兰的某个地区 — 请使用下方的「手动添加地点」。",
+      "unmatchedPlace": "无法把这个地点匹配到{country}的某个地区 — 请使用下方的「手动添加地点」。",
       "photosHint": "在这里添加照片。照片会以相册形式显示在你的故事中。",
-      "unmatchedPlaceNamed": "无法把「{label}」匹配到新西兰的某个地区 — 请使用下方的「手动添加地点」。",
-      "noteToEditorsHint": "（可选，私密，不会公开）"
+      "unmatchedPlaceNamed": "无法把「{label}」匹配到{country}的某个地区 — 请使用下方的「手动添加地点」。",
+      "noteToEditorsHint": "（可选，私密，不会公开）",
+      "country": "国家",
+      "countryLocked": "故事发布后无法更改国家。",
+      "countryClearedNotice": "已清除原国家的地点 — 请在下方添加{country}的地点。"
     },
     "tripDates": {
       "heading": "你是什么时候去的？",
@@ -705,7 +773,7 @@
     },
     "place": {
       "heading": "搜索地点",
-      "placeholder": "输入完整地名，例如 Queenstown",
+      "placeholder": "输入完整地名，例如 {example}",
       "search": "搜索",
       "searching": "搜索中…",
       "unavailable": "地点搜索暂时不可用 — 请改为在下方选择地区。",
@@ -792,6 +860,7 @@
     },
     "photos": {
       "dropzone": "把图片拖到这里，或点击浏览文件",
+      "driveNote": "照片会保存到你的 Google Drive，每张还会保留一份原图画质的副本。",
       "count": "{count} 张照片",
       "placedCount": "已放入故事 {count} 张",
       "badges": {
@@ -824,6 +893,13 @@
         "uploadFailed": "上传失败。",
         "uploadFailedStatus": "上传失败（错误 {status}）。",
         "uploadedToast": "{fileName} 已上传。"
+      },
+      "drag": {
+        "hint": "拖动照片即可调整顺序。在手机上请先按住照片。",
+        "pickedUp": "已拿起第 {position} 张照片。",
+        "over": "移到第 {position} 个位置，共 {total} 个。",
+        "dropped": "已放到第 {position} 个位置。",
+        "cancelled": "已取消移动，照片回到原来的位置。"
       }
     },
     "toolbar": {
@@ -872,13 +948,6 @@
       "hide": "隐藏",
       "outlineLead": "已经想好结构了？",
       "outlineAction": "从大纲开始"
-    },
-    "parentStory": {
-      "label": "主故事（可选）",
-      "none": "无，这是一篇独立的故事",
-      "help": "把这个故事链接到你另一个已发布的故事下，例如把“Fergburger”放在“皇后镇美食”下。",
-      "hasSubStories": "已有其他故事链接在这篇故事下，所以它不能成为子故事。",
-      "noOptions": "请先发布另一篇故事，才能把这篇归到它下面。"
     }
   },
   "publish": {
@@ -1135,16 +1204,16 @@
     "reserveUploadFailed": "无法预留上传位置。",
     "heicConvertFailed": "无法转换这张 HEIC 照片，请再试一次。",
     "finalizeUploadFailed": "无法完成上传。",
+    "driveDisconnected": "你的 Google Drive 已断开连接。请在账户设置中重新连接，然后再试一次。",
     "submitFailed": "无法提交这篇故事送审。",
     "savePrivateFailed": "无法把这篇故事保存为私密。",
     "requestChangesFailed": "无法提交修改请求。",
     "declineFailed": "无法拒绝。",
-    "subStorySelf": "故事不能把自己设为主故事。",
-    "subStoryNotFound": "找不到这篇主故事。",
-    "subStoryParentNotPublished": "主故事必须先发布。",
+    "subStorySelf": "故事不能归档到自己名下。",
+    "subStoryNotFound": "找不到那篇故事。",
     "subStoryParentIsSubStory": "那篇故事本身就是子故事，不能再有子故事。",
-    "subStoryHasSubStories": "已有其他故事链接在这篇故事下，所以它不能成为子故事。",
-    "subStoryNotPublished": "只有已发布的故事才能链接。"
+    "subStoryHasSubStories": "这篇故事下已经有子故事，不能再归入其他文件夹。",
+    "subStoryNotPublished": "只有已发布的故事才能归入文件夹。"
   },
   "takedown": {
     "alreadyDown": "这篇故事已经被撤下了。",
@@ -1155,5 +1224,193 @@
     "onlyPublished": "只有已发布的故事才能撤下。",
     "gone": "这篇故事已经不存在了。",
     "failed": "无法撤下这篇故事，请再试一次。"
+  },
+  "myPhotos": {
+    "metaTitle": "我的照片",
+    "title": "我的照片",
+    "subtitle": "你所有故事里的照片，都在这里。",
+    "summary": "{stories} 个故事中共有 {photos} 张照片。",
+    "empty": "还没有照片。你添加到故事里的照片会显示在这里。",
+    "backToMyStories": "我的故事",
+    "untitledStory": "未命名故事",
+    "photoCount": "{count} 张照片",
+    "photoLabel": "《{story}》的第 {index} 张照片",
+    "whereKakinotes": "存在 Kakinotes",
+    "whereDrive": "存在你的 Google Drive",
+    "earlierVersion": "来自较早的版本",
+    "download": "下载",
+    "downloadLabel": "下载{photo}",
+    "preparing": "准备中…",
+    "reconnect": "重新连接 Google Drive",
+    "reconnectToSee": "重新连接 Google Drive 后才能看到这张照片。",
+    "cantShow": "这张照片暂时无法显示。",
+    "fullQuality": "原图画质",
+    "downloadFull": "下载原图画质",
+    "downloadFullLabel": "下载{photo}（原图画质）"
+  },
+  "storyFolders": {
+    "metaTitle": "故事文件夹",
+    "title": "故事文件夹",
+    "backToMyStories": "返回我的故事",
+    "intro": "把已发布的故事拖到文件夹上即可归档，也可以使用“移动到…”。只有已发布的故事才能归档。",
+    "empty": "先发布至少一篇故事，才能开始建立文件夹。",
+    "dragHint": "把故事拖到文件夹上即可归档，拖到“未归档”区域可以移出文件夹。",
+    "folders": {
+      "subStoryCount": "{count, plural, other {# 篇子故事}}",
+      "openStory": "打开故事",
+      "removeFromFolder": "从文件夹移除",
+      "removeDialog": {
+        "title": "要从文件夹移除吗？",
+        "description": "移除后，“{child}”将不再显示为归档在“{parent}”之下。",
+        "confirm": "移除"
+      }
+    },
+    "notInFolder": {
+      "heading": "未归档",
+      "publishHint": "发布这篇故事后才能归档。",
+      "notDraggableHint": "这篇故事下有子故事，不能归入其他文件夹。"
+    },
+    "moveTo": {
+      "label": "移动到",
+      "notInFolderOption": "未归档"
+    },
+    "toasts": {
+      "filed": "已将“{child}”归档到“{parent}”下。",
+      "removed": "已将“{child}”从文件夹中移除。"
+    },
+    "announce": {
+      "instructions": "按空格键或回车键拿起一篇故事，用方向键把它移到某个文件夹上，再按空格键或回车键放下，按 Esc 取消。也可以使用“移动到”菜单。",
+      "start": "已拿起“{story}”。",
+      "over": "“{story}”位于“{target}”上方。",
+      "outside": "“{story}”不在任何文件夹上方。",
+      "dropped": "已把“{story}”放到“{target}”。",
+      "cancelled": "已停止移动“{story}”。"
+    }
+  },
+  "journey": {
+    "title": "旅程",
+    "note": "这是基于简化地图的示意插图，不可用于导航——地点为大致位置，由作者自行标注。",
+    "mapLabel": "新西兰旅程示意图，共 {count} 站",
+    "pinLabel": "第 {n} 站：{label}",
+    "play": "播放旅程",
+    "pause": "暂停",
+    "replay": "重新播放",
+    "stopOf": "第 {n} 站，共 {total} 站",
+    "onTheRoad": "正驶往 {label}…",
+    "onTheFerry": "正乘渡轮穿越库克海峡前往 {label}…",
+    "readThisPart": "阅读这一段",
+    "stopsList": "沿途站点",
+    "controls": {
+      "help": "可交互地图。拖动可平移；按住 Ctrl 或 Cmd 并滚动或双指捏合可缩放，也可使用加号和减号按钮。地图获得焦点时，方向键平移，加号和减号缩放。",
+      "follow": "回到中心并跟随房车",
+      "reset": "重置地图视图",
+      "zoomIn": "放大",
+      "zoomOut": "缩小",
+      "hint": {
+        "wheel": "按住 Ctrl 并滚动滚轮以缩放地图",
+        "wheelMac": "按住 ⌘ 并滚动滚轮以缩放地图",
+        "touch": "请用两根手指移动地图"
+      }
+    },
+    "editor": {
+      "title": "旅程地图",
+      "hint": "可选。点击地图，按旅行顺序标出最多 {max} 个主要站点，再在每个站点内添加最多 {inside} 个地点。读者会看到一条可爱的路线和你填写的地名，不会看到精确坐标（位置会被取整到约 1 公里）。",
+      "mapLabel": "新西兰。点击添加站点。",
+      "addByKeyboard": "在地图中央添加站点",
+      "empty": "还没有站点。点击地图添加第一站。",
+      "stopHeading": "第 {n} 站",
+      "labelField": "地名",
+      "labelPlaceholder": "例如：克伦威尔附近",
+      "labelHelp": "最多 {max} 个字符，读者可见。",
+      "sectionField": "链接到故事中的某一段",
+      "sectionNone": "无——链接到开头",
+      "moveUp": "将第 {n} 站上移",
+      "moveDown": "将第 {n} 站下移",
+      "remove": "删除第 {n} 站",
+      "limit": "站点总数已达上限 {max} 个。",
+      "needsLabel": "请为每个站点填写地名，才能保存路线。",
+      "saveFailed": "无法保存旅程，请重试。",
+      "mapHelp": "交互式地图。点击某处即可添加站点。拖动可平移，按住 Ctrl 或 Cmd 并滚动或双指捏合可缩放，也可使用加减按钮。地图获得焦点时，方向键平移，加号和减号缩放。",
+      "tapHint": "提示：先用加号按钮放大，再点击准确的位置。拖动可移动地图，之后可再修改名称。",
+      "linkField": "或通过 Google 地图链接添加",
+      "linkPlaceholder": "粘贴 Google 地图链接",
+      "linkButton": "添加站点",
+      "linkWorking": "添加中…",
+      "linkPrivacy": "粘贴某个地点的 Google 地图链接。我们只保留大致位置（约 1 公里）和名称，不保存链接。",
+      "linkAdded": "已添加“{name}”。请在下方核对名称。",
+      "linkAddedNoName": "已添加站点。请在下方填写地名。",
+      "linkErrors": {
+        "empty": "请先粘贴 Google 地图链接。",
+        "invalid": "这看起来不是 Google 地图链接。",
+        "notFound": "在该链接中找不到地点。请尝试使用具体地点的分享链接。",
+        "outsideNz": "该地点不在新西兰境内。",
+        "unreachable": "暂时无法打开该链接，请稍后重试。",
+        "unauthenticated": "请登录后再使用短链接。"
+      },
+      "pinLabel": "第 {n} 站{named, select, yes {：{name}} other {}}{selected, select, yes {，已选中} other {}}",
+      "toast": {
+        "added": "已添加第 {n} 站",
+        "removed": "已删除“{name}”",
+        "removedUnnamed": "已删除第 {n} 站",
+        "undo": "撤销",
+        "addedInside": "已在 {parent} 内添加 {id}",
+        "removedWithSubs": "已删除“{name}”及其内的 {count} 个地点",
+        "removedUnnamedWithSubs": "已删除第 {n} 站及其内的 {count} 个地点"
+      },
+      "popover": {
+        "label": "第 {n} 站操作",
+        "title": "第 {n} 站：{name}",
+        "titleUnnamed": "第 {n} 站",
+        "remove": "删除",
+        "edit": "编辑",
+        "addInside": "在其中添加地点"
+      },
+      "limitMain": "最多可以有 {max} 个主要站点。请把多出来的地点放进已有的站点里。",
+      "limitInside": "每个站点内最多可以放 {max} 个地点。",
+      "subHeading": "地点 {id}",
+      "unnamedStop": "第 {n} 站",
+      "partOfField": "所属",
+      "partOfMain": "主要站点",
+      "partOfInside": "位于：{label}",
+      "partOfInsideFull": "位于：{label}（已满）",
+      "partOfHasPlaces": "这个站点内已有地点，因此不能放进其他站点。",
+      "addingBanner": "正在 {label} 内添加地点",
+      "addingDone": "完成",
+      "subPinLabel": "地点 {id}{named, select, yes {：{name}} other {}}{selected, select, yes {，已选中} other {}}，位于 {parent}"
+    },
+    "preview": {
+      "title": "旅程地图（读者看到的样子）"
+    },
+    "pinLabelWithSubs": "第 {n} 站：{label}，内含 {count} 个地点",
+    "subPinLabel": "地点 {id}：{label}",
+    "morePlaces": "+{count} 个地点",
+    "backToJourney": "返回完整旅程",
+    "insideList": "{label} 内的地点",
+    "insideStatus": "正在浏览 {label}：{count} 个地点"
+  },
+  "countryContent": {
+    "newZealand": {
+      "name": "新西兰",
+      "tagline": "来自新西兰打工度假签证（WHV）旅人的第一人称故事。",
+      "siteDescription": "Kakinotes 是一个公开档案库，收录了正在或已经完成新西兰打工度假签证（WHV）经历的旅人所撰写的详细第一人称故事。",
+      "storiesIntro": "来自亲历者的真实打工度假记录 — 按地区、标签、出行年份、旅行方式或记录的花费筛选，找到与你相似的那一篇。",
+      "storiesMetaDescription": "浏览来自新西兰的真实第一人称打工度假签证（WHV）故事，可按地区、标签、出行年份、旅行方式和记录的花费筛选。",
+      "costsFraming": "人们在新西兰打工度假签证期间的真实花费，基于贡献者自愿分享的预算整理而成。",
+      "aboutText": "Kakinotes 收集并核实来自新西兰打工度假旅人的真实详细故事，让下一位旅人能读到这段经历的真实样貌。",
+      "personalExperienceLabel": "个人经历分享，非专业建议。",
+      "placeExample": "皇后镇"
+    },
+    "china": {
+      "name": "中国",
+      "tagline": "来自中国的第一人称旅行故事。",
+      "siteDescription": "Kakinotes 的中国板块是一个公开档案库，收录来自中国的详细第一人称旅行故事 —— 是一般旅行记录，而非打工度假签证故事。",
+      "storiesIntro": "浏览所有已发布的中国旅行故事，可按地区和旅行年份搜索。",
+      "storiesMetaDescription": "来自中国的已发布第一人称旅行故事，可按地区和旅行年份搜索。",
+      "costsFraming": "人们在中国旅行的真实花费，基于贡献者自愿分享的预算整理而成。",
+      "aboutText": "Kakinotes 的中国板块收集并核实来自中国的真实详细第一人称旅行故事，让下一位旅人能读到这趟旅程的真实样貌。",
+      "personalExperienceLabel": "个人经历分享，非专业建议。",
+      "madeFor": "为在中国旅行的人而建",
+      "placeExample": "广州"
+    }
   }
 }

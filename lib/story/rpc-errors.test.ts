@@ -1,20 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { subStoryErrorKey } from "./rpc-errors";
+import { storyFolderErrorKey } from "./rpc-errors";
 
-describe("subStoryErrorKey", () => {
+describe("storyFolderErrorKey", () => {
   it.each([
     ["WHV10", "subStorySelf"],
     ["WHV11", "subStoryNotFound"],
-    ["WHV12", "subStoryParentNotPublished"],
     ["WHV13", "subStoryParentIsSubStory"],
     ["WHV14", "subStoryHasSubStories"],
     ["WHV15", "subStoryNotPublished"],
   ])("maps %s to %s", (code, key) => {
-    expect(subStoryErrorKey({ code })).toBe(key);
+    expect(storyFolderErrorKey({ code })).toBe(key);
   });
 
   it.each([
     [{ code: "WHV01" }],
+    // Retired free-link-only code: no longer mapped under the folder model.
+    [{ code: "WHV16" }],
     [{ code: "23505" }],
     [{ code: 12 }],
     [{ message: "boom" }],
@@ -23,6 +24,6 @@ describe("subStoryErrorKey", () => {
     ["WHV10"],
     [undefined],
   ])("returns null for %j", (error) => {
-    expect(subStoryErrorKey(error)).toBeNull();
+    expect(storyFolderErrorKey(error)).toBeNull();
   });
 });

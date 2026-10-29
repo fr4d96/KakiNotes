@@ -1,25 +1,33 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import type { StoryFamilyLink, SubStoryLink } from "@/lib/story/sub-stories";
+import type { StoryFamilyLink } from "@/lib/story/story-folders";
 import type { StoryCardData } from "@/components/story/story-card";
 import { StoryCoverFallback } from "@/components/story/story-cover-fallback";
-import { getPublicImageUrl } from "@/lib/story/public-image-url";
+import { getCardCoverUrl } from "@/lib/story/image-url";
 
-// Type-only import above: lib/story/sub-stories.ts is "server-only", and
+// Type-only import above: lib/story/story-folders.ts is "server-only", and
 // erased type imports never pull it into a bundle.
 
 /**
  * "Part of: <main story>" -- the small breadcrumb at the top of a sub
- * story's public page. Titles are plain text children, never HTML.
+ * story's public page (supabase/migrations/20261021085920_story_folders.sql).
+ * Titles are plain text children, never HTML.
  */
-export function PartOfStory({ parent }: { parent: StoryFamilyLink | null }) {
+export function PartOfStory({
+  parent,
+  basePath = "/stories",
+}: {
+  parent: StoryFamilyLink | null;
+  /** See StoryCard's basePath -- defaults to the NZ path unchanged. */
+  basePath?: string;
+}) {
   const t = useTranslations("story.family");
   if (!parent) return null;
   return (
     <nav aria-label={t("partOfLabel")} className="mb-3 text-sm">
       <span className="text-muted-foreground">{t("partOf")} </span>
       <Link
-        href={`/stories/${parent.slug}`}
+        href={`${basePath}/${parent.slug}`}
         className="font-medium text-accent underline underline-offset-2"
       >
         {parent.title}
@@ -29,25 +37,28 @@ export function PartOfStory({ parent }: { parent: StoryFamilyLink | null }) {
 }
 
 /**
- * The stories linked under this main story, shown at the end of it as
- * small cards: title on the left, cover photo on the right. Card rows
- * (see matchSubStoryCards()) supply the cover; sub stories without one get
+ * The sub stories filed under this main story, shown at the end of it as
+ * small cards: title on the left, cover photo on the right. Card rows (see
+ * matchStoryFamilyCards()) supply the cover; sub stories without one get
  * the usual placeholder image. Renders nothing when empty.
  */
 export function SubStoryList({
   cards = [],
   subStories,
+  basePath = "/stories",
 }: {
   cards?: StoryCardData[];
   /** Sub stories with no card row -- shown with the placeholder image. */
-  subStories: SubStoryLink[];
+  subStories: StoryFamilyLink[];
+  /** See StoryCard's basePath -- defaults to the NZ path unchanged. */
+  basePath?: string;
 }) {
   const t = useTranslations("story.family");
   const items = [
     ...cards.map((c) => ({
       slug: c.slug,
       title: c.title,
-      coverUrl: getPublicImageUrl(c.cover_image_path),
+      coverUrl: getCardCoverUrl(c),
     })),
     ...subStories.map((s) => ({
       slug: s.slug,
@@ -67,7 +78,7 @@ export function SubStoryList({
       <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => (
           <li key={item.slug}>
-            <SubStoryCard {...item} />
+            <SubStoryCard {...item} basePath={basePath} />
           </li>
         ))}
       </ul>
@@ -79,16 +90,18 @@ function SubStoryCard({
   slug,
   title,
   coverUrl,
+  basePath,
 }: {
   slug: string;
   title: string;
   coverUrl: string | null;
+  basePath: string;
 }) {
   return (
     <article className="group relative flex items-center gap-2 rounded-lg border border-border-subtle bg-surface p-2 transition-shadow hover:shadow-md">
       <h3 className="min-w-0 flex-1 text-sm font-medium leading-snug">
         <Link
-          href={`/stories/${slug}`}
+          href={`${basePath}/${slug}`}
           className="line-clamp-2 group-hover:underline underline-offset-2"
         >
           {/* Stretched link: the whole card is one click target. */}

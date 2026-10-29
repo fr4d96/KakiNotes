@@ -1,16 +1,29 @@
 "use server";
 
 import { getTranslations } from "next-intl/server";
+import { after } from "next/server";
 
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
+import {
+  getDriveSyncGate,
+  syncStoryFolder,
+  renameStoryFolderIfExists,
+} from "@/lib/story/drive-folders";
 import {
   revisionInputSchema,
   revisionLocationsSchema,
   revisionTagsSchema,
   revisionExpensesSchema,
+  countrySlugSchema,
   type RevisionInput,
 } from "@/lib/validation/story";
+import { journeyStopsSchema } from "@/lib/journey/schema";
+import {
+  MAX_LINK_LENGTH,
+  resolveGoogleMapsLink,
+  type ResolveLinkResult,
+} from "@/lib/journey/resolve-google-maps-link";
 import { getErrorMessage } from "@/lib/errors";
 import { firstIssueMessage } from "@/lib/validation/issue-messages";
 import {
@@ -18,11 +31,13 @@ import {
   setRevisionLocations,
   setRevisionTags,
   setRevisionExpenses,
+  setRevisionStops,
   updateStoryMediaCaption,
   reorderStoryMedia,
   setStoryCoverMedia,
   detachStoryMedia,
   cancelPendingStoryMediaUpload,
+  setStoryCountry,
 } from "@/lib/story/mutations";
 
 /**
@@ -76,10 +91,54 @@ async function requireSignedIn(): Promise<{ ok: false; error: string } | null> {
   return null;
 }
 
+/**
+ * Best-effort, post-response Drive hooks. save_revision_draft/reorder_
+ * story_media/set_story_cover_media/detach_story_media are shared editor
+ * RPCs (used by other in-flight branches against this dev database, and by
+ * the currently deployed app in production) -- their own signatures/return
+ * shapes are NEVER touched, so every action below calls its underlying
+ * mutation exactly as main does and returns the response unchanged. storyId
+ * is passed in by the client purely as a courtesy for this lookup (the same
+ * component already has it, e.g. from its own `storyId` prop) -- never
+ * trusted for authorization: get_story_drive_sync_state() re-derives
+ * _is_self_submitted_story_owner(storyId) independently, so a wrong or
+ * forged storyId can at most ask about a DIFFERENT story the caller
+ * themselves owns, never about someone else's.
+ *
+ * Both helpers run entirely inside next/server's after(), so neither adds
+ * any latency to the user's actual save/reorder/cover/detach action, and a
+ * Drive hiccup here can never fail it. `createClient()` (used inside
+ * getDriveSyncGate/syncStoryFolder/renameStoryFolderIfExists) reads
+ * `cookies()` to build the session-scoped Supabase client -- confirmed
+ * supported inside after() for Server Functions specifically (Server
+ * Actions are Server Functions) per node_modules/next/dist/docs/01-app/
+ * 03-api-reference/04-functions/after.md's "In Route Handlers and Server
+ * Functions" section, so these calls run as the signed-in user, never
+ * through any elevated/admin client.
+ */
+function scheduleDriveMediaSync(storyId: string, userId: string): void {
+  after(async () => {
+    const gate = await getDriveSyncGate(storyId);
+    if (gate?.hasDriveMedia) {
+      await syncStoryFolder(userId, storyId);
+    }
+  });
+}
+
+function scheduleDriveFolderRenameIfDue(storyId: string, userId: string): void {
+  after(async () => {
+    const gate = await getDriveSyncGate(storyId);
+    if (gate?.hasFolder) {
+      await renameStoryFolderIfExists(userId, storyId);
+    }
+  });
+}
+
 export async function saveRevisionFieldsAction(
   revisionId: string,
   expectedVersion: number,
   input: RevisionInput,
+  storyId?: string,
 ): Promise<SaveFieldsResult> {
   const tv = await getTranslations("validation");
   const authError = await requireSignedIn();
@@ -92,12 +151,20 @@ export async function saveRevisionFieldsAction(
       error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
     };
   }
+  const parsedStoryId = z.uuid().safeParse(storyId);
   try {
+    // Unchanged call/return -- save_revision_draft's own shape is untouched.
     const version = await saveRevisionDraft(
       revisionId,
       expectedVersion,
       parsed.data,
     );
+    if (parsedStoryId.success) {
+      const user = await getCurrentUser();
+      if (user) {
+        scheduleDriveFolderRenameIfDue(parsedStoryId.data, user.id);
+      }
+    }
     return { ok: true, version };
   } catch (error) {
     return { ok: false, error: await errorMessage(error) };
@@ -122,6 +189,41 @@ export async function setLocationsAction(
   }
   try {
     await setRevisionLocations(revisionId, expectedVersion, parsed.data);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: await errorMessage(error) };
+  }
+}
+
+/**
+ * Changes a draft story's country. Called from the editor's Places step
+ * BEFORE the location rows for the new country are saved (story-edit-
+ * form.tsx), and only when the country actually changed. storyId here is
+ * never trusted for ownership -- set_story_country() re-derives owner/
+ * editor/admin itself and refuses once the story has ever been published
+ * (Engineering Rule 11), same as every other mutation in this file.
+ */
+export async function setCountryAction(
+  storyId: string,
+  countrySlug: string,
+): Promise<MutationResult> {
+  const tv = await getTranslations("validation");
+  const authError = await requireSignedIn();
+  if (authError) return authError;
+
+  const parsedStoryId = z.uuid().safeParse(storyId);
+  const parsedCountry = countrySlugSchema.safeParse(countrySlug);
+  if (!parsedStoryId.success) {
+    return { ok: false, error: tv("common.invalidInput") };
+  }
+  if (!parsedCountry.success) {
+    return {
+      ok: false,
+      error: firstIssueMessage(parsedCountry.error, tv, "common.invalidInput"),
+    };
+  }
+  try {
+    await setStoryCountry(parsedStoryId.data, parsedCountry.data);
     return { ok: true };
   } catch (error) {
     return { ok: false, error: await errorMessage(error) };
@@ -184,6 +286,38 @@ export async function setExpensesAction(
   }
 }
 
+/**
+ * The journey-map stops. As with every mutation here, nothing identifying
+ * comes from the client except the revisionId, which
+ * _authorize_revision_edit() verifies inside set_revision_stops(); the
+ * same RPC re-rounds the coordinates, re-checks the New Zealand bounds and
+ * the hierarchy rules and caps, so this schema is the friendly early check, not the
+ * boundary.
+ */
+export async function setJourneyStopsAction(
+  revisionId: string,
+  expectedVersion: number,
+  stops: unknown,
+): Promise<MutationResult> {
+  const tv = await getTranslations("validation");
+  const authError = await requireSignedIn();
+  if (authError) return authError;
+
+  const parsed = journeyStopsSchema.safeParse(stops);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
+    };
+  }
+  try {
+    await setRevisionStops(revisionId, expectedVersion, parsed.data);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: await errorMessage(error) };
+  }
+}
+
 const mediaCaptionInputSchema = z.object({
   revisionId: z.uuid(),
   mediaId: z.uuid(),
@@ -229,6 +363,7 @@ export async function reorderMediaAction(
   revisionId: string,
   expectedVersion: number,
   mediaOrder: unknown,
+  storyId?: string,
 ): Promise<MutationResult> {
   const tErr = await getTranslations("actionErrors");
   const authError = await requireSignedIn();
@@ -238,8 +373,16 @@ export async function reorderMediaAction(
   if (!parsed.success) {
     return { ok: false, error: tErr("invalidMediaOrder") };
   }
+  const parsedStoryId = z.uuid().safeParse(storyId);
   try {
+    // Unchanged call/return -- reorder_story_media's own shape is untouched.
     await reorderStoryMedia(revisionId, expectedVersion, parsed.data);
+    if (parsedStoryId.success) {
+      const user = await getCurrentUser();
+      if (user) {
+        scheduleDriveMediaSync(parsedStoryId.data, user.id);
+      }
+    }
     return { ok: true };
   } catch (error) {
     return { ok: false, error: await errorMessage(error) };
@@ -250,6 +393,7 @@ export async function setCoverAction(
   revisionId: string,
   expectedVersion: number,
   mediaId: string,
+  storyId?: string,
 ): Promise<MutationResult> {
   const tErr = await getTranslations("actionErrors");
   const authError = await requireSignedIn();
@@ -257,8 +401,16 @@ export async function setCoverAction(
 
   const parsed = z.uuid().safeParse(mediaId);
   if (!parsed.success) return { ok: false, error: tErr("invalidMedia") };
+  const parsedStoryId = z.uuid().safeParse(storyId);
   try {
+    // Unchanged call/return -- set_story_cover_media's own shape is untouched.
     await setStoryCoverMedia(revisionId, expectedVersion, parsed.data);
+    if (parsedStoryId.success) {
+      const user = await getCurrentUser();
+      if (user) {
+        scheduleDriveMediaSync(parsedStoryId.data, user.id);
+      }
+    }
     return { ok: true };
   } catch (error) {
     return { ok: false, error: await errorMessage(error) };
@@ -275,6 +427,7 @@ export async function detachMediaAction(
   revisionId: string,
   expectedVersion: number,
   mediaId: string,
+  storyId?: string,
 ): Promise<MutationResult> {
   const tErr = await getTranslations("actionErrors");
   const authError = await requireSignedIn();
@@ -282,8 +435,16 @@ export async function detachMediaAction(
 
   const parsed = z.uuid().safeParse(mediaId);
   if (!parsed.success) return { ok: false, error: tErr("invalidMedia") };
+  const parsedStoryId = z.uuid().safeParse(storyId);
   try {
+    // Unchanged call/return -- detach_story_media's own shape is untouched.
     await detachStoryMedia(revisionId, expectedVersion, parsed.data);
+    if (parsedStoryId.success) {
+      const user = await getCurrentUser();
+      if (user) {
+        scheduleDriveMediaSync(parsedStoryId.data, user.id);
+      }
+    }
     return { ok: true };
   } catch (error) {
     return { ok: false, error: await errorMessage(error) };
@@ -305,4 +466,30 @@ export async function cancelPendingUploadAction(
   } catch (error) {
     return { ok: false, error: await errorMessage(error) };
   }
+}
+
+const mapsLinkInputSchema = z.string().trim().min(1).max(MAX_LINK_LENGTH);
+
+/**
+ * Turns a pasted Google Maps link into a place (coordinates + name) for the
+ * journey editor. Needs a signed-in user but no story: it never touches the
+ * database. For a short link (maps.app.goo.gl) the server makes one outbound
+ * request to Google to read the redirect target (see
+ * lib/journey/resolve-google-maps-link.ts for the SSRF guard). The link is
+ * never stored or logged; at most the failure reason is.
+ */
+export async function resolveGoogleMapsLinkAction(
+  input: unknown,
+): Promise<ResolveLinkResult | { ok: false; reason: "unauthenticated" }> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, reason: "unauthenticated" };
+
+  const parsed = mapsLinkInputSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, reason: "invalid" };
+
+  const result = await resolveGoogleMapsLink(parsed.data);
+  if (!result.ok && result.reason === "unreachable") {
+    console.warn("[journey] maps link resolve failed: unreachable");
+  }
+  return result;
 }

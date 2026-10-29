@@ -11,7 +11,6 @@ import {
   requestStoryTakedownAction,
   cancelStoryTakedownAction,
 } from "./actions";
-import { LinkMainStoryAction } from "./link-main-story-dialog";
 import { ACTION_ICON_CLASS } from "./action-icon-class";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -36,8 +35,8 @@ import {
 import type { MyStoryWithCover } from "@/lib/story/contributor-queries";
 
 // Moved to ./action-icon-class.ts (re-exported here for anything already
-// importing it from this file) so link-main-story-dialog.tsx can reuse the
-// same class without a circular import between the two files.
+// importing it from this file) -- the per-story icon action styling shared
+// across this page.
 export { ACTION_ICON_CLASS };
 
 type ViewMode = "grid" | "list";
@@ -727,9 +726,6 @@ function StoryGrid({
                     <EyeIcon className="h-4 w-4" />
                   </ActionIconLink>
                 )}
-                {story.lifecycle_status === "published" && (
-                  <LinkMainStoryAction storyId={story.id} title={title} />
-                )}
                 {deletable && <DeleteDraftAction story={story} title={title} />}
                 {withdrawable && (
                   <TakedownAction
@@ -881,9 +877,6 @@ function StoryList({
                       <EyeIcon className="h-4 w-4" />
                     </ActionIconLink>
                   )}
-                  {story.lifecycle_status === "published" && (
-                    <LinkMainStoryAction storyId={story.id} title={title} />
-                  )}
                   {deletable && (
                     <DeleteDraftAction story={story} title={title} />
                   )}
@@ -1014,6 +1007,18 @@ export function MyStoriesView({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="journiq-heading text-[2.4rem]">{t("title")}</h1>
         <div className="flex items-center gap-3">
+          <Link
+            href="/my-stories/map"
+            className="rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium"
+          >
+            {t("storyMapLink")}
+          </Link>
+          <Link
+            href="/my-photos"
+            className="rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium"
+          >
+            {t("myPhotosLink")}
+          </Link>
           {stories.length > 0 && (
             <div
               role="group"

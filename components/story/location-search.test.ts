@@ -8,6 +8,7 @@ const regions = [
     slug: "northland",
     islandOrGrouping: "North Island",
     name_zh_cn: null,
+    countrySlug: "new-zealand",
   },
   {
     id: "r-otago",
@@ -15,6 +16,7 @@ const regions = [
     slug: "otago",
     islandOrGrouping: "South Island",
     name_zh_cn: null,
+    countrySlug: "new-zealand",
   },
 ];
 const destinations = [
@@ -24,6 +26,34 @@ const destinations = [
     slug: "queenstown",
     regionId: "r-otago",
     name_zh_cn: null,
+  },
+];
+
+const chinaRegions = [
+  {
+    id: "r-guangdong",
+    name: "Guangdong",
+    slug: "guangdong",
+    islandOrGrouping: null,
+    name_zh_cn: "广东",
+    countrySlug: "china",
+  },
+  {
+    id: "r-beijing",
+    name: "Beijing",
+    slug: "beijing-municipality",
+    islandOrGrouping: null,
+    name_zh_cn: "北京",
+    countrySlug: "china",
+  },
+];
+const chinaDestinations = [
+  {
+    id: "d-guangzhou",
+    name: "Guangzhou",
+    slug: "guangzhou",
+    regionId: "r-guangdong",
+    name_zh_cn: "广州",
   },
 ];
 
@@ -102,5 +132,70 @@ describe("matchLocation", () => {
       // Region-only is valid and always has been.
       customDestinationLabel: null,
     });
+  });
+});
+
+// China's regions are provinces/municipalities, and Nominatim's `state`
+// field for them carries an administrative suffix ("Guangdong Province",
+// "Beijing Municipality"/"北京市") that the curated `regions` rows never
+// do (seeded plain "Guangdong"/"Beijing" in
+// supabase/migrations/20260924021909_countries.sql). These are fixture
+// results, not live network calls -- no fetch happens in this file at all.
+describe("matchLocation — tolerant Chinese region matching", () => {
+  it("matches an English 'Province' suffix", () => {
+    const match = matchLocation(
+      { city: "Guangzhou", state: "Guangdong Province" },
+      chinaRegions,
+      chinaDestinations,
+      "Guangzhou",
+    );
+    expect(match).toEqual({
+      regionId: "r-guangdong",
+      destinationId: "d-guangzhou",
+      customDestinationLabel: null,
+    });
+  });
+
+  it("matches an English 'Municipality' suffix with no destination row", () => {
+    const match = matchLocation(
+      { city: "Chaoyang", state: "Beijing Municipality" },
+      chinaRegions,
+      chinaDestinations,
+      "Chaoyang",
+    );
+    expect(match).toEqual({
+      regionId: "r-beijing",
+      destinationId: null,
+      customDestinationLabel: "Chaoyang",
+    });
+  });
+
+  it("matches a Simplified Chinese '省' (province) suffix against name_zh_cn", () => {
+    const match = matchLocation(
+      { city: "广州", state: "广东省" },
+      chinaRegions,
+      chinaDestinations,
+      "广州",
+    );
+    expect(match?.regionId).toBe("r-guangdong");
+  });
+
+  it("matches a Simplified Chinese '市' (municipality) suffix against name_zh_cn", () => {
+    const match = matchLocation(
+      { state: "北京市" },
+      chinaRegions,
+      chinaDestinations,
+    );
+    expect(match?.regionId).toBe("r-beijing");
+  });
+
+  it("matches the Chinese destination name via name_zh_cn", () => {
+    const match = matchLocation(
+      { city: "广州", state: "广东省" },
+      chinaRegions,
+      chinaDestinations,
+      "广州",
+    );
+    expect(match?.destinationId).toBe("d-guangzhou");
   });
 });

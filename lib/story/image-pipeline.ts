@@ -8,13 +8,15 @@ import {
   rawStorageUpload,
 } from "@/lib/story/raw-storage-http";
 import { encodeJpegUnderBudget } from "@/lib/story/jpeg-budget";
-import { transcodeHeicToJpeg } from "@/lib/story/heic";
+import { photoDownloadFilename } from "@/lib/story/photo-download-name";
+import { transcodeHeicToJpeg, HeicTranscodeError } from "@/lib/story/heic";
 import {
   extensionForMimeType,
   MAX_INPUT_PIXELS,
   MAX_PROCESSED_BYTES,
   MAX_PROCESSED_DIMENSION,
   sniffImageMimeType,
+  sniffUploadMimeType,
   type AllowedImageMimeType,
 } from "@/lib/story/image-validation";
 
@@ -141,7 +143,7 @@ export async function processStoryMedia(
     )
     .eq("id", mediaId)
     .single();
-  if (fetchError || !media) {
+  if (fetchError || !media || !media.private_storage_path) {
     throw new Error(`No such media: ${mediaId}`);
   }
 
@@ -644,4 +646,439 @@ export async function downloadMediaPreviewBytes(
     throw new Error(`Could not read dimensions for media ${mediaId}`);
   }
   return { bytes, width: metadata.width, height: metadata.height };
+}
+
+/**
+ * ADDITIVE ONLY — added at the end of this file per this task's
+ * instructions, because another in-flight task is editing the rest of this
+ * module right now. Does not modify, rename, or reorder anything above.
+ *
+ * A bytes-in/bytes-out sibling of processStoryMedia(), for
+ * lib/story/drive-sync.ts's Drive-mode upload path (docs/google-drive-
+ * integration.md section 4, step 4): no storage path, no admin client, no
+ * story_media row of its own — it only runs the same decode/validate/strip/
+ * resize/re-encode steps processStoryMedia() already runs, reusing the SAME
+ * shared helpers that function already calls (sniffImageMimeType,
+ * MAX_INPUT_PIXELS/MAX_PROCESSED_DIMENSION/MAX_PROCESSED_BYTES from
+ * lib/story/image-validation.ts, encodeJpegUnderBudget from
+ * lib/story/jpeg-budget.ts) — never a second, drifting copy of the actual
+ * image-processing logic. The decode/strip/resize/encode steps inside
+ * processStoryMedia() itself are inlined there (tightly coupled to its own
+ * DB-recording calls), not separately exported private functions — this
+ * function reuses everything that genuinely IS already shared/exported,
+ * and re-implements only the orchestration around it.
+ *
+ * Throws a plain Error whose message is one of processStoryMedia()'s own
+ * failure codes (unrecognized_image_format / decode_failed /
+ * animated_not_supported / reencode_failed / processed_too_large) on a bad
+ * input — the caller (drive-sync.ts) is expected to map that to its own
+ * error handling; this function performs no DB writes of any kind.
+ */
+export type ProcessedImageBytes = {
+  bytes: Buffer;
+  processedMimeType: AllowedImageMimeType;
+  sourceMimeType: AllowedImageMimeType;
+  sourceWidth: number;
+  sourceHeight: number;
+  processedWidth: number;
+  processedHeight: number;
+  sha256: string;
+};
+
+export async function processImageBytesInMemory(
+  original: Buffer,
+): Promise<ProcessedImageBytes> {
+  // Round B addition: a Drive-mode upload has no separate HEIC-transcode
+  // step the way the Supabase path does (begin/finalizeMediaUploadAction's
+  // transcodeHeicUploadAction runs BEFORE processStoryMedia() ever sees the
+  // bytes, rewriting the reservation onto a plain original.jpg first) --
+  // lib/story/drive-sync.ts downloads whatever raw bytes the browser PUT
+  // to the staging file and hands them straight here. sniffUploadMimeType
+  // (unlike sniffImageMimeType, which this function originally only
+  // called) also recognizes HEIC, so a HEIC source is transcoded to JPEG
+  // right here, first, via the same lib/story/heic.ts used by the
+  // Supabase path -- nothing about the actual transcode logic is
+  // duplicated or diverges between the two paths.
+  const uploadSniffed = sniffUploadMimeType(original);
+  let workingBytes = original;
+  if (uploadSniffed === "image/heic") {
+    try {
+      workingBytes = await transcodeHeicToJpeg(original);
+    } catch (err) {
+      throw err instanceof HeicTranscodeError
+        ? err
+        : new Error("unrecognized_image_format");
+    }
+  }
+
+  const sniffed = sniffImageMimeType(workingBytes);
+  if (!sniffed) {
+    throw new Error("unrecognized_image_format");
+  }
+
+  let image: Sharp;
+  let metadata: Metadata;
+  try {
+    metadata = await sharp(workingBytes, {
+      limitInputPixels: MAX_INPUT_PIXELS,
+      pages: -1,
+    }).metadata();
+    image = sharp(workingBytes, { limitInputPixels: MAX_INPUT_PIXELS });
+  } catch {
+    throw new Error("decode_failed");
+  }
+
+  if ((metadata.pages ?? 1) > 1) {
+    throw new Error("animated_not_supported");
+  }
+  if (!metadata.width || !metadata.height) {
+    throw new Error("decode_failed");
+  }
+  const sourceWidth = metadata.width;
+  const sourceHeight = metadata.height;
+
+  const processedMimeType: AllowedImageMimeType =
+    sniffed === "image/png" ? "image/png" : "image/jpeg";
+  const resized = image.rotate().resize({
+    width: MAX_PROCESSED_DIMENSION,
+    height: MAX_PROCESSED_DIMENSION,
+    fit: "inside",
+    withoutEnlargement: true,
+  });
+
+  let processedBuffer: Buffer;
+  let processedInfo: OutputInfo;
+  try {
+    if (processedMimeType === "image/png") {
+      const result = await resized.png().toBuffer({ resolveWithObject: true });
+      processedBuffer = result.data;
+      processedInfo = result.info;
+    } else {
+      const result = await encodeJpegUnderBudget(
+        resized,
+        JPEG_QUALITY_STEPS,
+        MAX_PROCESSED_BYTES,
+      );
+      processedBuffer = result.data;
+      processedInfo = result.info;
+    }
+  } catch {
+    throw new Error("reencode_failed");
+  }
+
+  if (processedBuffer.byteLength > MAX_PROCESSED_BYTES) {
+    throw new Error("processed_too_large");
+  }
+
+  return {
+    bytes: processedBuffer,
+    processedMimeType,
+    sourceMimeType: sniffed,
+    sourceWidth,
+    sourceHeight,
+    processedWidth: processedInfo.width,
+    processedHeight: processedInfo.height,
+    sha256: sha256Hex(processedBuffer),
+  };
+}
+
+/**
+ * Supabase half of the "move my photos to Drive" tool
+ * (docs/google-drive-integration.md section 9; orchestrated by
+ * lib/story/media-move.ts, which passes only plain bytes between this
+ * module and the Drive side).
+ *
+ * Returns a supabase-backend photo's processed derivative -- the only form
+ * of a photo that may ever be written to Drive (Rule 14) -- and refuses
+ * bytes whose sha256 doesn't match the one recorded at processing time.
+ * The caller must already have claimed this media through
+ * claim_next_drive_move() on the contributor's own client, which is the
+ * ownership check; this function, like every export here, only takes a
+ * media id and resolves the path itself.
+ */
+export async function downloadProcessedDerivativeForMove(
+  mediaId: string,
+): Promise<{ bytes: Buffer; sha256: string; mimeType: string }> {
+  const admin = createAdminClient();
+  const { data: media, error } = await admin
+    .from("story_media")
+    .select(
+      "storage_backend, processed_private_storage_path, processed_mime_type, sha256",
+    )
+    .eq("id", mediaId)
+    .single();
+  if (
+    error ||
+    !media ||
+    media.storage_backend !== "supabase" ||
+    !media.processed_private_storage_path ||
+    !media.processed_mime_type ||
+    !media.sha256
+  ) {
+    throw new Error(`Media ${mediaId} has no Supabase derivative to move`);
+  }
+
+  const bytes = await downloadObject(
+    PRIVATE_BUCKET,
+    media.processed_private_storage_path,
+  );
+  if (sha256Hex(bytes) !== media.sha256) {
+    throw new Error(
+      `Stored derivative for media ${mediaId} failed its hash check`,
+    );
+  }
+  return { bytes, sha256: media.sha256, mimeType: media.processed_mime_type };
+}
+
+/**
+ * Deletes every Supabase object a moved photo left behind: the raw
+ * original (which still carries its EXIF/GPS), the processed derivative,
+ * any other leftover under the photo's own `<story>/<media>/` folder in the
+ * private bucket (e.g. a HEIC staging file), and its public-bucket copy.
+ *
+ * get_drive_move_cleanup_target() only returns a job that has already
+ * switched to Drive AND is due -- immediately for a photo with no public
+ * copy, 5 minutes after the flip for one with a public copy -- so this
+ * can never delete the copy a live page is still serving, whoever calls
+ * it. Returns false (and deletes nothing) for a job that isn't due.
+ * Safe to retry: removing an already-missing object is not an error.
+ */
+export async function deleteMovedSupabaseCopies(
+  jobId: string,
+): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data: rows, error } = await admin.rpc(
+    "get_drive_move_cleanup_target",
+    { p_job_id: jobId },
+  );
+  if (error) {
+    throw new Error(`get_drive_move_cleanup_target failed: ${error.message}`);
+  }
+  const target = rows?.[0];
+  if (!target) return false;
+
+  const folder = `${target.story_id}/${target.media_id}`;
+  const { data: listed, error: listError } = await admin.storage
+    .from(PRIVATE_BUCKET)
+    .list(folder);
+  if (listError) {
+    throw new Error(
+      `Failed to list ${PRIVATE_BUCKET}/${folder}: ${listError.message}`,
+    );
+  }
+  const privatePaths = new Set<string>(
+    (listed ?? []).map((obj) => `${folder}/${obj.name}`),
+  );
+  for (const path of [
+    target.old_private_storage_path,
+    target.old_processed_private_storage_path,
+  ]) {
+    if (path) privatePaths.add(path);
+  }
+
+  if (privatePaths.size > 0) {
+    const { error: removeError } = await admin.storage
+      .from(PRIVATE_BUCKET)
+      .remove([...privatePaths]);
+    if (removeError) {
+      throw new Error(
+        `Failed to delete private copies for job ${jobId}: ${removeError.message}`,
+      );
+    }
+  }
+  if (target.old_public_storage_path) {
+    const { error: removeError } = await admin.storage
+      .from(PUBLIC_BUCKET)
+      .remove([target.old_public_storage_path]);
+    if (removeError) {
+      throw new Error(
+        `Failed to delete public copy for job ${jobId}: ${removeError.message}`,
+      );
+    }
+  }
+
+  const { error: recordError } = await admin.rpc(
+    "record_drive_move_old_deleted",
+    { p_job_id: jobId },
+  );
+  if (recordError) {
+    throw new Error(
+      `record_drive_move_old_deleted failed: ${recordError.message}`,
+    );
+  }
+  return true;
+}
+
+/**
+ * My Photos page thumbnails: signed preview URLs for many Kakinotes-stored
+ * photos in one database read and one storage call, instead of one round
+ * trip per photo. Drive-stored ids are skipped (they're served by
+ * /media/<id>). Same contract as mintMediaPreviewSignedUrl(): the caller
+ * must already have authorized every id -- here, by taking them only from
+ * list_my_photos(), which returns nothing but the caller's own photos.
+ */
+export async function mintMediaPreviewSignedUrls(
+  mediaIds: readonly string[],
+  expiresInSeconds: number,
+): Promise<Record<string, string>> {
+  if (mediaIds.length === 0) return {};
+  const admin = createAdminClient();
+  const { data: rows, error } = await admin
+    .from("story_media")
+    .select("id, processed_private_storage_path")
+    .in("id", [...mediaIds])
+    .eq("storage_backend", "supabase")
+    .not("processed_private_storage_path", "is", null);
+  if (error) {
+    throw new Error(`Failed to look up photos for previews: ${error.message}`);
+  }
+  const withPaths = (rows ?? []).filter(
+    (row): row is { id: string; processed_private_storage_path: string } =>
+      !!row.processed_private_storage_path,
+  );
+  if (withPaths.length === 0) return {};
+
+  const { data: signed, error: signError } = await admin.storage
+    .from(PRIVATE_BUCKET)
+    .createSignedUrls(
+      withPaths.map((row) => row.processed_private_storage_path),
+      expiresInSeconds,
+    );
+  if (signError || !signed) {
+    throw new Error(
+      `Failed to mint preview URLs: ${signError?.message ?? "no data"}`,
+    );
+  }
+  const urls: Record<string, string> = {};
+  signed.forEach((entry, index) => {
+    if (entry.signedUrl) urls[withPaths[index].id] = entry.signedUrl;
+  });
+  return urls;
+}
+
+/**
+ * My Photos "Download": a short-lived signed URL for a Kakinotes-stored
+ * photo's processed derivative -- never the raw original (Rule 14) -- that
+ * makes the browser save the file instead of showing it. Same contract as
+ * mintMediaPreviewSignedUrl(): the caller must already have authorized the
+ * request via authorize_story_media_preview() on their own client.
+ */
+export async function mintMediaDownloadSignedUrl(
+  mediaId: string,
+): Promise<string> {
+  const admin = createAdminClient();
+  const [{ data: path, error: pathError }, { data: media }] = await Promise.all(
+    [
+      admin.rpc("get_media_private_path_for_preview", { p_media_id: mediaId }),
+      admin
+        .from("story_media")
+        .select("processed_mime_type")
+        .eq("id", mediaId)
+        .maybeSingle(),
+    ],
+  );
+  if (pathError || !path) {
+    throw new Error(`No processed derivative available for media ${mediaId}`);
+  }
+  const { data, error } = await admin.storage
+    .from(PRIVATE_BUCKET)
+    .createSignedUrl(path, SIGNED_URL_EXPIRY_SECONDS, {
+      download: photoDownloadFilename(mediaId, media?.processed_mime_type),
+    });
+  if (error || !data) {
+    throw new Error(
+      `Failed to mint download URL for media ${mediaId}: ${error?.message ?? "no data"}`,
+    );
+  }
+  return data.signedUrl;
+}
+
+// Full-quality copy (owner decision 2026-10-11, "option B"): the photo at its
+// original resolution, metadata stripped, for the contributor's own Drive.
+// High JPEG quality first, stepping down only to stay under the ceiling.
+// Measured on a worst-case (noisy) 48MP photo: ~5s and ~11MB at q92.
+const FULL_JPEG_QUALITY_STEPS = [92, 88, 85, 80] as const;
+export const MAX_FULL_COPY_BYTES = 40 * 1024 * 1024;
+
+export type FullResolutionBytes = {
+  bytes: Buffer;
+  mimeType: "image/jpeg" | "image/png";
+  width: number;
+  height: number;
+};
+
+/**
+ * Bytes-in/bytes-out like processImageBytesInMemory(), with the same input
+ * checks (format sniffing, HEIC transcode, MAX_INPUT_PIXELS, no animation),
+ * but NO resize: it keeps every pixel and only strips metadata (sharp writes
+ * no EXIF/GPS/XMP/ICC unless asked to) and applies the EXIF rotation first.
+ * A PNG stays a lossless PNG unless that would pass MAX_FULL_COPY_BYTES, in
+ * which case it becomes a high-quality JPEG. Never stores anything.
+ */
+export async function processFullResolutionBytesInMemory(
+  original: Buffer,
+): Promise<FullResolutionBytes> {
+  let workingBytes = original;
+  if (sniffUploadMimeType(original) === "image/heic") {
+    try {
+      workingBytes = await transcodeHeicToJpeg(original);
+    } catch (err) {
+      throw err instanceof HeicTranscodeError
+        ? err
+        : new Error("unrecognized_image_format");
+    }
+  }
+  const sniffed = sniffImageMimeType(workingBytes);
+  if (!sniffed) throw new Error("unrecognized_image_format");
+
+  let metadata: Metadata;
+  try {
+    metadata = await sharp(workingBytes, {
+      limitInputPixels: MAX_INPUT_PIXELS,
+      pages: -1,
+    }).metadata();
+  } catch {
+    throw new Error("decode_failed");
+  }
+  if ((metadata.pages ?? 1) > 1) throw new Error("animated_not_supported");
+  if (!metadata.width || !metadata.height) throw new Error("decode_failed");
+
+  const base = sharp(workingBytes, {
+    limitInputPixels: MAX_INPUT_PIXELS,
+  }).rotate();
+
+  try {
+    if (sniffed === "image/png") {
+      const png = await base
+        .clone()
+        .png({ compressionLevel: 9 })
+        .toBuffer({ resolveWithObject: true });
+      if (png.data.byteLength <= MAX_FULL_COPY_BYTES) {
+        return {
+          bytes: png.data,
+          mimeType: "image/png",
+          width: png.info.width,
+          height: png.info.height,
+        };
+      }
+    }
+    const jpeg = await encodeJpegUnderBudget(
+      base,
+      FULL_JPEG_QUALITY_STEPS,
+      MAX_FULL_COPY_BYTES,
+    );
+    if (jpeg.data.byteLength > MAX_FULL_COPY_BYTES) {
+      throw new Error("processed_too_large");
+    }
+    return {
+      bytes: jpeg.data,
+      mimeType: "image/jpeg",
+      width: jpeg.info.width,
+      height: jpeg.info.height,
+    };
+  } catch (err) {
+    if (err instanceof Error && err.message === "processed_too_large")
+      throw err;
+    throw new Error("reencode_failed");
+  }
 }

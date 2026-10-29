@@ -5,7 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { createClient } from "@/lib/supabase/server";
-import { mintMediaPreviewSignedUrl } from "@/lib/story/image-pipeline";
+import { resolvePreviewImageUrl } from "@/lib/story/preview-image-url";
 import {
   getStoryPreview,
   type RevisionMediaItem,
@@ -78,7 +78,7 @@ export async function mintPreviewUrlAction(
   }
 
   try {
-    const url = await mintMediaPreviewSignedUrl(parsed.data);
+    const url = await resolvePreviewImageUrl(supabase, parsed.data);
     return { url };
   } catch (error) {
     return {
@@ -142,7 +142,10 @@ export async function mintPreviewUrlsAction(
         if (authError)
           return [mediaId, { error: tErr("previewNotAuthorized") }];
         try {
-          return [mediaId, { url: await mintMediaPreviewSignedUrl(mediaId) }];
+          return [
+            mediaId,
+            { url: await resolvePreviewImageUrl(supabase, mediaId) },
+          ];
         } catch (error) {
           return [
             mediaId,

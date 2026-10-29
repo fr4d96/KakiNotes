@@ -3,13 +3,6 @@
 This file orients any engineer (human or AI) working in this repository. Read it, and
 [docs/implementation-status.md](docs/implementation-status.md), before starting any task.
 
-## How to reply
-
-Always reply in plain, simple language — the style of the `/bro` skill. Short sentences,
-no jargon, explain things like you're talking to a friend. Apply this to every response,
-not only when `/bro` is explicitly invoked. Keep technical accuracy, but cut hedging and
-formal phrasing; if a technical term is unavoidable, define it in one plain clause.
-
 ## Product context
 
 Kakinotes is a public platform for detailed, written first-person stories from people
@@ -75,14 +68,6 @@ These exist in `package.json` as of Prompt 1. Node 24 LTS (`.nvmrc`/`engines.nod
 package manager.
 
 ```bash
-npm run dev                    # local dev server
-npm run build                  # production build
-npm run start                  # serve the production build
-npm run lint                   # ESLint
-npm run format / format:check  # Prettier
-npm run typecheck              # tsc --noEmit
-npm run test                   # Vitest + React Testing Library
-npm run test:e2e               # build + Playwright
 npm run verify                 # format:check && lint && typecheck && test && build — the
                                 #   single non-destructive gate; run before calling anything done
 npm run verify:full            # verify, then Playwright (reuses verify's build, no rebuild)
@@ -102,17 +87,12 @@ See the proposed structure in [docs/architecture.md](docs/architecture.md#applic
 Key rules:
 
 - `app/` — routes, Server Components by default; `"use client"` only where interactivity requires it.
-- `app/(public)/` — anonymous-readable routes (browse/read stories).
-- `app/(contributor)/` — authenticated contributor drafting/preview routes.
 - `app/(editor)/` and `app/(moderation)/` — staff-only workflows, separated per Engineering Rule 5.
 - `lib/supabase/` — server/client/browser Supabase client factories. Never import the service-role
   client from anything reachable by a Client Component.
-- `lib/validation/` — Zod schemas for every trust boundary (forms, route handlers, server actions).
 - `supabase/migrations/` — versioned SQL migrations (source of truth for schema + RLS + storage policies).
 - `supabase/seed.sql` — fictional seed data only.
 - `types/database.ts` — generated, never hand-edited.
-- `tests/` or co-located `*.test.ts(x)` — Vitest/RTL (runner configs live in `tests/`);
-  `tests/e2e/` — Playwright specs and config. `i18n/messages/` — UI copy per locale.
 
 ## Definition of Done
 
@@ -139,11 +119,6 @@ A task is not complete until all of the following hold:
 - `release` is the production branch. Vercel deploys it; `.github/workflows/release.yml`
   (release-please) turns Conventional Commits into a version bump, `CHANGELOG.md`, git tag and
   GitHub Release. Details: [docs/architecture.md](docs/architecture.md#ci-and-releases).
-
-## Before starting any task
-
-Read [docs/implementation-status.md](docs/implementation-status.md) first. It tracks what has actually
-been built (Prompts 0–8) versus what is only planned in this file and the docs/ specs.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

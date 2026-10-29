@@ -830,48 +830,124 @@ logic of its own — the UI only ever decides whether to _show_ the button; the 
 enforces who may use it. The `ReopenForEditingButton` component surfaces it in three places: the
 editor's not-editable screen for a submitted story, the preview page, and My Stories.
 
-### Sub stories (2026-09-30, reworked 2026-10-03)
+### Story folders (2026-09-30, reworked 2026-10-03, free links 2026-10-13, folders 2026-10-21)
 
-A **published** story can be linked under another published **main story** by the same contributor
-("Fergburger" under "Food in Queenstown"). Two levels only. The link goes public as soon as it is
-saved — no review round. Migrations `20260930083209_sub_stories.sql` (first version, on revisions),
-`20260930083643_fix_story_is_publicly_visible.sql`, and `20261003051644_story_level_sub_stories.sql`
-(the current design).
+A story is either a **main story** (may have sub stories), a **sub story** (filed under exactly one
+main story), or neither — one level only, no depth limit beyond that, no story both has sub stories
+and is itself one. The link goes public as soon as it is saved — no review round. This is the third
+design for this relationship: a two-level main/sub hierarchy (2026-10-03), then free, undirected,
+Obsidian-style links with no hierarchy at all (2026-10-13), and now back to a one-level folder shape
+(2026-10-21) after the product owner decided free links made "what belongs under what" ambiguous on
+a contributor's own profile. Migrations: `20260930083209_sub_stories.sql` and
+`20261003051644_story_level_sub_stories.sql` (the first hierarchy, fully dropped),
+`20261013004751_story_links.sql` (the free-link design, also fully dropped) and
+`20261021085920_story_folders.sql` (the current design, which converts every existing
+`story_links` row into a parent/child pair — the end with more total links becomes the parent, a
+tie goes to the earlier `published_at` then the lower id, and a conversion is only applied when it
+is one-level-valid — before dropping the link table and its four functions).
 
-- **Where it lives:** `stories.parent_story_id` (FK to `stories`, `on delete restrict`, check
-  `<> id`). It started on `story_revisions` so it would be moderated with the content; on
-  2026-10-03 the product owner chose "only already-published stories, live straight away", so it
-  moved to `stories` and the revision column, `set_revision_parent_story()` and
-  `get_revision_parent_story()` were dropped. This is a documented exception to Engineering Rule 11
-  for this one field — see docs/content-governance.md, "Sub stories". `stories` still has no
-  direct API grants (RLS on, zero policies), so the column is writable only through the function
-  below. Not copied into drafts; editing a published sub story does not touch the link.
-- **Only writer:** `set_story_parent_story(story, parent | null)`, **owner only** (not the assigned
-  editor — this skips review, so it stays the contributor's call). Checks ownership first, then
-  locks both rows in id order so concurrent link changes queue instead of racing the two-level
-  check. Refusals: this story is not published (WHV15); not itself (WHV10); same `contributor_id` —
-  "not found" and "not yours" share one message so ids can't be probed (WHV11); the main story is
-  published (WHV12); the main story is not itself a sub story (WHV13); this story has no sub
-  stories of its own (WHV14). Clearing (null) is always allowed. No `stories.version` bump, so an
-  open editor tab on the same story doesn't go stale.
-- **Readers:** `get_story_parent_story(story)` and `list_parent_story_options(story)`, both owner
-  only — they back the "Link" dialog on My Stories (`app/(contributor)/my-stories/
-link-main-story-dialog.tsx`), which only shows on published rows. The editor, preview and
-  moderation pages no longer show anything about sub stories.
-- **Public read:** `get_published_story_family(slug)`, granted to `anon`. It follows
-  `stories.parent_story_id` and runs **both** ends of every link through
-  `_story_is_publicly_visible()` — the same gate as `get_published_story()`. An archived,
-  taken-down or consent-revoked story on either end just drops out; the link row itself stays.
-  The main story's page shows its sub stories as `StoryCard`s under the description, filling card
-  fields from the contributor's `list_published_stories()` page (`matchSubStoryCards()`); the
-  family read alone decides which stories appear.
-- **Verified 2026-10-03** on the hosted dev project inside a rolled-back transaction, then applied:
-  every refusal fires with its code, another user and anon are refused, anon can still read the
-  family, unlinking removes it publicly, and `stories.version` doesn't change.
-- **Gotcha hit while building it:** `_story_is_publicly_visible()` first ended in
+- **Where it lives:** `public.stories.parent_story_id` (`uuid`, FK to `stories` `on delete set
+null` — deleting a main story orphans its sub stories back to "not in a folder" rather than
+  blocking the delete), checked non-self. `stories` has no direct API grants for any role (same as
+  always) — every read or write goes through a SECURITY DEFINER function. This is a documented
+  exception to Engineering Rule 11 for this one column — see docs/content-governance.md, "Story
+  folders go live without review".
+- **Writer:** `set_story_parent(story_id, parent_id)`, the only writer; `parent_id = null` removes
+  the story from its folder. Requires the caller to **own both** stories (same contributor — not
+  the assigned editor, since this skips review and stays the contributor's call), locks both rows
+  in id order so concurrent filings on the same pair queue rather than race, and requires **both**
+  stories published when setting a parent (not when clearing). Refusals: self (WHV10); not
+  found/not yours — one message for both so ids can't be probed (WHV11); the target is itself a sub
+  story (WHV13); this story already has sub stories of its own (WHV14); either side not published
+  (WHV15). Re-filing a story under a different main story is allowed in one call. WHV16
+  ("already linked", a free-link-only concept) stays retired.
+- **Owner-scoped reader:** `get_my_story_folders()` — no arguments, scoped to `auth.uid()` via the
+  exact same source-kind-partitioned ownership check `list_my_stories()` uses (never
+  `contributor_id` alone, which isn't an authorization check). Returns every one of the caller's own
+  stories (`id`, `slug`, `title` from the published revision else the current draft,
+  `lifecycle_status`, `linkable`, `parent_story_id`). Backs the story folders page
+  (`app/(contributor)/my-stories/map/` — route kept, page retitled).
+- **Public read:** `get_published_story_family(story_id)`, granted to `anon`. Both ends of the
+  relationship pass `_story_is_publicly_visible()` — the same check `get_published_story()` uses —
+  every time: an archived, taken-down or consent-revoked story on either end just drops out,
+  without `parent_story_id` itself changing. A public story's page shows a "Part of: &lt;main
+  story&gt;" breadcrumb (`PartOfStory`) when it's a sub story, and a grid of compact "Sub stories"
+  cards (`SubStoryList`/`SubStoryCard`, `components/story/story-family.tsx`) when it has any,
+  filling card fields from the contributor's `list_published_stories()` page
+  (`matchStoryFamilyCards()`); the family read alone decides which stories appear.
+- **Story folders page:** `app/(contributor)/my-stories/map/` — a list of the contributor's
+  publishable stories as folder rows (any published, not-itself-filed story, even with zero sub
+  stories yet, so there's a row to drop onto); expanding one (a real `<button aria-expanded>`)
+  shows its sub stories with a status badge, an "Open story" link and a "Remove from folder"
+  button behind a confirm dialog. Below the folders, a "Not in a folder" list holds everything
+  else, greyed with a publish hint when not yet published. Drag-and-drop (`@dnd-kit/core`, same
+  sensor pattern as the editor's photo reorder) files a story by dropping it on a folder row, or
+  removes it by dropping on the "Not in a folder" area; a story with sub stories of its own can't be
+  dragged into another folder, and drafts aren't draggable. Every row also carries a "Move to…"
+  select — the keyboard/screen-reader and phone fallback (Engineering Rule 19), calling the exact
+  same `setStoryParentAction` as the drag gesture, with an optimistic update and rollback on
+  refusal.
+- **Verified 2026-10-21** on the hosted dev project inside a rolled-back transaction (not yet
+  applied — see docs/implementation-status.md): the full migration runs end to end; the
+  `story_links` → `parent_story_id` conversion correctly made "Kakiman" the parent of both "Opotiki
+  Trip" and "Trying Something New" (Kakiman had the most total links).
+- **Gotcha hit while building the first design:** `_story_is_publicly_visible()` first ended in
   `consent_row is not null`. For a composite, `IS NOT NULL` means _every_ field is non-null, so it
   said "not public" for every story (fixed in `20260930083643_fix_story_is_publicly_visible.sql`,
   now `not (x is null)`). Same family of bug as the three-valued-logic section below.
+
+### Journey map stops (2026-10-29)
+
+`story_revision_stops` (`20261029042052_story_revision_stops.sql`) holds a revision's ordered stops
+(`sort_order`, `latitude`/`longitude numeric(5,2)`, `label` 1-60 chars, optional `section_anchor`).
+It follows every other per-revision child table: keyed on `revision_id` (`on delete restrict`),
+frozen by the shared `_protect_revision_child_immutability()` trigger, RLS enabled with **no
+policies and no grants** — `set_revision_stops(revision_id, expected_version, stops jsonb)` is the
+only writer (owner/assigned editor via `_authorize_revision_edit`, optimistic version, max 12 main
+stops / 8 sub-stops per main stop / 40 in total, coordinates rounded to 2 dp and CHECK-bounded to New
+Zealand, array order = route order).
+
+**Main stops and sub-stops (one level).** `parent_sort_order integer null` (composite FK
+`(revision_id, parent_sort_order)` → `(revision_id, sort_order)`, `on delete cascade`, CHECK
+`parent_sort_order < sort_order`) makes a row a sub-stop of exactly one main stop. Each
+`set_revision_stops` element may carry `parent_index` (0-based array position); the function checks
+it points at an EARLIER element that is itself a main stop and enforces the caps, then stores the
+parent's `sort_order` — no client ordering or id is trusted. Both read functions return
+`parent_sort_order`; `create_next_draft_revision` copies it. App side: `lib/journey/draft.ts` (pure
+grouping helpers: normalise/letter ids/remove-with-children/move among siblings), `parseStopRows`
+turns `parent_sort_order` into `JourneyStopView.parentIndex` and drops orphaned or nested sub-stops;
+`journeyStopsSchema` mirrors the rules. The editor keeps `parentKey` (a client key, stable under
+reordering) and the form converts it to `parentIndex` on save. The reader map routes and drives over
+main stops only; `cameraBoxForPoints` frames an opened main stop and its sub-stops.
+
+Reads are two **new** functions rather than extra columns on the existing ones (their return types
+have been drop-and-recreated many times): `get_published_story_stops(slug)` (granted to `anon`;
+gated by `_story_is_publicly_visible()` and reading only `published_revision_id`) and
+`get_revision_stops(revision_id)` (editor, preview and moderation; owner / linked contributor /
+assigned editor / admin, or a moderator once the revision has left `draft`).
+`create_next_draft_revision()` copies the stops and `delete_draft_story()` clears them — the two
+sites of the child-table checklist, both redefined from their latest definitions.
+
+App side: `lib/journey/` (NZ bounds, lat/lng → SVG projection, Catmull-Rom → Bezier path, Cook
+Strait leg detection, Zod schema), `lib/story/headings.ts` +
+`heading-ids.ts` (stable heading anchors; `ContentBlockRenderer` puts `section-<anchor>` ids on
+headings), `lib/story/journey-queries.ts` (fail-soft readers via `callUntypedRpc` until types are
+regenerated), `components/story/journey-map.tsx` (reader animation, `"use client"`),
+`journey-stops-editor.tsx` (contributor editor, step "Places"), `journey-backdrop.tsx` and
+`journey-vehicles.tsx` (shared SVG art). `setJourneyStopsAction` is the server action.
+
+Base map: a Google-Maps-style picture, still not a map (no tiles, no live location). The geometry
+is real — `lib/journey/nz-map-data.ts` (land rings, lakes, major/secondary roads, ~50 KB, bundled
+with the client map) is **generated** by `scripts/journey/extract_nz.py` from Natural Earth 1:10m
+(public domain, no attribution required; do not hand-edit — rerun the script) and is excluded from
+Prettier/ESLint. `lib/journey/map-paths.ts` projects it once (memoised) with the same
+`latLngToPoint` as the stops into SVG path strings and the two main-island polygons that the
+display-only pin layout (`pins.ts`) uses for Cook Strait. Colours are `--map-*` CSS variables in
+`globals.css` (light + dark, following `data-theme`); strokes use `vector-effect:
+non-scaling-stroke` so they stay one on-screen width while the camera zooms. City names
+(`cities.ts`, `journey-cities.tsx`) are decorative, `aria-hidden` proper nouns drawn at 1/zoom: tier
+2 and the secondary roads fade in with zoom, and `applyMapDetail` (journey-map.tsx) hides a name
+whose box a stop marker or the current name chip would cover.
 
 ### Public reads
 
@@ -1181,6 +1257,310 @@ Conventional Commit in the project's history, not just the ones since some earli
 - `tests/integration/*.integration.test.ts` (currently just the story-domain RLS suite): explicitly
   named/tagged as integration tests, excluded from `tests/vitest.config.ts`'s default include, run only via
   `npm run test:rls` with its own `.env.test.local` — see "RLS integration test setup" above.
+
+## Google Drive connection (slice 1 — connect/disconnect only)
+
+Full design: `docs/google-drive-integration.md`. This slice only lets a contributor link/unlink
+their Google Drive from Account settings — no image upload or read path changes yet.
+
+- `supabase/migrations/20261007053505_drive_connections.sql` — `contributor_drive_connections`
+  (encrypted refresh token + IV/auth tag/key version, display email, status). RLS enabled with zero
+  policies and table grants revoked for `anon`/`authenticated` — same "enable RLS, grant nothing"
+  shape as `notifications`. The only exposed read is `get_my_drive_connection_status()`, a
+  `SECURITY DEFINER` function whose `RETURNS TABLE` has no token column at all, so it cannot be
+  made to leak one regardless of how it's called.
+- `lib/env.server.ts` — `getDriveEnv()` (same shape as `getAdminEnv()`) plus `isDriveConfigured()`,
+  which returns `false` instead of throwing when the four `GOOGLE_DRIVE_*` vars are absent, so a
+  deployment with no Drive credentials configured (e.g. a fresh Vercel preview) just hides the
+  Connect button instead of crashing the Account page.
+- `lib/drive/token-store.ts` — the only module allowed to read/write
+  `contributor_drive_connections` or import `lib/supabase/admin.ts` for it (AES-256-GCM encrypt/
+  decrypt, a fresh random IV per call). Enforced by the `no-restricted-imports` allowlist in
+  `eslint.config.mjs`, mirroring the existing `lib/story/image-pipeline.ts` entry. Only the rest of
+  `lib/drive/**` and the `app/(contributor)/account/drive/*` routes/actions may import
+  `token-store.ts` itself — a second, narrower allowlist entry.
+- `app/(contributor)/account/drive/connect` and `/callback` (Route Handlers) — the OAuth flow,
+  `drive.file` scope only, CSRF `state` in a short-lived httpOnly cookie, server-to-server token
+  exchange. Both re-derive the signed-in user server-side rather than trusting anything in the
+  query string (Rule 2); `proxy.ts`'s existing `/account/:path*` matcher already redirects a
+  signed-out visitor away before either handler runs.
+- `app/(contributor)/account/drive/actions.ts` — the disconnect Server Action: requires an explicit
+  confirmation field (Zod), best-effort revoke at Google, then deletes the local row via
+  `token-store.ts`.
+- **Applied 2026-10-07** to the linked development project through the Supabase MCP, so the local
+  file was renamed from `20261007051136` to the version the MCP recorded (`20261007053505`).
+  `db push` couldn't be used: the shared dev database already holds migrations from unmerged
+  branches (`feat/landing-country-cards`, `feat/itinerary-builder`, and the raw-original retention
+  task), so it aborts with "remote migration versions not found". `types/database.ts` was
+  regenerated, but only the `contributor_drive_connections` table and
+  `get_my_drive_connection_status` function were kept; the other branches' tables and functions
+  were left out on purpose.
+
+## Drive upload (slice 3, server)
+
+Full design: `docs/google-drive-integration.md` sections 3–6. This round is server, database, and
+proxy only — no editor UI wires into it yet (Round B wires `components/story/
+image-upload-manager.tsx`). Builds on the slice-1 connection table and `lib/drive/token-store.ts`
+above.
+
+- `supabase/migrations/20261007063355_story_media_drive_backend.sql` — **written, never applied to
+  any database**, per this task's instructions. Adds `story_media.storage_backend` (`text`, default
+  `'supabase'`, `check in ('supabase','google_drive')`), `drive_processed_file_id`, `drive_folder_id`;
+  drops `private_storage_path`'s `not null`; adds `story_media_backend_consistency` (a `supabase` row
+  keeps today's exact shape, a `google_drive` row has no Supabase storage path of any kind) and
+  replaces `story_media_processed_fields_require_processed_or_later` (20260804090000) with a
+  backend-aware version, since the original version required `processed_private_storage_path` on
+  every processed-or-later row, which a `google_drive` row can never satisfy. Four RPCs:
+  `begin_drive_media_upload` (reserves a `story_media` row with no storage path, independently
+  re-checking for an active Drive connection), `authorize_drive_media_finalize` (an authorize-only
+  pre-check, so a caller with no edit rights never reaches a single Drive API call),
+  `finalize_drive_media_upload` (records an already-processed-and-uploaded derivative, walking
+  `processing_state` through `uploaded -> processing -> processed` as three ordinary updates under
+  the existing transition trigger), and `get_drive_media_for_proxy` (the proxy route's one lookup —
+  returns zero rows for a non-existent id, a `supabase`-backend row, or an unauthorized
+  `google_drive` row, all indistinguishable from each other). A 30-minute reservation-expiry window
+  (design doc Decision Q12) is checked against `created_at`, not a separate column.
+- `lib/drive/drive-client.ts` — plain `fetch` calls to the Drive v3 REST API (no new dependency this
+  round): fresh-access-token refresh (delegates to `token-store.ts`, marks a connection
+  `refresh_failed` on `invalid_grant`), find-or-create the contributor's `Kakinotes` folder and
+  `Kakinotes staging` subfolder, start a resumable upload session (always sending `Origin` from
+  `GOOGLE_DRIVE_OAUTH_REDIRECT_URI`'s own origin — the 2026-10-07 CORS spike's rule — never from the
+  incoming request), file metadata/download/multipart-upload/permanent-delete. The only module
+  outside `lib/drive/token-store.ts` itself allowed to import it directly (already true under
+  `eslint.config.mjs`'s existing `lib/drive/**` allowlist entry — no ESLint change was needed for
+  this slice).
+- `lib/story/drive-sync.ts` — `beginDriveMediaUpload`/`finalizeDriveMediaUpload`, the Drive-mode
+  siblings of `lib/story/mutations.ts`'s upload functions. Does **not** import `lib/supabase/
+admin.ts`; DB writes go through the RPCs above on the caller's normal session client. Finalize's
+  order is fixed: authorize (no Drive call yet) -> fetch real Drive metadata and reject on any
+  mismatch (wrong reservation/stage/parent/size — nothing downloaded or deleted) -> download ->
+  `lib/story/image-pipeline.ts#processImageBytesInMemory` -> upload the derivative -> record via RPC
+  -> only then permanently delete the raw staging file. If recording fails after the derivative is
+  already uploaded, the derivative is deliberately left in place (never a best-effort delete from an
+  already-failing request) and the raw staging file is also left for a future cleanup sweep (slice
+  4, not built this round) — the function re-throws rather than claiming success.
+  `export const maxDuration = 60` (seconds): this repo configures no `maxDuration` anywhere else
+  (checked `next.config.ts`/root `vercel.json` — neither exists); 60s needs no plan upgrade on any
+  current Vercel tier and matches Decision Q10 exactly.
+- `lib/story/image-pipeline.ts` — one new function, `processImageBytesInMemory`, added at the end of
+  the file (additive only, since another in-flight task is editing the rest of this module). Bytes
+  in, processed bytes + metadata out, reusing `sniffImageMimeType`/`encodeJpegUnderBudget`/the
+  `MAX_*` constants `processStoryMedia` already uses — no DB write, no storage write, no admin
+  client of its own.
+- `lib/story/image-url.ts` — `getImageUrl(media)`, next to `lib/story/public-image-url.ts`. For a
+  `supabase` row, calls `getPublicImageUrl()` with the exact same argument today's code already
+  passes (proven byte-identical by a test); for a `google_drive` row, returns `/media/{id}`. Not
+  wired into any call site yet — that is Round B.
+- `app/media/[mediaId]/route.ts` (Node runtime) — the proxy. Validates the id as a UUID, calls
+  `get_drive_media_for_proxy` on the caller's own session client, 404s identically for "not found"
+  and for a `supabase`-backend row, fetches bytes from the owning contributor's Drive via
+  `lib/drive/drive-client.ts`, and streams them back. The owning contributor's token is looked up by
+  `token-store.ts`/`drive-client.ts` keyed on the `owner_user_id` (really `uploaded_by`) the RPC
+  itself returns — never by anything the client sends — and the RPC only ever returns that column
+  for a row it has already authorized, so an anonymous reader can never cause an arbitrary
+  contributor's token to be used. `Cache-Control: public, s-maxage=300, stale-while-revalidate=60`
+  for a published row (the RPC's `is_published` flag), `private, no-store` for anything a
+  contributor/moderator is previewing, `502`/`private, no-store` on a Drive-side failure. Ships no
+  placeholder image yet (slice 5, out of scope this round).
+- **Update (round A review, 2026-10-07):** the open question above is resolved — `20261007063355_
+story_media_drive_backend.sql` (renamed from `20261007055927` after it was applied to the dev
+  project; checksum `a00fc5afd2f11470c8fdd64b2de1bf33`, never edit that file again) replaces
+  `story_media_approved_path_requires_promoted` with a backend-aware version and teaches
+  `finalize_story_publication`/the transition trigger to promote a `processed` `google_drive` row
+  directly (no bucket copy, `approved_public_storage_path` stays NULL). `get_published_story_media`/
+  `list_published_stories`/`get_story_for_moderator` were also fixed so a published Drive photo no
+  longer vanishes from public pages/covers. `lib/story/image-url.ts`'s "not wired into any call site
+  yet" note above is now stale — see the Round B section below.
+
+## Drive upload (slice 3, UI and reads)
+
+Full design: `docs/google-drive-integration.md`. This round wires the editor's uploader into Drive
+mode and switches every image read site over to `getImageUrl`/`getCardCoverUrl`/`getImageBytes`. New
+migration `20261007102405_story_media_drive_upload_mode.sql` — kept separate from the already-
+applied `20261007063355` file (never edit an applied migration) — adds `get_story_media_upload_mode`
+and a `storageBackend` key on `get_story_preview`'s media jsonb.
+
+- **The server-side mode decision.** `get_story_media_upload_mode(revision_id)` (new RPC) returns
+  `'google_drive'` only for a `self_submitted` story's own `owner_user_id` with an active Drive
+  connection, `'supabase'` for literally everyone/everything else (no edit rights at all included —
+  it never raises). `lib/story/drive-sync.ts#getStoryMediaUploadMode` wraps it, defaulting to
+  `'supabase'` on any error. The client (`components/story/image-upload-manager.tsx`) fetches this
+  once per revision, on mount, into `uploadMode` state (defaulting to `'supabase'` until it resolves)
+  — there is no prop, flag, or query param a browser could set to flip it; the component only ever
+  reads what the server decided.
+- **Why the import is dynamic.** `image-upload-manager.tsx` loads
+  `app/(contributor)/stories/[id]/edit/drive-upload-actions.ts` and `lib/story/drive-upload-client.ts`
+  via `import()`, not a static import, even though every other Server Action this component calls is
+  static. Those two modules transitively import `lib/story/drive-sync.ts`, which carries `import
+"server-only"` — confirmed live that a static import crashes
+  `components/story/image-upload-manager.test.tsx` before a single test runs (`server-only` throws
+  unconditionally outside Next's bundler, with no allowance for "loaded by a Client Component test").
+  A dynamic import turns that into an ordinary rejected promise the mode-check effect already
+  catches, keeping the existing test passing with zero edits.
+- **Upload flow (Drive mode).** `lib/story/drive-upload-client.ts#beginAndUploadToDrive`: calls
+  `beginDriveMediaUploadAction` (which calls `beginDriveMediaUpload` → the RPC reservation →
+  `drive-client.ts` opens the resumable session with `Origin` set, per round A) and PUTs the file to
+  the returned `sessionUri` in 8 MiB chunks (`uploadFileToDriveSession`, a multiple of Drive's
+  required 256 KiB granularity), using `Content-Range` per chunk and resuming from a 308's `Range`
+  header rather than assuming the prior chunk fully landed. Only the session URI and the final
+  200/201 response's file id ever reach this module — no token. `finalizeDriveMediaUploadAction` then
+  runs inside the SAME mutation-queue `enqueue` call the Supabase path's finalize already uses (reads
+  `versionRef.current` only when the queued callback executes), so a Drive upload can't race the
+  editor's autosave any more than a Supabase one can. Client-side type/size pre-checks are unchanged
+  (shared with the Supabase path); no client-side HEIC conversion is needed for Drive mode.
+- **HEIC gap found and fixed.** `processImageBytesInMemory` originally only called
+  `sniffImageMimeType` (never recognizes HEIC) and never transcoded — fine for the Supabase path,
+  where `transcodeHeicUploadAction` already converts HEIC to JPEG before `processStoryMedia` (and,
+  for Drive, `processImageBytesInMemory`) ever sees the bytes. Drive mode has no equivalent earlier
+  step: `drive-sync.ts` downloads whatever raw bytes the browser PUT to the staging file, so a HEIC
+  source would have failed with `unrecognized_image_format`. Fixed in `processImageBytesInMemory`
+  itself: it now calls `sniffUploadMimeType` first and, for HEIC, transcodes via the same
+  `lib/story/heic.ts#transcodeHeicToJpeg` the Supabase path uses, before the normal decode/strip/
+  resize/re-encode steps — proven against the real `sample.heic` fixture in
+  `lib/story/process-image-bytes-in-memory.test.ts`.
+- **Failure UI.** `beginDriveMediaUploadAction`/`finalizeDriveMediaUploadAction` catch
+  `DriveConnectionError` (thrown by `drive-client.ts#getAccessToken` on no/revoked connection or a
+  Google `invalid_grant`) and return a translated `driveDisconnected` message
+  (`actionErrors.driveDisconnected`, en/zh-CN) instead of the generic failure string; every other
+  failure shows today's existing error UI unchanged, since the thrown `Error`'s message is already
+  the server's translated string.
+- **Quiet note.** `editor.photos.driveNote` ("Photos are saved to your Google Drive.", en/zh-CN),
+  shown under the dropzone only while `uploadMode === "google_drive"`.
+- **Read sites — all swapped to `getImageUrl`/`getCardCoverUrl`/`getImageBytes`, every supabase row
+  byte-identical to before:**
+  - `app/(contributor)/stories/[id]/media-actions.ts` (`mintPreviewUrlAction`/`mintPreviewUrlsAction`)
+    — now call `lib/story/preview-image-url.ts#resolvePreviewImageUrl`, which checks
+    `get_drive_media_for_proxy` first and returns `/media/<id>` for a Drive row instead of attempting
+    `mintMediaPreviewSignedUrl` (which would fail outright — no `private_storage_path` to sign). This
+    ONE change fixes every private-preview thumbnail in the app at once: the editor's own upload
+    panel, `components/story/preview-gallery.tsx`/`preview-content-body.tsx` (owner/editor preview +
+    moderator review), and `app/(contributor)/my-stories/story-cover-thumbnail.tsx` — none of those
+    needed their own change.
+  - `app/(contributor)/stories/[id]/export/route.ts` (PDF export) — `collectImages` now calls
+    `lib/story/image-bytes.ts#getImageBytes(media)` instead of `downloadMediaPreviewBytes` directly;
+    a `google_drive` row fetches via `drive-client.ts` using the owner's token (looked up via
+    `get_drive_media_for_proxy`, same pattern as the public proxy route), a `supabase` row is
+    unchanged.
+  - `lib/story/public-queries.ts` (`getPublishedStoryMedia`, `listPublishedStories`) — additive casts
+    exposing `storage_backend` / `cover_media_id`+`cover_storage_backend`, which the RPCs already
+    return as of the round A review fix; no query shape change.
+  - `app/(public)/stories/[id]/page.tsx` — og:image cover, inline content-block images, and the
+    trailing `StoryGallery` all resolve through `getImageUrl`/`getCardCoverUrl`. **Only ever published
+    media**: the cover and content map both come from `getPublishedStoryMediaDeduped`, which wraps
+    `get_published_story_media` — scoped to `published_revision_id` specifically (Rule 10) — so a
+    draft/pending Drive (or supabase) photo can never reach an og:image or the page body regardless
+    of backend.
+  - `app/(moderation)/moderation/stories/[id]/page.tsx` — the published-snapshot inline-image map
+    swapped the same way.
+  - `components/story/story-card.tsx`, `components/home/featured-story-slide.tsx`,
+    `components/home/story-index.tsx`, `components/story/story-family.tsx` — all read `StoryCardData`
+    (the shared `list_published_stories()` row shape) and now call `getCardCoverUrl(story)`, which
+    falls through to the exact same `getPublicImageUrl(cover_image_path)` call when the two new
+    columns are absent — covers every existing fixture/test unmodified.
+  - `components/story/story-gallery.tsx` — `GalleryImage` gained an optional `storage_backend`;
+    renders via `getImageUrl`.
+  - `app/sitemap.ts`, `app/robots.ts`, `components/story/editor/markdown-live-decorations.ts` —
+    unchanged: the sitemap carries no image URLs, and the live-decoration thumbnail goes through
+    `mintPreviewUrlAction`, already covered by the `media-actions.ts` fix above.
+- **`next/image` decision: none of these sites use it.** Grepped every read site this round touches
+  (`story-card.tsx`, `featured-story-slide.tsx`, `story-index.tsx`, `story-gallery.tsx`) — all already
+  render a plain `<img>` with an explicit `eslint-disable @next/next/no-img-element` comment, on the
+  grounds that a signed/short-lived or content-addressed URL isn't an optimizer-cacheable static
+  asset. `/media/<id>` for a Drive image is no different (same-origin, sometimes `private, no-store`
+  for a preview) — using `next/image` for it would risk Next's image optimizer caching a PRIVATE
+  preview response publicly, which plain `<img>` never does. Nothing needed to change; this is simply
+  confirmed, not a new decision.
+- **Known open question, still not resolved:** the move tool, "download all"/My Photos page, and the
+  cleanup sweep for abandoned staging files (slices 4/7/8/9 of the design doc) are untouched —
+  out of scope for both rounds so far.
+
+## Drive folder layout
+
+Extends the Drive upload work above: Drive photos are no longer all dumped loose into one
+"Kakinotes" folder. Each story gets its own subfolder, named after its title, with its photos
+numbered by display order inside it.
+
+- `story_drive_folders` (`supabase/migrations/20261007190006_story_drive_folders.sql`, **not
+  applied** — file only) — one row per story with a Drive folder: `story_id` (PK, FK `stories`),
+  `owner_user_id`, `drive_folder_id`, `folder_name`. Deny-all RLS, same pattern as
+  `contributor_drive_connections`.
+- **Shared editor RPCs are NEVER reshaped.** `save_revision_draft`, `reorder_story_media`,
+  `set_story_cover_media` and `detach_story_media` are used by other in-flight branches against
+  this shared dev database, and by the currently deployed app in production — this migration does
+  not touch their signatures or return shapes at all, to avoid a deploy-order window where a
+  migration lands before the matching app code and an old client gets a shape it doesn't expect.
+  Even `authorize_drive_media_finalize` — created by this feature's own uncommitted slice 3, called
+  only by this feature's own code — gets a **new function**, `authorize_drive_media_finalize_v2`
+  (returns the reservation's `story_id`; the original is left untouched, unused but in place)
+  rather than a DROP+CREATE, for the same reason at a smaller scale.
+- **RPCs added by this migration**, each re-checking `_is_self_submitted_story_owner(story_id)`:
+  `get_story_drive_folder`, `upsert_story_drive_folder` (insert-or-update, `ON CONFLICT (story_id)`
+  makes the write race-safe), `list_my_story_drive_folder_names` (for the uniqueness check),
+  `list_story_drive_media_for_sync` (a story's Drive media in display order — current draft
+  revision if one exists, else the published revision), `authorize_drive_media_finalize_v2` (above),
+  and `get_story_drive_sync_state(story_id)` — the one cheap, owner-checked lookup described below.
+- **Naming.** `lib/story/drive-folders.ts#sanitizeStoryFolderName`: trim, collapse whitespace, strip
+  `/ \ : * ? " < > |`, cap at 100 chars, empty → "Untitled story". `uniqueFolderName` appends
+  " (2)", " (3)", … against the owner's other story folder names. A linked story gets its own
+  top-level folder inside "Kakinotes" like any other story — links never nest one story's folder
+  under another's (Drive folders predate story links and were never hierarchical either way).
+- **`ensureStoryFolder(supabase, accessToken, userId, storyId)`** — finds or creates the story's
+  folder; renames it in place (same Drive folder id) when the title-implied name has changed. Not
+  best-effort: called directly on the upload path, where a Drive failure must fail the upload.
+  Shares its folder-resolution logic (`resolveStoryFolder`) with `renameStoryFolderIfExists` below,
+  parameterized by whether a missing folder should be created.
+- **`syncStoryFolder(userId, storyId)`** — best-effort (never throws): calls `ensureStoryFolder`,
+  then renumbers the story's Drive media to `01.ext`, `02.ext`, … (extension from
+  `processed_mime_type`: jpeg → `.jpg`, png → `.png`), moving any loose file into the folder. Two
+  passes — temp-rename everything that needs a new name first, then assign the real names — so two
+  files never need the same name at the same instant, even though Drive itself tolerates duplicate
+  names. Only files that actually need a change make a Drive call.
+- **`renameStoryFolderIfExists(userId, storyId)`** — best-effort (never throws): renames the
+  story's folder ONLY IF one already exists; never creates one (a title edit on a story with no
+  Drive photos yet must never spontaneously create a Drive folder). No-ops with zero Drive calls
+  when the title-implied name already matches the stored one.
+- **`getDriveSyncGate(storyId)`** — best-effort (never throws, returns `null` on any error):
+  the ONE new, cheap post-response lookup (`get_story_drive_sync_state`) every trigger below calls
+  inside `after()` to decide whether `syncStoryFolder`/`renameStoryFolderIfExists` are worth
+  attempting at all. Returns `{ hasDriveMedia, hasFolder }`.
+- **Trigger points — all scheduled via `next/server`'s `after()`, all best-effort:**
+  - Upload finalize (`lib/story/drive-sync.ts#finalizeDriveMediaUpload`): `ensureStoryFolder` runs
+    first (not best-effort, not deferred — the derivative is written directly into the story
+    folder), then `syncStoryFolder` runs after the DB record succeeds.
+  - Reorder/cover/detach (`app/(contributor)/stories/[id]/edit/actions.ts`): each action calls its
+    underlying `reorder_story_media`/`set_story_cover_media`/`detach_story_media` mutation exactly
+    as `main` does and returns its response unchanged. Inside `after()`, it calls `getDriveSyncGate`
+    and runs `syncStoryFolder` only when `hasDriveMedia` is true.
+  - Title save (`saveRevisionFieldsAction`): calls `save_revision_draft` exactly as `main` does.
+    Inside `after()`, it calls `getDriveSyncGate` and runs `renameStoryFolderIfExists` only when
+    `hasFolder` is true — which itself only makes a Drive call if the title-implied name has
+    actually changed.
+  - `storyId` is passed into each of these four actions by the client as an added, trailing,
+    optional parameter (the editor component already has it from its own `storyId` prop) — a
+    courtesy, never an authorization input: `get_story_drive_sync_state` re-derives
+    `_is_self_submitted_story_owner(storyId)` independently, so a wrong/forged value can at most
+    ask about a different story the same caller owns.
+  - A Supabase-backend story or a non-Drive user still pays one tiny post-response `getDriveSyncGate`
+    lookup it never waits for, but triggers zero Drive API calls and no further DB writes.
+  - `createClient()` reads `cookies()` to build the session-scoped Supabase client; this is
+    supported inside `after()` for Server Functions (Server Actions are Server Functions) per
+    `next/dist/docs/01-app/03-api-reference/04-functions/after.md`'s "In Route Handlers and Server
+    Functions" section — confirmed, not assumed. These calls run as the signed-in contributor,
+    never through the admin/service-role client.
+- **Staging folder.** `lib/drive/drive-client.ts`'s raw-upload staging folder moved from a top-level
+  "Kakinotes staging" sibling to a nested "Kakinotes/.staging" — `ensureAppFolders` finds-or-creates
+  the new location and, best-effort, looks for the old top-level folder by name; if found and empty,
+  deletes it permanently; if not empty (an abandoned raw upload), leaves it alone.
+- **`story_media.drive_folder_id` stays a write-time snapshot.** Immutable once promoted (the
+  existing transition trigger) — never updated for a promoted row even after a move. Updatable for a
+  non-promoted row. Nothing about serving depends on it; the proxy route resolves bytes from
+  `drive_processed_file_id` only.
+- **Backfill.** `scripts/drive-backfill-story-folders.mjs` — dry-run by default, `--apply` to act.
+  Runs outside the app's TypeScript/RLS boundary (service-role REST + Drive REST directly, same
+  shape as `scripts/reprocess-failed-story-media.mjs`), since the per-story RPCs' own `auth.uid()`
+  ownership checks are unreachable from a service-role caller with no user JWT.
+- **Not built this round:** the move tool and My Photos page (slices 7/9 of
+  `docs/google-drive-integration.md`) are unaffected by this folder layout and remain out of scope.
 
 ## Testing strategy
 
@@ -2690,3 +3070,36 @@ native-speaker review before launch.
 - No deployment or push is performed as part of this task.
 - Target hosting is assumed to be Vercel (Next.js) + Supabase-hosted Postgres/Auth/Storage — still
   an assumption to confirm, see [docs/implementation-status.md](implementation-status.md).
+
+## China: second country section (2026-10-14)
+
+See [docs/implementation-status.md](implementation-status.md)'s "China: second country section"
+entry for the full account (migration, RPC changes, verification status, follow-ups). Summary of the
+structural pieces, for anyone orienting from this file:
+
+**Schema.** A new `countries` lookup table (`supabase/migrations/20261014085842_countries.sql`), same
+access shape as `regions`/`destinations`/`tags` — plain RLS, `active = true` readable by anyone, admin
+writes. `regions.country_id` and `stories.country_id` are both `NOT NULL`, backfilled to New Zealand.
+A story's selected regions are enforced (by a trigger, not just app code) to belong to the story's own
+country — `story_revision_locations_validate_country()`, the same shape as the pre-existing
+`story_revision_locations_validate_destination()` trigger.
+
+**Public RPCs.** `list_published_stories()` and `get_published_story()` both take an additive,
+optional `p_country_slug`; every public reader in `lib/story/public-queries.ts` passes it explicitly.
+A cross-country slug resolves to no rows, identically to an unknown one.
+
+**Routing.** New Zealand's public routes are unchanged and unprefixed. China's mirror them under
+`/cn` (`app/(public)/cn/...`), inside the same `(public)` route group so they share the existing
+static header/footer layout. The stories index and story detail pages are shared, country-
+parameterized components (`app/(public)/_shared/`) rather than per-country copies; the landing page
+is not shared (NZ's is a bespoke art-directed page; China's is a simpler, generic one built from the
+same card/toggle/label components). `components/country-toggle.tsx` is the NZ | China switch,
+plain server-renderable links, no client JS required.
+
+**Framing, not just data.** New Zealand stays Working Holiday Visa framed throughout, exactly as
+before. China is framed as general first-person travel stories — a product decision
+(docs/product-spec.md's MVP non-goal on multi-country WHV support is narrowly overridden for this one
+case), not a technical default. Every country-varying string (site description, tagline, stories
+intro, costs framing, about text, the "personal experience, not advice" label, the location-match
+failure message) is read from a per-country `countryContent` i18n namespace or passed as a resolved
+prop — never a hard-coded country name inside a shared component.

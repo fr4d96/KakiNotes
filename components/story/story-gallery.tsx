@@ -1,13 +1,18 @@
-import { getPublicImageUrl } from "@/lib/story/public-image-url";
+import { getImageUrl } from "@/lib/story/image-url";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
 
 type GalleryImage = {
   media_id: string;
   // Despite the RPC's column name, get_published_story_media() actually
-  // returns the raw storage path (approved_public_storage_path), not a
-  // full URL -- run through getPublicImageUrl() below, same as every other
-  // public image on this site.
+  // returns the raw storage path (approved_public_storage_path) for a
+  // supabase row -- run through getImageUrl() below, same as every other
+  // public image on this site. A google_drive row has `public_url: null`
+  // and `storage_backend: "google_drive"`; getImageUrl() routes that one
+  // to the proxy (/media/<id>) instead.
   public_url: string | null;
+  // Optional (round A review MUST-FIX 1 / round B): absent on an older
+  // fixture, which getImageUrl() treats as "supabase" via its own default.
+  storage_backend?: "supabase" | "google_drive";
   alt_text: string | null;
   caption: string | null;
   decorative: boolean;
@@ -28,7 +33,11 @@ export function StoryGallery({ images }: { images: GalleryImage[] }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {images.map((image) => {
-        const url = getPublicImageUrl(image.public_url);
+        const url = getImageUrl({
+          id: image.media_id,
+          storage_backend: image.storage_backend ?? "supabase",
+          public_url: image.public_url,
+        });
         if (!url) return null;
         return (
           <figure

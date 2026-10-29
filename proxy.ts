@@ -48,6 +48,7 @@ function withAuthCookies<T extends NextResponse>(
 
 const PROTECTED_PATHS = [
   "/my-stories",
+  "/my-photos",
   "/stories/new",
   "/account",
   // /notifications is signed-in-only but NOT role-gated: a contributor's
@@ -541,6 +542,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/my-stories/:path*",
+    "/my-photos/:path*",
     // Wildcard, not the bare "/stories/new": isProtectedPath() already covers
     // subpaths (its `startsWith(`${path}/`)` branch), but the matcher decides
     // whether this middleware runs AT ALL. As an exact entry it skipped

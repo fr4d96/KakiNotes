@@ -10,6 +10,7 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         // Authenticated contributor surfaces (Prompt 4).
         "/my-stories",
+        "/my-photos",
         "/stories/new",
         "/stories/*/edit",
         "/stories/*/preview",

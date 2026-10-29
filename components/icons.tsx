@@ -326,9 +326,10 @@ export function BellIcon(props: IconProps) {
 }
 
 /**
- * Two interlocked chain links — the "Main story" link action on My Stories
- * (my-stories-view.tsx's LinkMainStoryAction), matching the sub-stories
- * relationship the editor's ParentStoryPicker already sets.
+ * Two interlocked chain links. No longer used by the story folders view
+ * (app/(contributor)/my-stories/map/, since 2026-10-21's folder redesign
+ * replaced the free-link story map), kept in case another feature wants a
+ * generic "linked" glyph.
  */
 export function LinkIcon(props: IconProps) {
   return (
@@ -336,6 +337,19 @@ export function LinkIcon(props: IconProps) {
       <path d="M9.5 14.5 14.5 9.5" />
       <path d="M11 6.5l1.4-1.4a3.2 3.2 0 0 1 4.5 4.5L15.5 11" />
       <path d="M13 17.5l-1.4 1.4a3.2 3.2 0 0 1-4.5-4.5L8.5 13" />
+    </svg>
+  );
+}
+
+/**
+ * A folder — the story folders view's "Open story folders" entry point on
+ * My Stories, and each folder row there
+ * (app/(contributor)/my-stories/map/).
+ */
+export function FolderIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M4 7.25A1.75 1.75 0 0 1 5.75 5.5h3.69c.5 0 .97.2 1.32.55l1.09 1.1c.35.35.82.55 1.32.55h6.11A1.75 1.75 0 0 1 21 9.45v8.3a1.75 1.75 0 0 1-1.75 1.75H5.75A1.75 1.75 0 0 1 4 17.75V7.25Z" />
     </svg>
   );
 }
