@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.12.0](https://github.com/fr4d96/KakiNotes/compare/v1.11.0...v1.12.0) (2026-10-29)
+
+
+### Features
+
+* **journey:** contributor journey map, one pin per story ([1a6bdc3](https://github.com/fr4d96/KakiNotes/commit/1a6bdc37c9d36a159b141d53f7ccf78e5081a7bd))
+* **media:** delete raw story-image originals after processing ([b341342](https://github.com/fr4d96/KakiNotes/commit/b341342448f148024036450e2db6b1e12c13a5e5))
+* **media:** delete raw story-image originals after processing ([d544d8e](https://github.com/fr4d96/KakiNotes/commit/d544d8efea0afea353185a62da3506e21f94a391))
+
 ## [1.11.0](https://github.com/fr4d96/KakiNotes/compare/v1.10.0...v1.11.0) (2026-10-29)
 
 ### What's new for readers
