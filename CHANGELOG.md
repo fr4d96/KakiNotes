@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/fr4d96/KakiNotes/compare/v1.9.0...v1.10.0) (2026-10-29)
+
+
+### Features
+
+* **stories:** journey map with main stops and places inside ([1d3679f](https://github.com/fr4d96/KakiNotes/commit/1d3679fe7f6dc7db30e476291574aacee880805f))
+
 ## [1.9.0](https://github.com/fr4d96/KakiNotes/compare/v1.8.0...v1.9.0) (2026-10-21)
 
 
