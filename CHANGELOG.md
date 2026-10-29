@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/fr4d96/KakiNotes/compare/v1.10.0...v1.11.0) (2026-10-29)
+
+
+### Features
+
+* **china:** China travel-stories section under /cn ([d6d7b53](https://github.com/fr4d96/KakiNotes/commit/d6d7b53200fb6f05978f92e0dbfba86804179db2))
+
 ## [1.10.0](https://github.com/fr4d96/KakiNotes/compare/v1.9.0...v1.10.0) (2026-10-29)
 
 ### What's new for readers
