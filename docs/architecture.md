@@ -896,6 +896,59 @@ null` — deleting a main story orphans its sub stories back to "not in a folder
   said "not public" for every story (fixed in `20260930083643_fix_story_is_publicly_visible.sql`,
   now `not (x is null)`). Same family of bug as the three-valued-logic section below.
 
+### Journey map stops (2026-10-29)
+
+`story_revision_stops` (`20261029042052_story_revision_stops.sql`) holds a revision's ordered stops
+(`sort_order`, `latitude`/`longitude numeric(5,2)`, `label` 1-60 chars, optional `section_anchor`).
+It follows every other per-revision child table: keyed on `revision_id` (`on delete restrict`),
+frozen by the shared `_protect_revision_child_immutability()` trigger, RLS enabled with **no
+policies and no grants** — `set_revision_stops(revision_id, expected_version, stops jsonb)` is the
+only writer (owner/assigned editor via `_authorize_revision_edit`, optimistic version, max 12 main
+stops / 8 sub-stops per main stop / 40 in total, coordinates rounded to 2 dp and CHECK-bounded to New
+Zealand, array order = route order).
+
+**Main stops and sub-stops (one level).** `parent_sort_order integer null` (composite FK
+`(revision_id, parent_sort_order)` → `(revision_id, sort_order)`, `on delete cascade`, CHECK
+`parent_sort_order < sort_order`) makes a row a sub-stop of exactly one main stop. Each
+`set_revision_stops` element may carry `parent_index` (0-based array position); the function checks
+it points at an EARLIER element that is itself a main stop and enforces the caps, then stores the
+parent's `sort_order` — no client ordering or id is trusted. Both read functions return
+`parent_sort_order`; `create_next_draft_revision` copies it. App side: `lib/journey/draft.ts` (pure
+grouping helpers: normalise/letter ids/remove-with-children/move among siblings), `parseStopRows`
+turns `parent_sort_order` into `JourneyStopView.parentIndex` and drops orphaned or nested sub-stops;
+`journeyStopsSchema` mirrors the rules. The editor keeps `parentKey` (a client key, stable under
+reordering) and the form converts it to `parentIndex` on save. The reader map routes and drives over
+main stops only; `cameraBoxForPoints` frames an opened main stop and its sub-stops.
+
+Reads are two **new** functions rather than extra columns on the existing ones (their return types
+have been drop-and-recreated many times): `get_published_story_stops(slug)` (granted to `anon`;
+gated by `_story_is_publicly_visible()` and reading only `published_revision_id`) and
+`get_revision_stops(revision_id)` (editor, preview and moderation; owner / linked contributor /
+assigned editor / admin, or a moderator once the revision has left `draft`).
+`create_next_draft_revision()` copies the stops and `delete_draft_story()` clears them — the two
+sites of the child-table checklist, both redefined from their latest definitions.
+
+App side: `lib/journey/` (NZ bounds, lat/lng → SVG projection, Catmull-Rom → Bezier path, Cook
+Strait leg detection, Zod schema), `lib/story/headings.ts` +
+`heading-ids.ts` (stable heading anchors; `ContentBlockRenderer` puts `section-<anchor>` ids on
+headings), `lib/story/journey-queries.ts` (fail-soft readers via `callUntypedRpc` until types are
+regenerated), `components/story/journey-map.tsx` (reader animation, `"use client"`),
+`journey-stops-editor.tsx` (contributor editor, step "Places"), `journey-backdrop.tsx` and
+`journey-vehicles.tsx` (shared SVG art). `setJourneyStopsAction` is the server action.
+
+Base map: a Google-Maps-style picture, still not a map (no tiles, no live location). The geometry
+is real — `lib/journey/nz-map-data.ts` (land rings, lakes, major/secondary roads, ~50 KB, bundled
+with the client map) is **generated** by `scripts/journey/extract_nz.py` from Natural Earth 1:10m
+(public domain, no attribution required; do not hand-edit — rerun the script) and is excluded from
+Prettier/ESLint. `lib/journey/map-paths.ts` projects it once (memoised) with the same
+`latLngToPoint` as the stops into SVG path strings and the two main-island polygons that the
+display-only pin layout (`pins.ts`) uses for Cook Strait. Colours are `--map-*` CSS variables in
+`globals.css` (light + dark, following `data-theme`); strokes use `vector-effect:
+non-scaling-stroke` so they stay one on-screen width while the camera zooms. City names
+(`cities.ts`, `journey-cities.tsx`) are decorative, `aria-hidden` proper nouns drawn at 1/zoom: tier
+2 and the secondary roads fade in with zoom, and `applyMapDetail` (journey-map.tsx) hides a name
+whose box a stop marker or the current name chip would cover.
+
 ### Public reads
 
 `get_published_story(slug)`, `list_published_stories(...)`, `get_published_story_media(story_id)`

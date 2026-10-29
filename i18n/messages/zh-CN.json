@@ -175,7 +175,13 @@
       "consentRequired": "你必须确认自己有权发布这篇故事。",
       "termsVersionMissing": "缺少条款版本。",
       "selectPage": "请至少选择一页。",
-      "changeNoteRequired": "请说明需要修改什么。"
+      "changeNoteRequired": "请说明需要修改什么。",
+      "journeyLabelRequired": "请为这个站点填写地名。",
+      "journeyLabelTooLong": "地名不能超过 {max} 个字符。",
+      "journeyOutOfBounds": "站点必须位于新西兰境内。",
+      "journeyTooMany": "一个故事最多可以有 12 个主要站点，站点总数不超过 40 个。",
+      "journeyTooManyInside": "每个主要站点内最多可以放 8 个地点。",
+      "journeyBadParent": "站点内的地点必须属于排在前面的主要站点。"
     },
     "pdf": {
       "empty": "PDF 文件是空的。",
@@ -1272,5 +1278,106 @@
       "dropped": "已把“{story}”放到“{target}”。",
       "cancelled": "已停止移动“{story}”。"
     }
+  },
+  "journey": {
+    "title": "旅程",
+    "note": "这是基于简化地图的示意插图，不可用于导航——地点为大致位置，由作者自行标注。",
+    "mapLabel": "新西兰旅程示意图，共 {count} 站",
+    "pinLabel": "第 {n} 站：{label}",
+    "play": "播放旅程",
+    "pause": "暂停",
+    "replay": "重新播放",
+    "stopOf": "第 {n} 站，共 {total} 站",
+    "onTheRoad": "正驶往 {label}…",
+    "onTheFerry": "正乘渡轮穿越库克海峡前往 {label}…",
+    "readThisPart": "阅读这一段",
+    "stopsList": "沿途站点",
+    "controls": {
+      "help": "可交互地图。拖动可平移；按住 Ctrl 或 Cmd 并滚动或双指捏合可缩放，也可使用加号和减号按钮。地图获得焦点时，方向键平移，加号和减号缩放。",
+      "follow": "回到中心并跟随房车",
+      "reset": "重置地图视图",
+      "zoomIn": "放大",
+      "zoomOut": "缩小",
+      "hint": {
+        "wheel": "按住 Ctrl 并滚动滚轮以缩放地图",
+        "wheelMac": "按住 ⌘ 并滚动滚轮以缩放地图",
+        "touch": "请用两根手指移动地图"
+      }
+    },
+    "editor": {
+      "title": "旅程地图",
+      "hint": "可选。点击地图，按旅行顺序标出最多 {max} 个主要站点，再在每个站点内添加最多 {inside} 个地点。读者会看到一条可爱的路线和你填写的地名，不会看到精确坐标（位置会被取整到约 1 公里）。",
+      "mapLabel": "新西兰。点击添加站点。",
+      "addByKeyboard": "在地图中央添加站点",
+      "empty": "还没有站点。点击地图添加第一站。",
+      "stopHeading": "第 {n} 站",
+      "labelField": "地名",
+      "labelPlaceholder": "例如：克伦威尔附近",
+      "labelHelp": "最多 {max} 个字符，读者可见。",
+      "sectionField": "链接到故事中的某一段",
+      "sectionNone": "无——链接到开头",
+      "moveUp": "将第 {n} 站上移",
+      "moveDown": "将第 {n} 站下移",
+      "remove": "删除第 {n} 站",
+      "limit": "站点总数已达上限 {max} 个。",
+      "needsLabel": "请为每个站点填写地名，才能保存路线。",
+      "saveFailed": "无法保存旅程，请重试。",
+      "mapHelp": "交互式地图。点击某处即可添加站点。拖动可平移，按住 Ctrl 或 Cmd 并滚动或双指捏合可缩放，也可使用加减按钮。地图获得焦点时，方向键平移，加号和减号缩放。",
+      "tapHint": "提示：先用加号按钮放大，再点击准确的位置。拖动可移动地图，之后可再修改名称。",
+      "linkField": "或通过 Google 地图链接添加",
+      "linkPlaceholder": "粘贴 Google 地图链接",
+      "linkButton": "添加站点",
+      "linkWorking": "添加中…",
+      "linkPrivacy": "粘贴某个地点的 Google 地图链接。我们只保留大致位置（约 1 公里）和名称，不保存链接。",
+      "linkAdded": "已添加“{name}”。请在下方核对名称。",
+      "linkAddedNoName": "已添加站点。请在下方填写地名。",
+      "linkErrors": {
+        "empty": "请先粘贴 Google 地图链接。",
+        "invalid": "这看起来不是 Google 地图链接。",
+        "notFound": "在该链接中找不到地点。请尝试使用具体地点的分享链接。",
+        "outsideNz": "该地点不在新西兰境内。",
+        "unreachable": "暂时无法打开该链接，请稍后重试。",
+        "unauthenticated": "请登录后再使用短链接。"
+      },
+      "pinLabel": "第 {n} 站{named, select, yes {：{name}} other {}}{selected, select, yes {，已选中} other {}}",
+      "toast": {
+        "added": "已添加第 {n} 站",
+        "removed": "已删除“{name}”",
+        "removedUnnamed": "已删除第 {n} 站",
+        "undo": "撤销",
+        "addedInside": "已在 {parent} 内添加 {id}",
+        "removedWithSubs": "已删除“{name}”及其内的 {count} 个地点",
+        "removedUnnamedWithSubs": "已删除第 {n} 站及其内的 {count} 个地点"
+      },
+      "popover": {
+        "label": "第 {n} 站操作",
+        "title": "第 {n} 站：{name}",
+        "titleUnnamed": "第 {n} 站",
+        "remove": "删除",
+        "edit": "编辑",
+        "addInside": "在其中添加地点"
+      },
+      "limitMain": "最多可以有 {max} 个主要站点。请把多出来的地点放进已有的站点里。",
+      "limitInside": "每个站点内最多可以放 {max} 个地点。",
+      "subHeading": "地点 {id}",
+      "unnamedStop": "第 {n} 站",
+      "partOfField": "所属",
+      "partOfMain": "主要站点",
+      "partOfInside": "位于：{label}",
+      "partOfInsideFull": "位于：{label}（已满）",
+      "partOfHasPlaces": "这个站点内已有地点，因此不能放进其他站点。",
+      "addingBanner": "正在 {label} 内添加地点",
+      "addingDone": "完成",
+      "subPinLabel": "地点 {id}{named, select, yes {：{name}} other {}}{selected, select, yes {，已选中} other {}}，位于 {parent}"
+    },
+    "preview": {
+      "title": "旅程地图（读者看到的样子）"
+    },
+    "pinLabelWithSubs": "第 {n} 站：{label}，内含 {count} 个地点",
+    "subPinLabel": "地点 {id}：{label}",
+    "morePlaces": "+{count} 个地点",
+    "backToJourney": "返回完整旅程",
+    "insideList": "{label} 内的地点",
+    "insideStatus": "正在浏览 {label}：{count} 个地点"
   }
 }

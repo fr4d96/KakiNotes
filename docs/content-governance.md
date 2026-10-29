@@ -306,6 +306,39 @@ What keeps it safe:
 
 Moderators don't see folders on the review page, because they aren't part of a revision.
 
+### Journey-map stops are reviewed with the revision (2026-10-29)
+
+A story can carry up to 12 ordered **main journey stops**, each holding up to 8 **sub-stops**
+("places inside"; 40 stops in total, one level only): a place name the contributor writes, a
+position on New Zealand, and optionally a link to one of the story's headings. The contributor
+chooses which main stop a sub-stop belongs to; nothing is grouped automatically. Readers see the
+main stops as an illustrated route and open one to see the places inside it (see "Story journey
+illustration" in `docs/product-spec.md`). Sub-stops are moderated exactly like main stops: same
+plain-text 60-character labels, same revision review, same privacy rounding.
+
+- **Part of the revision, not a separate queue.** Stops belong to a revision like tags, locations
+  and expenses do, so they go through the normal review: the moderation page shows the submitted
+  revision's route, and approval publishes it with the rest of the revision. A new draft starts
+  with a copy of the published stops; editing them changes nothing readers see until the replacement
+  is approved (Rules 10 and 11). A moderator can request changes on a bad place name like any other
+  text.
+- **Place names are plain text, 60 characters at most**, rendered only through React (no HTML).
+  Moderators should treat one like any other published text: no personal details (a home address, a
+  workplace, a named person), no advertising.
+- **"Add from a Google Maps link" never stores the link.** The pasted link is parsed for a
+  position and a place name only; the link itself (which can carry tracking parameters) is not
+  saved or logged. Short links (`maps.app.goo.gl`) are resolved by the server, which makes one
+  outbound request to Google (Google hosts only, https, at most 3 redirects, only the `Location`
+  header is read) and requires a signed-in user.
+- **Position is privacy-rounded and never shown.** The database rounds each position to two
+  decimals (about 1 km) when it is saved and rejects anything outside New Zealand. Readers only see
+  the contributor's label and a pin on a stylised picture; coordinates are never printed. Because
+  the saved position is only ~1 km accurate and the picture is a few hundred pixels wide, nothing
+  near an exact home or workplace location is ever stored (Rule 15).
+- **Editors cannot pin stops.** Only the story owner or assigned editor can edit a draft's stops,
+  the same rule as every other field on the revision; a moderator can read them once the revision
+  has been submitted, not while it is still a private draft.
+
 ## Reporting
 
 - Any reader can report a published story or image for review (e.g. suspected impersonation, rights

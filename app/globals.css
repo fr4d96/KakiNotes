@@ -532,6 +532,13 @@ body {
   }
 }
 
+/* The journey maps' pins are focusable SVG groups that draw their own ring at
+   a constant on-screen size. The ring above would be drawn in SVG user units,
+   so it grows with the map's zoom into a huge square. */
+svg g[role="button"]:focus-visible {
+  outline: none;
+}
+
 /* Reusable presentational utilities for the landing page's editorial
    design (serif display headings, lifted buttons, transparent-over-hero
    header, underline-on-hover nav links, and the two remaining sections
@@ -1458,4 +1465,65 @@ body {
   to {
     transform: translateX(360%);
   }
+}
+
+/* Journey map base colours (components/story/journey-backdrop.tsx and
+   journey-cities.tsx): Google-Maps-style, light and dark. Same selector
+   cascade as the theme tokens above. */
+:root {
+  --map-sea: #aadaff;
+  --map-land: #f5f3ee;
+  --map-land-stroke: #d6d1c4;
+  --map-lake: #aadaff;
+  --map-road-major: #f9c349;
+  --map-road-major-casing: #d9a02c;
+  --map-road-secondary: #ffffff;
+  --map-road-secondary-casing: #c4c4c0;
+  --map-label: #3c4043;
+  --map-label-halo: #ffffff;
+  --map-city-dot: #70757a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --map-sea: #17263c;
+    --map-land: #263041;
+    --map-land-stroke: #3a465a;
+    --map-lake: #17263c;
+    --map-road-major: #b78a3b;
+    --map-road-major-casing: #4f3d1c;
+    --map-road-secondary: #46526a;
+    --map-road-secondary-casing: #1b2433;
+    --map-label: #d3d9e3;
+    --map-label-halo: #1a2332;
+    --map-city-dot: #9aa5b8;
+  }
+}
+
+:root[data-theme="light"] {
+  --map-sea: #aadaff;
+  --map-land: #f5f3ee;
+  --map-land-stroke: #d6d1c4;
+  --map-lake: #aadaff;
+  --map-road-major: #f9c349;
+  --map-road-major-casing: #d9a02c;
+  --map-road-secondary: #ffffff;
+  --map-road-secondary-casing: #c4c4c0;
+  --map-label: #3c4043;
+  --map-label-halo: #ffffff;
+  --map-city-dot: #70757a;
+}
+
+:root[data-theme="dark"] {
+  --map-sea: #17263c;
+  --map-land: #263041;
+  --map-land-stroke: #3a465a;
+  --map-lake: #17263c;
+  --map-road-major: #b78a3b;
+  --map-road-major-casing: #4f3d1c;
+  --map-road-secondary: #46526a;
+  --map-road-secondary-casing: #1b2433;
+  --map-label: #d3d9e3;
+  --map-label-halo: #1a2332;
+  --map-city-dot: #9aa5b8;
 }
