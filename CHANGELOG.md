@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.0](https://github.com/fr4d96/KakiNotes/compare/v1.12.0...v1.13.0) (2026-10-30)
+
+
+### Features
+
+* **mobile:** installable iPhone web app with native-feel navigation ([d0096f3](https://github.com/fr4d96/KakiNotes/commit/d0096f393f4f0d4695b5b4fb36a709c288e92d14))
+* **mobile:** page titles in the phone header and a compact My Stories ([cf1f784](https://github.com/fr4d96/KakiNotes/commit/cf1f78424e9af18873769060f48dd587251dc8d4))
+
 ## [1.12.0](https://github.com/fr4d96/KakiNotes/compare/v1.11.0...v1.12.0) (2026-10-29)
 
 ### What's new for readers
