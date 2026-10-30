@@ -358,7 +358,7 @@ function IndexEntry({
           [numeral | thumb | title | meta | arrow]. */}
       <Link
         href={`/stories/${story.slug}`}
-        className="group grid grid-cols-[2.5rem_minmax(0,1fr)] items-start active:bg-accent/10 gap-x-3 py-6 md:grid-cols-[3rem_5rem_minmax(0,1fr)_13rem_1.5rem] md:items-center md:gap-x-6"
+        className="group grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-x-3 [@media(hover:hover)]:active:bg-accent/10 py-6 md:grid-cols-[3rem_5rem_minmax(0,1fr)_13rem_1.5rem] md:items-center md:gap-x-6"
       >
         <span
           aria-hidden="true"

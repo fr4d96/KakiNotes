@@ -1310,7 +1310,10 @@ svg g[role="button"]:focus-visible {
     padding-left: 0.75rem;
   }
 }
-.nf-entry:focus-within {
+/* :focus-visible, not :focus-within -- a tapped link keeps focus on some
+   mobile browsers (and again after a back-navigation restores the page),
+   which left the row lit with nothing being keyboard-navigated. */
+.nf-entry:has(:focus-visible) {
   background-color: color-mix(in srgb, var(--accent) 7%, transparent);
 }
 
@@ -1413,6 +1416,19 @@ svg g[role="button"]:focus-visible {
   opacity: 0.86;
   transition-duration: 120ms, 120ms, 150ms, 150ms, 150ms, 150ms;
 }
+/* .press-hover-only -- add beside .press on big scroll-through surfaces
+   (story cards, story list rows). On a phone a thumb starts every scroll by
+   touching one of them, and WebKit sets :active on that touchstart before
+   it knows the touch is a scroll, so every card scrolled past dipped as if
+   tapped. These keep the dip only where hover exists, the same gate
+   Tailwind puts on hover:. Small controls (chips, icon buttons, tab bar)
+   keep plain .press: nobody scrolls by dragging a 44px button. */
+@media not (hover: hover) {
+  .press.press-hover-only:active {
+    transform: none;
+    opacity: 1;
+  }
+}
 
 /* ---------- Bottom tab bar (components/bottom-tab-bar.tsx) ----------
    Native-feel details, kept here so the component stays markup. The bar is a
@@ -1476,8 +1492,14 @@ svg g[role="button"]:focus-visible {
   transition: transform var(--nf-medium) var(--nf-ease-out);
   pointer-events: none;
 }
-.nf-entry:hover::after,
-.nf-entry:focus-within::after {
+/* Touch browsers keep :hover stuck on the last row a finger touched, so
+   hover effects stay behind the same (hover: hover) gate as .nf-entry:hover. */
+@media (hover: hover) {
+  .nf-entry:hover::after {
+    transform: scaleX(1);
+  }
+}
+.nf-entry:has(:focus-visible)::after {
   transform: scaleX(1);
 }
 
@@ -1487,8 +1509,10 @@ svg g[role="button"]:focus-visible {
 .story-stack-card img {
   transition: transform 420ms var(--nf-ease-out);
 }
-.nf-entry:hover img {
-  transform: scale(1.04);
+@media (hover: hover) {
+  .nf-entry:hover img {
+    transform: scale(1.04);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -70,7 +70,7 @@ export function StoryCard({
   const badges = stringList(story.tags).slice(0, 3);
 
   return (
-    <article className="press group relative flex flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-lg">
+    <article className="press press-hover-only group relative flex flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-lg">
       <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-border-subtle bg-surface-muted">
         {coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- public bucket URLs are content-addressed, not a Next.js image-optimizable source list

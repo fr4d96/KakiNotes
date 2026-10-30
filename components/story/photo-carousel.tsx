@@ -125,11 +125,16 @@ export function PhotoCarousel({ photos }: { photos: CarouselPhoto[] }) {
         className="relative overflow-hidden bg-surface-muted sm:rounded-lg"
         style={{ aspectRatio: String(ratio) }}
       >
+        {/* overflow-y-hidden is load-bearing: overflow-x:auto alone computes
+            overflow-y to auto too, and a lazy slide's scale(1.03) loading
+            state (ResolvingImage) spills a few px past the frame. That made
+            the scroller vertically scrollable, and iOS latched a vertical
+            swipe onto it -- the page stopped scrolling at the photos. */}
         <div
           ref={scrollerRef}
           tabIndex={total > 1 ? 0 : undefined}
           aria-label={total > 1 ? t("carouselLabel") : undefined}
-          className="nf-scroll-x flex h-full w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+          className="nf-scroll-x flex h-full w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
         >
           {photos.map((photo, index) => (
             <div
@@ -154,7 +159,7 @@ export function PhotoCarousel({ photos }: { photos: CarouselPhoto[] }) {
                     alt={photo.alt}
                     loading={index === 0 ? "eager" : "lazy"}
                     loadingLabel={tImages("loading")}
-                    wrapperClassName="relative block h-full w-full"
+                    wrapperClassName="relative block h-full w-full overflow-hidden"
                     className="h-full w-full object-cover"
                   />
                 </LightboxPhoto>
