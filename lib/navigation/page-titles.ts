@@ -46,9 +46,9 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
  */
 const PAGE_BACK: Record<string, { href: string; labelKey: string }> = {
   "/my-stories/map": { href: "/my-stories", labelKey: "myStories.title" },
-  "/my-stories/journey": { href: "/my-stories", labelKey: "myStories.title" },
   "/my-photos": { href: "/my-stories", labelKey: "myStories.title" },
   "/stories/new": { href: "/my-stories", labelKey: "myStories.title" },
+  "/stories/new/import": { href: "/stories/new", labelKey: "nav.newStory" },
   "/forgot-password": { href: "/sign-in", labelKey: "auth.signIn.title" },
 };
 
@@ -63,14 +63,34 @@ export function pageTitleKey(pathname: string | null): string | null {
   return PAGE_TITLE_KEYS[splitPath(pathname).path] ?? null;
 }
 
+export type PageBack = {
+  /** Where the arrow goes -- or, for a `history` page, the fallback. */
+  href: string;
+  /** Names `href` in the arrow's label ("Back to My Stories"). */
+  labelKey: string;
+  /**
+   * A story can be opened from anywhere (My Stories, the Stories list, a
+   * profile, a folder), so its arrow goes back to wherever the reader came
+   * from, and uses `href` only when they landed on it directly. Its label is
+   * a plain "Back", and the arrow shows at every width: these pages have
+   * no in-page heading row to sit beside.
+   */
+  history?: boolean;
+};
+
+/** A story's own pages: /stories/<id>/edit, /preview, and /stories/<slug>. */
+function storyBack(path: string): PageBack | null {
+  const m = /^\/stories\/([^/]+)(?:\/(edit|preview))?$/.exec(path);
+  if (!m || m[1] === "new") return null;
+  return m[2]
+    ? { href: "/my-stories", labelKey: "myStories.title", history: true }
+    : { href: "/stories", labelKey: "stories.title", history: true };
+}
+
 /** The back target for a sub-page, keeping the reader's country prefix. */
-export function pageBack(
-  pathname: string | null,
-): { href: string; labelKey: string } | null {
+export function pageBack(pathname: string | null): PageBack | null {
   if (!pathname) return null;
   const { prefix, path } = splitPath(pathname);
-  const back = PAGE_BACK[path];
-  return back
-    ? { href: `${prefix}${back.href}`, labelKey: back.labelKey }
-    : null;
+  const back = PAGE_BACK[path] ?? storyBack(path);
+  return back ? { ...back, href: `${prefix}${back.href}` } : null;
 }

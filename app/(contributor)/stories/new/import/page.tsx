@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { DEFAULT_COUNTRY_SLUG, isCountrySlug } from "@/lib/story/countries";
+import { BackLink } from "@/components/back-link";
 import { PdfImportPicker } from "../pdf-import-picker";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -36,10 +37,13 @@ export default async function NewStoryImportPage({
   const countrySlug =
     country && isCountrySlug(country) ? country : DEFAULT_COUNTRY_SLUG;
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
-      <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only sm:text-3xl">
-        {t("title")}
-      </h1>
+    <div className="mx-auto max-w-3xl px-4 pt-4 pb-12 sm:px-6 sm:py-16">
+      <div className="flex items-center gap-3">
+        <BackLink />
+        <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only sm:text-3xl">
+          {t("title")}
+        </h1>
+      </div>
       <p className="mt-2 text-sm text-muted-foreground">
         {t("intro")}{" "}
         <Link href="/stories/new" className="underline underline-offset-2">

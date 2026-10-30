@@ -50,6 +50,7 @@
     "countryToggle": {
       "label": "选择国家板块"
     },
+    "back": "返回",
     "backTo": "返回{page}"
   },
   "nav": {
@@ -57,6 +58,7 @@
     "contributor": "投稿人导航",
     "stories": "故事",
     "contributors": "投稿人",
+    "journey": "旅程",
     "about": "关于",
     "signIn": "登录",
     "shareYourStory": "分享你的故事",

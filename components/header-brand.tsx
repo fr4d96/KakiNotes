@@ -35,7 +35,9 @@ export function HeaderBrand({
   const pathname = usePathname();
   const key = pageTitleKey(pathname);
   const title = key ? t(key as never) : null;
-  // A sub-page swaps the logo for a back arrow on phones: [←] Story folders.
+  // A sub-page puts a back arrow first. Where the bar names the page, the
+  // arrow replaces the logo on phones ([←] Story folders); on a story's
+  // pages (no bar title) the logo stays beside it ([←] Kakinotes).
   const hasBack = pageBack(pathname) !== null;
 
   return (
@@ -43,7 +45,7 @@ export function HeaderBrand({
       {hasBack && <BackLink variant="bar" />}
       <Link
         href={homeHref}
-        className={`flex min-h-11 shrink-0 items-center gap-2.5 text-xl font-black tracking-tight ${hasBack ? "max-md:hidden" : ""}`}
+        className={`flex min-h-11 shrink-0 items-center gap-2.5 text-xl font-black tracking-tight ${hasBack && title ? "max-md:hidden" : ""}`}
       >
         <BrandLogo className="border border-current" priority={priority} />
         <span className={title ? "max-md:sr-only" : undefined}>Kakinotes</span>

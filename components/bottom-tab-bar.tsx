@@ -9,6 +9,7 @@ import {
   ContributorIcon,
   HomeIcon,
   JournalIcon,
+  RouteIcon,
   UsersIcon,
 } from "@/components/icons";
 import { createClient } from "@/lib/supabase/client";
@@ -19,7 +20,11 @@ import { countryFromPathname, countryUrlPrefix } from "@/lib/story/countries";
  * (auth) and (contributor) layouts beside their header. It repeats the
  * header's primary destinations -- same hrefs, same `nav.*` message keys --
  * with the visitor's own entry point as the last tab: "Sign in" when signed
- * out, "My Stories" when signed in (the contributor area: My Stories, My
+ * out, "My Stories" when signed in. Signed in, the third tab is the
+ * contributor's own Journey map (/my-stories/journey) instead of
+ * Contributors (2026-10-30: used far more; Contributors stays in the
+ * header menu); signed out it stays Contributors -- a visitor has no journey.
+ * "My Stories" covers the contributor area (My Stories, My
  * Photos, Account, Notifications and the story editor/preview screens).
  * About and the rest stay in the header's hamburger / avatar menu.
  *
@@ -99,18 +104,26 @@ export function BottomTabBar({
       // the last tab.
       active: isWithin(pathname, storiesHref) && !inMyArea,
     },
-    {
-      href: `${prefix}/contributors`,
-      label: t("contributors"),
-      Icon: UsersIcon,
-      active: isWithin(pathname, `${prefix}/contributors`),
-    },
+    signedIn
+      ? {
+          href: JOURNEY_HREF,
+          label: t("journey"),
+          Icon: RouteIcon,
+          active: isWithin(pathname, JOURNEY_HREF),
+        }
+      : {
+          href: `${prefix}/contributors`,
+          label: t("contributors"),
+          Icon: UsersIcon,
+          active: isWithin(pathname, `${prefix}/contributors`),
+        },
     signedIn
       ? {
           href: "/my-stories",
           label: t("myStories"),
           Icon: EditorialPencilIcon,
-          active: inMyArea,
+          // The journey map has its own tab now.
+          active: inMyArea && !isWithin(pathname, JOURNEY_HREF),
         }
       : {
           href: "/sign-in",
@@ -189,6 +202,8 @@ export function BottomTabBar({
 }
 
 /** True when `pathname` is `base` or anything beneath it. */
+const JOURNEY_HREF = "/my-stories/journey";
+
 function isWithin(pathname: string | null, base: string): boolean {
   return pathname === base || !!pathname?.startsWith(`${base}/`);
 }

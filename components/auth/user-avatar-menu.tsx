@@ -92,6 +92,13 @@ export function UserAvatarMenu({
   // Phones get the same menu as a bottom sheet (thumb-reachable, 48px rows);
   // md+ keeps the anchored dropdown. Exactly one of them is ever rendered.
   const isPhone = useIsPhone();
+  // Signed in, the phone tab bar's third tab is Journey, not Contributors
+  // (components/bottom-tab-bar.tsx) -- so on a phone Contributors lives
+  // here, on every signed-in header.
+  const browseItems = [
+    ...(isPhone ? [{ href: "/contributors", label: t("contributors") }] : []),
+    ...(extraItems ?? []),
+  ];
 
   useEffect(() => {
     // The sheet is a modal <dialog>: it has its own backdrop tap and Escape.
@@ -150,9 +157,9 @@ export function UserAvatarMenu({
           <div className={dividerClass} />
         </>
       )}
-      {extraItems && extraItems.length > 0 && (
+      {browseItems.length > 0 && (
         <>
-          {extraItems.map((item) => (
+          {browseItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}

@@ -200,12 +200,31 @@ describe("BottomTabBar", () => {
     ).toBeInTheDocument();
   });
 
+  it("swaps Contributors for the contributor's Journey map when signed in", () => {
+    sessionMock.current = { user: { id: "u1" } };
+    usePathnameMock.mockReturnValue("/my-stories/journey");
+    render(<BottomTabBar signedInHint />);
+    const links = Array.from(getBar().querySelectorAll("a"));
+    expect(links.map((a) => a.textContent)).toEqual([
+      "Home",
+      "Stories",
+      "Journey",
+      "My Stories",
+    ]);
+    const journey = links[2];
+    expect(journey).toHaveAttribute("href", "/my-stories/journey");
+    // Journey is its own tab now, so My Stories is not lit there.
+    expect(journey).toHaveAttribute("aria-current", "page");
+    expect(links[3]).not.toHaveAttribute("aria-current");
+  });
+
   it("has every message key it uses in both English and Chinese", () => {
     for (const messages of [en, zhCN]) {
       for (const key of [
         "home",
         "stories",
         "contributors",
+        "journey",
         "signIn",
         "myStories",
         "tabBar",
