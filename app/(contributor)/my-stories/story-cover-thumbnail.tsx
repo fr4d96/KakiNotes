@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { mintPreviewUrlAction } from "@/app/(contributor)/stories/[id]/media-actions";
-import { Spinner } from "@/components/ui/spinner";
 import { StoryCoverFallback } from "@/components/story/story-cover-fallback";
+import { ResolvingImage } from "@/components/ui/resolving-image";
 
 // mintMediaPreviewSignedUrl (lib/story/image-pipeline.ts) mints URLs that
 // last 120s server-side. Cache resolved URLs for less than that so a
 // remounted thumbnail (e.g. switching MyStoriesView between grid and list,
 // which swaps in a whole new <ul> subtree) can reuse the still-valid URL
 // instead of re-running the authorize+mint round trip and re-showing the
-// loading spinner for an image the contributor already saw. In-flight
+// loading shimmer for an image the contributor already saw. In-flight
 // mints are also deduped so two thumbnails for the same mediaId mounted at
 // once never issue duplicate requests.
 const PREVIEW_URL_TTL_MS = 90_000;
@@ -64,6 +65,7 @@ export function StoryCoverThumbnail({
   mediaId: string | null;
   altText: string | null;
 }) {
+  const t = useTranslations("editor.images");
   const [url, setUrl] = useState<string | null>(() =>
     mediaId ? getCachedPreviewUrl(mediaId) : null,
   );
@@ -97,19 +99,28 @@ export function StoryCoverThumbnail({
     );
   }
 
+  // Loading reads as the app's own "focus pull" (DESIGN.md, Loading): the
+  // frame holds a soft .nf-skeleton sheen while the signed URL is minted,
+  // and ResolvingImage keeps that same sheen up while the bytes arrive, then
+  // resolves the photo in from a slight blur. No spinner: the shape is
+  // known, only the pixels are missing.
   if (!url) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-surface-muted text-foreground/40">
-        <Spinner className="h-6 w-6" />
-      </div>
+      <div
+        role="status"
+        aria-label={t("loading")}
+        className="nf-skeleton h-full w-full rounded-none"
+      />
     );
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL, not an optimizable static asset
-    <img
+    <ResolvingImage
+      key={url}
       src={url}
       alt={altText ?? ""}
+      loadingLabel={t("loading")}
+      wrapperClassName="relative block h-full w-full overflow-hidden bg-surface-muted"
       className="h-full w-full object-cover"
       onError={() => {
         // The cached URL can occasionally have expired server-side

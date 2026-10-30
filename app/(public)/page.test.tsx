@@ -64,9 +64,9 @@ function mockStories(...batch: unknown[]) {
 
 describe("HomePage", () => {
   // The personal-experience/not-advice disclaimer is asserted separately in
-  // components/site-footer.test.tsx -- SiteFooter renders it sitewide via
-  // app/(public)/layout.tsx, which this test (rendering <HomePage /> in
-  // isolation, not the full layout) never mounts.
+  // components/site-footer.test.tsx -- SiteFooter renders it on the home
+  // pages via app/(public)/layout.tsx, which this test (rendering <HomePage />
+  // in isolation, not the full layout) never mounts.
   it("renders the platform's hero heading", async () => {
     render(await HomePage());
 

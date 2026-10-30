@@ -9,7 +9,9 @@ import {
 
 // Regression coverage for the site-wide photo viewer: a single <dialog>
 // owned by the provider, paged through by every LightboxPhoto registered
-// on the page, via buttons, arrow keys, and horizontal swipes.
+// on the page, via buttons, arrow keys and a native swipe track, and closed
+// by the close button, Escape or a drag down. (The zoom in/out uses
+// Element.animate, which jsdom lacks, so here it closes immediately.)
 
 function ThreePhotos({ children }: { children?: ReactNode }) {
   return (
@@ -63,22 +65,26 @@ describe("PhotoLightboxProvider / LightboxPhoto", () => {
     );
   });
 
-  it("wraps around with the next and previous buttons", async () => {
+  it("moves with the next and previous buttons, stopping at the ends", async () => {
     const user = userEvent.setup();
     render(<ThreePhotos />);
     await user.click(screen.getByRole("button", { name: /Photo one/i }));
     expect(screen.getByText("Photo 1 of 3")).toBeInTheDocument();
+    // Like the Photos app: nothing before the first photo.
+    expect(
+      screen.queryByRole("button", { name: "Previous photo" }),
+    ).not.toBeInTheDocument();
 
-    const next = screen.getByRole("button", { name: "Next photo" });
-    await user.click(next);
+    await user.click(screen.getByRole("button", { name: "Next photo" }));
     expect(screen.getByText("Photo 2 of 3")).toBeInTheDocument();
-    await user.click(next);
+    await user.click(screen.getByRole("button", { name: "Next photo" }));
     expect(screen.getByText("Photo 3 of 3")).toBeInTheDocument();
-    await user.click(next);
-    expect(screen.getByText("Photo 1 of 3")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Next photo" }),
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Previous photo" }));
-    expect(screen.getByText("Photo 3 of 3")).toBeInTheDocument();
+    expect(screen.getByText("Photo 2 of 3")).toBeInTheDocument();
   });
 
   it("pages through photos with the arrow keys on the dialog", async () => {
@@ -94,19 +100,112 @@ describe("PhotoLightboxProvider / LightboxPhoto", () => {
     expect(screen.getByText("Photo 1 of 3")).toBeInTheDocument();
   });
 
-  it("advances on a left swipe past the threshold, and ignores a short drag", async () => {
+  it("lays every photo on one swipe track, exposing only the current one", async () => {
+    const user = userEvent.setup();
+    render(<ThreePhotos />);
+    await user.click(screen.getByRole("button", { name: /Photo two/i }));
+    const dialog = getDialog();
+
+    const slides = dialog.querySelectorAll("figure");
+    expect(slides).toHaveLength(3);
+    const track = slides[0].parentElement!;
+    // Native, finger-following swipe with snap; vertical drags are left
+    // to the pointer handlers (drag down to close).
+    expect(track).toHaveClass(
+      "snap-x",
+      "snap-mandatory",
+      "overflow-x-auto",
+      "touch-pan-x",
+    );
+    for (const slide of slides) expect(slide).toHaveClass("snap-center");
+    expect(slides[0]).toHaveAttribute("aria-hidden", "true");
+    expect(slides[1]).not.toHaveAttribute("aria-hidden");
+    expect(within(dialog).getAllByRole("img")).toHaveLength(1);
+  });
+
+  it("closes on a long drag down, and springs back from a short one", async () => {
     const user = userEvent.setup();
     render(<ThreePhotos />);
     await user.click(screen.getByRole("button", { name: /Photo one/i }));
     const dialog = getDialog();
+    const track = dialog.querySelector("figure")!.parentElement!;
+    // isPrimary: jsdom's PointerEvent defaults it to false; a real finger or
+    // mouse is primary, and the viewer ignores secondary pointers.
+    const drag = (to: number) => {
+      fireEvent.pointerDown(track, {
+        pointerId: 1,
+        isPrimary: true,
+        clientX: 200,
+        clientY: 300,
+      });
+      fireEvent.pointerMove(track, {
+        pointerId: 1,
+        isPrimary: true,
+        clientX: 202,
+        clientY: 320,
+      });
+      fireEvent.pointerMove(track, {
+        pointerId: 1,
+        isPrimary: true,
+        clientX: 204,
+        clientY: to,
+      });
+      fireEvent.pointerUp(track, {
+        pointerId: 1,
+        isPrimary: true,
+        clientX: 204,
+        clientY: to,
+      });
+    };
 
-    fireEvent.pointerDown(dialog, { clientX: 300 });
-    fireEvent.pointerUp(dialog, { clientX: 280 });
-    expect(screen.getByText("Photo 1 of 3")).toBeInTheDocument();
+    drag(360); // 60px: not far enough
+    expect(dialog).toHaveAttribute("open");
 
-    fireEvent.pointerDown(dialog, { clientX: 300 });
-    fireEvent.pointerUp(dialog, { clientX: 100 });
-    expect(screen.getByText("Photo 2 of 3")).toBeInTheDocument();
+    drag(520); // 220px: dismiss
+    expect(dialog).not.toHaveAttribute("open");
+  });
+
+  it("ignores a sideways drag (that is the track's swipe, not a dismiss)", async () => {
+    const user = userEvent.setup();
+    render(<ThreePhotos />);
+    await user.click(screen.getByRole("button", { name: /Photo one/i }));
+    const dialog = getDialog();
+    const track = dialog.querySelector("figure")!.parentElement!;
+
+    fireEvent.pointerDown(track, {
+      pointerId: 1,
+      isPrimary: true,
+      clientX: 300,
+      clientY: 300,
+    });
+    fireEvent.pointerMove(track, {
+      pointerId: 1,
+      isPrimary: true,
+      clientX: 100,
+      clientY: 330,
+    });
+    fireEvent.pointerMove(track, {
+      pointerId: 1,
+      isPrimary: true,
+      clientX: 40,
+      clientY: 480,
+    });
+    fireEvent.pointerUp(track, {
+      pointerId: 1,
+      isPrimary: true,
+      clientX: 40,
+      clientY: 480,
+    });
+    expect(dialog).toHaveAttribute("open");
+  });
+
+  it("closes on Escape", async () => {
+    const user = userEvent.setup();
+    render(<ThreePhotos />);
+    await user.click(screen.getByRole("button", { name: /Photo one/i }));
+    const dialog = getDialog();
+    fireEvent(dialog, new Event("cancel", { cancelable: true }));
+    expect(dialog).not.toHaveAttribute("open");
   });
 
   it("shows no prev/next buttons or counter with a single photo", async () => {

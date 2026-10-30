@@ -10736,3 +10736,62 @@ title holds still during page slides. Pages whose heading is the content keep th
 their big title: home, story pages, contributor profiles, the editor, preview, and
 /reset-password (its heading becomes the "link expired" message). On My Stories the New Story pill
 becomes an accent "+" leading the toolbar on phones; three stories now fit the first screen.
+
+## 2026-10-30 — Site footer on the home page only (branch `feat/footer-home-only`)
+
+`SiteFooter` now renders only on the home pages (`/` and `/cn`). It stays in
+`app/(public)/layout.tsx` (outside `<main>`, so it keeps its contentinfo landmark) and returns
+nothing on any other path; the auth, contributor, editorial, moderation, admin and readiness
+layouts no longer render it at all. Why: on phones the header and tab bar carry navigation, and a
+full footer under every list, form and story was a long scroll of links. Trade-off: Privacy, Terms,
+Guidelines and Copyright & Removal are now linked from the home footer only (plus direct URLs);
+story pages keep their own "personal experience, not advice" label (Rule 17), which never depended
+on the footer. Tests: `components/site-footer.test.tsx` covers home-only rendering.
+
+## 2026-10-30 — My Stories covers fill their cards (branch `feat/my-stories-covers`)
+
+- List view, phones: each row's cover is now a full-height panel down the row's left edge
+  (`w-24`, `h-full`, `object-cover`, row grid `items-stretch`) instead of a 64x48 thumbnail in the
+  corner of a ~110-175px row. From `sm` up the cover is a 7rem x 5rem frame. Grid cards were
+  already full-bleed squares and are unchanged.
+- Loading: `StoryCoverThumbnail` drops the spinner for the app's `.nf-skeleton` sheen, held until
+  the `<img>` has actually loaded (not just until its signed URL resolves), then the photo fades in
+  from a slight blur and 1.04 scale over 500ms; instant under reduced motion. The placeholder is
+  `role="status"` "Loading image". Test: `story-cover-thumbnail.test.tsx`.
+
+**Story photos load the same way (same branch, later on 2026-10-30).** The cover's loading is now a
+shared component, `components/ui/resolving-image.tsx`, used for every story photo: My Stories
+covers, the contributor preview gallery (`preview-gallery.tsx`), inline story photos
+(`content-block-renderer.tsx`, preview and published) and the published gallery
+(`story-gallery.tsx`). The spinner is gone from all of them; the signed-URL wait shows the same
+`.nf-skeleton` sheen. Safety: `ResolvingImage` renders the image visible on the server and on first
+paint, and switches to the sheen in a layout effect only if the `<img>` is not yet `complete` — an
+image that loaded (or failed) before hydration is never hidden, and a failure clears the sheen.
+Placeholder name: `editor.images.loading` ("Loading image"). Tests: `resolving-image.test.tsx`;
+`content-block-renderer.test.tsx` updated for the extra wrapper and the sheen.
+
+**Story photos as an Instagram-style carousel (same branch, 2026-10-30).** New
+`components/story/photo-carousel.tsx`: one swipeable frame with CSS scroll-snap, a "2/5" counter,
+Instagram-style dots (max five, sliding window, accent for the current photo) and the active
+photo's caption under them; frame ratio from the first photo, clamped to 4:5–1.91:1; full-bleed on
+phones; desktop prev/next buttons; slides labelled "Photo n of N". The current slide is read from
+`scrollLeft / width` whenever an IntersectionObserver fires. Used by both galleries
+(`PreviewGallery` — contributor preview and moderation — and the published `StoryGallery`), and by
+`ContentBlockRenderer` for in-text photos via a new `lib/story/remark-media-carousel.ts`: a run of
+two or more `![[mediaId]]` embeds with no words between them (one paragraph or consecutive
+photo-only paragraphs) becomes one carousel. A single in-text photo, or photos with text between
+them, render exactly as before, so author-set widths survive. New key
+`common.photoLightbox.carouselLabel` (en, zh-CN). Tests: `photo-carousel.test.tsx`, new grouping
+cases in `content-block-renderer.test.tsx`.
+
+**Photo viewer zooms and swipes (same branch, 2026-10-30).** `components/ui/photo-lightbox.tsx`
+reworked, iPhone Photos style: the tapped photo zooms out of its place on the page (Web Animations
+transform from the source element's rect, 340ms) as the black ground fades in, and zooms back on
+close (button, Escape via `cancel`, tap on the ground, or drag down past 110px); if its source is
+off screen it scales and fades away instead. Every photo now sits on one horizontal scroll-snap
+track (`touch-pan-x`), so swiping follows the finger with native momentum; buttons and arrow keys
+drive the same track; only the current slide is exposed to assistive tech. No wrap-around any more
+(was last → first). The dialog-level CSS fade on `.journiq-lightbox` was removed so it cannot replay
+over the zoom-out. Prev/next buttons are desktop-only (`max-md:hidden!` — the unlayered
+`.journiq-lightbox-control` sets `display`). Tests rewritten in `photo-lightbox.test.tsx` (buttons
+stop at the ends, track structure, drag-down close and spring-back, sideways drag ignored, Escape).

@@ -673,27 +673,13 @@ svg g[role="button"]:focus-visible {
 }
 
 /*
- * The photo viewer (components/ui/photo-lightbox.tsx). Same open/close
- * choreography as .journiq-modal but opacity only: it fills the viewport,
- * so the modal's slide-and-scale would show the page peeking past its
- * edges for the first frames. Controls are fixed-contrast on a black
- * ground in both themes -- the viewer is deliberately theme-independent.
+ * The photo viewer (components/ui/photo-lightbox.tsx). No dialog-level
+ * fade: the viewer animates its own black ground and zooms the photo in
+ * and out of its place on the page with Web Animations, and a CSS fade on
+ * the whole dialog would replay over the zoom-out. Controls are
+ * fixed-contrast on a black ground in both themes -- the viewer is
+ * deliberately theme-independent.
  */
-.journiq-lightbox {
-  opacity: 0;
-  transition:
-    opacity 0.2s ease,
-    overlay 0.2s ease allow-discrete,
-    display 0.2s ease allow-discrete;
-}
-.journiq-lightbox[open] {
-  opacity: 1;
-}
-@starting-style {
-  .journiq-lightbox[open] {
-    opacity: 0;
-  }
-}
 .journiq-lightbox-control {
   display: inline-flex;
   align-items: center;
@@ -713,7 +699,6 @@ svg g[role="button"]:focus-visible {
   outline-offset: 2px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .journiq-lightbox,
   .journiq-lightbox-control {
     transition: none;
   }

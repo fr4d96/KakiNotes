@@ -356,6 +356,23 @@ text-accent-foreground`.
   plus name and trip metadata (destination pin icon, trip-year icon) — the reusable identity unit
   across story cards and story detail pages.
 
+### Photo Carousel
+
+- A story's gallery, and any run of two or more photos the author placed back to back in the
+  text, is one swipeable frame (`components/story/photo-carousel.tsx`), the way Instagram shows a
+  post: full-bleed on phones, native scroll-snap swipe, a `2/5` counter pill top right, and dots
+  underneath (accent = current; at most five shown, the row sliding with smaller edge dots).
+- One shape per carousel: the first photo's ratio clamped to 4:5–1.91:1, the rest cropped to it,
+  so the frame never jumps. Tapping a photo opens the lightbox. Previous/next buttons appear on
+  hover/focus from `md` up; the scroller is keyboard-focusable.
+- A lone in-text photo is never put in a carousel — it keeps the width its author set.
+- **Photo viewer (lightbox):** modelled on the iPhone Photos app. Opening zooms the tapped photo
+  out of its place on the page to full screen while the black ground fades up; closing zooms it
+  back into place (or settles it away with a small scale-and-fade when that place is off screen).
+  All photos sit on one native scroll-snap track, so a swipe follows the finger; dragging a photo
+  down pulls it after the finger and closes past 110px. Web Animations on transform/opacity only,
+  none under reduced motion. Ends are ends (no wrap-around), as in Photos.
+
 ### Cards / Containers
 
 - **Corner Style:** `rounded-xl` (12px) for the standard story card; 28px (20px mobile) for the
@@ -385,6 +402,9 @@ text-accent-foreground`.
   transparent header would draw white nav text onto the light page ground. Because
   `--header-solid` and `text-foreground` both resolve per theme, no route needs a special case. Nav links use `.journiq-nav-link`'s underline-on-hover treatment (accent-coloured
   underline that grows in from the left on hover).
+- **Footer (home only):** `SiteFooter` renders on the home pages (`/`, `/cn`) and nowhere else.
+  Every other screen ends with its own content; the header and the phone tab bar carry
+  navigation. The legal pages stay reachable from the home footer and by direct URL.
 - **Phone title (The Named-Bar Rule):** below `md`, a label page names itself in the header —
   logo mark, then the page title in the wordmark's own type (`text-xl font-black tracking-tight`,
   truncating) — and drops its big in-page `<h1>` to screen-reader-only. Content pages (home, a
@@ -560,7 +580,7 @@ block about to arrive, and an accent-tinted sheen crosses it the way a lens hunt
 **Never a spinner on a route.** A spinner says "wait"; a shaped skeleton says "here is what is
 coming", which is the honest message when the layout is already known and only the data is missing.
 (`components/ui/spinner.tsx` stays — it is for a single image still being processed, where the
-shape genuinely is unknown.)
+shape genuinely is unknown. A story photo whose frame is already known — a My Stories cover, a preview or published gallery photo, an inline story photo — gets the sheen instead, via `components/ui/resolving-image.tsx`: held until its bytes arrive, then the photo resolves in from a slight blur. It is visible by default and only switches to the sheen once mounted and genuinely still loading, so a server-rendered photo is never stranded invisible.)
 
 **The Nested Fallback Rule.** A `loading.tsx` belongs INSIDE its route group, never at the root
 segment. A Suspense fallback replaces everything below its own boundary, so a root-level one swaps

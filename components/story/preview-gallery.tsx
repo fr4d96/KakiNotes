@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
 import type { PreviewableMediaItem } from "@/lib/story/contributor-queries";
 import { getPreviewUrl } from "@/lib/story/preview-url-client";
-import { Spinner } from "@/components/ui/spinner";
-import { LightboxPhoto } from "@/components/ui/photo-lightbox";
+import { PhotoCarousel } from "@/components/story/photo-carousel";
 
 /**
  * Mints a short-lived signed URL per image, client-side, only after the
@@ -24,7 +22,6 @@ import { LightboxPhoto } from "@/components/ui/photo-lightbox";
  * review page felt like it was "still processing images".
  */
 export function PreviewGallery({ media }: { media: PreviewableMediaItem[] }) {
-  const t = useTranslations("editor.images");
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -56,43 +53,17 @@ export function PreviewGallery({ media }: { media: PreviewableMediaItem[] }) {
 
   const sorted = [...media].sort((a, b) => a.sortOrder - b.sortOrder);
 
+  // One swipeable frame, the same carousel the published page uses, so the
+  // preview really is what readers will see.
   return (
-    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      {sorted.map((item) => (
-        <li key={item.mediaId} className="space-y-1">
-          <div className="aspect-square overflow-hidden rounded-md border border-border-subtle bg-surface-muted">
-            {urls[item.mediaId] ? (
-              <LightboxPhoto
-                url={urls[item.mediaId]}
-                alt={item.altText ?? ""}
-                caption={item.caption}
-                className="block h-full w-full"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL */}
-                <img
-                  src={urls[item.mediaId]}
-                  alt={item.altText ?? ""}
-                  className="h-full w-full object-cover"
-                />
-              </LightboxPhoto>
-            ) : errors[item.mediaId] ? (
-              <div className="flex h-full w-full items-center justify-center p-2 text-center text-xs text-muted-foreground">
-                {errors[item.mediaId]}
-              </div>
-            ) : (
-              <div
-                className="flex h-full w-full items-center justify-center text-muted-foreground"
-                aria-label={t("loading")}
-              >
-                <Spinner className="h-6 w-6" />
-              </div>
-            )}
-          </div>
-          {item.caption && (
-            <p className="text-xs text-muted-foreground">{item.caption}</p>
-          )}
-        </li>
-      ))}
-    </ul>
+    <PhotoCarousel
+      photos={sorted.map((item) => ({
+        id: item.mediaId,
+        url: urls[item.mediaId] ?? null,
+        error: errors[item.mediaId] ?? null,
+        alt: item.altText ?? "",
+        caption: item.caption,
+      }))}
+    />
   );
 }

@@ -40,6 +40,7 @@
     "working": "Working…",
     "requiredSuffix": " required",
     "photoLightbox": {
+      "carouselLabel": "Story photos",
       "open": "View photo larger",
       "close": "Close photo viewer",
       "previous": "Previous photo",

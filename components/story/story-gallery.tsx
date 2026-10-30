@@ -1,5 +1,5 @@
 import { getImageUrl } from "@/lib/story/image-url";
-import { LightboxPhoto } from "@/components/ui/photo-lightbox";
+import { PhotoCarousel } from "@/components/story/photo-carousel";
 
 type GalleryImage = {
   media_id: string;
@@ -30,43 +30,24 @@ type GalleryImage = {
 export function StoryGallery({ images }: { images: GalleryImage[] }) {
   if (images.length === 0) return null;
 
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {images.map((image) => {
-        const url = getImageUrl({
-          id: image.media_id,
-          storage_backend: image.storage_backend ?? "supabase",
-          public_url: image.public_url,
-        });
-        if (!url) return null;
-        return (
-          <figure
-            key={image.media_id}
-            className="overflow-hidden rounded-lg border border-border-subtle bg-surface-muted"
-          >
-            <LightboxPhoto
-              url={url}
-              alt={image.decorative ? "" : (image.alt_text ?? "")}
-              caption={image.caption}
-              className="block w-full"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element -- public bucket URLs are content-addressed, not a Next.js image-optimizable source list */}
-              <img
-                src={url}
-                alt={image.decorative ? "" : (image.alt_text ?? "")}
-                loading="lazy"
-                decoding="async"
-                className="h-full w-full object-cover"
-              />
-            </LightboxPhoto>
-            {image.caption ? (
-              <figcaption className="p-2 text-xs text-foreground/60">
-                {image.caption}
-              </figcaption>
-            ) : null}
-          </figure>
-        );
-      })}
-    </div>
-  );
+  // An Instagram-style carousel (components/story/photo-carousel.tsx): one
+  // swipeable frame with dots, rather than a grid of every photo at once.
+  const photos = images.flatMap((image) => {
+    const url = getImageUrl({
+      id: image.media_id,
+      storage_backend: image.storage_backend ?? "supabase",
+      public_url: image.public_url,
+    });
+    if (!url) return [];
+    return [
+      {
+        id: image.media_id,
+        url,
+        alt: image.decorative ? "" : (image.alt_text ?? ""),
+        caption: image.caption,
+      },
+    ];
+  });
+
+  return <PhotoCarousel photos={photos} />;
 }
