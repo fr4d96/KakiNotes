@@ -223,6 +223,16 @@ export function ModerationQueueIcon(props: IconProps) {
 }
 
 /** Read a story / continue reading CTA. */
+/** "Go back" -- the top-left arrow of a sub-page (components/back-link.tsx). */
+export function ArrowLeftIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M19.5 12h-15" />
+      <path d="M10.5 6l-6 6 6 6" />
+    </svg>
+  );
+}
+
 export function ArrowRightIcon(props: IconProps) {
   return (
     <svg {...base(props)}>

@@ -875,18 +875,16 @@ null` — deleting a main story orphans its sub stories back to "not in a folder
   cards (`SubStoryList`/`SubStoryCard`, `components/story/story-family.tsx`) when it has any,
   filling card fields from the contributor's `list_published_stories()` page
   (`matchStoryFamilyCards()`); the family read alone decides which stories appear.
-- **Story folders page:** `app/(contributor)/my-stories/map/` — a list of the contributor's
-  publishable stories as folder rows (any published, not-itself-filed story, even with zero sub
-  stories yet, so there's a row to drop onto); expanding one (a real `<button aria-expanded>`)
-  shows its sub stories with a status badge, an "Open story" link and a "Remove from folder"
-  button behind a confirm dialog. Below the folders, a "Not in a folder" list holds everything
-  else, greyed with a publish hint when not yet published. Drag-and-drop (`@dnd-kit/core`, same
-  sensor pattern as the editor's photo reorder) files a story by dropping it on a folder row, or
-  removes it by dropping on the "Not in a folder" area; a story with sub stories of its own can't be
-  dragged into another folder, and drafts aren't draggable. Every row also carries a "Move to…"
-  select — the keyboard/screen-reader and phone fallback (Engineering Rule 19), calling the exact
-  same `setStoryParentAction` as the drag gesture, with an optimistic update and rollback on
-  refusal.
+- **Story folders page:** `app/(contributor)/my-stories/map/` — tap-first since 2026-10-30
+  (drag-and-drop had no usable phone gesture). "Your folders" lists only main stories that hold
+  sub stories; expanding one (a real `<button aria-expanded>`) shows its sub stories with an "Open
+  story" link, a "Remove from folder" button behind a confirm dialog, and "Add sub stories". "New
+  folder" opens a two-step picker — tap a published, not-itself-filed main story, then tick
+  published sub stories that have none of their own (a story in another folder is offered,
+  labelled, and adding it moves it). The picker is a `BottomSheet` on phones and an inline panel
+  from md up; plain buttons and checkboxes, so keyboard and screen readers need no fallback
+  (Engineering Rule 19). Drafts are summed up in one line, never listed. Each ticked story calls
+  `setStoryParentAction` in turn, with an optimistic update and per-story rollback on refusal.
 - **Verified 2026-10-21** on the hosted dev project inside a rolled-back transaction (not yet
   applied — see docs/implementation-status.md): the full migration runs end to end; the
   `story_links` → `parent_story_id` conversion correctly made "Kakiman" the parent of both "Opotiki

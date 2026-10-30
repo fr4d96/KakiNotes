@@ -49,7 +49,8 @@
     },
     "countryToggle": {
       "label": "选择国家板块"
-    }
+    },
+    "backTo": "返回{page}"
   },
   "nav": {
     "primary": "主导航",
@@ -120,7 +121,6 @@
       "emailLabel": "邮箱",
       "submit": "发送重置链接",
       "submitting": "正在发送…",
-      "backToSignIn": "返回登录",
       "success": "如果该邮箱对应的账户存在，我们已发送重置密码的链接。",
       "metaTitle": "忘记密码"
     },
@@ -1115,7 +1115,6 @@
     "startWriting": "开始写作",
     "havePdf": "已经有 PDF 了？",
     "importInstead": "改为导入",
-    "backToMyStories": "返回我的故事",
     "errors": {
       "needsContributorIdentity": "开始写故事之前，请先在「账户」页面设置你的投稿人身份。",
       "createFailed": "无法创建新故事，请再试一次。"
@@ -1246,7 +1245,6 @@
     "subtitle": "你所有故事里的照片，都在这里。",
     "summary": "{stories} 个故事中共有 {photos} 张照片。",
     "empty": "还没有照片。你添加到故事里的照片会显示在这里。",
-    "backToMyStories": "我的故事",
     "untitledStory": "未命名故事",
     "photoCount": "{count} 张照片",
     "photoLabel": "《{story}》的第 {index} 张照片",
@@ -1266,46 +1264,46 @@
   "storyFolders": {
     "metaTitle": "故事文件夹",
     "title": "故事文件夹",
-    "backToMyStories": "返回我的故事",
-    "intro": "把已发布的故事拖到文件夹上即可归档，也可以使用“移动到…”。只有已发布的故事才能归档。",
+    "intro": "先选一篇主故事，再把子故事加进去。只有已发布的故事才能归档。",
+    "newFolder": "新建文件夹",
+    "yourFolders": "你的文件夹",
+    "noFolders": "还没有文件夹。点“新建文件夹”，选一篇主故事并加入子故事。",
+    "draftsNote": "{count, plural, other {这里不显示 # 篇草稿}}。发布故事后才能归档。",
     "empty": "先发布至少一篇故事，才能开始建立文件夹。",
-    "dragHint": "把故事拖到文件夹上即可归档，拖到“未归档”区域可以移出文件夹。",
     "folders": {
       "subStoryCount": "{count, plural, other {# 篇子故事}}",
+      "mainStory": "主故事",
+      "subStories": "子故事",
       "openStory": "打开故事",
       "removeFromFolder": "从文件夹移除",
       "removeDialog": {
         "title": "要从文件夹移除吗？",
         "description": "移除后，“{child}”将不再显示为归档在“{parent}”之下。",
         "confirm": "移除"
-      }
+      },
+      "addSubStories": "添加子故事"
     },
-    "notInFolder": {
-      "heading": "未归档",
-      "publishHint": "发布这篇故事后才能归档。",
-      "notDraggableHint": "这篇故事下有子故事，不能归入其他文件夹。"
-    },
-    "moveTo": {
-      "label": "移动到",
-      "notInFolderOption": "未归档"
+    "picker": {
+      "mainTitle": "选择主故事",
+      "mainHint": "它的子故事会归在它下面。",
+      "subTitle": "添加子故事",
+      "subHint": "勾选要归到“{parent}”下的故事，取消勾选即可移出。",
+      "search": "搜索你的故事",
+      "noMatches": "没有匹配的故事。",
+      "noCandidates": "暂时没有其他已发布的故事可以添加。",
+      "inFolder": "目前在“{parent}”下。加到这里会移动它。",
+      "save": "{count, plural, =0 {保存 · 没有子故事} other {保存 · # 篇子故事}}",
+      "back": "更换主故事",
+      "cancel": "取消"
     },
     "toasts": {
-      "filed": "已将“{child}”归档到“{parent}”下。",
+      "saved": "{count, plural, =0 {“{parent}”现在没有子故事。} other {已保存“{parent}”，共 # 篇子故事。}}",
       "removed": "已将“{child}”从文件夹中移除。"
-    },
-    "announce": {
-      "instructions": "按空格键或回车键拿起一篇故事，用方向键把它移到某个文件夹上，再按空格键或回车键放下，按 Esc 取消。也可以使用“移动到”菜单。",
-      "start": "已拿起“{story}”。",
-      "over": "“{story}”位于“{target}”上方。",
-      "outside": "“{story}”不在任何文件夹上方。",
-      "dropped": "已把“{story}”放到“{target}”。",
-      "cancelled": "已停止移动“{story}”。"
     }
   },
   "myJourney": {
     "metaTitle": "旅程地图",
     "title": "旅程地图",
-    "backToMyStories": "返回我的故事",
     "intro": "把你已发布的新西兰故事逐一固定到地图上。读者会在你的个人主页看到一张完整的旅程地图，点开每个地点即可阅读对应的故事。子故事会收在其主故事的地点里。保存后，地点会立即公开。",
     "empty": "发布一篇新西兰的故事，就可以开始绘制你的旅程地图。",
     "listLabel": "你的故事",

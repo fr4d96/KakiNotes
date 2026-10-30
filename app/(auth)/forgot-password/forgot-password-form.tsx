@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { forgotPasswordAction, type AuthFormState } from "@/app/(auth)/actions";
 
@@ -45,12 +44,6 @@ export function ForgotPasswordForm() {
       >
         {pending ? t("submitting") : t("submit")}
       </button>
-
-      <p className="text-sm text-muted-foreground">
-        <Link href="/sign-in" className="hover:underline">
-          {t("backToSignIn")}
-        </Link>
-      </p>
     </form>
   );
 }

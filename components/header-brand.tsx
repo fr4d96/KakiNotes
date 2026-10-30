@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { BrandLogo } from "@/components/brand-logo";
-import { pageTitleKey } from "@/lib/navigation/page-titles";
+import { BackLink } from "@/components/back-link";
+import { pageBack, pageTitleKey } from "@/lib/navigation/page-titles";
 
 /**
  * The left end of every reader/contributor header: the logo mark, then
@@ -31,14 +32,18 @@ export function HeaderBrand({
   priority?: boolean;
 }) {
   const t = useTranslations();
-  const key = pageTitleKey(usePathname());
+  const pathname = usePathname();
+  const key = pageTitleKey(pathname);
   const title = key ? t(key as never) : null;
+  // A sub-page swaps the logo for a back arrow on phones: [←] Story folders.
+  const hasBack = pageBack(pathname) !== null;
 
   return (
     <div className="flex min-w-0 items-center gap-2.5">
+      {hasBack && <BackLink variant="bar" />}
       <Link
         href={homeHref}
-        className="flex min-h-11 shrink-0 items-center gap-2.5 text-xl font-black tracking-tight"
+        className={`flex min-h-11 shrink-0 items-center gap-2.5 text-xl font-black tracking-tight ${hasBack ? "max-md:hidden" : ""}`}
       >
         <BrandLogo className="border border-current" priority={priority} />
         <span className={title ? "max-md:sr-only" : undefined}>Kakinotes</span>

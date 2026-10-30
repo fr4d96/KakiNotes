@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { BackLink } from "@/components/back-link";
 import { createDraftAction, type NewStoryFormState } from "./actions";
 
 const initialState: NewStoryFormState = {};
@@ -55,9 +56,12 @@ export function StartNewStory({
 
   return (
     <div className="mx-auto max-w-md px-4 py-12 sm:px-6 sm:py-16">
-      <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only sm:text-3xl">
-        {t("title")}
-      </h1>
+      <div className="flex items-center gap-3">
+        <BackLink />
+        <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only sm:text-3xl">
+          {t("title")}
+        </h1>
+      </div>
       <p className="mt-2 text-sm text-muted-foreground">{t("intro")}</p>
 
       <form action={formAction} className="mt-8 space-y-5" noValidate>
@@ -115,14 +119,6 @@ export function StartNewStory({
             {t("importInstead")}
           </Link>
           .
-        </p>
-        <p className="text-sm text-muted-foreground">
-          <Link
-            href="/my-stories"
-            className="press inline-flex min-h-11 items-center hover:underline"
-          >
-            {t("backToMyStories")}
-          </Link>
         </p>
       </form>
     </div>

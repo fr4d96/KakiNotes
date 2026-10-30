@@ -17,6 +17,7 @@ vi.mock("./actions", () => ({
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh, push: vi.fn() }),
+  usePathname: () => "/my-stories/journey",
 }));
 
 function renderView(stories: MyJourneyEntry[]) {

@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-30 (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+Last updated: 2026-10-30 (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
 one-level folder shape — a story is either a main story, a sub story filed under exactly one main
 story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
 "Move to…" select; migration applied to the dev project — see the entry at the end of this
@@ -10795,3 +10795,60 @@ drive the same track; only the current slide is exposed to assistive tech. No wr
 over the zoom-out. Prev/next buttons are desktop-only (`max-md:hidden!` — the unlayered
 `.journiq-lightbox-control` sets `display`). Tests rewritten in `photo-lightbox.test.tsx` (buttons
 stop at the ends, track structure, drag-down close and spring-back, sideways drag ignored, Escape).
+
+## 2026-10-30 — Phone touch fixes, tap feedback, tap-first story folders
+
+Branch `fix/mobile-touch-fixes` (from `main` at 1.14.0). Checked in the iPhone 17 frame
+(`/dev/iphone-17`), not on a real device.
+
+**Scrolling no longer highlights stories.** WebKit sets `:active` on the touchstart that begins a
+scroll, so story cards (`.press`) and story rows (`active:bg-accent/10`, the my-stories `has-[…]`
+highlight and card dip) lit up as a thumb scrolled past. Those now apply only under
+`(hover: hover)`: new `.press-hover-only` modifier in `globals.css` (used by `story-card.tsx`), and
+`[@media(hover:hover)]:` on the Tailwind variants (`story-index.tsx`, `my-stories-view.tsx`). The
+`.nf-entry` hover underline and thumbnail zoom are hover-gated too, and the row focus highlight is
+`:has(:focus-visible)` instead of `:focus-within`, so a tapped row is not left lit.
+
+**Scrolling no longer sticks on photo carousels.** A lazy slide's `scale(1.03)` loading state
+(`ResolvingImage`) overflowed the frame; `overflow-x: auto` computes `overflow-y` to `auto`, so the
+scroller had ~7px of vertical scroll and iOS latched vertical swipes onto it. Fix:
+`overflow-y-hidden` on the scroller plus `overflow-hidden` on each slide wrapper
+(`photo-carousel.tsx`).
+
+**Tap feedback on every button.** New `components/click-pulse.tsx`, mounted once in the root
+layout: on `click` (never fires for a scroll) it plays a 280ms `scale(0.94 → 1)` Web Animation,
+composited `add`, on the nearest button-like control; an opacity dip under reduced motion. Skips
+targets taller than 120px (cards, photos), `.press-hover-only`, the photo-viewer trigger, disabled
+controls and anything inside `[data-no-pulse]`. `.press:active` is unchanged; the pulse covers the
+quick-tap case where `:active` lasts ~50ms. Test: `click-pulse.test.tsx`.
+
+**Story folders are tap-first.** `/my-stories/map` (`story-folders-view.tsx`) drops drag-and-drop
+(no usable phone gesture) and the per-row "Move to" selects. "Your folders" lists only main stories
+that hold sub stories; "New folder" opens a two-step picker — tap a main story, then tick sub
+stories (search box past six candidates; stories in another folder are offered, labelled "moves
+it") — and each folder has "Add sub stories" straight to step two. BottomSheet on phones, inline
+panel from md up. Drafts are one line ("N drafts aren't shown"). Each ticked story is filed with
+the existing `setStoryParentAction`, one at a time, optimistically with per-story rollback — no
+server, RPC or RLS change. i18n: `storyFolders` gains `newFolder`, `yourFolders`, `noFolders`,
+`draftsNote`, `folders.addSubStories`, `picker.*`, `toasts.added`; drops `dragHint`,
+`notInFolder.*`, `moveTo.*`, `announce.*`, `toasts.filed` (en, zh-CN). `@dnd-kit/core` stays (photo
+reorder still uses it). Tests rewritten in `story-folders-view.test.tsx`.
+
+**Folder picker edits the whole folder (same day).** Step two opens with the folder's current sub
+stories ticked, listed first; Save files newly ticked stories and takes unticked ones out
+(`setStoryParentAction(id, null, …)`), and stays disabled until something changes. Keys:
+`picker.save` and `toasts.saved` replace `picker.add` and `toasts.added`.
+
+**Arrow back instead of "Back to …" links (same day).** New `components/back-link.tsx` and
+`ArrowLeftIcon`; back targets live in `pageBack()` beside the page titles
+(`lib/navigation/page-titles.ts`): Story folders, Journey map, My Photos and New story go to My
+Stories; Forgot password goes to Sign in (country prefix kept). On phones the arrow takes the logo's
+place in the top bar (`header-brand.tsx`: `[←] Story folders`); from md up it sits beside the page
+heading. Accessible name "Back to {page}" (`common.backTo`); navigates with the `nav-back` view
+transition. The five text links and their keys are removed. The story editor's step Back/Next
+buttons and the journey map's in-map "Back to whole journey" are unchanged (step navigation and a
+map control, not page-back links). Tests: `header-brand.test.tsx`, `page-titles.test.ts`,
+`story-folders-view.test.tsx`.
+
+Risk: `feat/private-story-folders` (unmerged, 41 commits behind) edits
+`story-folders-view.test.tsx`; it will conflict with this rewrite when it is rebased.

@@ -666,7 +666,7 @@ function StoryGrid({
         return (
           <li
             key={story.id}
-            className="relative transition-transform duration-150 ease-out motion-safe:has-[a[data-card-link]:active]:scale-[0.97]"
+            className="relative transition-transform duration-150 ease-out [@media(hover:hover)]:motion-safe:has-[a[data-card-link]:active]:scale-[0.97]"
           >
             {/* The title link's ::after stretches over the whole card (cover,
                 title, status), so the card is one big tap target and presses
@@ -817,7 +817,7 @@ function StoryList({
         return (
           <li
             key={story.id}
-            className="nf-entry has-[a[data-card-link]:active]:bg-accent/10"
+            className="nf-entry [@media(hover:hover)]:has-[a[data-card-link]:active]:bg-accent/10"
           >
             {/* One grid, two shapes. Mobile: [thumb | stacked content],
             numeral hidden (display:none claims no track). From sm up

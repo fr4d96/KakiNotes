@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import en from "@/i18n/messages/en.json";
 import zhCN from "@/i18n/messages/zh-CN.json";
-import { pageTitleKey } from "./page-titles";
+import { pageBack, pageTitleKey } from "./page-titles";
 
 function lookup(messages: unknown, key: string): unknown {
   return key
@@ -65,5 +65,24 @@ describe("pageTitleKey", () => {
       expect(typeof lookup(en, key), `${path} en`).toBe("string");
       expect(typeof lookup(zhCN, key), `${path} zh-CN`).toBe("string");
     }
+  });
+});
+
+describe("pageBack", () => {
+  it("sends a sub-page back to its parent, keeping the country prefix", () => {
+    expect(pageBack("/my-stories/map")).toEqual({
+      href: "/my-stories",
+      labelKey: "myStories.title",
+    });
+    expect(pageBack("/cn/forgot-password/")).toEqual({
+      href: "/cn/sign-in",
+      labelKey: "auth.signIn.title",
+    });
+  });
+
+  it("gives top-level pages no back arrow", () => {
+    expect(pageBack("/my-stories")).toBeNull();
+    expect(pageBack("/stories")).toBeNull();
+    expect(pageBack(null)).toBeNull();
   });
 });
