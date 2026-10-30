@@ -1,6 +1,13 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
-import { FilterBar } from "./filter-bar";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+const replace = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace }),
+  usePathname: () => "/stories",
+}));
+
+import { FilterBar, SEARCH_DEBOUNCE_MS } from "./filter-bar";
 
 const regions = [{ id: "r1", name: "Hawke's Bay" }];
 const destinations = [{ id: "d1", name: "Hastings", regionId: "r1" }];
@@ -157,6 +164,74 @@ describe("FilterBar", () => {
       fireEvent.click(trigger);
       fireEvent.click(screen.getByRole("button", { name: "Close" }));
       expect(trigger).toHaveAttribute("aria-expanded", "false");
+    });
+  });
+
+  describe("search as you type", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+      replace.mockReset();
+    });
+
+    const renderBar = (current = {}) =>
+      render(
+        <FilterBar
+          regions={regions}
+          destinations={destinations}
+          tags={tags}
+          travelStyles={travelStyles}
+          current={current}
+        />,
+      );
+
+    it("searches after a short pause, from the first letter", () => {
+      vi.useFakeTimers();
+      renderBar();
+      fireEvent.change(screen.getByLabelText(/search/i), {
+        target: { value: "k" },
+      });
+      expect(replace).not.toHaveBeenCalled();
+      act(() => vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS));
+      expect(replace).toHaveBeenCalledWith("/stories?q=k", { scroll: false });
+    });
+
+    it("waits for typing to pause instead of searching every letter", () => {
+      vi.useFakeTimers();
+      renderBar();
+      const box = screen.getByLabelText(/search/i);
+      for (const value of ["k", "ki", "kiw", "kiwi"]) {
+        fireEvent.change(box, { target: { value } });
+        act(() => vi.advanceTimersByTime(100));
+      }
+      act(() => vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS));
+      expect(replace).toHaveBeenCalledTimes(1);
+      expect(replace).toHaveBeenCalledWith("/stories?q=kiwi", {
+        scroll: false,
+      });
+    });
+
+    it("keeps the other active filters", () => {
+      vi.useFakeTimers();
+      renderBar({ region: "r1", tag: "t2" });
+      fireEvent.change(screen.getByLabelText(/search/i), {
+        target: { value: "farm" },
+      });
+      act(() => vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS));
+      const [url] = replace.mock.calls[0];
+      const params = new URL(url, "http://x").searchParams;
+      expect(params.get("q")).toBe("farm");
+      expect(params.get("region")).toBe("r1");
+      expect(params.get("tag")).toBe("t2");
+    });
+
+    it("clearing the box shows every story again", () => {
+      vi.useFakeTimers();
+      renderBar({ q: "farm" });
+      fireEvent.change(screen.getByLabelText(/search/i), {
+        target: { value: "" },
+      });
+      act(() => vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS));
+      expect(replace).toHaveBeenCalledWith("/stories", { scroll: false });
     });
   });
 });
