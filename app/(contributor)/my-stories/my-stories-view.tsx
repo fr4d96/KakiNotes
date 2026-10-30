@@ -824,7 +824,7 @@ function StoryList({
             the inner wrapper becomes `display: contents` so its
             children drop into the parent grid as real columns
             [numeral | thumb | title+meta | actions]. */}
-            <div className="grid grid-cols-[4rem_minmax(0,1fr)] items-start gap-x-3 py-4 sm:grid-cols-[2.5rem_5rem_minmax(0,1fr)_auto] sm:items-center sm:gap-x-5">
+            <div className="grid grid-cols-[6rem_minmax(0,1fr)] items-stretch gap-x-3.5 py-4 sm:grid-cols-[2.5rem_7rem_minmax(0,1fr)_auto] sm:items-center sm:gap-x-5">
               <span
                 aria-hidden="true"
                 className="hidden font-mono text-sm text-foreground/40 tabular-nums sm:block"
@@ -836,7 +836,11 @@ function StoryList({
                 href={href}
                 tabIndex={-1}
                 aria-hidden="true"
-                className="block h-12 w-16 overflow-hidden rounded-md border border-border-subtle bg-surface-muted sm:h-14 sm:w-20"
+                // Phone: the cover is a full-height panel down the row's left
+                // edge (items-stretch above), cropped to fill, instead of a
+                // 64x48 stamp in the corner of a ~110px row. From sm up the
+                // row centres and the cover is a fixed 7rem x 5rem frame.
+                className="block h-full min-h-24 w-24 overflow-hidden rounded-lg border border-border-subtle bg-surface-muted sm:h-20 sm:min-h-0 sm:w-28"
               >
                 <StoryCoverThumbnail
                   mediaId={story.coverMediaId}

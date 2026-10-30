@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { PreviewableMediaItem } from "@/lib/story/contributor-queries";
 import { getPreviewUrl } from "@/lib/story/preview-url-client";
-import { Spinner } from "@/components/ui/spinner";
+import { ResolvingImage } from "@/components/ui/resolving-image";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
 
 /**
@@ -68,10 +68,11 @@ export function PreviewGallery({ media }: { media: PreviewableMediaItem[] }) {
                 caption={item.caption}
                 className="block h-full w-full"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL */}
-                <img
+                <ResolvingImage
                   src={urls[item.mediaId]}
                   alt={item.altText ?? ""}
+                  loadingLabel={t("loading")}
+                  wrapperClassName="relative block h-full w-full"
                   className="h-full w-full object-cover"
                 />
               </LightboxPhoto>
@@ -80,12 +81,13 @@ export function PreviewGallery({ media }: { media: PreviewableMediaItem[] }) {
                 {errors[item.mediaId]}
               </div>
             ) : (
+              // Same sheen ResolvingImage holds while the bytes arrive, so
+              // the signed-URL wait and the download read as one load.
               <div
-                className="flex h-full w-full items-center justify-center text-muted-foreground"
+                role="status"
                 aria-label={t("loading")}
-              >
-                <Spinner className="h-6 w-6" />
-              </div>
+                className="nf-skeleton h-full w-full rounded-none"
+              />
             )}
           </div>
           {item.caption && (

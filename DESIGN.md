@@ -560,7 +560,7 @@ block about to arrive, and an accent-tinted sheen crosses it the way a lens hunt
 **Never a spinner on a route.** A spinner says "wait"; a shaped skeleton says "here is what is
 coming", which is the honest message when the layout is already known and only the data is missing.
 (`components/ui/spinner.tsx` stays — it is for a single image still being processed, where the
-shape genuinely is unknown.)
+shape genuinely is unknown. A story photo whose frame is already known — a My Stories cover, a preview or published gallery photo, an inline story photo — gets the sheen instead, via `components/ui/resolving-image.tsx`: held until its bytes arrive, then the photo resolves in from a slight blur. It is visible by default and only switches to the sheen once mounted and genuinely still loading, so a server-rendered photo is never stranded invisible.)
 
 **The Nested Fallback Rule.** A `loading.tsx` belongs INSIDE its route group, never at the root
 segment. A Suspense fallback replaces everything below its own boundary, so a root-level one swaps

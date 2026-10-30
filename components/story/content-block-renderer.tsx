@@ -6,7 +6,7 @@ import { storyContentText } from "@/lib/validation/story";
 import { remarkMediaEmbed } from "@/lib/story/remark-media-embed";
 import { remarkSoftBreaks } from "@/lib/story/remark-soft-breaks";
 import { remarkHeadingIds } from "@/lib/story/heading-ids";
-import { Spinner } from "@/components/ui/spinner";
+import { ResolvingImage } from "@/components/ui/resolving-image";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
 
 /**
@@ -28,8 +28,8 @@ import { LightboxPhoto } from "@/components/ui/photo-lightbox";
  * nothing, never a broken-image icon or a crash — consistent with this
  * component's "never throw on bad data" posture. A caller that mints the
  * URL asynchronously (PreviewContentBody) can instead set an entry to the
- * literal `"loading"` while the mint is in flight, which renders a spinner
- * in the image's place instead of a jarring blank gap in the text.
+ * literal `"loading"` while the mint is in flight, which holds a sheen of the
+ * image's shape in its place instead of a jarring blank gap in the text.
  */
 export type ContentBlockMediaMap = Record<
   string,
@@ -59,12 +59,11 @@ function MediaEmbed({
   if (resolved === "loading") {
     return (
       <span
+        role="status"
         aria-label={t("loading")}
-        style={{ ...dimensionStyle, aspectRatio: width ? undefined : "16 / 9" }}
-        className={`${frameClassName} flex items-center justify-center bg-surface-muted text-muted-foreground`}
-      >
-        <Spinner className="h-6 w-6" />
-      </span>
+        style={{ ...dimensionStyle, aspectRatio: "16 / 9" }}
+        className={`${frameClassName} nf-skeleton`}
+      />
     );
   }
 
@@ -85,12 +84,16 @@ function MediaEmbed({
       style={dimensionStyle}
       className={width ? "my-4 inline-block max-w-full" : "my-4 block w-full"}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element -- resolved.url is either a short-lived signed URL (draft preview) or a public-bucket URL (published); neither is a stable remote source worth Next/Image's remote-pattern config */}
-      <img
+      {/* resolved.url is either a short-lived signed URL (draft preview) or
+          a public-bucket URL (published). ResolvingImage holds a sheen in a
+          16:9 box until the photo arrives, then lets it take its own shape. */}
+      <ResolvingImage
         src={resolved.url}
         loading="lazy"
-        decoding="async"
         alt={alt}
+        loadingLabel={t("loading")}
+        wrapperClassName="relative block rounded-md"
+        reserveClassName="aspect-video"
         className={
           width
             ? "h-auto w-full rounded-md border border-border-subtle object-contain"

@@ -73,10 +73,13 @@ describe("ContentBlockRenderer", () => {
       />,
     );
 
-    // The stored width sizes the photo's wrapper (the LightboxPhoto trigger,
-    // which is the element that occupies the layout slot); the <img> fills it.
+    // The stored width sizes the LightboxPhoto slot (the element that
+    // occupies the layout); the <img>, inside ResolvingImage's wrapper,
+    // fills it.
     const img = screen.getByRole("img");
-    expect(img.parentElement).toHaveStyle({ width: "480px", maxWidth: "100%" });
+    // Two levels up: ResolvingImage's own wrapper, then the sized slot.
+    const slot = img.parentElement!.parentElement!;
+    expect(slot).toHaveStyle({ width: "480px", maxWidth: "100%" });
   });
 
   it("renders nothing for an embed whose mediaId isn't in the media map (e.g. detached after save)", () => {
@@ -92,7 +95,7 @@ describe("ContentBlockRenderer", () => {
     expect(screen.getByText("still here")).toBeInTheDocument();
   });
 
-  it('renders a spinner in place of an embed whose entry is the literal "loading" state', () => {
+  it('holds a sheen, not a spinner, in place of an embed whose entry is the literal "loading" state', () => {
     const blocks = markdownToStoryContent(
       "![[44444444-4444-4444-8444-444444444444]]",
     );
@@ -104,7 +107,9 @@ describe("ContentBlockRenderer", () => {
       />,
     );
 
-    expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument();
+    const sheen = screen.getByRole("status", { name: "Loading image" });
+    expect(sheen).toHaveClass("nf-skeleton");
+    expect(sheen.querySelector("svg")).toBeNull();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 

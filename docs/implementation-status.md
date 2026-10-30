@@ -10736,3 +10736,25 @@ title holds still during page slides. Pages whose heading is the content keep th
 their big title: home, story pages, contributor profiles, the editor, preview, and
 /reset-password (its heading becomes the "link expired" message). On My Stories the New Story pill
 becomes an accent "+" leading the toolbar on phones; three stories now fit the first screen.
+
+## 2026-10-30 — My Stories covers fill their cards (branch `feat/my-stories-covers`)
+
+- List view, phones: each row's cover is now a full-height panel down the row's left edge
+  (`w-24`, `h-full`, `object-cover`, row grid `items-stretch`) instead of a 64x48 thumbnail in the
+  corner of a ~110-175px row. From `sm` up the cover is a 7rem x 5rem frame. Grid cards were
+  already full-bleed squares and are unchanged.
+- Loading: `StoryCoverThumbnail` drops the spinner for the app's `.nf-skeleton` sheen, held until
+  the `<img>` has actually loaded (not just until its signed URL resolves), then the photo fades in
+  from a slight blur and 1.04 scale over 500ms; instant under reduced motion. The placeholder is
+  `role="status"` "Loading cover photo". Test: `story-cover-thumbnail.test.tsx`.
+
+**Story photos load the same way (same branch, later on 2026-10-30).** The cover's loading is now a
+shared component, `components/ui/resolving-image.tsx`, used for every story photo: My Stories
+covers, the contributor preview gallery (`preview-gallery.tsx`), inline story photos
+(`content-block-renderer.tsx`, preview and published) and the published gallery
+(`story-gallery.tsx`). The spinner is gone from all of them; the signed-URL wait shows the same
+`.nf-skeleton` sheen. Safety: `ResolvingImage` renders the image visible on the server and on first
+paint, and switches to the sheen in a layout effect only if the `<img>` is not yet `complete` — an
+image that loaded (or failed) before hydration is never hidden, and a failure clears the sheen.
+Placeholder name: `editor.images.loading` ("Loading image"). Tests: `resolving-image.test.tsx`;
+`content-block-renderer.test.tsx` updated for the extra wrapper and the sheen.

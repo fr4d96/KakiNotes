@@ -1,5 +1,7 @@
+import { useTranslations } from "next-intl";
 import { getImageUrl } from "@/lib/story/image-url";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
+import { ResolvingImage } from "@/components/ui/resolving-image";
 
 type GalleryImage = {
   media_id: string;
@@ -28,6 +30,7 @@ type GalleryImage = {
  * appears twice.
  */
 export function StoryGallery({ images }: { images: GalleryImage[] }) {
+  const t = useTranslations("editor.images");
   if (images.length === 0) return null;
 
   return (
@@ -50,12 +53,12 @@ export function StoryGallery({ images }: { images: GalleryImage[] }) {
               caption={image.caption}
               className="block w-full"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element -- public bucket URLs are content-addressed, not a Next.js image-optimizable source list */}
-              <img
+              <ResolvingImage
                 src={url}
                 alt={image.decorative ? "" : (image.alt_text ?? "")}
                 loading="lazy"
-                decoding="async"
+                loadingLabel={t("loading")}
+                reserveClassName="aspect-[4/3]"
                 className="h-full w-full object-cover"
               />
             </LightboxPhoto>
