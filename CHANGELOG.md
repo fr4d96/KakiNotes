@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.14.0](https://github.com/fr4d96/KakiNotes/compare/v1.13.0...v1.14.0) (2026-10-30)
+
+
+### Features
+
+* **layout:** show the site footer on the home page only ([803a777](https://github.com/fr4d96/KakiNotes/commit/803a77716fb63b302bc2e0471c6abd11aaa528bb))
+* **stories:** covers fill My Stories rows; photos load with a sheen ([0550e17](https://github.com/fr4d96/KakiNotes/commit/0550e17b36324bc62ef394b833fe75beb12f561b))
+* **stories:** Instagram-style photo carousel and a Photos-style viewer ([4a5d858](https://github.com/fr4d96/KakiNotes/commit/4a5d858aa0da43fce1c546f7d5958a49a5d80596))
+
 ## [1.13.0](https://github.com/fr4d96/KakiNotes/compare/v1.12.0...v1.13.0) (2026-10-30)
 
 ### Kakinotes on your iPhone
