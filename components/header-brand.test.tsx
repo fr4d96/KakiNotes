@@ -50,6 +50,15 @@ describe("HeaderBrand", () => {
     );
   });
 
+  it("keeps the logo beside the arrow on a story page", () => {
+    usePathnameMock.mockReturnValue("/stories/abc/preview");
+    render(<HeaderBrand />);
+    expect(screen.getByRole("link", { name: "Back" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Kakinotes" })).not.toHaveClass(
+      "max-md:hidden",
+    );
+  });
+
   it("shows no back arrow on a top-level page", () => {
     usePathnameMock.mockReturnValue("/my-stories");
     render(<HeaderBrand />);

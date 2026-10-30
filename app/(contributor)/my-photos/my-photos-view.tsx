@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { BackLink } from "@/components/back-link";
+import { ChevronIcon } from "@/components/icons";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
 import { StatusBadge } from "@/app/(contributor)/my-stories/status-badge";
 import { mintPreviewUrlAction } from "@/app/(contributor)/stories/[id]/media-actions";
@@ -16,8 +17,12 @@ import type { MyPhoto, MyPhotoStory } from "@/lib/story/my-photos";
  * its own Download button. Per-photo downloads only for now -- "Download
  * all" is a later slice.
  *
- * Mobile-first (Rule 18): two columns on a phone. Every status is written
- * out as text, never hover-only or colour-only (Rule 19).
+ * Mobile-first (Rule 18): each story is a collapsed row (cover, title,
+ * status, photo count); opening one shows only that story's photos, two
+ * columns on a phone, and closes any other -- one story's photos at a time.
+ * A closed story mounts no photos, so nothing loads until it is opened.
+ * Every status is written out as text, never hover-only or colour-only
+ * (Rule 19).
  */
 export function MyPhotosView({
   stories,
@@ -28,9 +33,10 @@ export function MyPhotosView({
 }) {
   const t = useTranslations("myPhotos");
   const total = stories.reduce((n, story) => n + story.photos.length, 0);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
+    <div className="mx-auto max-w-5xl px-4 pt-4 pb-12 sm:px-6 sm:py-16">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-3">
@@ -52,15 +58,21 @@ export function MyPhotosView({
           {t("empty")}
         </p>
       ) : (
-        <div className="mt-8 space-y-10">
+        <ul className="mt-6 space-y-3">
           {stories.map((story) => (
             <StorySection
               key={story.storyId}
               story={story}
               driveConnected={driveConnected}
+              open={openId === story.storyId}
+              onToggle={() =>
+                setOpenId((current) =>
+                  current === story.storyId ? null : story.storyId,
+                )
+              }
             />
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );
@@ -69,36 +81,92 @@ export function MyPhotosView({
 function StorySection({
   story,
   driveConnected,
+  open,
+  onToggle,
 }: {
   story: MyPhotoStory;
   driveConnected: boolean;
+  open: boolean;
+  onToggle: () => void;
 }) {
   const t = useTranslations("myPhotos");
   const title = story.title?.trim() || t("untitledStory");
-  const headingId = `story-photos-${story.storyId}`;
+  const panelId = `story-photos-${story.storyId}`;
+  const rowRef = useRef<HTMLLIElement>(null);
+  const [coverFailed, setCoverFailed] = useState(false);
+  const cover = coverFailed ? null : (story.photos[0]?.thumbnailUrl ?? null);
+
+  function toggle() {
+    onToggle();
+    if (open) return;
+    // Opening this one closes the one above it, which can pull this row up
+    // and off screen -- bring it back into view once the layout settles.
+    requestAnimationFrame(() => {
+      const reduce = window.matchMedia?.(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      rowRef.current?.scrollIntoView?.({
+        block: "nearest",
+        behavior: reduce ? "auto" : "smooth",
+      });
+    });
+  }
 
   return (
-    <section aria-labelledby={headingId}>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <h2 id={headingId} className="text-lg font-semibold">
-          {title}
-        </h2>
-        <StatusBadge status={story.lifecycleStatus} />
-        <span className="text-xs text-foreground/55">
-          {t("photoCount", { count: story.photos.length })}
-        </span>
-      </div>
-      <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {story.photos.map((photo, index) => (
-          <PhotoCard
-            key={photo.mediaId}
-            photo={photo}
-            label={t("photoLabel", { index: index + 1, story: title })}
-            driveConnected={driveConnected}
+    <li
+      ref={rowRef}
+      className="scroll-mt-20 rounded-lg border border-border-subtle bg-surface"
+    >
+      <h2>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={toggle}
+          className="flex min-h-16 w-full items-center gap-3 p-2 pr-3 text-left"
+        >
+          <span className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-surface-muted">
+            {cover ? (
+              // eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL or the Drive proxy, not an optimizable static asset
+              <img
+                src={cover}
+                alt=""
+                loading="lazy"
+                className="h-full w-full object-cover"
+                onError={() => setCoverFailed(true)}
+              />
+            ) : null}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-semibold">{title}</span>
+            <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <StatusBadge status={story.lifecycleStatus} />
+              <span className="text-xs font-normal text-foreground/55">
+                {t("photoCount", { count: story.photos.length })}
+              </span>
+            </span>
+          </span>
+          <ChevronIcon
+            className={`h-4 w-4 shrink-0 text-foreground/60 transition-transform ${open ? "rotate-90" : ""}`}
           />
-        ))}
-      </ul>
-    </section>
+        </button>
+      </h2>
+      {open ? (
+        <ul
+          id={panelId}
+          className="grid grid-cols-2 gap-3 border-t border-border-subtle p-3 sm:grid-cols-3 lg:grid-cols-4"
+        >
+          {story.photos.map((photo, index) => (
+            <PhotoCard
+              key={photo.mediaId}
+              photo={photo}
+              label={t("photoLabel", { index: index + 1, story: title })}
+              driveConnected={driveConnected}
+            />
+          ))}
+        </ul>
+      ) : null}
+    </li>
   );
 }
 

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { MyPhotoStory } from "@/lib/story/my-photos";
 
@@ -50,11 +50,17 @@ const stories: MyPhotoStory[] = [
 
 beforeEach(() => getPhotoDownloadUrlAction.mockReset());
 
+/** Renders the page and opens the first story, as a contributor would. */
+function renderOpen(list: MyPhotoStory[], driveConnected: boolean) {
+  render(<MyPhotosView stories={list} driveConnected={driveConnected} />);
+  fireEvent.click(screen.getAllByRole("button", { expanded: false })[0]);
+}
+
 describe("MyPhotosView", () => {
   it("groups photos under their story with its status, and says where each one lives", () => {
-    render(<MyPhotosView stories={stories} driveConnected={true} />);
+    renderOpen(stories, true);
     expect(
-      screen.getByRole("heading", { name: "Kiwi orchard summer" }),
+      screen.getByRole("heading", { name: /Kiwi orchard summer/ }),
     ).toBeInTheDocument();
     expect(screen.getByText("Published")).toBeInTheDocument();
     expect(screen.getByText("On Kakinotes")).toBeInTheDocument();
@@ -64,7 +70,7 @@ describe("MyPhotosView", () => {
   });
 
   it("gives every photo its own labelled Download button", () => {
-    render(<MyPhotosView stories={stories} driveConnected={true} />);
+    renderOpen(stories, true);
     expect(
       screen.getByRole("button", {
         name: "Download photo 1 of Kiwi orchard summer",
@@ -88,7 +94,7 @@ describe("MyPhotosView", () => {
         clicked.push(this.href);
       });
 
-    render(<MyPhotosView stories={stories} driveConnected={true} />);
+    renderOpen(stories, true);
     await userEvent.click(
       screen.getByRole("button", {
         name: "Download photo 1 of Kiwi orchard summer",
@@ -103,7 +109,7 @@ describe("MyPhotosView", () => {
 
   it("shows the server's error next to the photo when a download can't start", async () => {
     getPhotoDownloadUrlAction.mockResolvedValue({ error: "Not allowed." });
-    render(<MyPhotosView stories={stories} driveConnected={true} />);
+    renderOpen(stories, true);
     await userEvent.click(
       screen.getByRole("button", {
         name: "Download photo 1 of Kiwi orchard summer",
@@ -113,7 +119,7 @@ describe("MyPhotosView", () => {
   });
 
   it("asks to reconnect, instead of offering a download that would fail, when Drive is disconnected", () => {
-    render(<MyPhotosView stories={stories} driveConnected={false} />);
+    renderOpen(stories, false);
     expect(
       screen.getByText("Reconnect Google Drive to see this photo."),
     ).toBeInTheDocument();
@@ -133,6 +139,56 @@ describe("MyPhotosView", () => {
     ).toBeEnabled();
   });
 
+  it("starts with every story collapsed, loading no photos", () => {
+    render(<MyPhotosView stories={stories} driveConnected={true} />);
+    expect(
+      screen.getByRole("button", { name: /Kiwi orchard summer/ }),
+    ).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("button", { name: /^Download/ })).toBeNull();
+  });
+
+  it("shows one story's photos at a time", () => {
+    const two: MyPhotoStory[] = [
+      stories[0],
+      {
+        ...stories[0],
+        storyId: "s2",
+        title: "Queenstown winter",
+        photos: [{ ...stories[0].photos[0], mediaId: "m3" }],
+      },
+    ];
+    render(<MyPhotosView stories={two} driveConnected={true} />);
+    const kiwi = screen.getByRole("button", { name: /Kiwi orchard summer/ });
+    const queenstown = screen.getByRole("button", {
+      name: /Queenstown winter/,
+    });
+
+    fireEvent.click(kiwi);
+    expect(kiwi).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByRole("button", {
+        name: "Download photo 1 of Kiwi orchard summer",
+      }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(queenstown);
+    expect(kiwi).toHaveAttribute("aria-expanded", "false");
+    expect(queenstown).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.queryByRole("button", {
+        name: "Download photo 1 of Kiwi orchard summer",
+      }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", {
+        name: "Download photo 1 of Queenstown winter",
+      }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(queenstown);
+    expect(queenstown).toHaveAttribute("aria-expanded", "false");
+  });
+
   it("has a friendly empty state", () => {
     render(<MyPhotosView stories={[]} driveConnected={false} />);
     expect(screen.getByText(/No photos yet/)).toBeInTheDocument();
@@ -145,7 +201,7 @@ describe("MyPhotosView", () => {
         photos: [{ ...stories[0].photos[1], hasFullCopy: true }],
       },
     ];
-    render(<MyPhotosView stories={withFull} driveConnected={true} />);
+    renderOpen(withFull, true);
     expect(screen.getByText(/Full quality/)).toBeInTheDocument();
     expect(
       screen.getByRole("button", {

@@ -86,3 +86,32 @@ describe("pageBack", () => {
     expect(pageBack(null)).toBeNull();
   });
 });
+
+describe("pageBack for a story's own pages", () => {
+  it("goes back from edit and preview, falling back to My Stories", () => {
+    for (const path of ["/stories/abc-123/edit", "/stories/abc-123/preview"]) {
+      expect(pageBack(path)).toEqual({
+        href: "/my-stories",
+        labelKey: "myStories.title",
+        history: true,
+      });
+    }
+  });
+
+  it("goes back from a published story, falling back to Stories", () => {
+    expect(pageBack("/cn/stories/queenstown-winter-8516669f")).toEqual({
+      href: "/cn/stories",
+      labelKey: "stories.title",
+      history: true,
+    });
+  });
+
+  it("leaves the new-story flow and other story routes alone", () => {
+    expect(pageBack("/stories/new")?.history).toBeUndefined();
+    expect(pageBack("/stories/new/import")).toEqual({
+      href: "/stories/new",
+      labelKey: "nav.newStory",
+    });
+    expect(pageBack("/stories/abc-123/export")).toBeNull();
+  });
+});

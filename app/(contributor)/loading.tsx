@@ -22,7 +22,7 @@ export default function ContributorLoading() {
   return (
     <LoadingScreen
       label={t("workspace")}
-      className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16"
+      className="mx-auto max-w-5xl px-4 pt-4 pb-12 sm:px-6 sm:py-16"
     >
       <div className="flex flex-wrap items-center justify-between gap-4">
         <Skeleton className="h-10 w-56" />

@@ -53,7 +53,7 @@ export default async function ContributorsPage({
   const hasNextPage = contributors.length === 24;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
+    <div className="mx-auto max-w-7xl px-4 pt-4 pb-12 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-semibold tracking-tight max-md:sr-only sm:text-4xl">
         {t("title")}
       </h1>

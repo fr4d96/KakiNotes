@@ -50,6 +50,7 @@
     "countryToggle": {
       "label": "Choose a country section"
     },
+    "back": "Back",
     "backTo": "Back to {page}"
   },
   "nav": {
@@ -57,6 +58,7 @@
     "contributor": "Contributor",
     "stories": "Stories",
     "contributors": "Contributors",
+    "journey": "Journey",
     "about": "About",
     "signIn": "Sign in",
     "shareYourStory": "Share your story",

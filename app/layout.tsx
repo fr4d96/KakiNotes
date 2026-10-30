@@ -6,6 +6,7 @@ import { ToastProvider } from "@/components/ui/toast";
 import { PhotoLightboxProvider } from "@/components/ui/photo-lightbox";
 import { TouchActive } from "@/components/touch-active";
 import { ClickPulse } from "@/components/click-pulse";
+import { InAppHistory } from "@/components/in-app-history";
 import "./globals.css";
 
 // The app's default (sans) typeface is Avenir Next, declared globally via
@@ -110,6 +111,8 @@ export default async function RootLayout({
         <TouchActive />
         {/* Spring-back pulse on every button tap/click, app-wide. */}
         <ClickPulse />
+        {/* Lets a story's back arrow use router.back() safely. */}
+        <InAppHistory />
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-black focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-blue-600"
