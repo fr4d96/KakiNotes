@@ -13,8 +13,8 @@ export async function generateMetadata(): Promise<Metadata> {
  * other route in this group). Loads the caller's own stories and their
  * current folder once per visit via get_my_story_folders() -- owner-scoped
  * RPC, never trusts anything from the client -- and hands them to the
- * client component that renders the folder list, its drag-and-drop filing
- * gesture, and the keyboard/screen-reader "Move to" fallback beside it.
+ * client component that renders the folder list and the tap-first
+ * "pick a main story, tick its sub stories" picker.
  *
  * Route kept at /my-stories/map (not renamed) so existing links and
  * bookmarks keep working -- only the page's own title/copy changed, from

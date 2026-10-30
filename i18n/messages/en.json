@@ -49,7 +49,8 @@
     },
     "countryToggle": {
       "label": "Choose a country section"
-    }
+    },
+    "backTo": "Back to {page}"
   },
   "nav": {
     "primary": "Primary",
@@ -120,7 +121,6 @@
       "emailLabel": "Email",
       "submit": "Send reset link",
       "submitting": "Sending…",
-      "backToSignIn": "Back to sign in",
       "success": "If an account exists for that email, we've sent a link to reset your password.",
       "metaTitle": "Forgot password"
     },
@@ -1115,7 +1115,6 @@
     "startWriting": "Start writing",
     "havePdf": "Have it as a PDF?",
     "importInstead": "Import it instead",
-    "backToMyStories": "Back to My Stories",
     "errors": {
       "needsContributorIdentity": "Set up your contributor identity on the Account page before starting a story.",
       "createFailed": "Could not start a new story. Please try again."
@@ -1246,7 +1245,6 @@
     "subtitle": "Every photo on your stories, in one place.",
     "summary": "{photos, plural, one {1 photo} other {# photos}} across {stories, plural, one {1 story} other {# stories}}.",
     "empty": "No photos yet. Photos you add to your stories will show up here.",
-    "backToMyStories": "My Stories",
     "untitledStory": "Untitled story",
     "photoCount": "{count, plural, one {1 photo} other {# photos}}",
     "photoLabel": "photo {index} of {story}",
@@ -1266,46 +1264,46 @@
   "storyFolders": {
     "metaTitle": "Story folders",
     "title": "Story folders",
-    "backToMyStories": "Back to My Stories",
-    "intro": "Drag a published story onto a folder to file it there, or use “Move to…”. Only published stories can be filed.",
+    "intro": "Pick a main story, then add sub stories to it. Only published stories can be filed.",
+    "newFolder": "New folder",
+    "yourFolders": "Your folders",
+    "noFolders": "No folders yet. Tap “New folder” to pick a main story and add sub stories to it.",
+    "draftsNote": "{count, plural, one {# draft isn’t shown} other {# drafts aren’t shown}} here. Publish a story to file it.",
     "empty": "Publish at least one story to start making folders.",
-    "dragHint": "Drag a story onto a folder to file it there, or onto “Not in a folder” to remove it.",
     "folders": {
       "subStoryCount": "{count, plural, one {# sub story} other {# sub stories}}",
+      "mainStory": "Main story",
+      "subStories": "Sub stories",
       "openStory": "Open story",
       "removeFromFolder": "Remove from folder",
       "removeDialog": {
         "title": "Remove from folder?",
         "description": "“{child}” will no longer show as filed under “{parent}”.",
         "confirm": "Remove"
-      }
+      },
+      "addSubStories": "Add sub stories"
     },
-    "notInFolder": {
-      "heading": "Not in a folder",
-      "publishHint": "Publish this story to file it.",
-      "notDraggableHint": "This story has sub stories, so it can't be filed under another."
-    },
-    "moveTo": {
-      "label": "Move to",
-      "notInFolderOption": "Not in a folder"
+    "picker": {
+      "mainTitle": "Pick a main story",
+      "mainHint": "Its sub stories will be grouped under it.",
+      "subTitle": "Add sub stories",
+      "subHint": "Tick the stories that belong under “{parent}”. Untick one to take it out.",
+      "search": "Search your stories",
+      "noMatches": "No stories match.",
+      "noCandidates": "No other published stories can be added yet.",
+      "inFolder": "Now in “{parent}”. Adding it here moves it.",
+      "save": "{count, plural, =0 {Save · no sub stories} one {Save · # sub story} other {Save · # sub stories}}",
+      "back": "Change main story",
+      "cancel": "Cancel"
     },
     "toasts": {
-      "filed": "Filed “{child}” under “{parent}”.",
+      "saved": "{count, plural, =0 {“{parent}” has no sub stories now.} one {Saved “{parent}” with # sub story.} other {Saved “{parent}” with # sub stories.}}",
       "removed": "Removed “{child}” from its folder."
-    },
-    "announce": {
-      "instructions": "To pick up a story, press Space or Enter. Use the arrow keys to move it over a folder, then press Space or Enter to drop it there, or Escape to cancel. You can also use the Move to menu.",
-      "start": "Picked up “{story}”.",
-      "over": "“{story}” is over “{target}”.",
-      "outside": "“{story}” is not over a folder.",
-      "dropped": "Dropped “{story}” on “{target}”.",
-      "cancelled": "Stopped moving “{story}”."
     }
   },
   "myJourney": {
     "metaTitle": "Journey map",
     "title": "Journey map",
-    "backToMyStories": "Back to My Stories",
     "intro": "Pin each of your published New Zealand stories on a map. Readers see one journey on your profile, and each pin opens its story. Sub stories sit inside their main story’s pin. Pins go public as soon as you save them.",
     "empty": "Publish a New Zealand story to start your journey map.",
     "listLabel": "Your stories",

@@ -37,9 +37,40 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
   "/stories/new/import": "pdfImport.title",
 };
 
-export function pageTitleKey(pathname: string | null): string | null {
-  if (!pathname) return null;
+/**
+ * Sub-pages: where their top-left back arrow goes, and the message key that
+ * names that place (for the arrow's accessible name, "Back to My Stories").
+ * Replaces the "Back to …" text links these pages used to carry. On phones
+ * the arrow sits in the top bar before the title (components/header-brand.tsx);
+ * from md up, beside the page's own heading (components/back-link.tsx).
+ */
+const PAGE_BACK: Record<string, { href: string; labelKey: string }> = {
+  "/my-stories/map": { href: "/my-stories", labelKey: "myStories.title" },
+  "/my-stories/journey": { href: "/my-stories", labelKey: "myStories.title" },
+  "/my-photos": { href: "/my-stories", labelKey: "myStories.title" },
+  "/stories/new": { href: "/my-stories", labelKey: "myStories.title" },
+  "/forgot-password": { href: "/sign-in", labelKey: "auth.signIn.title" },
+};
+
+function splitPath(pathname: string) {
   const prefix = countryUrlPrefix(countryFromPathname(pathname));
   const path = pathname.slice(prefix.length).replace(/\/+$/, "") || "/";
-  return PAGE_TITLE_KEYS[path] ?? null;
+  return { prefix, path };
+}
+
+export function pageTitleKey(pathname: string | null): string | null {
+  if (!pathname) return null;
+  return PAGE_TITLE_KEYS[splitPath(pathname).path] ?? null;
+}
+
+/** The back target for a sub-page, keeping the reader's country prefix. */
+export function pageBack(
+  pathname: string | null,
+): { href: string; labelKey: string } | null {
+  if (!pathname) return null;
+  const { prefix, path } = splitPath(pathname);
+  const back = PAGE_BACK[path];
+  return back
+    ? { href: `${prefix}${back.href}`, labelKey: back.labelKey }
+    : null;
 }

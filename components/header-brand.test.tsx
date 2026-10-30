@@ -38,6 +38,26 @@ describe("HeaderBrand", () => {
     expect(barTitle).toHaveClass("md:hidden", "truncate");
   });
 
+  it("swaps the logo for a back arrow on a phone sub-page", () => {
+    usePathnameMock.mockReturnValue("/my-stories/map");
+    render(<HeaderBrand />);
+    const back = screen.getByRole("link", { name: "Back to My Stories" });
+    expect(back).toHaveAttribute("href", "/my-stories");
+    expect(back).toHaveClass("md:hidden");
+    // The logo stays for desktop, hidden on a phone behind the arrow.
+    expect(screen.getByRole("link", { name: "Kakinotes" })).toHaveClass(
+      "max-md:hidden",
+    );
+  });
+
+  it("shows no back arrow on a top-level page", () => {
+    usePathnameMock.mockReturnValue("/my-stories");
+    render(<HeaderBrand />);
+    expect(
+      screen.queryByRole("link", { name: /^back to/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("links the logo to the country home it is given", () => {
     usePathnameMock.mockReturnValue("/cn/stories");
     render(<HeaderBrand homeHref="/cn" />);

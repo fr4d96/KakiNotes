@@ -51,9 +51,9 @@ async function invalidateFolderPublicCache(storyIds: Array<string | null>) {
 }
 
 /**
- * Backs the story folders view's drag-to-file gesture, its Move-to
- * menu/select fallback, and the "Remove from folder" action (null parentId)
- * -- app/(contributor)/my-stories/map/story-folders-view.tsx. Only the ids'
+ * Backs the story folders view's "add sub stories" picker (called once per
+ * ticked story) and its "Remove from folder" action (null parentId) --
+ * app/(contributor)/my-stories/map/story-folders-view.tsx. Only the ids'
  * SHAPE is checked here -- who may do it and whether the filing is allowed
  * (owner of both, both published, one level only) is re-derived by
  * set_story_parent() from the database, never taken from the client

@@ -1,9 +1,9 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { BackLink } from "@/components/back-link";
 import { setStoryJourneyPlaceAction } from "./actions";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -380,16 +380,11 @@ export function JourneyView({
 function JourneyHeader() {
   const t = useTranslations("myJourney");
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex items-center gap-3">
+      <BackLink />
       <h1 className="journiq-heading text-[2rem] max-md:sr-only">
         {t("title")}
       </h1>
-      <Link
-        href="/my-stories"
-        className="press inline-flex min-h-11 items-center self-start text-sm font-medium text-accent underline underline-offset-2 sm:self-auto"
-      >
-        {t("backToMyStories")}
-      </Link>
     </div>
   );
 }

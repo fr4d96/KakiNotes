@@ -14,6 +14,7 @@ vi.mock("./actions", () => ({
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh, push: vi.fn() }),
+  usePathname: () => "/my-stories/map",
 }));
 
 function renderView(stories: StoryFolderEntry[]) {
@@ -24,23 +25,32 @@ function renderView(stories: StoryFolderEntry[]) {
   );
 }
 
-const kakiman: StoryFolderEntry = {
-  id: "11111111-1111-4111-8111-111111111111",
-  slug: "kakiman",
-  title: "Kakiman",
-  lifecycleStatus: "published",
-  linkable: true,
-  parentStoryId: null,
-};
+function published(
+  id: string,
+  title: string,
+  parentStoryId: string | null = null,
+): StoryFolderEntry {
+  return {
+    id,
+    slug: title.toLowerCase().replace(/\s+/g, "-"),
+    title,
+    lifecycleStatus: "published",
+    linkable: true,
+    parentStoryId,
+  };
+}
 
-const opotiki: StoryFolderEntry = {
-  id: "22222222-2222-4222-8222-222222222222",
-  slug: "opotiki-trip",
-  title: "Opotiki Trip",
-  lifecycleStatus: "published",
-  linkable: true,
-  parentStoryId: kakiman.id,
-};
+const kakiman = published("11111111-1111-4111-8111-111111111111", "Kakiman");
+const opotiki = published(
+  "22222222-2222-4222-8222-222222222222",
+  "Opotiki Trip",
+  kakiman.id,
+);
+const tauranga = published(
+  "44444444-4444-4444-8444-444444444444",
+  "Tauranga Week",
+);
+const napier = published("55555555-5555-4555-8555-555555555555", "Napier");
 
 const draftStory: StoryFolderEntry = {
   id: "33333333-3333-4333-8333-333333333333",
@@ -57,22 +67,30 @@ beforeEach(() => {
 });
 
 describe("StoryFoldersView", () => {
+  it("goes back to My Stories with an arrow, not a text link", () => {
+    renderView([kakiman, opotiki]);
+    expect(
+      screen.getByRole("link", { name: "Back to My Stories" }),
+    ).toHaveAttribute("href", "/my-stories");
+  });
+
   it("renders an empty state when the contributor has no stories", () => {
     renderView([]);
     expect(screen.getByText(/publish at least one story/i)).toBeInTheDocument();
   });
 
-  it("gives screen readers translated drag instructions, not dnd-kit's default", () => {
-    renderView([kakiman]);
+  it("lists only folders that hold sub stories, not every unfiled story", () => {
+    renderView([kakiman, opotiki, tauranga]);
     expect(
-      screen.getByText(/to pick up a story, press space or enter/i),
+      screen.getByRole("button", { name: /kakiman/i }),
     ).toBeInTheDocument();
+    expect(screen.queryByText("Tauranga Week")).not.toBeInTheDocument();
   });
 
-  it("shows a published, unfiled story as a collapsed folder row", () => {
-    renderView([kakiman]);
-    const toggle = screen.getByRole("button", { name: /kakiman/i });
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
+  it("says there are no folders yet instead of listing unfiled stories", () => {
+    renderView([tauranga, napier]);
+    expect(screen.getByText(/no folders yet/i)).toBeInTheDocument();
+    expect(screen.queryByText("Napier")).not.toBeInTheDocument();
   });
 
   it("expands a folder to reveal its sub stories, and collapses again", async () => {
@@ -80,81 +98,156 @@ describe("StoryFoldersView", () => {
     renderView([kakiman, opotiki]);
 
     const toggle = screen.getByRole("button", { name: /kakiman/i });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByText("Opotiki Trip")).not.toBeInTheDocument();
 
     await user.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Opotiki Trip")).toBeInTheDocument();
+    // The main story is listed too, with its own link.
+    expect(screen.getByText("Main story")).toBeInTheDocument();
+    const openLinks = screen.getAllByRole("link", { name: /open story/i });
+    expect(openLinks.map((l) => l.getAttribute("href"))).toEqual([
+      "/stories/kakiman",
+      "/stories/opotiki-trip",
+    ]);
 
     await user.click(toggle);
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByText("Opotiki Trip")).not.toBeInTheDocument();
   });
 
-  it("files a story into a folder via the Move to select", async () => {
+  it("picks a main story, then files the ticked sub stories under it", async () => {
     const user = userEvent.setup();
     mockSetStoryParentAction.mockResolvedValue({ ok: true });
-    const unfiled: StoryFolderEntry = {
-      id: "44444444-4444-4444-8444-444444444444",
-      slug: "trying-something-new",
-      title: "Trying Something New",
-      lifecycleStatus: "published",
-      linkable: true,
-      parentStoryId: null,
-    };
-    renderView([kakiman, unfiled]);
+    renderView([tauranga, napier, kakiman]);
 
-    const selects = screen.getAllByLabelText(/move to/i);
-    // The second folder-capable row (Trying Something New, not yet filed).
-    const select = selects[1];
-    await user.selectOptions(select, kakiman.id);
+    await user.click(screen.getByRole("button", { name: /new folder/i }));
+    await user.click(screen.getByRole("button", { name: /tauranga week/i }));
+    await user.click(screen.getByRole("checkbox", { name: /napier/i }));
+    await user.click(screen.getByRole("checkbox", { name: /kakiman/i }));
+    await user.click(
+      screen.getByRole("button", { name: /save · 2 sub stories/i }),
+    );
 
     await waitFor(() =>
-      expect(mockSetStoryParentAction).toHaveBeenCalledWith(
-        unfiled.id,
-        kakiman.id,
-        null,
-      ),
+      expect(mockSetStoryParentAction).toHaveBeenCalledTimes(2),
     );
+    expect(mockSetStoryParentAction).toHaveBeenCalledWith(
+      napier.id,
+      tauranga.id,
+      null,
+    );
+    expect(mockSetStoryParentAction).toHaveBeenCalledWith(
+      kakiman.id,
+      tauranga.id,
+      null,
+    );
+    expect(
+      await screen.findByText(/saved “tauranga week” with 2 sub stories/i),
+    ).toBeInTheDocument();
+    // The new folder shows, already expanded.
+    expect(
+      screen.getByRole("button", { name: /tauranga week/i }),
+    ).toHaveAttribute("aria-expanded", "true");
   });
 
-  it("rolls back the optimistic move and shows an error toast on refusal", async () => {
+  it("keeps Save disabled until something changes", async () => {
+    const user = userEvent.setup();
+    renderView([tauranga, napier]);
+    await user.click(screen.getByRole("button", { name: /new folder/i }));
+    await user.click(screen.getByRole("button", { name: /tauranga week/i }));
+    expect(
+      screen.getByRole("button", { name: /save · no sub stories/i }),
+    ).toBeDisabled();
+  });
+
+  it("opens a folder with its current sub stories ticked, and unticking removes one", async () => {
+    const user = userEvent.setup();
+    mockSetStoryParentAction.mockResolvedValue({ ok: true });
+    renderView([kakiman, opotiki, napier]);
+    await user.click(screen.getByRole("button", { name: /kakiman/i }));
+    await user.click(screen.getByRole("button", { name: /add sub stories/i }));
+
+    const opotikiBox = screen.getByRole("checkbox", { name: /opotiki trip/i });
+    expect(opotikiBox).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /napier/i })).not.toBeChecked();
+
+    await user.click(opotikiBox);
+    await user.click(
+      screen.getByRole("button", { name: /save · no sub stories/i }),
+    );
+    await waitFor(() =>
+      expect(mockSetStoryParentAction).toHaveBeenCalledWith(
+        opotiki.id,
+        null,
+        kakiman.id,
+      ),
+    );
+    expect(mockSetStoryParentAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers neither the main story nor drafts as sub stories", async () => {
+    const user = userEvent.setup();
+    renderView([kakiman, opotiki, napier, draftStory]);
+    await user.click(screen.getByRole("button", { name: /kakiman/i }));
+    await user.click(screen.getByRole("button", { name: /add sub stories/i }));
+
+    expect(
+      screen.getByRole("checkbox", { name: /napier/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("checkbox", { name: /kakiman/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("checkbox", { name: /untitled story/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("rolls back a refused filing and shows the error", async () => {
     const user = userEvent.setup();
     mockSetStoryParentAction.mockResolvedValue({
       ok: false,
       error: "This story already has sub stories.",
     });
-    const unfiled: StoryFolderEntry = {
-      id: "55555555-5555-4555-8555-555555555555",
-      slug: "another-story",
-      title: "Another Story",
-      lifecycleStatus: "published",
-      linkable: true,
-      parentStoryId: null,
-    };
-    renderView([kakiman, unfiled]);
+    renderView([tauranga, napier]);
 
-    const selects = screen.getAllByLabelText(/move to/i);
-    await user.selectOptions(selects[1], kakiman.id);
+    await user.click(screen.getByRole("button", { name: /new folder/i }));
+    await user.click(screen.getByRole("button", { name: /tauranga week/i }));
+    await user.click(screen.getByRole("checkbox", { name: /napier/i }));
+    await user.click(
+      screen.getByRole("button", { name: /save · 1 sub story/i }),
+    );
 
     expect(
       await screen.findByText("This story already has sub stories."),
     ).toBeInTheDocument();
-    // Rolled back: still shown as its own unfiled folder row, not nested.
-    expect(
-      screen.getByRole("button", { name: /another story/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/no folders yet/i)).toBeInTheDocument();
+    expect(refresh).not.toHaveBeenCalled();
   });
 
-  it("shows drafts in Not in a folder, greyed with a publish hint, not fileable", () => {
-    renderView([kakiman, draftStory]);
-    expect(screen.getByText("Untitled story")).toBeInTheDocument();
-    expect(
-      screen.getByText(/publish this story to file it/i),
-    ).toBeInTheDocument();
-    const draftSelect = screen
-      .getAllByLabelText(/move to/i)
-      .find((el) => el.closest("li")?.textContent?.includes("Untitled story"));
-    expect(draftSelect).toBeDisabled();
+  it("removes a sub story after confirming", async () => {
+    const user = userEvent.setup();
+    mockSetStoryParentAction.mockResolvedValue({ ok: true });
+    renderView([kakiman, opotiki]);
+
+    await user.click(screen.getByRole("button", { name: /kakiman/i }));
+    await user.click(
+      screen.getByRole("button", { name: /remove from folder/i }),
+    );
+    await user.click(screen.getByRole("button", { name: /^remove$/i }));
+
+    await waitFor(() =>
+      expect(mockSetStoryParentAction).toHaveBeenCalledWith(
+        opotiki.id,
+        null,
+        kakiman.id,
+      ),
+    );
+  });
+
+  it("sums drafts up in one line instead of listing them", () => {
+    renderView([kakiman, opotiki, draftStory]);
+    expect(screen.getByText(/1 draft isn’t shown/i)).toBeInTheDocument();
+    expect(screen.queryByText("Untitled story")).not.toBeInTheDocument();
   });
 });

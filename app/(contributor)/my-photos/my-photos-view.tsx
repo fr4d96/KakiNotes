@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { BackLink } from "@/components/back-link";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
 import { StatusBadge } from "@/app/(contributor)/my-stories/status-badge";
 import { mintPreviewUrlAction } from "@/app/(contributor)/stories/[id]/media-actions";
@@ -32,21 +33,18 @@ export function MyPhotosView({
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="journiq-heading text-[2.4rem] max-md:sr-only">
-            {t("title")}
-          </h1>
+          <div className="flex items-center gap-3">
+            <BackLink />
+            <h1 className="journiq-heading text-[2.4rem] max-md:sr-only">
+              {t("title")}
+            </h1>
+          </div>
           <p className="mt-1 text-sm text-foreground/65">
             {total > 0
               ? t("summary", { photos: total, stories: stories.length })
               : t("subtitle")}
           </p>
         </div>
-        <Link
-          href="/my-stories"
-          className="press inline-flex min-h-11 items-center rounded-full border border-border-subtle px-4 text-sm font-medium"
-        >
-          {t("backToMyStories")}
-        </Link>
       </div>
 
       {total === 0 ? (

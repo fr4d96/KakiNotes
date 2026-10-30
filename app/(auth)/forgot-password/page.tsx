@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { BackLink } from "@/components/back-link";
 import { ForgotPasswordForm } from "@/app/(auth)/forgot-password/forgot-password-form";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -11,9 +12,12 @@ export default async function ForgotPasswordPage() {
   const t = await getTranslations("auth.forgotPassword");
   return (
     <div className="mx-auto max-w-md px-4 py-12 sm:px-6 sm:py-16">
-      <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only sm:text-3xl">
-        {t("title")}
-      </h1>
+      <div className="flex items-center gap-3">
+        <BackLink />
+        <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only sm:text-3xl">
+          {t("title")}
+        </h1>
+      </div>
       <p className="mt-2 text-sm text-muted-foreground">{t("intro")}</p>
       <ForgotPasswordForm />
     </div>

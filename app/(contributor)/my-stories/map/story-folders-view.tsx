@@ -4,43 +4,40 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import {
-  DndContext,
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useDraggable,
-  useDroppable,
-  useSensor,
-  useSensors,
-  type Announcements,
-  type DragEndEvent,
-  type UniqueIdentifier,
-} from "@dnd-kit/core";
+import { BackLink } from "@/components/back-link";
 import { setStoryParentAction } from "./actions";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { useIsPhone } from "@/components/ui/use-is-phone";
 import { StatusBadge } from "../status-badge";
-import { ChevronIcon, FolderIcon } from "@/components/icons";
+import {
+  ChevronIcon,
+  FolderIcon,
+  PlusIcon,
+  StorySearchIcon,
+} from "@/components/icons";
 import type { StoryFolderEntry } from "@/lib/story/story-folders";
 
-/** The drop target id for "take this story out of its folder". */
-const NOT_IN_FOLDER_ZONE = "not-in-folder";
+/** Past this many candidates the picker grows a search box. */
+const SEARCH_THRESHOLD = 6;
 
 /**
- * Story folders (supabase/migrations/20261021085920_story_folders.sql),
- * replacing the free-link story map (2026-10-21). One level only: a
- * published story with no parent of its own is always a potential folder
- * (even with zero sub stories yet, so there is a row to drop onto); any
- * story filed under one shows nested under it instead of in the "Not in a
- * folder" list.
+ * Story folders (supabase/migrations/20261021085920_story_folders.sql). One
+ * level only: a published main story groups published sub stories under it.
  *
- * Drag-and-drop (pointer + touch + keyboard, via @dnd-kit/core -- same
- * sensor pattern as the editor's photo reorder, components/story/
- * image-upload-manager.tsx) is the primary gesture; every row also has a
- * "Move to" select as the keyboard/screen-reader and phone fallback
- * (Engineering Rule 19) -- both call the same optimistic
- * setStoryParentAction.
+ * Tap-first (2026-10-30), replacing drag-and-drop, which had no usable
+ * gesture on a phone: "New folder" opens a two-step picker -- tap the main
+ * story, then tick its sub stories -- and every folder has its own "Add sub
+ * stories" that jumps straight to step two. Only folders that actually hold
+ * sub stories are listed; unfiled published stories appear in the picker
+ * instead of as a long list of empty rows, and drafts (never fileable) are
+ * one line of text. On a phone the picker is a BottomSheet; from md up it
+ * sits inline under the button (components/ui/use-is-phone.ts).
+ *
+ * Every filing calls setStoryParentAction, one story at a time, which
+ * re-derives ownership and eligibility server-side (Engineering Rule 2) --
+ * the eligibility filters here only keep impossible choices out of the list.
  */
 export function StoryFoldersView({
   stories: initialStories,
@@ -50,12 +47,15 @@ export function StoryFoldersView({
   const t = useTranslations("storyFolders");
   const router = useRouter();
   const { showToast } = useToast();
+  const isPhone = useIsPhone();
   const [stories, setStories] = useState(initialStories);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<StoryFolderEntry | null>(
     null,
   );
+  // null = picker closed; mainId null = step one (pick the main story).
+  const [picker, setPicker] = useState<{ mainId: string | null } | null>(null);
 
   const byId = useMemo(() => new Map(stories.map((s) => [s.id, s])), [stories]);
   const childrenOf = useMemo(() => {
@@ -68,17 +68,12 @@ export function StoryFoldersView({
     }
     return map;
   }, [stories]);
-  const hasChildren = (id: string) => (childrenOf.get(id)?.length ?? 0) > 0;
+  const subCount = (id: string) => childrenOf.get(id)?.length ?? 0;
 
-  // Any published, not-itself-filed story is a potential folder -- even
-  // one with no sub stories yet, so there's a row to drop a story onto.
-  const folders = stories.filter((s) => s.linkable && !s.parentStoryId);
-  // Everything else that isn't already nested under a folder above.
-  const notInFolder = stories.filter(
-    (s) => !s.parentStoryId && !(s.linkable && !s.parentStoryId),
-  );
-
-  const folderOptions = folders.map((f) => ({ id: f.id, title: f.title }));
+  const folders = stories.filter((s) => subCount(s.id) > 0);
+  const draftCount = stories.filter(
+    (s) => !s.linkable && !s.parentStoryId && subCount(s.id) === 0,
+  ).length;
 
   function toggleExpanded(id: string) {
     setExpanded((prev) => {
@@ -89,102 +84,93 @@ export function StoryFoldersView({
     });
   }
 
-  async function moveStory(storyId: string, parentId: string | null) {
-    const story = byId.get(storyId);
-    if (!story || story.id === parentId) return;
-    const previousParentId = story.parentStoryId;
-    if (previousParentId === parentId) return;
+  /**
+   * Applies the picker's ticks: `addIds` are filed under the main story,
+   * `removeIds` (its sub stories the contributor unticked) are taken out.
+   */
+  async function saveFolder(
+    mainId: string,
+    addIds: string[],
+    removeIds: string[],
+  ) {
+    const main = byId.get(mainId);
+    if (!main || addIds.length + removeIds.length === 0) return;
+    const changes = new Map<string, string | null>([
+      ...addIds.map((id) => [id, mainId] as const),
+      ...removeIds.map((id) => [id, null] as const),
+    ]);
+    const previous = new Map(
+      [...changes.keys()].map((id) => [
+        id,
+        byId.get(id)?.parentStoryId ?? null,
+      ]),
+    );
 
-    setPendingId(storyId);
-    // Optimistic update.
+    setPending(true);
+    // Optimistic: show the folder as saved straight away.
     setStories((prev) =>
       prev.map((s) =>
-        s.id === storyId ? { ...s, parentStoryId: parentId } : s,
+        changes.has(s.id) ? { ...s, parentStoryId: changes.get(s.id)! } : s,
       ),
     );
+    setPicker(null);
+    setExpanded((prev) => new Set(prev).add(mainId));
 
-    const result = await setStoryParentAction(
-      storyId,
-      parentId,
-      previousParentId,
-    );
+    const failed: string[] = [];
+    let firstError: string | null = null;
+    // One at a time: each call is its own checked, logged mutation, and
+    // their cache invalidations don't race.
+    for (const [id, parentId] of changes) {
+      const result = await setStoryParentAction(id, parentId, previous.get(id));
+      if (!result.ok) {
+        failed.push(id);
+        firstError ??= result.error;
+      }
+    }
 
-    setPendingId(null);
-    if (!result.ok) {
-      // Roll back.
+    setPending(false);
+    if (failed.length > 0) {
       setStories((prev) =>
         prev.map((s) =>
-          s.id === storyId ? { ...s, parentStoryId: previousParentId } : s,
+          failed.includes(s.id)
+            ? { ...s, parentStoryId: previous.get(s.id) ?? null }
+            : s,
+        ),
+      );
+      showToast(firstError ?? "", "error");
+    }
+    if (failed.length < changes.size) {
+      const finalCount = stories.filter((s) =>
+        changes.has(s.id) && !failed.includes(s.id)
+          ? changes.get(s.id) === mainId
+          : s.parentStoryId === mainId,
+      ).length;
+      showToast(
+        t("toasts.saved", { count: finalCount, parent: main.title ?? "" }),
+      );
+      router.refresh();
+    }
+  }
+
+  async function removeStory(story: StoryFolderEntry) {
+    const previousParentId = story.parentStoryId;
+    setPending(true);
+    setStories((prev) =>
+      prev.map((s) => (s.id === story.id ? { ...s, parentStoryId: null } : s)),
+    );
+    const result = await setStoryParentAction(story.id, null, previousParentId);
+    setPending(false);
+    if (!result.ok) {
+      setStories((prev) =>
+        prev.map((s) =>
+          s.id === story.id ? { ...s, parentStoryId: previousParentId } : s,
         ),
       );
       showToast(result.error, "error");
       return;
     }
-
-    if (parentId) {
-      const parent = byId.get(parentId);
-      showToast(
-        t("toasts.filed", {
-          child: story.title ?? "",
-          parent: parent?.title ?? "",
-        }),
-      );
-    } else {
-      showToast(t("toasts.removed", { child: story.title ?? "" }));
-    }
+    showToast(t("toasts.removed", { child: story.title ?? "" }));
     router.refresh();
-  }
-
-  const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 250, tolerance: 8 },
-    }),
-    useSensor(KeyboardSensor),
-  );
-
-  // dnd-kit's built-in screen-reader announcements read out raw ids
-  // ("Draggable item 54ec… was dropped over droppable area folder-ef3b…"),
-  // in English only. These name the stories instead, in the reader's
-  // language (Engineering Rule 19).
-  function titleFor(id: UniqueIdentifier | undefined): string {
-    if (id === undefined) return "";
-    const key = String(id);
-    if (key === NOT_IN_FOLDER_ZONE) return t("notInFolder.heading");
-    const story = byId.get(key.replace(/^folder-/, ""));
-    return story?.title ?? story?.slug ?? "";
-  }
-  const announcements: Announcements = {
-    onDragStart: ({ active }) =>
-      t("announce.start", { story: titleFor(active.id) }),
-    onDragOver: ({ active, over }) =>
-      over
-        ? t("announce.over", {
-            story: titleFor(active.id),
-            target: titleFor(over.id),
-          })
-        : t("announce.outside", { story: titleFor(active.id) }),
-    onDragEnd: ({ active, over }) =>
-      over
-        ? t("announce.dropped", {
-            story: titleFor(active.id),
-            target: titleFor(over.id),
-          })
-        : t("announce.cancelled", { story: titleFor(active.id) }),
-    onDragCancel: ({ active }) =>
-      t("announce.cancelled", { story: titleFor(active.id) }),
-  };
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over) return;
-    const storyId = String(active.id);
-    if (over.id === NOT_IN_FOLDER_ZONE) {
-      moveStory(storyId, null);
-      return;
-    }
-    const parentId = String(over.id).replace(/^folder-/, "");
-    moveStory(storyId, parentId);
   }
 
   if (stories.length === 0) {
@@ -196,58 +182,86 @@ export function StoryFoldersView({
     );
   }
 
+  const pickerBody = picker ? (
+    <FolderPicker
+      key={picker.mainId ?? "main"}
+      stories={stories}
+      mainId={picker.mainId}
+      subCount={subCount}
+      byId={byId}
+      onPickMain={(id) => setPicker({ mainId: id })}
+      onBack={() => setPicker({ mainId: null })}
+      onCancel={() => setPicker(null)}
+      onSave={saveFolder}
+      pending={pending}
+      inSheet={isPhone}
+    />
+  ) : null;
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
       <StoryFoldersHeader />
       <p className="mt-2 text-sm text-muted-foreground">{t("intro")}</p>
 
-      <DndContext
-        sensors={sensors}
-        onDragEnd={handleDragEnd}
-        accessibility={{
-          announcements,
-          screenReaderInstructions: { draggable: t("announce.instructions") },
-        }}
+      <button
+        type="button"
+        onClick={() => setPicker({ mainId: null })}
+        aria-expanded={!isPhone ? picker !== null : undefined}
+        className="press mt-5 inline-flex min-h-12 items-center gap-2 rounded-full bg-accent px-5 text-sm font-bold text-accent-foreground"
       >
-        <ul className="mt-6 space-y-3">
-          {folders.map((folder) => (
-            <FolderRow
-              key={folder.id}
-              folder={folder}
-              subStories={childrenOf.get(folder.id) ?? []}
-              expanded={expanded.has(folder.id)}
-              onToggle={() => toggleExpanded(folder.id)}
-              folderOptions={folderOptions}
-              pendingId={pendingId}
-              onMove={moveStory}
-              onRequestRemove={setRemoveTarget}
-            />
-          ))}
-        </ul>
+        <PlusIcon className="h-4 w-4" />
+        {t("newFolder")}
+      </button>
 
-        <section className="mt-8" aria-labelledby="not-in-folder-heading">
-          <h2
-            id="not-in-folder-heading"
-            className="text-sm font-semibold text-muted-foreground"
-          >
-            {t("notInFolder.heading")}
+      {isPhone ? (
+        <BottomSheet
+          open={picker !== null}
+          onClose={() => setPicker(null)}
+          title={picker?.mainId ? t("picker.subTitle") : t("picker.mainTitle")}
+        >
+          {pickerBody}
+        </BottomSheet>
+      ) : pickerBody ? (
+        <div className="mt-4 rounded-lg border border-border-subtle bg-surface p-4">
+          <h2 className="font-semibold">
+            {picker?.mainId ? t("picker.subTitle") : t("picker.mainTitle")}
           </h2>
-          <NotInFolderZone>
-            <ul className="mt-2 space-y-2">
-              {notInFolder.map((story) => (
-                <NotInFolderRow
-                  key={story.id}
-                  story={story}
-                  folderOptions={folderOptions}
-                  pendingId={pendingId}
-                  hasChildren={hasChildren(story.id)}
-                  onMove={moveStory}
-                />
-              ))}
-            </ul>
-          </NotInFolderZone>
-        </section>
-      </DndContext>
+          {pickerBody}
+        </div>
+      ) : null}
+
+      <section className="mt-8" aria-labelledby="your-folders-heading">
+        <h2
+          id="your-folders-heading"
+          className="text-sm font-semibold text-muted-foreground"
+        >
+          {t("yourFolders")}
+        </h2>
+        {folders.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">{t("noFolders")}</p>
+        ) : (
+          <ul className="mt-2 space-y-3">
+            {folders.map((folder) => (
+              <FolderRow
+                key={folder.id}
+                folder={folder}
+                subStories={childrenOf.get(folder.id) ?? []}
+                expanded={expanded.has(folder.id)}
+                onToggle={() => toggleExpanded(folder.id)}
+                onAdd={() => setPicker({ mainId: folder.id })}
+                pending={pending}
+                onRequestRemove={setRemoveTarget}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {draftCount > 0 ? (
+        <p className="mt-6 text-xs text-muted-foreground">
+          {t("draftsNote", { count: draftCount })}
+        </p>
+      ) : null}
 
       <ConfirmDialog
         open={removeTarget !== null}
@@ -261,9 +275,9 @@ export function StoryFoldersView({
             : undefined
         }
         confirmLabel={t("folders.removeDialog.confirm")}
-        pending={removeTarget ? pendingId === removeTarget.id : false}
+        pending={pending}
         onConfirm={() => {
-          if (removeTarget) moveStory(removeTarget.id, null);
+          if (removeTarget) removeStory(removeTarget);
           setRemoveTarget(null);
         }}
         onCancel={() => setRemoveTarget(null)}
@@ -275,56 +289,220 @@ export function StoryFoldersView({
 function StoryFoldersHeader() {
   const t = useTranslations("storyFolders");
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex items-center gap-3">
+      <BackLink />
       <h1 className="journiq-heading text-[2rem] max-md:sr-only">
         {t("title")}
       </h1>
-      <Link
-        href="/my-stories"
-        className="text-sm font-medium text-accent underline underline-offset-2"
-      >
-        {t("backToMyStories")}
-      </Link>
     </div>
   );
 }
 
-type FolderOption = { id: string; title: string | null };
-
-function MoveToSelect({
-  story,
-  folderOptions,
-  disabled,
-  onMove,
+/**
+ * Step one (mainId null): every published story not itself filed under
+ * another is a possible main story. Step two edits that folder: its current
+ * sub stories start ticked (untick to take one out), and any other published
+ * story with no sub stories of its own (one level only, WHV14) can be ticked
+ * in. A story already in ANOTHER folder is offered too, labelled, since
+ * adding it here moves it. Drafts never appear: set_story_parent() refuses
+ * them, so they are summed up on the page instead.
+ */
+function FolderPicker({
+  stories,
+  mainId,
+  subCount,
+  byId,
+  onPickMain,
+  onBack,
+  onCancel,
+  onSave,
+  pending,
+  inSheet,
 }: {
-  story: StoryFolderEntry;
-  folderOptions: FolderOption[];
-  disabled: boolean;
-  onMove: (storyId: string, parentId: string | null) => void;
+  stories: StoryFolderEntry[];
+  mainId: string | null;
+  subCount: (id: string) => number;
+  byId: Map<string, StoryFolderEntry>;
+  onPickMain: (id: string) => void;
+  onBack: () => void;
+  onCancel: () => void;
+  onSave: (mainId: string, addIds: string[], removeIds: string[]) => void;
+  pending: boolean;
+  inSheet: boolean;
 }) {
   const t = useTranslations("storyFolders");
-  const options = folderOptions.filter((f) => f.id !== story.id);
+  const [query, setQuery] = useState("");
+  const main = mainId ? byId.get(mainId) : undefined;
+  // The folder's sub stories as they are now -- the starting ticks, and
+  // what Save diffs against. FolderPicker is keyed by mainId, so this is
+  // read once per folder opened.
+  const [current] = useState(
+    () =>
+      new Set(
+        main
+          ? stories.filter((s) => s.parentStoryId === main.id).map((s) => s.id)
+          : [],
+      ),
+  );
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(current));
+
+  const candidates = main
+    ? [
+        // Its own sub stories first, ticked.
+        ...stories.filter((s) => current.has(s.id)),
+        ...stories.filter(
+          (s) =>
+            s.linkable &&
+            s.id !== main.id &&
+            !current.has(s.id) &&
+            subCount(s.id) === 0,
+        ),
+      ]
+    : stories.filter((s) => s.linkable && !s.parentStoryId);
+  const addIds = [...selected].filter((id) => !current.has(id));
+  const removeIds = [...current].filter((id) => !selected.has(id));
+  const changed = addIds.length + removeIds.length > 0;
+  const needle = query.trim().toLowerCase();
+  const shown = needle
+    ? candidates.filter((s) =>
+        (s.title ?? s.slug).toLowerCase().includes(needle),
+      )
+    : candidates;
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   return (
-    <label className="sr-only sm:not-sr-only sm:text-xs sm:text-muted-foreground">
-      {t("moveTo.label")}
-      <select
-        className="ml-1 min-h-[44px] rounded-md border border-border-subtle bg-surface px-2 py-1 text-sm sm:min-h-0 sm:py-0.5"
-        aria-label={t("moveTo.label")}
-        disabled={disabled || !story.linkable}
-        value={story.parentStoryId ?? ""}
-        onChange={(event) => {
-          const value = event.target.value;
-          onMove(story.id, value === "" ? null : value);
-        }}
-      >
-        <option value="">{t("moveTo.notInFolderOption")}</option>
-        {options.map((f) => (
-          <option key={f.id} value={f.id}>
-            {f.title}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className={inSheet ? "" : "mt-1"}>
+      {main ? (
+        <p className="text-sm text-muted-foreground">
+          {t("picker.subHint", { parent: main.title ?? "" })}
+        </p>
+      ) : (
+        <p className="text-sm text-muted-foreground">{t("picker.mainHint")}</p>
+      )}
+
+      {candidates.length > SEARCH_THRESHOLD ? (
+        // Same shape as the stories filter bar's search: the border sits on
+        // the input itself, so the app's one focus ring wraps it cleanly.
+        // text-base (16px) stops iOS zooming the page on focus.
+        <label className="relative mt-3 block">
+          <span className="sr-only">{t("picker.search")}</span>
+          <StorySearchIcon className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-foreground/50" />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t("picker.search")}
+            className="min-h-11 w-full rounded-md border border-border-subtle bg-surface py-2 pr-3 pl-9 text-base"
+          />
+        </label>
+      ) : null}
+
+      {candidates.length === 0 ? (
+        <p className="mt-4 text-sm text-muted-foreground">
+          {main ? t("picker.noCandidates") : t("empty")}
+        </p>
+      ) : shown.length === 0 ? (
+        <p className="mt-4 text-sm text-muted-foreground">
+          {t("picker.noMatches")}
+        </p>
+      ) : main ? (
+        <ul className="mt-3 divide-y divide-border-subtle">
+          {shown.map((story) => {
+            const currentParent =
+              story.parentStoryId && story.parentStoryId !== main.id
+                ? byId.get(story.parentStoryId)
+                : undefined;
+            return (
+              <li key={story.id}>
+                <label className="flex min-h-12 cursor-pointer items-center gap-3 py-2">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(story.id)}
+                    onChange={() => toggle(story.id)}
+                    className="h-5 w-5 shrink-0 accent-[var(--accent)]"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">
+                      {story.title}
+                    </span>
+                    {currentParent ? (
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {t("picker.inFolder", {
+                          parent: currentParent.title ?? "",
+                        })}
+                      </span>
+                    ) : null}
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <ul className="mt-3 divide-y divide-border-subtle">
+          {shown.map((story) => (
+            <li key={story.id}>
+              <button
+                type="button"
+                onClick={() => onPickMain(story.id)}
+                className="flex min-h-12 w-full items-center gap-3 py-2 text-left"
+              >
+                <FolderIcon className="h-5 w-5 shrink-0 text-accent" />
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                  {story.title}
+                </span>
+                {subCount(story.id) > 0 ? (
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {t("folders.subStoryCount", {
+                      count: subCount(story.id),
+                    })}
+                  </span>
+                ) : null}
+                <ChevronIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-4 flex flex-wrap gap-3">
+        {main ? (
+          <>
+            <button
+              type="button"
+              disabled={!changed || pending}
+              onClick={() => onSave(main.id, addIds, removeIds)}
+              className="press inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-accent px-5 text-sm font-bold text-accent-foreground disabled:opacity-50 sm:flex-none"
+            >
+              {t("picker.save", { count: selected.size })}
+            </button>
+            <button
+              type="button"
+              onClick={onBack}
+              className="press inline-flex min-h-12 items-center justify-center rounded-full border border-border-subtle px-5 text-sm font-bold"
+            >
+              {t("picker.back")}
+            </button>
+          </>
+        ) : !inSheet ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="press inline-flex min-h-11 items-center justify-center rounded-full border border-border-subtle px-5 text-sm font-bold"
+          >
+            {t("picker.cancel")}
+          </button>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -333,227 +511,106 @@ function FolderRow({
   subStories,
   expanded,
   onToggle,
-  folderOptions,
-  pendingId,
-  onMove,
+  onAdd,
+  pending,
   onRequestRemove,
 }: {
   folder: StoryFolderEntry;
   subStories: StoryFolderEntry[];
   expanded: boolean;
   onToggle: () => void;
-  folderOptions: FolderOption[];
-  pendingId: string | null;
-  onMove: (storyId: string, parentId: string | null) => void;
+  onAdd: () => void;
+  pending: boolean;
   onRequestRemove: (story: StoryFolderEntry) => void;
 }) {
   const t = useTranslations("storyFolders");
-  const { setNodeRef: setDropRef, isOver } = useDroppable({
-    id: `folder-${folder.id}`,
-  });
-  const draggable = folder.linkable && subStories.length === 0;
-  const {
-    setNodeRef: setDragRef,
-    listeners,
-    isDragging,
-  } = useDraggable({
-    id: folder.id,
-    disabled: !draggable,
-  });
-
   return (
-    <li
-      ref={setDropRef}
-      className={`rounded-lg border ${
-        isOver ? "border-accent bg-accent/5" : "border-border-subtle"
-      } bg-surface`}
-      data-dragging={isDragging || undefined}
-    >
-      <div className="flex items-center gap-2 p-3">
-        {draggable ? (
-          <span
-            ref={setDragRef}
-            {...listeners}
-            className="flex h-11 w-11 shrink-0 cursor-grab items-center justify-center rounded-md text-accent"
-          >
-            <FolderIcon className="h-5 w-5" />
-          </span>
-        ) : (
-          <FolderIcon className="h-5 w-5 shrink-0 text-accent" />
-        )}
-        <button
-          type="button"
-          aria-expanded={expanded}
-          onClick={onToggle}
-          className="flex min-h-[44px] flex-1 items-center gap-2 text-left"
-        >
-          <ChevronIcon
-            className={`h-4 w-4 shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`}
-          />
-          <span className="min-w-0 flex-1 truncate font-medium">
-            {folder.title}
-          </span>
-          <span className="shrink-0 text-xs text-muted-foreground">
-            {t("folders.subStoryCount", { count: subStories.length })}
-          </span>
-        </button>
-        {/* A folder with sub stories of its own can't be filed under
-            another (one level only, WHV14) -- MoveToSelect's own
-            `!story.linkable` check doesn't know about that, so it's
-            disabled here too. */}
-        <MoveToSelect
-          story={folder}
-          folderOptions={folderOptions}
-          disabled={pendingId === folder.id || subStories.length > 0}
-          onMove={onMove}
-        />
-      </div>
-      {expanded ? (
-        <ul className="space-y-1 border-t border-border-subtle p-2">
-          {subStories.length === 0 ? (
-            <li className="px-2 py-1 text-sm text-muted-foreground">
-              {t("folders.subStoryCount", { count: 0 })}
-            </li>
-          ) : (
-            subStories.map((child) => (
-              <SubStoryRow
-                key={child.id}
-                story={child}
-                folderOptions={folderOptions}
-                pendingId={pendingId}
-                onMove={onMove}
-                onRequestRemove={onRequestRemove}
-              />
-            ))
-          )}
-        </ul>
-      ) : null}
-    </li>
-  );
-}
-
-function SubStoryRow({
-  story,
-  folderOptions,
-  pendingId,
-  onMove,
-  onRequestRemove,
-}: {
-  story: StoryFolderEntry;
-  folderOptions: FolderOption[];
-  pendingId: string | null;
-  onMove: (storyId: string, parentId: string | null) => void;
-  onRequestRemove: (story: StoryFolderEntry) => void;
-}) {
-  const t = useTranslations("storyFolders");
-  // A sub story can never have sub stories of its own (one level only), so
-  // the only thing that can block dragging it to another folder is not
-  // being published.
-  const draggable = story.linkable;
-  const { setNodeRef, listeners, isDragging } = useDraggable({
-    id: story.id,
-    disabled: !draggable,
-  });
-  return (
-    <li
-      ref={setNodeRef}
-      data-dragging={isDragging || undefined}
-      className="flex min-h-[44px] flex-wrap items-center gap-2 rounded-md px-2 py-1.5"
-    >
-      <span
-        {...(draggable ? listeners : {})}
-        className={`min-w-0 flex-1 truncate text-sm ${draggable ? "cursor-grab" : ""}`}
-      >
-        {story.title}
-      </span>
-      <StatusBadge status={story.lifecycleStatus} />
-      <Link
-        href={`/stories/${story.slug}`}
-        className="text-xs font-medium text-accent underline underline-offset-2"
-      >
-        {t("folders.openStory")}
-      </Link>
+    <li className="rounded-lg border border-border-subtle bg-surface">
       <button
         type="button"
-        onClick={() => onRequestRemove(story)}
-        disabled={pendingId === story.id}
-        className="rounded-md border border-border-subtle px-2 py-1 text-xs font-medium text-destructive"
+        aria-expanded={expanded}
+        onClick={onToggle}
+        className="flex min-h-14 w-full items-center gap-3 px-3 text-left"
       >
-        {t("folders.removeFromFolder")}
+        <FolderIcon className="h-5 w-5 shrink-0 text-accent" />
+        <span className="min-w-0 flex-1 truncate font-medium">
+          {folder.title}
+        </span>
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {t("folders.subStoryCount", { count: subStories.length })}
+        </span>
+        <ChevronIcon
+          className={`h-4 w-4 shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`}
+        />
       </button>
-      <MoveToSelect
-        story={story}
-        folderOptions={folderOptions}
-        disabled={pendingId === story.id}
-        onMove={onMove}
-      />
-    </li>
-  );
-}
-
-function NotInFolderZone({ children }: { children: React.ReactNode }) {
-  const { setNodeRef, isOver } = useDroppable({ id: NOT_IN_FOLDER_ZONE });
-  return (
-    <div
-      ref={setNodeRef}
-      className={`rounded-lg border border-dashed p-2 ${
-        isOver ? "border-accent bg-accent/5" : "border-border-subtle"
-      }`}
-    >
-      {children}
-    </div>
-  );
-}
-
-function NotInFolderRow({
-  story,
-  folderOptions,
-  pendingId,
-  hasChildren,
-  onMove,
-}: {
-  story: StoryFolderEntry;
-  folderOptions: FolderOption[];
-  pendingId: string | null;
-  hasChildren: boolean;
-  onMove: (storyId: string, parentId: string | null) => void;
-}) {
-  const t = useTranslations("storyFolders");
-  const draggable = story.linkable && !hasChildren;
-  const { setNodeRef, listeners, isDragging } = useDraggable({
-    id: story.id,
-    disabled: !draggable,
-  });
-  const hint = !story.linkable
-    ? t("notInFolder.publishHint")
-    : hasChildren
-      ? t("notInFolder.notDraggableHint")
-      : null;
-
-  return (
-    <li
-      ref={setNodeRef}
-      data-dragging={isDragging || undefined}
-      className={`flex min-h-[44px] flex-wrap items-center gap-2 rounded-md px-2 py-1.5 ${
-        !story.linkable ? "text-muted-foreground" : ""
-      }`}
-    >
-      <span
-        {...(draggable ? listeners : {})}
-        className={`min-w-0 flex-1 truncate text-sm ${draggable ? "cursor-grab" : ""}`}
-      >
-        {story.title}
-      </span>
-      <StatusBadge status={story.lifecycleStatus} />
-      {hint ? (
-        <span className="text-xs text-muted-foreground">{hint}</span>
+      {expanded ? (
+        <div className="border-t border-border-subtle p-2">
+          {/* The main story itself, so it is as reachable as its sub
+              stories. */}
+          <div className="rounded-md bg-surface-muted/60 px-2 pt-2">
+            <span className="text-[0.7rem] font-semibold tracking-wide text-muted-foreground uppercase">
+              {t("folders.mainStory")}
+            </span>
+            <span className="line-clamp-2 text-sm font-medium">
+              {folder.title}
+            </span>
+            <Link
+              href={`/stories/${folder.slug}`}
+              className="inline-flex min-h-11 items-center text-xs font-medium text-accent underline underline-offset-2"
+            >
+              {t("folders.openStory")}
+            </Link>
+          </div>
+          <p className="mt-3 px-2 text-[0.7rem] font-semibold tracking-wide text-muted-foreground uppercase">
+            {t("folders.subStories")}
+          </p>
+          <ul className="space-y-1">
+            {subStories.map((child) => (
+              // Title on its own line, actions under it: side by side, a
+              // phone left the title three characters wide.
+              <li key={child.id} className="rounded-md px-2 pt-2">
+                <div className="flex items-start gap-2">
+                  <span className="line-clamp-2 min-w-0 flex-1 text-sm font-medium">
+                    {child.title}
+                  </span>
+                  {/* Filing requires published, so only an exception (a
+                      story unpublished after filing) is worth a badge. */}
+                  {child.lifecycleStatus !== "published" ? (
+                    <StatusBadge status={child.lifecycleStatus} />
+                  ) : null}
+                </div>
+                <div className="flex items-center gap-4">
+                  <Link
+                    href={`/stories/${child.slug}`}
+                    className="inline-flex min-h-11 items-center text-xs font-medium text-accent underline underline-offset-2"
+                  >
+                    {t("folders.openStory")}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => onRequestRemove(child)}
+                    disabled={pending}
+                    className="min-h-11 text-xs font-medium text-destructive"
+                  >
+                    {t("folders.removeFromFolder")}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {folder.linkable ? (
+            <button
+              type="button"
+              onClick={onAdd}
+              disabled={pending}
+              className="press mt-1 inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm font-semibold text-accent"
+            >
+              <PlusIcon className="h-4 w-4" />
+              {t("folders.addSubStories")}
+            </button>
+          ) : null}
+        </div>
       ) : null}
-      <MoveToSelect
-        story={story}
-        folderOptions={folderOptions}
-        disabled={pendingId === story.id}
-        onMove={onMove}
-      />
     </li>
   );
 }
