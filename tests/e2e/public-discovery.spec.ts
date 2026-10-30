@@ -217,9 +217,9 @@ test.describe("story detail", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: storyTitle }),
     ).toBeVisible();
-    // The site footer also carries a similar disclaimer ("one person's
-    // *personal* experience, not immigration..."), so match the label's
-    // own, more specific phrasing to avoid a strict-mode ambiguity.
+    // Match the label's own, specific phrasing. (The site footer's similar
+    // disclaimer only renders on the home pages now, but the specific
+    // phrasing stays the safer match.)
     await expect(page.getByText(/one person's experience/i)).toBeVisible();
     await expect(
       page.getByText(

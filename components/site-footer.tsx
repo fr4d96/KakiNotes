@@ -8,13 +8,23 @@ import { countryFromPathname, countryUrlPrefix } from "@/lib/story/countries";
 
 // A client component only for usePathname(): the footer sits in the shared
 // (public) layout, so the URL is the one place it can learn which country
-// section it is under.
+// section it is under -- and whether this is a home page at all.
+//
+// Home pages only (/ and /cn). Everywhere else the bottom tab bar and the
+// header carry the navigation, and a full footer under every list, form and
+// story was a long scroll of links nobody came for. Rendered from the
+// (public) layout rather than the home page itself so it stays outside
+// <main> and keeps its contentinfo landmark. The other layouts (auth,
+// contributor, staff) never show a home page, so they don't render it.
 export function SiteFooter() {
   const t = useTranslations("footer");
   const tNav = useTranslations("nav");
   const tChina = useTranslations("countryContent.china");
-  const isChina = countryFromPathname(usePathname()) === "china";
+  const pathname = usePathname() ?? "/";
+  const isChina = countryFromPathname(pathname) === "china";
   const prefix = isChina ? countryUrlPrefix("china") : "";
+  const rest = pathname.slice(prefix.length).replace(/\/+$/, "");
+  if (rest !== "") return null;
   return (
     // The footer FLIPS with the theme; it is not an always-dark band.
     //

@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { resolveContributorAccess } from "@/lib/auth/contributor-guard";
 import { ContributorNav } from "@/components/contributor-nav";
-import { SiteFooter } from "@/components/site-footer";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
 import { PageTransition } from "@/components/page-transition";
 
@@ -30,7 +29,6 @@ export default async function ContributorLayout({
       <main id="main-content" className="flex-1">
         <PageTransition>{children}</PageTransition>
       </main>
-      <SiteFooter />
       <BottomTabBar signedInHint />
     </>
   );

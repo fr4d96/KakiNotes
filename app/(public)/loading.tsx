@@ -9,8 +9,8 @@ import {
  * Fallback for every public route that hasn't got a closer one — /about, the
  * four legal pages, and the home page.
  *
- * It sits inside (public)/layout.tsx, so SiteHeader and SiteFooter stay on
- * screen the whole time and only <main> is swapped. That, not the shimmer, is
+ * It sits inside (public)/layout.tsx, so SiteHeader (and, on the home page,
+ * SiteFooter) stay on screen the whole time and only <main> is swapped. That, not the shimmer, is
  * what fixed the old "the whole window goes blank and says Loading…" feel.
  *
  * Shaped as a prose page (title, standfirst, body) because that is what all
