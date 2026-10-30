@@ -23,7 +23,7 @@ export default async function SignInPage({
   const t = await getTranslations("auth.signIn");
 
   return (
-    <div className="mx-auto max-w-md px-4 py-12 sm:px-6 sm:py-16">
+    <div className="mx-auto max-w-md px-4 pt-4 pb-12 sm:px-6 sm:py-16">
       <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only sm:text-3xl">
         {t("title")}
       </h1>

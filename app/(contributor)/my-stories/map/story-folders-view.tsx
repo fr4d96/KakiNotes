@@ -175,7 +175,7 @@ export function StoryFoldersView({
 
   if (stories.length === 0) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+      <div className="mx-auto max-w-3xl px-4 pt-4 pb-12 sm:px-6 sm:py-16">
         <StoryFoldersHeader />
         <p className="mt-6 text-sm text-muted-foreground">{t("empty")}</p>
       </div>
@@ -199,7 +199,7 @@ export function StoryFoldersView({
   ) : null;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+    <div className="mx-auto max-w-3xl px-4 pt-4 pb-12 sm:px-6 sm:py-16">
       <StoryFoldersHeader />
       <p className="mt-2 text-sm text-muted-foreground">{t("intro")}</p>
 

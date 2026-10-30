@@ -15,7 +15,7 @@ export default function AuthLoading() {
   return (
     <LoadingScreen
       label={t("loading")}
-      className="mx-auto max-w-md px-4 py-12 sm:px-6 sm:py-16"
+      className="mx-auto max-w-md px-4 pt-4 pb-12 sm:px-6 sm:py-16"
     >
       <Skeleton className="h-8 w-40 sm:h-9" />
       <div className="mt-8 flex flex-col gap-5">

@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-30 (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+Last updated: 2026-10-30 (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
 one-level folder shape — a story is either a main story, a sub story filed under exactly one main
 story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
 "Move to…" select; migration applied to the dev project — see the entry at the end of this
@@ -10852,3 +10852,46 @@ map control, not page-back links). Tests: `header-brand.test.tsx`, `page-titles.
 
 Risk: `feat/private-story-folders` (unmerged, 41 commits behind) edits
 `story-folders-view.test.tsx`; it will conflict with this rewrite when it is rebased.
+
+## 2026-10-30 — My Photos collapsed by default, tighter phone tops, back arrow on stories
+
+Branch `fix/mobile-polish` (from `main` at `d45e393`). Checked in the iPhone 17 frame against the
+dev project, read-only.
+
+**My Photos** (`my-photos-view.tsx`): each story is a collapsed row — cover thumbnail, title,
+status, photo count, chevron (`<h2><button aria-expanded>`). Opening one shows only its photos and
+closes any other; a closed story mounts no photos, so nothing loads until it is opened. Tests:
+`my-photos-view.test.tsx` (open-first helper; collapsed start; one open at a time).
+
+**No empty band under the phone top bar.** Pages whose title moved into the top bar still had
+`py-12` above a phone-hidden `<h1>`. They now use `pt-4` on phones (as My Stories already did),
+desktop unchanged: My Photos, Story folders, Journey map, New story, PDF import, Account,
+Notifications, Stories, Contributors, Costs (+ /cn), Sign in, Sign up, Forgot password, the
+placeholder page, and the contributor and auth loading skeletons.
+
+**Back arrow on a story's pages.** `pageBack()` (`lib/navigation/page-titles.ts`) now also covers
+`/stories/<id>/edit`, `/stories/<id>/preview` and the published `/stories/<slug>` (`history: true`):
+the top-bar arrow (at every width, logo kept beside it: `[←] Kakinotes`) goes back to wherever the
+reader came from via `history.back()`, and falls back to My Stories (edit, preview) or Stories
+(published) when they landed directly. In-app navigation is counted by
+`components/in-app-history.tsx` (root layout) into `lib/navigation/in-app-history.ts`, so the arrow
+never sends a reader off the site. Label `common.back` ("Back", en, zh-CN). Tests:
+`back-link.test.tsx`, `header-brand.test.tsx`, `page-titles.test.ts`.
+
+**Same branch, later the same day.**
+
+- _Download a copy_ on a published story's preview (`stories/[id]/preview/page.tsx`) is a round
+  download icon beside "Edit this story" instead of a top row of its own; the top row now renders
+  only when it has a left-hand item (back to editing / reopen) or the download has nowhere else to
+  go (a submitted, non-published story). Phone top padding `pt-4`.
+- _Import from PDF_ gets the back arrow (`pageBack`: `/stories/new/import` → New story,
+  `nav.newStory`).
+- _Journey tab._ Signed in, the bottom tab bar's third tab is Journey (`/my-stories/journey`,
+  `RouteIcon`, `nav.journey`) instead of Contributors; signed out it stays Contributors. My Stories
+  is no longer lit on the journey page, and the journey page drops its back arrow (it is a tab root
+  now). Contributors moves into the signed-in avatar menu on phones (`user-avatar-menu.tsx`), so it
+  stays reachable from every signed-in header. Test: `bottom-tab-bar.test.tsx`.
+
+- _Journey map rows_ (`journey-view.tsx`): on a phone the title (up to two lines, badge beside it)
+  gets its own line, the place under it and the buttons on a row below; they had squeezed the
+  title to a few characters. One row from sm up.

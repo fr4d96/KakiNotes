@@ -229,27 +229,32 @@ export default async function StoryPreviewPage({
   ) as Partial<Record<StoryStepId, string>>;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-      <div className="flex items-center justify-between gap-4 text-sm font-bold">
-        {canEdit ? (
-          <Link
-            href={`/stories/${preview.storyId}/edit?step=places`}
-            className="text-accent underline underline-offset-2"
-          >
-            ← Back to editing
-          </Link>
-        ) : canReopen ? (
-          <ReopenForEditingButton
-            storyId={preview.storyId}
-            storyTitle={preview.title}
-            isPublished={preview.lifecycleStatus === "published"}
-            variant="button"
-            className="text-accent underline underline-offset-2"
-          />
-        ) : (
-          <span />
-        )}
-        {/*
+    <div className="mx-auto max-w-5xl px-4 pt-4 pb-8 sm:px-6 sm:py-12">
+      {/* The top row only when it has something on the left (back to
+          editing / reopen) or the download has nowhere else to go: on a
+          published story the download sits in the "Edit this story" card
+          as an icon, so this row would be a whole line spent on one link. */}
+      {(canEdit || canReopen || (canDownloadCopy && !canStartRevision)) && (
+        <div className="flex items-center justify-between gap-4 text-sm font-bold">
+          {canEdit ? (
+            <Link
+              href={`/stories/${preview.storyId}/edit?step=places`}
+              className="text-accent underline underline-offset-2"
+            >
+              ← Back to editing
+            </Link>
+          ) : canReopen ? (
+            <ReopenForEditingButton
+              storyId={preview.storyId}
+              storyTitle={preview.title}
+              isPublished={preview.lifecycleStatus === "published"}
+              variant="button"
+              className="text-accent underline underline-offset-2"
+            />
+          ) : (
+            <span />
+          )}
+          {/*
           A plain <a>, not next/link: /stories/:id/export is a Route Handler
           that answers with Content-Disposition: attachment, and Link would
           try to client-side navigate rather than let the browser download.
@@ -267,31 +272,46 @@ export default async function StoryPreviewPage({
           unaffected, and is the link a contributor mid-draft actually
           reaches for.
         */}
-        {canDownloadCopy ? (
-          <a
-            href={`/stories/${preview.storyId}/export`}
-            className="inline-flex items-center gap-1.5 text-foreground/70 underline underline-offset-2"
-          >
-            <DownloadIcon className="h-4 w-4" aria-hidden />
-            {t("downloadCopy")}
-          </a>
-        ) : (
-          <span />
-        )}
-      </div>
+          {canDownloadCopy && !canStartRevision ? (
+            <a
+              href={`/stories/${preview.storyId}/export`}
+              className="inline-flex items-center gap-1.5 text-foreground/70 underline underline-offset-2"
+            >
+              <DownloadIcon className="h-4 w-4" aria-hidden />
+              {t("downloadCopy")}
+            </a>
+          ) : (
+            <span />
+          )}
+        </div>
+      )}
 
       {canStartRevision && (
-        <div className="mt-4 flex flex-col gap-2 rounded-md border border-border-subtle p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col gap-2 rounded-md border border-border-subtle p-4 first:mt-0 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             This is your published story. You can change it — it stays live
             while a moderator reviews your update.
           </p>
-          <StartRevisionButton
-            storyId={preview.storyId}
-            storyTitle={preview.title}
-            isPublished
-            className="journiq-button inline-flex shrink-0 items-center gap-2 bg-accent text-accent-foreground"
-          />
+          <div className="flex shrink-0 items-center gap-2">
+            <StartRevisionButton
+              storyId={preview.storyId}
+              storyTitle={preview.title}
+              isPublished
+              className="journiq-button inline-flex flex-1 items-center justify-center gap-2 bg-accent text-accent-foreground sm:flex-none"
+            />
+            {canDownloadCopy && (
+              // Same export route as the top-row link (a plain <a>, see
+              // above), shrunk to an icon beside Edit.
+              <a
+                href={`/stories/${preview.storyId}/export`}
+                aria-label={t("downloadCopy")}
+                title={t("downloadCopy")}
+                className="press inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border-subtle text-foreground/80 hover:bg-surface-muted"
+              >
+                <DownloadIcon className="h-5 w-5" aria-hidden />
+              </a>
+            )}
+          </div>
         </div>
       )}
 

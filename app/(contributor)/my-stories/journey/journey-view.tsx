@@ -145,7 +145,7 @@ export function JourneyView({
 
   if (stories.length === 0) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+      <div className="mx-auto max-w-3xl px-4 pt-4 pb-12 sm:px-6 sm:py-16">
         <JourneyHeader />
         <p className="mt-6 text-sm text-muted-foreground">{t("empty")}</p>
       </div>
@@ -169,9 +169,15 @@ export function JourneyView({
           story.pinnable ? "" : "opacity-70"
         }`}
       >
-        <div className="flex flex-wrap items-center gap-2 p-3">
+        {/* Phone: title (with its badge) on its own line, the place under
+            it, the buttons on a row below -- side by side, the buttons
+            left the title a few characters wide. One row from sm up. */}
+        <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">
-            <p className="truncate font-medium">{title}</p>
+            <div className="flex items-start gap-2">
+              <p className="line-clamp-2 min-w-0 flex-1 font-medium">{title}</p>
+              <StatusBadge status={story.lifecycleStatus} />
+            </div>
             {story.place ? (
               <p className="text-sm text-muted-foreground">
                 {t("rows.placeLabel", { place: story.place.label })}
@@ -184,8 +190,7 @@ export function JourneyView({
               </p>
             )}
           </div>
-          <StatusBadge status={story.lifecycleStatus} />
-          <div className="flex flex-wrap gap-2">
+          <div className="flex shrink-0 flex-wrap gap-2">
             {story.pinnable ? (
               <button
                 type="button"
@@ -313,7 +318,7 @@ export function JourneyView({
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+    <div className="mx-auto max-w-3xl px-4 pt-4 pb-12 sm:px-6 sm:py-16">
       <JourneyHeader />
       <p className="mt-2 text-sm text-muted-foreground">{t("intro")}</p>
 
