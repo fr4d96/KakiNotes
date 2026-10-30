@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.15.0](https://github.com/fr4d96/KakiNotes/compare/v1.14.0...v1.15.0) (2026-10-30)
+
+
+### Features
+
+* **journey:** list published journeys, a page per journey, clearer pin wording ([966ec76](https://github.com/fr4d96/KakiNotes/commit/966ec760ea3a54677e6f6993b4ba7572a9affdd2))
+* **my-photos:** stories start collapsed, one open at a time ([d7f224d](https://github.com/fr4d96/KakiNotes/commit/d7f224d464498c876c4a2e76d91039f95edcaf98))
+* **my-stories:** tap-first story folders and arrow back navigation ([ce8af67](https://github.com/fr4d96/KakiNotes/commit/ce8af67bd6705aaec59c043d6518a0f17fb7dad7))
+* **nav:** back arrow on story pages and PDF import, Journey tab ([aec1389](https://github.com/fr4d96/KakiNotes/commit/aec1389c8a46cada7d680bf249eaa037afa9ee25))
+* **ui:** spring-back pulse on every button tap ([5da2f8c](https://github.com/fr4d96/KakiNotes/commit/5da2f8c2ae50df777e0551572b4b6bf3c9ea6abf))
+
+
+### Bug Fixes
+
+* **mobile:** reclaim space at the top of pages and on story rows ([dcbd35a](https://github.com/fr4d96/KakiNotes/commit/dcbd35a614cc9f2ce7ed7111dd916d0e06337f31))
+* **mobile:** stop scroll from highlighting stories and sticking on photos ([6681a1c](https://github.com/fr4d96/KakiNotes/commit/6681a1c1c196ecd63af2377b2e5a988c97f89c4e))
+
 ## [1.14.0](https://github.com/fr4d96/KakiNotes/compare/v1.13.0...v1.14.0) (2026-10-30)
 
 ### Photos in stories
