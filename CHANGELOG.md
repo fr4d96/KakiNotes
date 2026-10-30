@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.16.0](https://github.com/fr4d96/KakiNotes/compare/v1.15.0...v1.16.0) (2026-10-30)
+
+
+### Features
+
+* **mobile:** launch splash, pull to refresh, no page pinch-zoom in the app ([876c933](https://github.com/fr4d96/KakiNotes/commit/876c93333c153433dcfce51bc1d63d8ceda06fad))
+
+
+### Bug Fixes
+
+* **journey:** zoom and re-centre work on a one-pin map ([bead368](https://github.com/fr4d96/KakiNotes/commit/bead368507a136addde3e8eb1ef0cdf5998d40b5))
+
 ## [1.15.0](https://github.com/fr4d96/KakiNotes/compare/v1.14.0...v1.15.0) (2026-10-30)
 
 ### Smoother on your phone
