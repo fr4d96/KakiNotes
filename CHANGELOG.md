@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.14.0](https://github.com/fr4d96/KakiNotes/compare/v1.13.0...v1.14.0) (2026-10-30)
+
+### Photos in stories
+
+**Swipe through a story's photos.** A story's photos now sit in one frame you swipe through, like a post on Instagram. A counter in the corner shows where you are ("2/5"), and dots underneath light up as you go. Photos an author placed back to back in the story text are grouped the same way. A single photo in the text stays exactly where and how big the author put it.
+
+**Tap a photo to see it full screen.** The photo grows out of the page to fill the screen, and shrinks back into place when you close it. Swipe left or right to move between photos, and drag a photo down to close it. On a computer, use the arrow buttons or the arrow keys. If you've asked your device to reduce motion, photos open and close without the zoom.
+
+**Photos load more gently.** Instead of a spinning wheel, each photo's space shows a soft shimmer until the photo has fully arrived, then the photo fades into place.
+
+### What's new for contributors
+
+**Covers fill your My Stories list.** In the list view, each story's cover photo now runs down the whole left side of its row instead of sitting as a small thumbnail in the corner.
+
+### Easier to use
+
+**The footer is only on the home page.** Other pages now end with their own content instead of a long block of links, and the tab bar and top bar handle getting around. Privacy, Terms, Guidelines and Copyright & Removal are linked from the home page footer.
+
+
+
+### Features
+
+* **layout:** show the site footer on the home page only ([803a777](https://github.com/fr4d96/KakiNotes/commit/803a77716fb63b302bc2e0471c6abd11aaa528bb))
+* **stories:** covers fill My Stories rows; photos load with a sheen ([0550e17](https://github.com/fr4d96/KakiNotes/commit/0550e17b36324bc62ef394b833fe75beb12f561b))
+* **stories:** Instagram-style photo carousel and a Photos-style viewer ([4a5d858](https://github.com/fr4d96/KakiNotes/commit/4a5d858aa0da43fce1c546f7d5958a49a5d80596))
+
 ## [1.13.0](https://github.com/fr4d96/KakiNotes/compare/v1.12.0...v1.13.0) (2026-10-30)
 
 ### Kakinotes on your iPhone
