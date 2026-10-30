@@ -276,7 +276,9 @@ function StoryFoldersHeader() {
   const t = useTranslations("storyFolders");
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <h1 className="journiq-heading text-[2rem]">{t("title")}</h1>
+      <h1 className="journiq-heading text-[2rem] max-md:sr-only">
+        {t("title")}
+      </h1>
       <Link
         href="/my-stories"
         className="text-sm font-medium text-accent underline underline-offset-2"

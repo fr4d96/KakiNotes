@@ -10706,3 +10706,33 @@ manipulation`, `scroll-padding-top` on `html`, and `components/touch-active.tsx`
 
 **Next.** Install it on a real iPhone and check the icon, status bar and the signed-in flow; then
 decide whether Android's install prompt needs anything more.
+
+**My Stories compacted for phones (same branch, later on 2026-10-30).** At 402px the first story
+sat at y≈769, behind the tab bar: a full-width New Story/Import pair, a sideways-scrolling pill
+row and three sideways-scrolling filter chip rows filled the first screen. Now:
+
+- Title bar: "My Stories" on one line with a compact `+ New Story` pill — the only labelled action
+  on a phone.
+- One non-scrolling toolbar of 40px icons (story folders, journey map, My Photos, Import) on the
+  left; Filters (phone only, with an active-count badge) and the grid/list toggle on the right.
+  Labels are `sr-only` plus a `title` tooltip on phones and shown from `md` up; an `::after`
+  hit-slop keeps every tap target past 44px.
+- Phone filters live in the shared `BottomSheet`, chips wrapped (`FilterRow wrap`), with a
+  "Show N stories" button and Clear filters. The inline chip rows are `sm:` and up only.
+- New icons: `PlusIcon`, `ImportIcon`, `RouteIcon`. New keys: `myStories.filters.button`,
+  `buttonActive`, `showResults` (en + zh-CN).
+
+Result at 402×874: the first story row starts at y≈496 (the Drafts section is still collapsed by
+default) and the page is exactly 402px wide. Risk: icon-only controls rely on recognisable icons;
+names stay available to screen readers and as tooltips.
+
+**Page titles in the phone header (same branch, 2026-10-30).** On phones the header names the
+screen, iOS navigation-bar style: the logo stays, and on a "label" page the Kakinotes wordmark gives
+way to that page's title (`components/header-brand.tsx`, used by both `SiteHeader` and
+`ContributorNav`). The route → message-key map is `lib/navigation/page-titles.ts`; each listed
+page's `<h1>` is `max-md:sr-only`, so the title is drawn once and screen readers still get a real
+heading. Decided from the pathname during render, so there is no wordmark flash on load and the
+title holds still during page slides. Pages whose heading is the content keep the wordmark and
+their big title: home, story pages, contributor profiles, the editor, preview, and
+/reset-password (its heading becomes the "link expired" message). On My Stories the New Story pill
+becomes an accent "+" leading the toolbar on phones; three stories now fit the first screen.

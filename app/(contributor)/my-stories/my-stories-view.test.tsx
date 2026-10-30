@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MyStoriesView } from "./my-stories-view";
 import { ToastProvider } from "@/components/ui/toast";
 import { mintPreviewUrlAction } from "@/app/(contributor)/stories/[id]/media-actions";
@@ -110,56 +110,68 @@ describe("MyStoriesView", () => {
   });
 
   describe("phone layout", () => {
-    it("pairs New Story and Import in one two-column row, apart from the secondary links", () => {
+    it("names the page in the header on phones and moves New Story into the toolbar", () => {
       render(<MyStoriesView stories={[makeStory()]} />);
+      const heading = screen.getByRole("heading", {
+        level: 1,
+        name: "My Stories",
+      });
+      // The header shows the title on a phone (components/header-brand.tsx),
+      // so the page's own <h1> is screen-reader-only there.
+      expect(heading.className).toContain("max-md:sr-only");
 
-      const newStory = screen.getByRole("link", { name: "New Story" });
-      const importLink = screen.getByRole("link", { name: "Import" });
-      const row = newStory.parentElement!;
-      expect(importLink.parentElement).toBe(row);
-      expect(row.className).toContain("grid-cols-2");
-      // The secondary links and the view toggle share ONE scrolling pill row.
-      const folders = screen.getByRole("link", { name: "Open story folders" });
-      const strip = folders.parentElement!;
-      expect(strip).not.toBe(row);
-      // The pair leads the header in DOM order too, so focus and screen
-      // readers meet it where a phone draws it; sm:order-last restores the
-      // desktop row.
-      expect(
-        row.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING,
-      ).toBeTruthy();
-      expect(row.className).toContain("sm:order-last");
-      expect(strip.className).toContain("overflow-x-auto");
-      expect(strip.className).toContain("snap-x");
-      expect(strip.className).toContain("nf-scroll-x");
-      for (const name of ["Open journey map", "My Photos"]) {
-        expect(screen.getByRole("link", { name }).parentElement).toBe(strip);
+      const [desktopPill, phonePlus] = screen.getAllByRole("link", {
+        name: "New Story",
+      });
+      for (const link of [desktopPill, phonePlus]) {
+        expect(link).toHaveAttribute("href", "/stories/new");
       }
-      expect(screen.getByRole("group", { name: "View" }).parentElement).toBe(
-        strip,
+      // md and up: a labelled pill beside the title, hidden on phones.
+      expect(desktopPill.parentElement).toBe(heading.parentElement);
+      expect(desktopPill.className).toContain("max-md:hidden");
+      // Phones: an accent "+" leading the toolbar, hidden from md up.
+      expect(phonePlus.className).toContain("md:hidden");
+      expect(phonePlus.className).toContain("bg-accent");
+      expect(phonePlus.parentElement).toBe(
+        screen.getByRole("link", { name: "Open story folders" }).parentElement,
       );
     });
 
-    it("keeps each secondary pill on one line so none wrap to three", () => {
+    it("fits every secondary action into ONE non-scrolling toolbar of icons", () => {
       render(<MyStoriesView stories={[makeStory()]} />);
-      for (const name of [
-        "Open story folders",
-        "Open journey map",
-        "My Photos",
-      ]) {
+      const links = [
+        ["Open story folders", "/my-stories/map"],
+        ["Open journey map", "/my-stories/journey"],
+        ["My Photos", "/my-photos"],
+        ["Import", "/stories/new/import"],
+      ] as const;
+      const toolbar = screen.getByRole("link", {
+        name: "Open story folders",
+      }).parentElement!;
+      for (const [name, href] of links) {
         const link = screen.getByRole("link", { name });
-        expect(link.className).toContain("whitespace-nowrap");
-        expect(link.className).toContain("shrink-0");
-        expect(link.className).toContain("min-h-11");
+        expect(link).toHaveAttribute("href", href);
+        expect(link.parentElement).toBe(toolbar);
+        // Icon-only on a phone: the name is screen-reader text (shown from
+        // md up) plus a tooltip, and the drawn icon is an svg.
+        expect(link.querySelector("svg")).not.toBeNull();
+        expect(within(link).getByText(name)).toHaveClass("sr-only");
+        expect(link).toHaveAttribute("title", name);
+      }
+      // Nothing in the header scrolls sideways any more.
+      let node: HTMLElement | null = toolbar;
+      while (node && node.tagName !== "BODY") {
+        expect(node.className).not.toContain("overflow-x-auto");
+        node = node.parentElement;
       }
     });
 
-    it("gives the grid/list toggle 44px buttons", () => {
+    it("keeps the compact grid/list buttons past 44px with a hit-slop", () => {
       render(<MyStoriesView stories={[makeStory()]} />);
       for (const name of ["Grid view", "List view"]) {
         const button = screen.getByRole("button", { name });
-        expect(button.className).toContain("h-11");
-        expect(button.className).toContain("w-11");
+        expect(button.className).toContain("h-9");
+        expect(button.className).toContain("after:-inset-1");
       }
     });
 
@@ -550,6 +562,54 @@ describe("MyStoriesView", () => {
       expect(
         screen.queryByRole("link", { name: "Nelson apples" }),
       ).not.toBeInTheDocument();
+    });
+
+    describe("on a phone", () => {
+      afterEach(() => {
+        // @ts-expect-error -- jsdom has no matchMedia by default
+        delete window.matchMedia;
+      });
+
+      it("moves the chip rows into a Filters sheet and badges the active count", async () => {
+        Object.defineProperty(window, "matchMedia", {
+          configurable: true,
+          writable: true,
+          value: (query: string) => ({
+            matches: query.includes("max-width"),
+            media: query,
+            addEventListener: () => {},
+            removeEventListener: () => {},
+          }),
+        });
+        const user = userEvent.setup();
+        render(<MyStoriesView stories={[otago, nelson]} />);
+
+        await user.click(screen.getByRole("button", { name: "Filters" }));
+        const sheet = screen.getByRole("dialog", { name: "Filters" });
+        const regionGroup = within(sheet).getByRole("group", {
+          name: "Filter stories by region",
+        });
+        // Wrapped, not a sideways scroller, inside the sheet.
+        expect(regionGroup.className).toContain("flex-wrap");
+        expect(regionGroup.className).not.toContain("overflow-x-auto");
+
+        await user.click(
+          within(regionGroup).getByRole("button", { name: "Nelson" }),
+        );
+        await user.click(
+          within(sheet).getByRole("button", { name: "Show 1 story" }),
+        );
+
+        expect(
+          screen.getByRole("button", { name: "Filters, 1 active" }),
+        ).toBeInTheDocument();
+        expect(
+          screen.queryByRole("link", { name: "A season in Otago" }),
+        ).not.toBeInTheDocument();
+        expect(
+          screen.getByRole("link", { name: "Nelson apples" }),
+        ).toBeInTheDocument();
+      });
     });
 
     it("filters on the Destination axis", async () => {

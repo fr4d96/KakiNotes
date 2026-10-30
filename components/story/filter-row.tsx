@@ -22,6 +22,7 @@ export function FilterRow({
   onChange,
   allLabel,
   groupLabel,
+  wrap = false,
 }: {
   label: string;
   options: string[];
@@ -31,6 +32,12 @@ export function FilterRow({
   allLabel?: string;
   /** Accessible name for the chip group, e.g. "Filter stories by place". */
   groupLabel?: string;
+  /**
+   * Wrap onto more lines at every width instead of scrolling sideways on
+   * phones -- for a row that lives inside a bottom sheet, where the reader
+   * has asked to see every option and a hidden overflow would only hide them.
+   */
+  wrap?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
@@ -46,7 +53,11 @@ export function FilterRow({
       <div
         role="group"
         aria-label={groupLabel ?? `Filter stories by ${label.toLowerCase()}`}
-        className="nf-scroll-x -mx-4 flex snap-x gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+        className={
+          wrap
+            ? "flex flex-wrap gap-2"
+            : "nf-scroll-x -mx-4 flex snap-x gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+        }
       >
         {options.map((option) => {
           const isActive = option === active;

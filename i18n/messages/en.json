@@ -640,7 +640,10 @@
       "destination": "Destination",
       "tag": "Tags",
       "all": "All",
-      "filterBy": "Filter stories by {axis}"
+      "filterBy": "Filter stories by {axis}",
+      "button": "Filters",
+      "buttonActive": "Filters, {count} active",
+      "showResults": "{count, plural, one {Show # story} other {Show # stories}}"
     },
     "sections": {
       "drafts": "Drafts",

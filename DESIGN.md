@@ -385,6 +385,11 @@ text-accent-foreground`.
   transparent header would draw white nav text onto the light page ground. Because
   `--header-solid` and `text-foreground` both resolve per theme, no route needs a special case. Nav links use `.journiq-nav-link`'s underline-on-hover treatment (accent-coloured
   underline that grows in from the left on hover).
+- **Phone title (The Named-Bar Rule):** below `md`, a label page names itself in the header —
+  logo mark, then the page title in the wordmark's own type (`text-xl font-black tracking-tight`,
+  truncating) — and drops its big in-page `<h1>` to screen-reader-only. Content pages (home, a
+  story, a profile, the editor) keep the wordmark and their title. Never draw the same title twice
+  on one phone screen.
 - **Mobile:** primary nav and auth controls collapse behind `MobileNavToggle`; a signed-in user
   instead sees `UserAvatarMenu`, which folds the primary nav links into its own dropdown
   (`extraItems`) rather than keeping a separate hamburger.

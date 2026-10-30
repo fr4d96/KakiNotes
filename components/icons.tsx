@@ -376,3 +376,34 @@ export function FolderIcon(props: IconProps) {
     </svg>
   );
 }
+
+/** Create something new (New Story). */
+export function PlusIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+/** Bring an existing document in (PDF import): a page with an arrow entering it. */
+export function ImportIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M14 3.5H7.75A1.75 1.75 0 0 0 6 5.25v13.5c0 .97.78 1.75 1.75 1.75h8.5c.97 0 1.75-.78 1.75-1.75V7.5l-4-4Z" />
+      <path d="M14 3.5v4h4" />
+      <path d="M12 10.5v6M9.5 14l2.5 2.5 2.5-2.5" />
+    </svg>
+  );
+}
+
+/** A route between stops (the contributor's journey map). */
+export function RouteIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="6" cy="18" r="2" />
+      <circle cx="18" cy="6" r="2" />
+      <path d="M8 18h7.5a3 3 0 0 0 0-6h-7a3 3 0 0 1 0-6H16" />
+    </svg>
+  );
+}

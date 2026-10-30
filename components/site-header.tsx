@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { BrandLogo } from "@/components/brand-logo";
+import { HeaderBrand } from "@/components/header-brand";
 import { MobileNavToggle } from "@/components/mobile-nav-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LocaleToggle } from "@/components/locale-toggle";
@@ -173,13 +173,7 @@ export function SiteHeader() {
       className={`sticky top-0 z-40 pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] transition-colors ${headerToneClasses}`}
     >
       <div className="mx-auto flex min-h-[76px] max-w-[1440px] items-center gap-5 px-4 sm:px-6">
-        <Link
-          href={countryPrefix || "/"}
-          className="flex min-h-11 items-center gap-2.5 text-xl font-black tracking-tight"
-        >
-          <BrandLogo className="border border-current" priority />
-          Kakinotes
-        </Link>
+        <HeaderBrand homeHref={countryPrefix || "/"} priority />
 
         <nav
           aria-label={t("primary")}

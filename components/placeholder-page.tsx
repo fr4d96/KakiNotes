@@ -13,7 +13,10 @@ export function PlaceholderPage({
       {icon ? (
         <div className="mb-5 overflow-hidden rounded-full">{icon}</div>
       ) : null}
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+      {/* Phone-hidden: every page using this shell is listed in
+          lib/navigation/page-titles.ts, so the header shows the title. A new
+          caller must be added there too. */}
+      <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only sm:text-3xl">
         {title}
       </h1>
       <div className="mt-4 space-y-4 text-foreground/70">{children}</div>

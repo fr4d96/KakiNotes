@@ -3184,6 +3184,18 @@ plain GET form; Apply/Clear sit in the sheet footer).
 around an unchanged dot/icon (story steps, My Stories row actions, journey-map pins via `HIT_R`),
 `.press` on anything tappable, and an `:active` tint on cards and rows.
 
+**My Stories toolbar.** On phones the page header is a title bar (title + the one labelled
+action, New Story) and a single non-scrolling icon toolbar; secondary actions never scroll sideways.
+Filters there open the shared `BottomSheet` with wrapped chips (`FilterRow`'s `wrap` prop); the
+inline chip rows render from `sm` up only, so exactly one set is exposed per width.
+
+**Page titles in the phone header.** `components/header-brand.tsx` (logo + wordmark) is shared by
+`SiteHeader` and `ContributorNav`. Below `md`, on a path listed in `lib/navigation/page-titles.ts`
+(country prefix ignored), it shows that page's title instead of the wordmark (aria-hidden; the
+wordmark goes `sr-only` so the logo link keeps its name). The map holds the same message key the
+page's `<h1>` renders, and that `<h1>` must carry `max-md:sr-only`. `PlaceholderPage` hides its
+heading on phones for this reason, so every caller of it must be in the map.
+
 **Device-frame preview (dev only).** `/dev/iphone-17` (`app/dev/iphone-17/route.ts`) serves
 `.claude/device-preview/iphone-17.html` — an iPhone 17 frame (402×874pt screen, Dynamic Island,
 status bar, side buttons, home indicator) with the live site in a same-origin iframe, e.g.

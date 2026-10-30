@@ -640,7 +640,10 @@
       "destination": "目的地",
       "tag": "标签",
       "all": "全部",
-      "filterBy": "按{axis}筛选故事"
+      "filterBy": "按{axis}筛选故事",
+      "button": "筛选",
+      "buttonActive": "筛选（已启用 {count} 项）",
+      "showResults": "显示 {count} 个故事"
     },
     "sections": {
       "drafts": "草稿",

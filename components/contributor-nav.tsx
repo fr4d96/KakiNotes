@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { BrandLogo } from "@/components/brand-logo";
+import { HeaderBrand } from "@/components/header-brand";
 import { UserAvatarMenu } from "@/components/auth/user-avatar-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ContributorNavLinks } from "@/components/contributor-nav-links";
@@ -35,13 +34,7 @@ export async function ContributorNav() {
   return (
     <header className="journiq-header-solid sticky top-0 z-40 border-b border-border-subtle pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] text-foreground">
       <div className="mx-auto flex min-h-[76px] max-w-[1440px] items-center gap-5 px-4 sm:px-6">
-        <Link
-          href="/"
-          className="flex items-center gap-2.5 text-xl font-black tracking-tight"
-        >
-          <BrandLogo className="border border-current" />
-          Kakinotes
-        </Link>
+        <HeaderBrand />
 
         <ContributorNavLinks className="ml-auto hidden md:flex" />
 

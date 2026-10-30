@@ -37,7 +37,7 @@ export default async function NewStoryImportPage({
     country && isCountrySlug(country) ? country : DEFAULT_COUNTRY_SLUG;
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+      <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only sm:text-3xl">
         {t("title")}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">

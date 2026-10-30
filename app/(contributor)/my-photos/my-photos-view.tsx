@@ -32,7 +32,9 @@ export function MyPhotosView({
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="journiq-heading text-[2.4rem]">{t("title")}</h1>
+          <h1 className="journiq-heading text-[2.4rem] max-md:sr-only">
+            {t("title")}
+          </h1>
           <p className="mt-1 text-sm text-foreground/65">
             {total > 0
               ? t("summary", { photos: total, stories: stories.length })
