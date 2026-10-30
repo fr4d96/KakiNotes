@@ -1306,21 +1306,24 @@
   "myJourney": {
     "metaTitle": "旅程地图",
     "title": "旅程地图",
-    "intro": "把你已发布的新西兰故事逐一固定到地图上。读者会在你的个人主页看到一张完整的旅程地图，点开每个地点即可阅读对应的故事。子故事会收在其主故事的地点里。保存后，地点会立即公开。",
+    "listIntro": "你已发布的故事，每篇主故事和它的子故事放在一起。点一下即可打开这段旅程，把故事钉在地图上。",
+    "onMap": "地图上已有 {pinned}/{total} 篇",
+    "storyIntro": "把每篇故事钉在发生的地方。保存后图钉立即公开。",
+    "mapTitle": "这段旅程的地图",
+    "mapEmpty": "这段旅程还没有故事在地图上。在下面钉上一篇故事就能开始。",
     "empty": "发布一篇新西兰的故事，就可以开始绘制你的旅程地图。",
     "listLabel": "你的故事",
     "subStoriesOf": "{story} 的子故事",
     "rows": {
       "placeLabel": "已固定在 {place}",
       "noPlace": "尚未加入地图",
-      "notPublished": "无法加入地图：只有已发布的故事才能固定。",
       "notNewZealand": "无法加入地图：只有新西兰的故事才能固定。",
-      "add": "添加地点",
-      "change": "更改地点",
-      "remove": "移除",
-      "addNamed": "为 {story} 添加地点",
-      "changeNamed": "更改 {story} 的地点",
-      "removeNamed": "将 {story} 从地图中移除"
+      "add": "钉到地图上",
+      "change": "移动图钉",
+      "remove": "移除图钉",
+      "addNamed": "把{story}钉到地图上",
+      "changeNamed": "移动{story}的图钉",
+      "removeNamed": "移除{story}的图钉"
     },
     "panel": {
       "label": "{story} 的地点",
@@ -1332,7 +1335,7 @@
       "needsPlace": "请先在地图上选择一个位置。",
       "needsName": "请为这个地点填写名称后再保存。",
       "publicNote": "读者只会看到地点名称和大致位置（精确到约 1 公里），不会看到精确坐标。保存后会立即公开。",
-      "save": "保存地点",
+      "save": "保存图钉",
       "saving": "正在保存…",
       "cancel": "取消"
     },
@@ -1341,9 +1344,9 @@
       "removed": "已将“{story}”从你的旅程地图中移除。"
     },
     "removeDialog": {
-      "title": "从地图中移除？",
+      "title": "要移除图钉吗？",
       "description": "“{story}”将不再显示在你的旅程地图上，故事本身不受影响。",
-      "confirm": "移除"
+      "confirm": "移除图钉"
     },
     "previewTitle": "预览：读者看到的样子",
     "previewEmpty": "固定一篇故事后，这里会显示你的旅程地图。"

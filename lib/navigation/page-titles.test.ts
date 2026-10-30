@@ -115,3 +115,17 @@ describe("pageBack for a story's own pages", () => {
     expect(pageBack("/stories/abc-123/export")).toBeNull();
   });
 });
+
+describe("a journey's own page", () => {
+  it("keeps Journey map in the bar and goes back to the list", () => {
+    expect(pageTitleKey("/my-stories/journey/abc-123")).toBe("myJourney.title");
+    expect(pageBack("/my-stories/journey/abc-123")).toEqual({
+      href: "/my-stories/journey",
+      labelKey: "myJourney.title",
+    });
+  });
+
+  it("leaves the Journey map tab itself without a back arrow", () => {
+    expect(pageBack("/my-stories/journey")).toBeNull();
+  });
+});

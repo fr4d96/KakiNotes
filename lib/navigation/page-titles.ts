@@ -58,9 +58,17 @@ function splitPath(pathname: string) {
   return { prefix, path };
 }
 
+/** One journey's page, /my-stories/journey/<main story id>. */
+const JOURNEY_STORY = /^\/my-stories\/journey\/[^/]+$/;
+
 export function pageTitleKey(pathname: string | null): string | null {
   if (!pathname) return null;
-  return PAGE_TITLE_KEYS[splitPath(pathname).path] ?? null;
+  const { path } = splitPath(pathname);
+  // A journey's page keeps "Journey map" in the bar, under a back arrow;
+  // its own heading (the journey's name) stays visible -- it is content,
+  // not a repeat of the bar.
+  if (JOURNEY_STORY.test(path)) return "myJourney.title";
+  return PAGE_TITLE_KEYS[path] ?? null;
 }
 
 export type PageBack = {
@@ -91,6 +99,10 @@ function storyBack(path: string): PageBack | null {
 export function pageBack(pathname: string | null): PageBack | null {
   if (!pathname) return null;
   const { prefix, path } = splitPath(pathname);
-  const back = PAGE_BACK[path] ?? storyBack(path);
+  const back =
+    PAGE_BACK[path] ??
+    (JOURNEY_STORY.test(path)
+      ? { href: "/my-stories/journey", labelKey: "myJourney.title" }
+      : storyBack(path));
   return back ? { ...back, href: `${prefix}${back.href}` } : null;
 }

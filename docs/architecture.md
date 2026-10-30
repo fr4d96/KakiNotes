@@ -935,8 +935,11 @@ App side:
   (`app/(public)/_shared/story-detail.tsx`) shows "See this on <name>'s journey". The in-story map,
   the per-revision editor (`journey-stops-editor.tsx`, `lib/journey/draft.ts`) and the stops on the
   edit / preview / moderation pages are gone.
-- `app/(contributor)/my-stories/journey/` — contributor management: `page.tsx` (Server Component),
-  `journey-view.tsx` (stories grouped like folders, Add / Change / Remove, live map preview) and
+- `app/(contributor)/my-stories/journey/` — contributor management: `page.tsx` +
+  `journey-list.tsx` (the Journey map tab: published journeys only, one card per main story with
+  its sub stories, plus the readers' whole-journey preview), `[storyId]/page.tsx` +
+  `journey-view.tsx` (one journey: its map first, then Pin on map / Move pin / Remove pin per
+  story; the id only picks from the owner-scoped `get_my_journey()`, so anything else 404s) and
   `actions.ts` (`setStoryJourneyPlaceAction`: Zod, signed-in check, ids and ownership re-derived by
   the RPC, logs `story.journey.set` / `story.journey.cleared`, revalidates the profile and journey
   route patterns and the story page; `resolveGoogleMapsLinkAction` moved here from the edit
