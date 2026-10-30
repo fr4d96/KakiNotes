@@ -5,8 +5,12 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { ToastProvider } from "@/components/ui/toast";
 import { PhotoLightboxProvider } from "@/components/ui/photo-lightbox";
 import { TouchActive } from "@/components/touch-active";
+import { AppSplash } from "@/components/app-splash";
 import { ClickPulse } from "@/components/click-pulse";
+import { appleStartupImages } from "@/lib/pwa/splash-screens";
 import { InAppHistory } from "@/components/in-app-history";
+import { NoPinchZoom } from "@/components/no-pinch-zoom";
+import { PullToRefresh } from "@/components/pull-to-refresh";
 import "./globals.css";
 
 // The app's default (sans) typeface is Avenir Next, declared globally via
@@ -37,6 +41,9 @@ export async function generateMetadata(): Promise<Metadata> {
       capable: true,
       title: "Kakinotes",
       statusBarStyle: "default",
+      // iOS launch images, shown while the home-screen app starts
+      // (lib/pwa/splash-screens.ts); the in-app splash takes over after.
+      startupImage: appleStartupImages(),
     },
   };
 }
@@ -46,6 +53,9 @@ export async function generateMetadata(): Promise<Metadata> {
 // env(safe-area-inset-*) to compensate. Pinch-zoom is deliberately left
 // enabled (no maximumScale / userScalable): the iOS form-field zoom is
 // handled by a 16px font floor in app/globals.css instead (WCAG 1.4.4).
+// The installed home-screen app is the one exception: there pinch-zoom of
+// the whole page is switched off so it feels like an app
+// (components/no-pinch-zoom.tsx); Safari tabs keep it.
 // Colours are --background in app/globals.css (light / dark).
 export const viewport: Viewport = {
   viewportFit: "cover",
@@ -107,12 +117,16 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full flex flex-col">
+        {/* Home-screen app only: covers the page until it is ready. */}
+        <AppSplash />
         {/* Opts iOS into :active on non-link elements (.press feedback). */}
         <TouchActive />
         {/* Spring-back pulse on every button tap/click, app-wide. */}
         <ClickPulse />
         {/* Lets a story's back arrow use router.back() safely. */}
         <InAppHistory />
+        {/* Home-screen app only: no pinch-zooming the whole page. */}
+        <NoPinchZoom />
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-black focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-blue-600"
@@ -123,6 +137,9 @@ export default async function RootLayout({
             messages and time zone from i18n/request.ts, and hands them to
             every Client Component that calls useTranslations(). */}
         <NextIntlClientProvider>
+          {/* Home-screen app only: pull down at the top to refresh. Inside
+              the provider -- it has translated text. */}
+          <PullToRefresh />
           <ToastProvider>
             {/* One photo viewer for the whole site: any LightboxPhoto on the
                 current page opens it, and it pages through all of them. */}

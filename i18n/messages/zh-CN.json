@@ -51,7 +51,10 @@
       "label": "选择国家板块"
     },
     "back": "返回",
-    "backTo": "返回{page}"
+    "backTo": "返回{page}",
+    "pullToRefresh": {
+      "refreshing": "正在刷新…"
+    }
   },
   "nav": {
     "primary": "主导航",
