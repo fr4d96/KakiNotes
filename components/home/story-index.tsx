@@ -319,11 +319,11 @@ function PageButton({
       disabled={disabled}
       aria-label={label}
       aria-current={current ? "page" : undefined}
-      // px-3.5 py-2 rather than something tighter: it lands the control at
-      // the same 34px as the filter chips directly above it, so the two
-      // rows of controls in this section read as one family, and it clears
-      // WCAG 2.2's 24px minimum target with room for a thumb.
-      className={`rounded-full px-3.5 py-2 font-mono text-xs tracking-wider tabular-nums transition-colors ${
+      // px-3.5 py-2 on desktop lands the control at the same 34px as the
+      // filter chips directly above it, so the two rows of controls in this
+      // section read as one family. Below md it grows to the 44px touch
+      // target (the chips do the same, see components/story/filter-row.tsx).
+      className={`press inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-3.5 py-2 font-mono text-xs tracking-wider tabular-nums transition-colors md:min-h-0 md:min-w-0 ${
         current
           ? "bg-accent text-accent-foreground"
           : "text-foreground/60 hover:text-accent disabled:pointer-events-none disabled:opacity-35"
@@ -358,7 +358,7 @@ function IndexEntry({
           [numeral | thumb | title | meta | arrow]. */}
       <Link
         href={`/stories/${story.slug}`}
-        className="group grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-x-3 py-6 md:grid-cols-[3rem_5rem_minmax(0,1fr)_13rem_1.5rem] md:items-center md:gap-x-6"
+        className="group grid grid-cols-[2.5rem_minmax(0,1fr)] items-start active:bg-accent/10 gap-x-3 py-6 md:grid-cols-[3rem_5rem_minmax(0,1fr)_13rem_1.5rem] md:items-center md:gap-x-6"
       >
         <span
           aria-hidden="true"

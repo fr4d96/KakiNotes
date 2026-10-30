@@ -176,7 +176,7 @@ export function NotificationBell({ inverted = false }: { inverted?: boolean }) {
         aria-expanded={open}
         aria-controls={menuId}
         aria-label={label}
-        className={`relative flex h-10 w-10 items-center justify-center rounded-full border transition-transform hover:-translate-y-0.5 ${controlToneClasses(inverted)}`}
+        className={`relative flex h-11 w-11 items-center justify-center rounded-full border transition-transform md:h-10 md:w-10 hover:-translate-y-0.5 ${controlToneClasses(inverted)}`}
       >
         <BellIcon className="h-5 w-5" />
         {badge && (

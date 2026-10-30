@@ -78,6 +78,29 @@ export function ContributorIcon(props: IconProps) {
   );
 }
 
+/** A house outline — the Home tab. */
+export function HomeIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M4 10.5 12 4l8 6.5" />
+      <path d="M5.75 9.5V19.5h12.5V9.5" />
+      <path d="M10 19.5v-5h4v5" />
+    </svg>
+  );
+}
+
+/** Two people — the Contributors tab. */
+export function UsersIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="9" cy="8.5" r="3" />
+      <path d="M3.5 19c0-3.04 2.46-5.5 5.5-5.5s5.5 2.46 5.5 5.5" />
+      <path d="M15.5 5.75a3 3 0 0 1 0 5.5" />
+      <path d="M17 13.75c2.07.5 3.5 2.3 3.5 4.75" />
+    </svg>
+  );
+}
+
 /** Blockquote — one of the story content block types. */
 export function QuoteBlockIcon(props: IconProps) {
   return (
@@ -350,6 +373,37 @@ export function FolderIcon(props: IconProps) {
   return (
     <svg {...base(props)}>
       <path d="M4 7.25A1.75 1.75 0 0 1 5.75 5.5h3.69c.5 0 .97.2 1.32.55l1.09 1.1c.35.35.82.55 1.32.55h6.11A1.75 1.75 0 0 1 21 9.45v8.3a1.75 1.75 0 0 1-1.75 1.75H5.75A1.75 1.75 0 0 1 4 17.75V7.25Z" />
+    </svg>
+  );
+}
+
+/** Create something new (New Story). */
+export function PlusIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+/** Bring an existing document in (PDF import): a page with an arrow entering it. */
+export function ImportIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M14 3.5H7.75A1.75 1.75 0 0 0 6 5.25v13.5c0 .97.78 1.75 1.75 1.75h8.5c.97 0 1.75-.78 1.75-1.75V7.5l-4-4Z" />
+      <path d="M14 3.5v4h4" />
+      <path d="M12 10.5v6M9.5 14l2.5 2.5 2.5-2.5" />
+    </svg>
+  );
+}
+
+/** A route between stops (the contributor's journey map). */
+export function RouteIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="6" cy="18" r="2" />
+      <circle cx="18" cy="6" r="2" />
+      <path d="M8 18h7.5a3 3 0 0 0 0-6h-7a3 3 0 0 1 0-6H16" />
     </svg>
   );
 }

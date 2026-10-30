@@ -55,7 +55,7 @@ export function StartNewStory({
 
   return (
     <div className="mx-auto max-w-md px-4 py-12 sm:px-6 sm:py-16">
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+      <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only sm:text-3xl">
         {t("title")}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">{t("intro")}</p>
@@ -101,7 +101,7 @@ export function StartNewStory({
         <button
           type="submit"
           disabled={!canSubmit}
-          className="w-full rounded-md bg-accent px-3 py-2 text-accent-foreground hover:opacity-90 disabled:opacity-60"
+          className="press min-h-11 w-full rounded-full bg-accent px-3 py-2 text-accent-foreground hover:opacity-90 disabled:opacity-60"
         >
           {pending ? t("starting") : t("startWriting")}
         </button>
@@ -110,14 +110,17 @@ export function StartNewStory({
           {t("havePdf")}{" "}
           <Link
             href="/stories/new/import"
-            className="underline underline-offset-2"
+            className="press relative underline underline-offset-2 before:absolute before:-inset-x-1 before:-inset-y-3 before:content-['']"
           >
             {t("importInstead")}
           </Link>
           .
         </p>
         <p className="text-sm text-muted-foreground">
-          <Link href="/my-stories" className="hover:underline">
+          <Link
+            href="/my-stories"
+            className="press inline-flex min-h-11 items-center hover:underline"
+          >
             {t("backToMyStories")}
           </Link>
         </p>

@@ -14,6 +14,8 @@ import {
 import { ACTION_ICON_CLASS } from "./action-icon-class";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { useIsPhone } from "@/components/ui/use-is-phone";
 import { ALL, FilterRow } from "@/components/story/filter-row";
 import { StartRevisionButton } from "@/components/story/start-revision-button";
 import { ReopenForEditingButton } from "@/components/story/reopen-for-editing-button";
@@ -29,7 +31,13 @@ import {
   ChevronIcon,
   EditorialPencilIcon,
   EyeIcon,
+  FilterIcon,
+  FolderIcon,
+  GalleryIcon,
   HiddenEyeIcon,
+  ImportIcon,
+  PlusIcon,
+  RouteIcon,
   TrashIcon,
 } from "@/components/icons";
 import type { MyStoryWithCover } from "@/lib/story/contributor-queries";
@@ -40,6 +48,15 @@ import type { MyStoryWithCover } from "@/lib/story/contributor-queries";
 export { ACTION_ICON_CLASS };
 
 type ViewMode = "grid" | "list";
+
+// The toolbar's secondary actions. On a phone each is a bare 40px icon --
+// the label is screen-reader text plus a `title` tooltip -- so the whole
+// toolbar fits one 402px row with nothing scrolling sideways; an invisible
+// ::after hit-slop takes the tap target past 44px without making the row look
+// heavier. From md up the label is shown and the control becomes an outlined
+// pill, the desktop row it always was.
+const TOOL_CLASS =
+  "press relative inline-flex h-10 min-w-10 shrink-0 items-center justify-center gap-2 rounded-full text-foreground/75 transition-colors after:absolute after:-inset-0.5 after:content-[''] hover:bg-surface-muted hover:text-foreground active:bg-surface-muted md:border md:border-border-subtle md:px-3.5 md:text-sm md:font-medium";
 
 const VIEW_STORAGE_KEY = "kaki-my-stories-view";
 
@@ -647,9 +664,19 @@ function StoryGrid({
         const title = story.title ?? t("untitled");
         const href = primaryStoryHref(story);
         return (
-          <li key={story.id}>
+          <li
+            key={story.id}
+            className="relative transition-transform duration-150 ease-out motion-safe:has-[a[data-card-link]:active]:scale-[0.97]"
+          >
+            {/* The title link's ::after stretches over the whole card (cover,
+                title, status), so the card is one big tap target and presses
+                as one (the has() scale above, same dip as .press); the cover
+                link is a duplicate of it and the action row sits above the
+                overlay (relative z-10). */}
             <Link
               href={href}
+              tabIndex={-1}
+              aria-hidden="true"
               className="relative block aspect-square overflow-hidden rounded-md border border-border-subtle"
             >
               <StoryCoverThumbnail
@@ -675,13 +702,19 @@ function StoryGrid({
               </div>
             </Link>
             <div className="mt-2">
-              <p className="truncate text-sm font-medium">{title}</p>
+              <Link
+                href={href}
+                data-card-link=""
+                className="block truncate text-sm font-medium after:absolute after:inset-0 after:content-['']"
+              >
+                {title}
+              </Link>
               {updateInFlight && (
                 <p className="mt-1">
                   <UpdateChip inReview={inReview} />
                 </p>
               )}
-              <div className="-ml-1.5 mt-1 flex flex-wrap items-center">
+              <div className="relative z-10 -ml-3 mt-0.5 flex flex-wrap items-center md:-ml-1.5 md:mt-1">
                 {editable && (
                   <ActionIconLink
                     href={`/stories/${story.id}/edit`}
@@ -782,7 +815,10 @@ function StoryList({
         const title = story.title ?? t("untitled");
         const href = primaryStoryHref(story);
         return (
-          <li key={story.id} className="nf-entry">
+          <li
+            key={story.id}
+            className="nf-entry has-[a[data-card-link]:active]:bg-accent/10"
+          >
             {/* One grid, two shapes. Mobile: [thumb | stacked content],
             numeral hidden (display:none claims no track). From sm up
             the inner wrapper becomes `display: contents` so its
@@ -811,9 +847,13 @@ function StoryList({
               <div className="sm:contents">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
+                    {/* ::after stretches this link over the whole row (the
+                        li is .nf-entry, already position: relative), so the
+                        row is one tap target; the action icons sit above it. */}
                     <Link
                       href={href}
-                      className="font-medium hover:text-accent hover:underline underline-offset-2"
+                      data-card-link=""
+                      className="font-medium underline-offset-2 after:absolute after:inset-0 after:content-[''] hover:text-accent hover:underline"
                     >
                       {title}
                     </Link>
@@ -832,7 +872,7 @@ function StoryList({
                   )}
                 </div>
 
-                <div className="-ml-1.5 mt-1 flex items-center sm:mt-0">
+                <div className="relative z-10 -ml-3 mt-0.5 flex items-center sm:mt-0 md:-ml-1.5">
                   {editable && (
                     <ActionIconLink
                       href={`/stories/${story.id}/edit`}
@@ -1002,78 +1042,173 @@ export function MyStoriesView({
     setStoredView(next);
   }
 
+  const activeFilterCount = axes.filter(
+    (axis) => activeFilters[axis.key] && activeFilters[axis.key] !== ALL,
+  ).length;
+  // Phones get the filter chips in a bottom sheet behind one toolbar button
+  // instead of three sideways-scrolling chip rows above the list -- those rows
+  // were what pushed the first story below the fold. The sheet only mounts on
+  // a phone (useIsPhone), and the inline rows are display:none there, so
+  // exactly one set of chip groups is ever exposed.
+  const isPhone = useIsPhone();
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const filterRows = (wrap: boolean) =>
+    axes.map((axis) => (
+      <FilterRow
+        key={axis.key}
+        label={axis.label}
+        options={[ALL, ...axis.options]}
+        active={activeFilters[axis.key] ?? ALL}
+        onChange={(value) => changeFilter(axis.key, value)}
+        allLabel={t("filters.all")}
+        groupLabel={t("filters.filterBy", {
+          axis: axis.label.toLowerCase(),
+        })}
+        wrap={wrap}
+      />
+    ));
+
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="journiq-heading text-[2.4rem]">{t("title")}</h1>
-        <div className="flex items-center gap-3">
+    <div className="mx-auto max-w-5xl px-4 pt-4 pb-12 sm:px-6 sm:py-16">
+      {/* Title bar (md and up): the page name and its ONE primary action,
+          New Story. On a phone the header already names the page
+          (components/header-brand.tsx), so the <h1> is screen-reader-only,
+          this pill is hidden, and New Story moves into the toolbar as an
+          accent "+" -- where iOS puts a screen's add action. */}
+      <div className="flex items-center justify-between gap-3">
+        {/* Not .journiq-heading: that class is unlayered in globals.css, so
+            its clamp() size and `text-wrap: balance` beat these utilities
+            and broke "My Stories" onto two lines beside New Story. Same
+            weight, tracking and family; phone-sized here, and from sm up the
+            heading's own clamp(), so desktop is unchanged. */}
+        <h1 className="min-w-0 font-sans text-[1.75rem] leading-none font-extrabold tracking-[-0.035em] whitespace-nowrap max-md:sr-only sm:text-[clamp(2.35rem,5vw,4.7rem)] sm:leading-[0.98]">
+          {t("title")}
+        </h1>
+        <Link
+          href="/stories/new"
+          className="press inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-accent pr-4 pl-3 text-sm font-bold text-accent-foreground hover:opacity-90 max-md:hidden"
+        >
+          <PlusIcon className="h-5 w-5" />
+          {t("newStory")}
+        </Link>
+      </div>
+
+      {/* Toolbar: one row, never scrolls. Places and tools on the left, how
+          the list is shown (filters, grid/list) on the right. */}
+      <div className="flex items-center justify-between gap-2 md:mt-4">
+        <div className="flex items-center gap-1 md:gap-2">
+          <Link
+            href="/stories/new"
+            aria-label={t("newStory")}
+            title={t("newStory")}
+            className="press relative mr-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground after:absolute after:-inset-0.5 after:content-[''] hover:opacity-90 md:hidden"
+          >
+            <PlusIcon className="h-5 w-5" />
+          </Link>
           <Link
             href="/my-stories/map"
-            className="rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium"
+            className={TOOL_CLASS}
+            title={t("storyMapLink")}
           >
-            {t("storyMapLink")}
+            <FolderIcon className="h-5 w-5" />
+            <span className="sr-only md:not-sr-only">{t("storyMapLink")}</span>
           </Link>
           <Link
             href="/my-stories/journey"
-            className="rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium"
+            className={TOOL_CLASS}
+            title={t("journeyLink")}
           >
-            {t("journeyLink")}
+            <RouteIcon className="h-5 w-5" />
+            <span className="sr-only md:not-sr-only">{t("journeyLink")}</span>
           </Link>
           <Link
             href="/my-photos"
-            className="rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium"
+            className={TOOL_CLASS}
+            title={t("myPhotosLink")}
           >
-            {t("myPhotosLink")}
+            <GalleryIcon className="h-5 w-5" />
+            <span className="sr-only md:not-sr-only">{t("myPhotosLink")}</span>
           </Link>
-          {stories.length > 0 && (
+          <Link
+            href="/stories/new/import"
+            className={TOOL_CLASS}
+            title={t("import")}
+          >
+            <ImportIcon className="h-5 w-5" />
+            <span className="sr-only md:not-sr-only">{t("import")}</span>
+          </Link>
+        </div>
+
+        {stories.length > 0 && (
+          <div className="flex items-center gap-1 md:gap-2">
+            {axes.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setFiltersOpen(true)}
+                aria-haspopup="dialog"
+                aria-label={
+                  activeFilterCount > 0
+                    ? t("filters.buttonActive", { count: activeFilterCount })
+                    : t("filters.button")
+                }
+                title={t("filters.button")}
+                className={`${TOOL_CLASS} sm:hidden ${
+                  activeFilterCount > 0 ? "text-accent" : ""
+                }`}
+              >
+                <FilterIcon className="h-5 w-5" />
+                {activeFilterCount > 0 && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute top-0.5 right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-mono text-[10px] leading-none font-bold text-accent-foreground tabular-nums"
+                  >
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            )}
             <div
               role="group"
               aria-label={t("viewLabel")}
-              className="flex rounded-md border border-border-subtle p-0.5"
+              className="relative isolate flex shrink-0 rounded-full border border-border-subtle p-0.5"
             >
-              <button
-                type="button"
-                onClick={() => changeView("grid")}
-                aria-pressed={view === "grid"}
-                aria-label={t("gridView")}
-                title={t("gridView")}
-                className={`rounded px-2 py-1.5 ${
-                  view === "grid"
-                    ? "bg-surface-muted text-foreground"
-                    : "text-foreground/60 hover:bg-surface-muted/60"
+              {/* The selected pill slides between the two buttons (a
+                  transform, so it costs nothing to paint) instead of swapping
+                  background colours. It is exactly one button wide: the
+                  group's padding box is two buttons plus the 2px padding
+                  either side. */}
+              <span
+                aria-hidden="true"
+                className={`absolute inset-y-0.5 left-0.5 -z-10 w-[calc(50%-0.125rem)] rounded-full bg-surface-muted transition-transform duration-200 ease-out motion-reduce:transition-none ${
+                  view === "list" ? "translate-x-full" : "translate-x-0"
                 }`}
-              >
-                <GridIcon />
-              </button>
-              <button
-                type="button"
-                onClick={() => changeView("list")}
-                aria-pressed={view === "list"}
-                aria-label={t("listView")}
-                title={t("listView")}
-                className={`rounded px-2 py-1.5 ${
-                  view === "list"
-                    ? "bg-surface-muted text-foreground"
-                    : "text-foreground/60 hover:bg-surface-muted/60"
-                }`}
-              >
-                <ListIcon />
-              </button>
+              />
+              {(
+                [
+                  ["grid", t("gridView"), <GridIcon key="g" />],
+                  ["list", t("listView"), <ListIcon key="l" />],
+                ] as const
+              ).map(([mode, label, icon]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => changeView(mode)}
+                  aria-pressed={view === mode}
+                  aria-label={label}
+                  title={label}
+                  className={`press relative flex h-9 w-9 items-center justify-center rounded-full after:absolute after:-inset-1 after:content-[''] ${
+                    view === mode
+                      ? "text-foreground"
+                      : "text-foreground/60 hover:text-foreground"
+                  }`}
+                >
+                  {icon}
+                </button>
+              ))}
             </div>
-          )}
-          <Link
-            href="/stories/new/import"
-            className="journiq-button border border-border-subtle bg-transparent text-foreground"
-          >
-            {t("import")}
-          </Link>
-          <Link
-            href="/stories/new"
-            className="journiq-button bg-accent text-accent-foreground"
-          >
-            {t("newStory")}
-          </Link>
-        </div>
+          </div>
+        )}
       </div>
 
       {stories.length === 0 ? (
@@ -1097,21 +1232,39 @@ export function MyStoriesView({
       ) : (
         <>
           {axes.length > 0 && (
-            <div className="mt-8 flex flex-col gap-4 border-b border-border-subtle pb-6">
-              {axes.map((axis) => (
-                <FilterRow
-                  key={axis.key}
-                  label={axis.label}
-                  options={[ALL, ...axis.options]}
-                  active={activeFilters[axis.key] ?? ALL}
-                  onChange={(value) => changeFilter(axis.key, value)}
-                  allLabel={t("filters.all")}
-                  groupLabel={t("filters.filterBy", {
-                    axis: axis.label.toLowerCase(),
-                  })}
-                />
-              ))}
+            <div className="mt-8 hidden flex-col gap-4 border-b border-border-subtle pb-6 sm:flex">
+              {filterRows(false)}
             </div>
+          )}
+
+          {axes.length > 0 && isPhone && (
+            <BottomSheet
+              open={filtersOpen}
+              onClose={() => setFiltersOpen(false)}
+              title={t("filters.button")}
+              footer={
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFiltersOpen(false)}
+                    className="press inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-accent px-5 text-sm font-black text-accent-foreground"
+                  >
+                    {t("filters.showResults", { count: filtered.length })}
+                  </button>
+                  {isFiltered && (
+                    <button
+                      type="button"
+                      onClick={clearFilters}
+                      className="press inline-flex min-h-12 items-center justify-center rounded-full border border-border-subtle px-5 text-sm font-bold"
+                    >
+                      {t("clearFilters")}
+                    </button>
+                  )}
+                </div>
+              }
+            >
+              <div className="flex flex-col gap-5">{filterRows(true)}</div>
+            </BottomSheet>
           )}
 
           {axes.length > 0 && (
@@ -1179,7 +1332,7 @@ export function MyStoriesView({
                         triangle is hidden two ways because one is not enough:
                         `list-none` covers Firefox and Chrome, the
                         ::-webkit-details-marker variant covers Safari. */}
-                    <summary className="flex cursor-pointer list-none items-center gap-3 py-4 outline-offset-4 [&::-webkit-details-marker]:hidden">
+                    <summary className="flex cursor-pointer list-none items-center gap-3 py-3 outline-offset-4 sm:py-4 [&::-webkit-details-marker]:hidden">
                       <ChevronIcon
                         className={`h-4 w-4 shrink-0 text-foreground/40 transition-transform ${
                           open ? "rotate-90" : ""

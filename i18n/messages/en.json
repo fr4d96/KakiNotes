@@ -65,7 +65,9 @@
     "signOut": "Sign out",
     "accountMenu": "Account menu",
     "staff": "Staff",
-    "myPhotos": "My Photos"
+    "myPhotos": "My Photos",
+    "home": "Home",
+    "tabBar": "Quick navigation"
   },
   "footer": {
     "tagline": "A storytelling community for honest working-holiday experiences across Aotearoa New Zealand.",
@@ -206,7 +208,6 @@
       "search": "Search",
       "searchPlaceholder": "Find a story like yours",
       "showFilters": "Filters",
-      "hideFilters": "Hide filters",
       "apply": "Apply filters",
       "clear": "Clear",
       "region": "Region",
@@ -639,7 +640,10 @@
       "destination": "Destination",
       "tag": "Tags",
       "all": "All",
-      "filterBy": "Filter stories by {axis}"
+      "filterBy": "Filter stories by {axis}",
+      "button": "Filters",
+      "buttonActive": "Filters, {count} active",
+      "showResults": "{count, plural, one {Show # story} other {Show # stories}}"
     },
     "sections": {
       "drafts": "Drafts",

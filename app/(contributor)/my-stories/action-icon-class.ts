@@ -1,8 +1,13 @@
-// Shared 32px round hit-target for every per-story icon action (Edit,
-// Preview/Review, Delete, Link, Take down and their confirm/cancel steps) --
-// consistent size and hover treatment whether the action is a Link or a
-// button. Pulled out of my-stories-view.tsx into its own module so
-// link-main-story-dialog.tsx (which my-stories-view.tsx also imports) can
-// reuse it without the two files importing each other.
+// Round hit-target for every per-story icon action (Edit, Preview/Review,
+// Delete, Take down, Start revision, Reopen and their confirm/cancel steps) --
+// consistent size and treatment whether the action is a Link or a button.
+// my-stories-view.tsx is its only consumer.
+//
+// Phones get a 44px box (the minimum comfortable thumb target) around the SAME
+// 32px visible circle: the hover/pressed fill is a ::before inset 6px, painted
+// behind the icon (`isolate` + `-z-10` keep it under the glyph without
+// touching the children), so the row looks exactly as light as before and
+// only the tappable area grows. From md up (pointer + keyboard) the box
+// shrinks back to the 32px circle itself.
 export const ACTION_ICON_CLASS =
-  "inline-flex h-8 w-8 items-center justify-center rounded-full hover:bg-surface-muted disabled:pointer-events-none disabled:opacity-60";
+  "press relative isolate inline-flex h-11 w-11 items-center justify-center rounded-full before:absolute before:inset-1.5 before:-z-10 before:rounded-full before:transition-colors hover:before:bg-surface-muted active:before:bg-surface-muted md:h-8 md:w-8 md:before:inset-0 disabled:pointer-events-none disabled:opacity-60";

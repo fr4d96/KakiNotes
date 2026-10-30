@@ -385,6 +385,11 @@ text-accent-foreground`.
   transparent header would draw white nav text onto the light page ground. Because
   `--header-solid` and `text-foreground` both resolve per theme, no route needs a special case. Nav links use `.journiq-nav-link`'s underline-on-hover treatment (accent-coloured
   underline that grows in from the left on hover).
+- **Phone title (The Named-Bar Rule):** below `md`, a label page names itself in the header —
+  logo mark, then the page title in the wordmark's own type (`text-xl font-black tracking-tight`,
+  truncating) — and drops its big in-page `<h1>` to screen-reader-only. Content pages (home, a
+  story, a profile, the editor) keep the wordmark and their title. Never draw the same title twice
+  on one phone screen.
 - **Mobile:** primary nav and auth controls collapse behind `MobileNavToggle`; a signed-in user
   instead sees `UserAvatarMenu`, which folds the primary nav links into its own dropdown
   (`extraItems`) rather than keeping a separate hamburger.
@@ -517,6 +522,37 @@ is white at rest and turns cyan only under the lens — the accent marking a sta
 Accent Rule — and every lit point is a published story, so the first viewport is made of the record
 rather than of stock photography.
 
+### Touch & navigation motion
+
+The installed iPhone app (home-screen PWA, `viewportFit: "cover"`) should feel native, so touch and
+route changes have their own small grammar. All of it is transform/opacity only, gated behind
+`prefers-reduced-motion`, and nothing is invisible at rest.
+
+- **The press rule.** Anything tappable dips under the finger: add the `press` class
+  (`app/globals.css`) — `scale(0.97)` plus a slight opacity dip, 120ms in, 200ms out. The button
+  classes (`.journiq-button`, `.night-button-*`) share the same pressed state. It needs a box that
+  can transform (not `display: inline`). Under reduced motion only the opacity dip remains.
+  `components/touch-active.tsx` registers one passive no-op `touchstart` listener so iOS applies
+  `:active` to non-link elements at all. `touch-action: manipulation` on controls removes the
+  double-tap-zoom delay; pinch-zoom on the page stays.
+- **Tab-bar indicator.** In `components/bottom-tab-bar.tsx` a small accent pill slides between tabs
+  (`translateX` by tab index, 250ms, `cubic-bezier(0.2, 0.75, 0.25, 1)`); the newly active icon pops
+  once (1 → 1.12 → 1). The bar slides down on task screens and while a field has focus. Tapping the
+  tab you are already on scrolls to the top. Reduced motion: no slide, no pop, instant hide.
+- **Route transitions.** `components/page-transition.tsx` keys a React `<ViewTransition>` by
+  pathname; the CSS lives in `app/globals.css` (`.vt-*`). Going deeper (a longer URL: list → story,
+  My Stories → editor) the new page slides in from the right; going back it slides in from the left;
+  a tab-bar switch (the `tab` transition type) is a crossfade; same depth is a short rise + fade.
+  Links that pass `nav-forward` / `nav-back` also shift the old page a little the other way.
+  320ms, the same ease as the pill. Header and tab bar are lifted into their own un-animated groups
+  _only while a transition runs_ (`:root:active-view-transition`), above the sliding page, so they
+  stay put; a permanent `view-transition-name` would make them stacking contexts and containing
+  blocks for `position: fixed` descendants at rest. Under reduced motion every slide becomes a 120ms
+  fade. Browsers without view transitions just swap pages.
+- **Fill-mode exception.** The Fill-Mode Rule above is for DOM reveals. The `::view-transition-*`
+  animations use `both` because the browser tears those pseudo-elements down when the transition
+  ends; nothing is held.
+
 ## Loading — the focus pull, held
 
 Loading states are the same idea at rest: a placeholder is a soft, out-of-focus stand-in for the
@@ -543,8 +579,9 @@ state is visible, per the rule above against reveals that are invisible at rest.
 and the swap becomes a jump. If the real component's frame changes, change its skeleton with it.
 
 `.nf-route-progress` is an indeterminate hairline at the top of each fallback. It sits in normal
-flow, **not** `position: fixed` — `PageTransition` animates `transform`, which makes it a containing
-block for fixed descendants, so a fixed bar anchors to that wrapper instead of the viewport.
+flow, **not** `position: fixed`. (`PageTransition` used to animate `transform` on a wrapper, which
+made it a containing block for fixed descendants; it is now a `<ViewTransition>` and the wrapper is
+unstyled at rest, so that trap is gone, but keeping the bar in flow costs nothing and stays safe.)
 
 ## Signature components
 

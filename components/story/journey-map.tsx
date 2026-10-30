@@ -91,7 +91,12 @@ const CAMERA_TAU_MS = 230;
 /** Marker sizes, in full-view SVG units; divided by the zoom while zoomed. */
 const DOT_R = 2.4;
 const DOT_R_LIT = 3.4;
-const HIT_R = 8;
+/**
+ * Invisible tap radius. A pin-space unit is a constant ~1.7 screen px on a
+ * phone-width map (the pins are scaled by 1/zoom), so 13 units is a ~44px
+ * target around a dot that stays 2.4 units across.
+ */
+const HIT_R = 13;
 const BIG_PIN_R = 5.6;
 const CHIP_FONT = 5;
 const CHIP_H = 9;
@@ -100,7 +105,7 @@ const CHIP_MAX_CHARS = 24;
 /** Sub-stop pins: smaller than a main stop's pin, spread within their group. */
 const SUB_R = 3.7;
 const SUB_FONT = 3.5;
-const SUB_HIT_R = 7;
+const SUB_HIT_R = 12;
 const SUB_MIN_DISTANCE = 4.5;
 const SUB_LAYOUT_RADIUS = 4;
 /** Room around an opened group, and how far in the camera may go for it. */
@@ -893,7 +898,7 @@ export function JourneyMap({ stops: allStops }: { stops: JourneyStopView[] }) {
                     data-py={p.y.toFixed(2)}
                     transform={`translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})`}
                   >
-                    {/* Invisible, enlarged hit area (>= 24px on screen). */}
+                    {/* Invisible, enlarged hit area (>= 44px on a phone). */}
                     <circle r={HIT_R} fill="transparent" />
                     <circle
                       r={BIG_PIN_R + 2}
@@ -1330,7 +1335,7 @@ export function JourneyMap({ stops: allStops }: { stops: JourneyStopView[] }) {
                         aria-expanded={
                           subsByMain[i].length > 0 ? openMain === i : undefined
                         }
-                        className={`block min-h-9 w-full rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                        className={`press block min-h-11 w-full rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                           state === "current"
                             ? "text-lg font-semibold"
                             : state === "upcoming"
@@ -1356,7 +1361,7 @@ export function JourneyMap({ stops: allStops }: { stops: JourneyStopView[] }) {
                       </p>
                       <Link
                         href={stop.href}
-                        className={`inline-block rounded-sm text-sm underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                        className={`inline-flex min-h-11 items-center rounded-sm text-sm underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                           state === "upcoming" ? "text-muted-foreground" : ""
                         }`}
                       >

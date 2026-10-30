@@ -38,7 +38,7 @@ export function SiteFooter() {
           <div>
             <Link
               href={prefix || "/"}
-              className="flex items-center gap-2.5 text-xl font-black"
+              className="flex min-h-11 items-center gap-2.5 text-xl font-black"
             >
               <BrandLogo className="border border-border-subtle" />
               Kakinotes
@@ -52,27 +52,41 @@ export function SiteFooter() {
           </div>
           <div>
             <strong>{t("explore")}</strong>
-            <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
-              <Link href={`${prefix}/stories`}>{tNav("stories")}</Link>
+            <div className="mt-3 grid gap-0 text-sm md:gap-2 text-muted-foreground">
+              <Link href={`${prefix}/stories`} className="py-3 md:py-0">
+                {tNav("stories")}
+              </Link>
             </div>
           </div>
           <div>
             <strong>{t("community")}</strong>
-            <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
-              <Link href="/sign-up">{t("shareAStory")}</Link>
-              <Link href={`${prefix}/contributors`}>
+            <div className="mt-3 grid gap-0 text-sm md:gap-2 text-muted-foreground">
+              <Link href="/sign-up" className="py-3 md:py-0">
+                {t("shareAStory")}
+              </Link>
+              <Link href={`${prefix}/contributors`} className="py-3 md:py-0">
                 {tNav("contributors")}
               </Link>
-              <Link href={`${prefix}/about`}>{tNav("about")}</Link>
+              <Link href={`${prefix}/about`} className="py-3 md:py-0">
+                {tNav("about")}
+              </Link>
             </div>
           </div>
           <div>
             <strong>{t("support")}</strong>
-            <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
-              <Link href="/privacy">{t("privacy")}</Link>
-              <Link href="/terms">{t("terms")}</Link>
-              <Link href="/community-guidelines">{t("guidelines")}</Link>
-              <Link href="/copyright">{t("copyrightRemoval")}</Link>
+            <div className="mt-3 grid gap-0 text-sm md:gap-2 text-muted-foreground">
+              <Link href="/privacy" className="py-3 md:py-0">
+                {t("privacy")}
+              </Link>
+              <Link href="/terms" className="py-3 md:py-0">
+                {t("terms")}
+              </Link>
+              <Link href="/community-guidelines" className="py-3 md:py-0">
+                {t("guidelines")}
+              </Link>
+              <Link href="/copyright" className="py-3 md:py-0">
+                {t("copyrightRemoval")}
+              </Link>
             </div>
           </div>
         </div>

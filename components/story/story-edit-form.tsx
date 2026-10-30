@@ -1283,8 +1283,10 @@ export function StoryEditForm({
     <>
       {/* Sticky, so the progress bar, the save state and Preview stay put
           while a long step (the story body, the photo grid) scrolls under
-          them. `top-76px` is the site header's own min-height
-          (components/site-header.tsx), which is sticky at top-0; z-30 keeps
+          them. The offset is the site header's own min-height (76px,
+          components/site-header.tsx) plus the top safe-area inset the header
+          pads itself with in the installed iPhone app; the header is sticky
+          at top-0; z-30 keeps
           this under that header's z-40 rather than fighting it.
 
           It sits OUTSIDE the max-w-3xl column on purpose, rather than
@@ -1297,7 +1299,7 @@ export function StoryEditForm({
           (components/story/story-steps.tsx). Below `lg` this lands at
           exactly the old geometry: max-w-3xl, same px-4/sm:px-6, a bar the
           full width of the column. */}
-      <div className="sticky top-[76px] z-30 border-b border-border-subtle bg-background">
+      <div className="sticky top-[calc(76px+env(safe-area-inset-top))] z-30 border-b border-border-subtle bg-background">
         <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 lg:max-w-5xl">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-3">
             <h1 className="text-lg font-semibold tracking-tight sm:text-xl">

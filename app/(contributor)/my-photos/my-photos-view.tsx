@@ -32,7 +32,9 @@ export function MyPhotosView({
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="journiq-heading text-[2.4rem]">{t("title")}</h1>
+          <h1 className="journiq-heading text-[2.4rem] max-md:sr-only">
+            {t("title")}
+          </h1>
           <p className="mt-1 text-sm text-foreground/65">
             {total > 0
               ? t("summary", { photos: total, stories: stories.length })
@@ -41,7 +43,7 @@ export function MyPhotosView({
         </div>
         <Link
           href="/my-stories"
-          className="rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium"
+          className="press inline-flex min-h-11 items-center rounded-full border border-border-subtle px-4 text-sm font-medium"
         >
           {t("backToMyStories")}
         </Link>
@@ -193,7 +195,7 @@ function PhotoCard({
       {needsReconnect ? (
         <Link
           href="/account#drive"
-          className="rounded-md border border-border-subtle px-2 py-1.5 text-center text-xs font-medium"
+          className="press inline-flex min-h-11 items-center justify-center rounded-full border border-border-subtle px-3 text-center text-xs font-medium"
         >
           {t("reconnect")}
         </Link>
@@ -207,7 +209,7 @@ function PhotoCard({
               ? t("downloadFullLabel", { photo: label })
               : t("downloadLabel", { photo: label })
           }
-          className="rounded-md border border-border-subtle px-2 py-1.5 text-xs font-medium disabled:opacity-60"
+          className="press inline-flex min-h-11 items-center justify-center rounded-full border border-border-subtle px-3 text-xs font-medium disabled:opacity-60"
         >
           {downloading
             ? t("preparing")

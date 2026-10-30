@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { BrandLogo } from "@/components/brand-logo";
+import { HeaderBrand } from "@/components/header-brand";
 import { MobileNavToggle } from "@/components/mobile-nav-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LocaleToggle } from "@/components/locale-toggle";
@@ -156,19 +156,24 @@ export function SiteHeader() {
     href: `${countryPrefix}${item.href}`,
     label: t(item.key),
   }));
+  // On phones Stories and Contributors live in the bottom tab bar
+  // (components/bottom-tab-bar.tsx), so the hamburger / avatar menu only
+  // carries what the bar doesn't.
+  const mobileNavItems = primaryNav.flatMap((item) =>
+    item.key === "about"
+      ? [{ href: `${countryPrefix}${item.href}`, label: t(item.key) }]
+      : [],
+  );
 
   return (
+    // The env() paddings keep the bar clear of the notch / status bar and
+    // the side cut-outs now that app/layout.tsx's viewport uses
+    // viewportFit: "cover" (they are 0 in an ordinary browser tab).
     <header
-      className={`sticky top-0 z-40 transition-colors ${headerToneClasses}`}
+      className={`sticky top-0 z-40 pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] transition-colors ${headerToneClasses}`}
     >
       <div className="mx-auto flex min-h-[76px] max-w-[1440px] items-center gap-5 px-4 sm:px-6">
-        <Link
-          href={countryPrefix || "/"}
-          className="flex items-center gap-2.5 text-xl font-black tracking-tight"
-        >
-          <BrandLogo className="border border-current" priority />
-          Kakinotes
-        </Link>
+        <HeaderBrand homeHref={countryPrefix || "/"} priority />
 
         <nav
           aria-label={t("primary")}
@@ -233,14 +238,14 @@ export function SiteHeader() {
               <NotificationBell />
               <UserAvatarMenu
                 emoji={avatarEmoji}
-                extraItems={navItems}
+                extraItems={mobileNavItems}
                 role={role}
               />
             </>
           ) : (
             <MobileNavToggle
               navItems={[
-                ...navItems,
+                ...mobileNavItems,
                 { label: t("signIn"), onClick: () => setAuthModal("sign-in") },
                 {
                   label: t("shareYourStory"),

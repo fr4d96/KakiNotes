@@ -479,6 +479,22 @@
 
 html {
   scroll-behavior: smooth;
+  /* Anchor jumps and focus scrolling land BELOW the sticky header (76px bar
+     plus the notch inset it pads itself with in the installed app). */
+  scroll-padding-top: calc(76px + env(safe-area-inset-top));
+}
+
+/* Removes the ~300ms double-tap-to-zoom wait on controls while leaving
+   pinch-zoom on the page alone (WCAG 1.4.4 -- viewport never disables it). */
+a,
+button,
+[role="button"],
+input,
+select,
+textarea,
+label,
+summary {
+  touch-action: manipulation;
 }
 
 body {
@@ -855,31 +871,152 @@ svg g[role="button"]:focus-visible {
 }
 
 /*
- * Subtle whole-page transition on route change (components/page-transition.tsx).
- * Kept short and small (8px, 220ms) so it reads as a polish detail, not a
- * loading state -- the global prefers-reduced-motion override below already
- * collapses this to effectively instant for anyone who's asked for that.
+ * Route transitions (components/page-transition.tsx) -- React <ViewTransition>
+ * + the browser View Transitions API. React gives the page wrapper a
+ * view-transition-name only while a navigation runs, and picks one of the
+ * .vt-* classes below from the transition type / direction. Browsers without
+ * view transitions never reach any of this: pages just swap.
+ *
+ * Everything animated here is a transient ::view-transition-* pseudo-element
+ * that the browser tears down when the transition ends, so (unlike the DOM
+ * reveals in DESIGN.md) `both` fill is correct and nothing is left invisible
+ * at rest. Durations 200-320ms, the same ease as the tab-bar pill.
  */
-.journiq-page-transition {
-  /* `backwards`, never `both`/`forwards`. Once a filled animation ends,
-     the wrapper would hold the INTERPOLATED end value -- `translateY(0)`,
-     even when the keyframe says `none`, because `none` is paired up as an
-     identity transform for the tween -- and any transform other than
-     `none` makes this wrapper the containing block for every
-     `position: fixed` descendant. The landing page's reading-progress
-     hairline was scrolling away with the page because of exactly that.
-     With `backwards`, the element's own (un-transformed) style returns
-     the moment the fade finishes. */
-  animation: journiq-page-in 0.22s cubic-bezier(0.2, 0.75, 0.25, 1) backwards;
+:root {
+  --vt-ease: cubic-bezier(0.2, 0.75, 0.25, 1);
 }
-@keyframes journiq-page-in {
+
+/* The "root" snapshot is everything not named: it must not crossfade (the
+   header/footer/background are identical across pages, and a crossfade of
+   two pages' footers at different heights reads as a flash). Show the live
+   new state immediately and drop the stale one. */
+::view-transition-old(root) {
+  display: none;
+  animation: none;
+}
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* Let taps through while a transition runs. Named elements (header, tab bar)
+   are still skipped by hit-testing for the duration, so keep it short. */
+::view-transition {
+  pointer-events: none;
+}
+
+/* Header and tab bar stay put: during a transition (and ONLY then -- a
+   permanent view-transition-name would make each a stacking context and a
+   containing block at rest) they are lifted into their own groups with no
+   animation and stacked ABOVE the sliding page, so a page scrolled under
+   the sticky header never paints over it. `body > header` is whichever
+   header the layout rendered (SiteHeader / ContributorNav). */
+:root:active-view-transition body > header {
+  view-transition-name: nf-header;
+}
+:root:active-view-transition .nf-tab-bar {
+  view-transition-name: nf-tab-bar;
+}
+::view-transition-group(nf-header),
+::view-transition-group(nf-tab-bar) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(nf-header),
+::view-transition-old(nf-tab-bar) {
+  display: none;
+}
+::view-transition-new(nf-header),
+::view-transition-new(nf-tab-bar) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Deeper: the new page slides in from the right... */
+  ::view-transition-new(.vt-in-forward) {
+    animation: vt-in-from-right 320ms var(--vt-ease) both;
+  }
+  /* ...back: from the left. */
+  ::view-transition-new(.vt-in-back) {
+    animation: vt-in-from-left 320ms var(--vt-ease) both;
+  }
+  /* Same depth: a short rise + fade (the old page-load idiom). */
+  ::view-transition-new(.vt-in-rise) {
+    animation: vt-in-rise 280ms var(--vt-ease) both;
+  }
+  /* Tab switch: plain crossfade. */
+  ::view-transition-new(.vt-fade) {
+    animation: vt-fade-in 200ms ease-out both;
+  }
+  ::view-transition-old(.vt-fade) {
+    animation: vt-fade-out 140ms ease-in both;
+  }
+  /* The old page: fades out in place, or (when a link says which way it is
+     going) also shifts a little the opposite way. */
+  ::view-transition-old(.vt-out) {
+    animation: vt-fade-out 180ms ease-in both;
+  }
+  ::view-transition-old(.vt-out-forward) {
+    animation: vt-out-to-left 240ms var(--vt-ease) both;
+  }
+  ::view-transition-old(.vt-out-back) {
+    animation: vt-out-to-right 240ms var(--vt-ease) both;
+  }
+}
+
+/* Reduced motion: no slide, no rise -- a 120ms fade only. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-new(.vt-in-forward),
+  ::view-transition-new(.vt-in-back),
+  ::view-transition-new(.vt-in-rise),
+  ::view-transition-new(.vt-fade) {
+    animation: vt-fade-in 120ms linear both;
+  }
+  ::view-transition-old(.vt-out),
+  ::view-transition-old(.vt-out-forward),
+  ::view-transition-old(.vt-out-back),
+  ::view-transition-old(.vt-fade) {
+    animation: vt-fade-out 120ms linear both;
+  }
+}
+
+@keyframes vt-fade-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
   }
+}
+@keyframes vt-fade-out {
   to {
-    opacity: 1;
-    transform: none;
+    opacity: 0;
+  }
+}
+@keyframes vt-in-from-right {
+  from {
+    opacity: 0;
+    translate: 18% 0;
+  }
+}
+@keyframes vt-in-from-left {
+  from {
+    opacity: 0;
+    translate: -18% 0;
+  }
+}
+@keyframes vt-in-rise {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+@keyframes vt-out-to-left {
+  to {
+    opacity: 0;
+    translate: -8% 0;
+  }
+}
+@keyframes vt-out-to-right {
+  to {
+    opacity: 0;
+    translate: 8% 0;
   }
 }
 
@@ -1036,6 +1173,9 @@ svg g[role="button"]:focus-visible {
   transform: translateY(-2px);
 }
 .night-button-ghost {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
   font-size: 0.875rem;
   font-weight: 700;
   /* Muted via opacity rather than a baked-in alpha colour, so the muting
@@ -1252,15 +1392,84 @@ svg g[role="button"]:focus-visible {
 .journiq-button {
   transition:
     transform var(--nf-fast) var(--nf-ease-out),
+    opacity var(--nf-medium) var(--nf-ease-out),
     border-color var(--nf-medium) var(--nf-ease-out),
     background-color var(--nf-medium) var(--nf-ease-out),
     color var(--nf-medium) var(--nf-ease-out),
     box-shadow var(--nf-medium) var(--nf-ease-out);
 }
+/* .press -- the shared touch-feedback utility. Add `press` to anything
+   tappable (chips, cards, icon buttons, tab-bar links) and it dips on
+   :active the way a native control does: scale(0.97) + a slight opacity
+   dip, 120ms in, 200ms out. transform and opacity only, so it is
+   compositor-driven and costs no layout or paint. Needs a box that can
+   transform -- not an `inline` element (use inline-flex/block). The
+   transition list also carries the colour/shadow properties Tailwind's
+   transition-colors/-shadow utilities would set, because this rule is
+   unlayered and would otherwise replace them. The button classes above
+   (.night-button-*, .journiq-button) keep their own transition list and
+   share the pressed state below. iOS only honours :active on non-links when
+   a touch listener exists: components/touch-active.tsx. */
+.press {
+  transition:
+    transform 200ms var(--nf-ease-out),
+    opacity 200ms var(--nf-ease-out),
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+/* One pressed state for .press AND the button classes, so they cannot drift. */
+.press:active,
 .night-button-primary:active,
 .night-button-ghost:active,
 .journiq-button:active {
   transform: scale(0.97);
+  opacity: 0.86;
+  transition-duration: 120ms, 120ms, 150ms, 150ms, 150ms, 150ms;
+}
+
+/* ---------- Bottom tab bar (components/bottom-tab-bar.tsx) ----------
+   Native-feel details, kept here so the component stays markup. The bar is a
+   touch surface: no long-press callout, no text selection. */
+.nf-tab-bar {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: transform 280ms var(--vt-ease);
+}
+/* Hidden on focused task screens and while a field has focus: slides down
+   past the bottom edge (its own height includes the home-indicator pad). */
+.nf-tab-bar[data-hidden="true"] {
+  transform: translateY(100%);
+  pointer-events: none;
+}
+/* The accent pill slides between tabs; the component sets its translateX
+   from the active index. */
+.nf-tab-indicator {
+  transition:
+    transform 250ms var(--vt-ease),
+    opacity 150ms ease;
+}
+/* The newly active icon pops once (1 -> 1.12 -> 1). Plays when aria-current
+   arrives; nothing is hidden or held at rest. */
+@media (prefers-reduced-motion: no-preference) {
+  .nf-tab-bar [aria-current="page"] .nf-tab-icon {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: nf-tab-pop 300ms var(--vt-ease);
+  }
+}
+@keyframes nf-tab-pop {
+  50% {
+    transform: scale(1.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nf-tab-bar,
+  .nf-tab-indicator {
+    transition: none;
+  }
 }
 
 /* Index rows: the accent hairline wipes in from the left on hover/focus,
@@ -1301,7 +1510,10 @@ svg g[role="button"]:focus-visible {
   .night-button-primary:active,
   .night-button-ghost:active,
   .journiq-button:active,
+  .press:active,
   .nf-entry:hover img {
+    /* Reduced motion keeps the opacity dip (a state change) and drops the
+       scale (movement). */
     transform: none;
   }
   .nf-entry::after {

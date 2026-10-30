@@ -38,7 +38,7 @@ export function SignInForm({ next }: { next: string }) {
             type="text"
             autoComplete="username"
             required
-            className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2"
+            className="mt-1 min-h-11 w-full rounded-md border border-border-subtle px-3 py-2"
           />
           <p className="mt-1 text-xs text-foreground/55">
             {t("identifierHint")}
@@ -55,7 +55,7 @@ export function SignInForm({ next }: { next: string }) {
             type="password"
             autoComplete="current-password"
             required
-            className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2"
+            className="mt-1 min-h-11 w-full rounded-md border border-border-subtle px-3 py-2"
           />
         </div>
 
@@ -68,19 +68,22 @@ export function SignInForm({ next }: { next: string }) {
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-md bg-accent px-3 py-2 text-accent-foreground hover:opacity-90 disabled:opacity-60"
+          className="min-h-11 w-full rounded-md bg-accent px-3 py-2 text-accent-foreground hover:opacity-90 disabled:opacity-60"
         >
           {pending ? t("submitting") : t("submit")}
         </button>
 
         <p className="text-sm text-muted-foreground">
-          <Link href="/forgot-password" className="hover:underline">
+          <Link
+            href="/forgot-password"
+            className="inline-block py-3 hover:underline"
+          >
             {t("forgotPassword")}
           </Link>
         </p>
         <p className="text-sm text-muted-foreground">
           {t("noAccount")}{" "}
-          <Link href="/sign-up" className="hover:underline">
+          <Link href="/sign-up" className="inline-block py-3 hover:underline">
             {t("signUpLink")}
           </Link>
         </p>

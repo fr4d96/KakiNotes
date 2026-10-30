@@ -195,12 +195,18 @@ export function StoryStepProgress({
           items are focusable links/buttons, so keyboard users reach a
           scrolled-off step by tabbing and the browser scrolls it into view;
           no tabIndex of its own is needed here. */}
-      <ol className="mt-2 flex items-center gap-1 overflow-x-auto">
+      {/* The 6px of padding (cancelled by the margins, so the rail sits where
+          it did) is room for the steps' hit-slop: overflow-x-auto would
+          otherwise clip it at the rail's edge. */}
+      <ol className="-mx-1.5 -mb-1.5 mt-0.5 flex items-center gap-1 overflow-x-auto p-1.5">
         {STORY_STEPS.map((step, index) => {
           const { isCurrent } = stateOf(step.id, index);
           const inner = <Face id={step.id} index={index} />;
           const shared =
-            "flex items-center gap-2 rounded-full px-0.5 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-accent";
+            // The ::before is hit-slop: the 28px dot keeps its size, but the
+            // tappable box grows to 44px+ (6px each way into the connector
+            // gaps, which at 16px leave room without overlapping a neighbour).
+            "press relative flex items-center gap-2 rounded-full px-0.5 py-0.5 outline-none before:absolute before:-inset-1.5 before:content-[''] focus-visible:ring-2 focus-visible:ring-accent";
           const href = hrefs?.[step.id];
           const isLocked = locked.has(step.id);
 

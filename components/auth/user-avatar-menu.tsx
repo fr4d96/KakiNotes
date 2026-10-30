@@ -7,6 +7,8 @@ import { signOutAction } from "@/app/(auth)/actions";
 import { ContributorIcon } from "@/components/icons";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { useIsPhone } from "@/components/ui/use-is-phone";
 import { controlToneClasses } from "@/components/ui-tone";
 import type { AppRole } from "@/lib/auth/staff-guard";
 import { staffMenuItemsForRole } from "@/lib/auth/staff-menu";
@@ -87,9 +89,13 @@ export function UserAvatarMenu({
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
+  // Phones get the same menu as a bottom sheet (thumb-reachable, 48px rows);
+  // md+ keeps the anchored dropdown. Exactly one of them is ever rendered.
+  const isPhone = useIsPhone();
 
   useEffect(() => {
-    if (!open) return;
+    // The sheet is a modal <dialog>: it has its own backdrop tap and Escape.
+    if (!open || isPhone) return;
 
     function handlePointerDown(event: PointerEvent) {
       if (!containerRef.current?.contains(event.target as Node)) {
@@ -106,7 +112,96 @@ export function UserAvatarMenu({
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open]);
+  }, [open, isPhone]);
+
+  // One definition of the menu's contents, drawn with the dropdown's compact
+  // rows or the sheet's >=48px rows.
+  const rowClass = isPhone
+    ? "press flex min-h-12 w-full items-center rounded-xl px-3 text-left text-base font-medium hover:bg-surface-muted active:bg-surface-muted"
+    : "block rounded-lg px-3 py-2 text-sm font-medium hover:bg-surface-muted";
+  const dividerClass = isPhone
+    ? "my-1.5 border-t border-border-subtle"
+    : "my-1 border-t border-border-subtle";
+
+  const menuBody = (
+    <>
+      {staffItems.length > 0 && (
+        <>
+          {/*
+            Labelled, because "Moderation" sitting directly above "My
+            Stories" reads as one flat list of unrelated places. The
+            heading is what makes the group legible as "your staff
+            surfaces" rather than more account actions.
+          */}
+          <p className="px-3 pt-1.5 pb-1 font-mono text-[0.625rem] tracking-[0.14em] text-muted-foreground uppercase">
+            {t("staff")}
+          </p>
+          {staffItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className={rowClass}
+            >
+              {item.label}
+            </Link>
+          ))}
+          <div className={dividerClass} />
+        </>
+      )}
+      {extraItems && extraItems.length > 0 && (
+        <>
+          {extraItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className={rowClass}
+            >
+              {item.label}
+            </Link>
+          ))}
+          <div className={dividerClass} />
+        </>
+      )}
+      {menuItems.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          role="menuitem"
+          onClick={() => setOpen(false)}
+          className={rowClass}
+        >
+          {t(item.key)}
+        </Link>
+      ))}
+      {/* Theme and language live here rather than as two more round
+          buttons in the header: they are settings, not destinations,
+          and the header was getting crowded on a phone. Signed-out
+          visitors have no menu, so the header keeps the icon form for
+          them (site-header.tsx). The toggles draw their own rows; the
+          wrapper lifts them to the sheet's 48px on phones. */}
+      <div className={dividerClass} />
+      <div
+        className={
+          isPhone
+            ? "[&>button]:min-h-12 [&>button]:rounded-xl [&>button]:text-base [&>button]:active:bg-surface-muted"
+            : undefined
+        }
+      >
+        <ThemeToggle variant="menuItem" />
+        <LocaleToggle variant="menuItem" />
+      </div>
+      <div className={dividerClass} />
+      <form action={signOutAction}>
+        <button type="submit" role="menuitem" className={rowClass}>
+          {t("signOut")}
+        </button>
+      </form>
+    </>
+  );
 
   return (
     <div ref={containerRef} className="relative">
@@ -115,91 +210,32 @@ export function UserAvatarMenu({
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-controls={menuId}
+        aria-controls={isPhone ? undefined : menuId}
         aria-label={t("accountMenu")}
-        className={`flex h-10 w-10 items-center justify-center rounded-full border text-lg transition-transform hover:-translate-y-0.5 ${controlToneClasses(inverted)}`}
+        className={`press flex h-11 w-11 items-center justify-center rounded-full border text-lg md:h-10 md:w-10 transition-transform hover:-translate-y-0.5 ${controlToneClasses(inverted)}`}
       >
         {emoji ?? <ContributorIcon className="h-5 w-5" />}
       </button>
 
-      {open && (
+      {open && !isPhone && (
         <div
           id={menuId}
           role="menu"
           className="absolute right-0 top-12 z-50 max-h-[calc(100vh-5rem)] w-56 overflow-y-auto rounded-xl border border-border-subtle bg-surface p-1.5 text-foreground shadow-xl"
         >
-          {staffItems.length > 0 && (
-            <>
-              {/*
-                Labelled, because "Moderation" sitting directly above "My
-                Stories" reads as one flat list of unrelated places. The
-                heading is what makes the group legible as "your staff
-                surfaces" rather than more account actions.
-              */}
-              <p className="px-3 pt-1.5 pb-1 font-mono text-[0.625rem] tracking-[0.14em] text-muted-foreground uppercase">
-                {t("staff")}
-              </p>
-              {staffItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  role="menuitem"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-surface-muted"
-                >
-                  {item.label}
-                </Link>
-              ))}
-              <div className="my-1 border-t border-border-subtle" />
-            </>
-          )}
-          {extraItems && extraItems.length > 0 && (
-            <>
-              {extraItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  role="menuitem"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-surface-muted"
-                >
-                  {item.label}
-                </Link>
-              ))}
-              <div className="my-1 border-t border-border-subtle" />
-            </>
-          )}
-          {menuItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              role="menuitem"
-              onClick={() => setOpen(false)}
-              className="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-surface-muted"
-            >
-              {t(item.key)}
-            </Link>
-          ))}
-          {/* Theme and language live here rather than as two more round
-              buttons in the header: they are settings, not destinations,
-              and the header was getting crowded on a phone. Signed-out
-              visitors have no menu, so the header keeps the icon form for
-              them (site-header.tsx). */}
-          <div className="my-1 border-t border-border-subtle" />
-          <ThemeToggle variant="menuItem" />
-          <LocaleToggle variant="menuItem" />
-          <div className="my-1 border-t border-border-subtle" />
-          <form action={signOutAction}>
-            <button
-              type="submit"
-              role="menuitem"
-              className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-surface-muted"
-            >
-              {t("signOut")}
-            </button>
-          </form>
+          {menuBody}
         </div>
       )}
+
+      <BottomSheet
+        open={open && isPhone}
+        onClose={() => setOpen(false)}
+        title={t("accountMenu")}
+      >
+        <div role="menu" aria-label={t("accountMenu")}>
+          {menuBody}
+        </div>
+      </BottomSheet>
     </div>
   );
 }

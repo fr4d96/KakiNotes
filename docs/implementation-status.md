@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+Last updated: 2026-10-30 (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
 one-level folder shape — a story is either a main story, a sub story filed under exactly one main
 story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
 "Move to…" select; migration applied to the dev project — see the entry at the end of this
@@ -10629,3 +10629,110 @@ profiles only if a China map is ever built (it is NZ only today).
 - **Still open:** the raw-original backlog sweep (434 due, 14 of them `failed` with no other copy —
   decide on reprocessing those first) and the uncommitted private story folders work on
   `feat/private-story-folders`.
+
+## 2026-10-30 — Installable web app (PWA) and phone tab bar (branch `feat/pwa-mobile`)
+
+**Status: code complete; `npm run verify` is the gate. NOT yet tried on a real iPhone.** The public
+site can be added to the home screen and launches full-screen, and on phones it has an app-style
+bottom tab bar.
+
+- **Install:** `app/manifest.ts` (standalone, `/` scope, light `--background` colours, 192 / 512 /
+  maskable-512 icons in `public/icons/`), `app/apple-icon.png` (180×180, opaque),
+  `metadata.appleWebApp` and a `viewport` export (`viewportFit: "cover"`, light/dark `themeColor`)
+  in `app/layout.tsx`. Icons were generated once from `public/kakinotes-icon.png` with `sharp`.
+- **Navigation:** `components/bottom-tab-bar.tsx` — Home, Stories, Contributors, and Account (signed
+  in) or Sign in (signed out), below `md` only, on the `(public)` and `(auth)` layouts. Active tab has
+  `aria-current="page"`, tabs are 56px tall, it pads for the home indicator and hides when printing.
+  The header pads for the safe-area insets; the home page's reading-progress line moved with it.
+  Stories and Contributors left the phone hamburger / avatar menu (About, Sign in, Share your story
+  stay). New keys `nav.home` and `nav.tabBar` in en and zh-CN. Staff and contributor areas untouched.
+- **Phone polish (375px pass):** no horizontal overflow found. Tap targets raised to 44px on phones:
+  header brand link, theme / language / bell / avatar buttons and the Menu button; footer links;
+  stories search box, filter controls and Apply / Clear; the home page filter chips, pager and
+  "or see how this works" link; country toggle; sign-in / sign-up fields, buttons and links, and the
+  Google button; the report-a-story form. Form fields were already 16px on touch (globals.css).
+  The "personal experience, not advice" label is unchanged.
+- **Tests:** `components/bottom-tab-bar.test.tsx`, `app/manifest.test.ts` (display standalone, icon
+  files exist), and a header test that Stories / Contributors are not duplicated in the phone menu.
+
+**Decisions.**
+
+- **No service worker and no offline caching.** A cache could keep serving draft, private or
+  unapproved content, or an image after access is revoked (Rules 12–13); iOS installs without one.
+- "Sign in" in the tab bar links to `/sign-in` rather than opening the header's modal (the modal's
+  state lives in `SiteHeader`).
+- The manifest has one colour pair (light); dark mode is covered by the `themeColor` media queries.
+
+**Risks.**
+
+- iOS keeps a home-screen app's cookies and storage separate from Safari: people sign in again inside
+  the installed app. Sessions in the two do not share.
+- With `statusBarStyle: "default"` iOS draws its own status bar, so the safe-area top inset is
+  normally 0; the env() paddings matter only if that is changed to `black-translucent`.
+- The theme toggle can differ from the OS setting, so the status-bar tint (`themeColor` follows the OS)
+  may not match a manually chosen theme.
+- Not checked: a real iPhone, the install prompt, the maskable icon crop, landscape.
+- Still under 44px on purpose: the home hero's decorative map points and the carousel's dot buttons
+  (the previous / next buttons beside them are 44px).
+- `next dev` / `next build` with Turbopack failed in this worktree because `node_modules` is a symlink
+  out of the repo ("points out of the filesystem root"); `--webpack` worked for the dev check.
+
+**Native-feel pass (same branch, later on 2026-10-30).** App shell and navigation motion:
+
+- The tab bar now also renders on the `(contributor)` layout. Signed in, the 4th tab is **My Stories**
+  (`/my-stories`, active for My Stories / My Photos / Account / Notifications / the story editor and
+  preview; the public `/stories` pages keep Stories); signed out it is still Sign in. It slides down
+  on `/stories/new*` and `/stories/<id>/edit` and while a text field has focus; an accent pill slides
+  between tabs, the active icon pops once, and tapping the active tab (at its root) scrolls to top.
+- Safe areas: `ContributorNav` pads for the insets like `SiteHeader`; the story editor's sticky step
+  rail offsets by `76px + env(safe-area-inset-top)` (one line in `story-edit-form.tsx`).
+- Touch layer: `.press` class (and the buttons' pressed state reconciled with it), `touch-action:
+manipulation`, `scroll-padding-top` on `html`, and `components/touch-active.tsx` (passive no-op
+  `touchstart` so iOS applies `:active`). Image fade-in on load was skipped: it cannot be made
+  safe without JS or animation support without risking invisible images.
+- Route transitions: `PageTransition` is now a keyed React `<ViewTransition>` (Next 16 guide) —
+  deeper = slide in from the right, back = from the left, tab switch = crossfade, same depth = rise;
+  header and tab bar stay put. Direction comes from URL depth, because links in files outside this
+  change cannot carry `nav-forward` / `nav-back`; those types are honoured if a link passes them.
+  Reduced motion: 120ms fade; no support: no animation. The old transform wrapper is gone.
+- Tests: `bottom-tab-bar.test.tsx` (tabs, hiding, pill, scroll-to-top), `page-transition.test.tsx`,
+  `touch-active.test.tsx`. Checked in Chrome at 402×874 only: the `vt-*` animations and the header /
+  tab-bar names run on navigation. NOT checked: Safari / a real iPhone (iOS 18+ is needed for view
+  transition types and `:active-view-transition`).
+- **Risks:** on a browser with view transitions but without `:active-view-transition` the sliding page
+  can paint over the header for ~300ms; the tab bar's pill does not slide across a route-group
+  boundary (the bar remounts); the depth heuristic mislabels a few sideways links (e.g. Home →
+  Stories reads as deeper, but tab links use the crossfade type).
+
+**Next.** Install it on a real iPhone and check the icon, status bar and the signed-in flow; then
+decide whether Android's install prompt needs anything more.
+
+**My Stories compacted for phones (same branch, later on 2026-10-30).** At 402px the first story
+sat at y≈769, behind the tab bar: a full-width New Story/Import pair, a sideways-scrolling pill
+row and three sideways-scrolling filter chip rows filled the first screen. Now:
+
+- Title bar: "My Stories" on one line with a compact `+ New Story` pill — the only labelled action
+  on a phone.
+- One non-scrolling toolbar of 40px icons (story folders, journey map, My Photos, Import) on the
+  left; Filters (phone only, with an active-count badge) and the grid/list toggle on the right.
+  Labels are `sr-only` plus a `title` tooltip on phones and shown from `md` up; an `::after`
+  hit-slop keeps every tap target past 44px.
+- Phone filters live in the shared `BottomSheet`, chips wrapped (`FilterRow wrap`), with a
+  "Show N stories" button and Clear filters. The inline chip rows are `sm:` and up only.
+- New icons: `PlusIcon`, `ImportIcon`, `RouteIcon`. New keys: `myStories.filters.button`,
+  `buttonActive`, `showResults` (en + zh-CN).
+
+Result at 402×874: the first story row starts at y≈496 (the Drafts section is still collapsed by
+default) and the page is exactly 402px wide. Risk: icon-only controls rely on recognisable icons;
+names stay available to screen readers and as tooltips.
+
+**Page titles in the phone header (same branch, 2026-10-30).** On phones the header names the
+screen, iOS navigation-bar style: the logo stays, and on a "label" page the Kakinotes wordmark gives
+way to that page's title (`components/header-brand.tsx`, used by both `SiteHeader` and
+`ContributorNav`). The route → message-key map is `lib/navigation/page-titles.ts`; each listed
+page's `<h1>` is `max-md:sr-only`, so the title is drawn once and screen readers still get a real
+heading. Decided from the pathname during render, so there is no wordmark flash on load and the
+title holds still during page slides. Pages whose heading is the content keep the wordmark and
+their big title: home, story pages, contributor profiles, the editor, preview, and
+/reset-password (its heading becomes the "link expired" message). On My Stories the New Story pill
+becomes an accent "+" leading the toolbar on phones; three stories now fit the first screen.

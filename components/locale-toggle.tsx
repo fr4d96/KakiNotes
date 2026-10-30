@@ -78,7 +78,7 @@ export function LocaleToggle({
       aria-label={label}
       aria-busy={isPending || undefined}
       title={label}
-      className={`flex h-9 w-9 items-center justify-center rounded-full border text-[0.8rem] font-bold transition-transform hover:-translate-y-0.5 disabled:opacity-60 ${toneClasses}`}
+      className={`flex h-11 w-11 items-center justify-center rounded-full border text-[0.8rem] md:h-9 md:w-9 font-bold transition-transform hover:-translate-y-0.5 disabled:opacity-60 ${toneClasses}`}
     >
       {/* lang on the glyph only: the accessible name above is in the CURRENT
           language and must be voiced in it, while the visible glyph is in

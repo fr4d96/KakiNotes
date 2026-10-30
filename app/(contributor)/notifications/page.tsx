@@ -19,7 +19,9 @@ export default async function NotificationsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
-      <h1 className="journiq-heading text-[2.4rem]">{t("title")}</h1>
+      <h1 className="journiq-heading text-[2.4rem] max-md:sr-only">
+        {t("title")}
+      </h1>
       <p className="mt-2 text-sm text-muted-foreground">{t("intro")}</p>
 
       <div className="mt-8">

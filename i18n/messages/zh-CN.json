@@ -65,7 +65,9 @@
     "signOut": "退出登录",
     "accountMenu": "账户菜单",
     "staff": "工作人员",
-    "myPhotos": "我的照片"
+    "myPhotos": "我的照片",
+    "home": "首页",
+    "tabBar": "快捷导航"
   },
   "footer": {
     "tagline": "一个分享新西兰打工度假真实经历的故事社区。",
@@ -206,7 +208,6 @@
       "search": "搜索",
       "searchPlaceholder": "找一篇和你相似的故事",
       "showFilters": "筛选",
-      "hideFilters": "收起筛选",
       "apply": "应用筛选",
       "clear": "清除",
       "region": "地区",
@@ -639,7 +640,10 @@
       "destination": "目的地",
       "tag": "标签",
       "all": "全部",
-      "filterBy": "按{axis}筛选故事"
+      "filterBy": "按{axis}筛选故事",
+      "button": "筛选",
+      "buttonActive": "筛选（已启用 {count} 项）",
+      "showResults": "显示 {count} 个故事"
     },
     "sections": {
       "drafts": "草稿",

@@ -1,11 +1,13 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { StorySearchFilters } from "@/lib/validation/discovery";
 import { costBands } from "@/lib/validation/discovery";
 import { FilterIcon, StorySearchIcon } from "@/components/icons";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { useIsPhone } from "@/components/ui/use-is-phone";
 
 // `name` is already localized by the page (lib/i18n/vocab.ts): these
 // lookup rows carry a slug, so the closed regions/destinations vocabulary
@@ -22,6 +24,14 @@ type DestinationOption = Option & { regionId: string };
  * button on small viewports, always visible at sm+ (design-brief
  * guidance) -- explicit state, not a native <details> (see the comment at
  * its render site for why).
+ *
+ * On phones (below md) the fields live in a bottom sheet
+ * (components/ui/bottom-sheet.tsx) with Apply / Clear pinned at its foot;
+ * from md up they stay inline with the Apply row beneath. Exactly one copy
+ * of the fields exists at a time, and the sheet keeps them mounted while
+ * closed, so a plain search-and-Enter still submits every active filter.
+ * The sheet sits inside the <form> in the DOM, so Apply is an ordinary
+ * submit button: same native GET, same params, same pagination reset.
  */
 export function FilterBar({
   regions,
@@ -39,7 +49,7 @@ export function FilterBar({
   const t = useTranslations("stories.filters");
   const [selectedRegion, setSelectedRegion] = useState(current.region ?? "");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const filtersId = useId();
+  const isPhone = useIsPhone();
   const visibleDestinations = selectedRegion
     ? destinations.filter((d) => d.regionId === selectedRegion)
     : destinations;
@@ -52,7 +62,7 @@ export function FilterBar({
           name="region"
           defaultValue={current.region ?? ""}
           onChange={(e) => setSelectedRegion(e.target.value)}
-          className="rounded-md border border-border-subtle bg-surface px-3 py-2"
+          className="min-h-11 rounded-md border border-border-subtle bg-surface px-3 py-2"
         >
           <option value="">{t("anyRegion")}</option>
           {regions.map((r) => (
@@ -68,7 +78,7 @@ export function FilterBar({
         <select
           name="destination"
           defaultValue={current.destination ?? ""}
-          className="rounded-md border border-border-subtle bg-surface px-3 py-2"
+          className="min-h-11 rounded-md border border-border-subtle bg-surface px-3 py-2"
         >
           <option value="">{t("anyDestination")}</option>
           {visibleDestinations.map((d) => (
@@ -84,7 +94,7 @@ export function FilterBar({
         <select
           name="tag"
           defaultValue={current.tag ?? ""}
-          className="rounded-md border border-border-subtle bg-surface px-3 py-2"
+          className="min-h-11 rounded-md border border-border-subtle bg-surface px-3 py-2"
         >
           <option value="">{t("anyTag")}</option>
           {tags.map((t) => (
@@ -104,7 +114,7 @@ export function FilterBar({
           max={2100}
           defaultValue={current.tripYear ?? ""}
           placeholder={t("anyYear")}
-          className="rounded-md border border-border-subtle bg-surface px-3 py-2"
+          className="min-h-11 rounded-md border border-border-subtle bg-surface px-3 py-2"
         />
       </label>
 
@@ -113,7 +123,7 @@ export function FilterBar({
         <select
           name="travelStyle"
           defaultValue={current.travelStyle ?? ""}
-          className="rounded-md border border-border-subtle bg-surface px-3 py-2"
+          className="min-h-11 rounded-md border border-border-subtle bg-surface px-3 py-2"
         >
           <option value="">{t("anyStyle")}</option>
           {travelStyles.map((style) => (
@@ -129,7 +139,7 @@ export function FilterBar({
         <select
           name="costBand"
           defaultValue={current.costBand ?? ""}
-          className="rounded-md border border-border-subtle bg-surface px-3 py-2"
+          className="min-h-11 rounded-md border border-border-subtle bg-surface px-3 py-2"
         >
           <option value="">{t("anyCost")}</option>
           {costBands.map((band) => (
@@ -149,7 +159,7 @@ export function FilterBar({
               ? ""
               : String(current.hasReportedExpense)
           }
-          className="rounded-md border border-border-subtle bg-surface px-3 py-2"
+          className="min-h-11 rounded-md border border-border-subtle bg-surface px-3 py-2"
         >
           <option value="">{t("anyStory")}</option>
           <option value="true">{t("hasReportedCost")}</option>
@@ -163,6 +173,7 @@ export function FilterBar({
     <form
       method="get"
       action="/stories"
+      onSubmit={() => setFiltersOpen(false)}
       className="rounded-xl border border-border-subtle bg-surface p-4 shadow-sm"
     >
       <label className="mb-4 flex flex-col gap-1 text-sm">
@@ -174,7 +185,7 @@ export function FilterBar({
             name="q"
             defaultValue={current.q ?? ""}
             placeholder={t("searchPlaceholder")}
-            className="w-full rounded-md border border-border-subtle bg-surface py-2 pl-9 pr-3"
+            className="min-h-11 w-full rounded-md border border-border-subtle bg-surface py-2 pl-9 pr-3"
           />
         </span>
       </label>
@@ -183,38 +194,66 @@ export function FilterBar({
         Explicit state, not a native <details> -- confirmed live (Playwright,
         real Chromium) that a closed <details>'s children stay hidden from
         both the accessibility tree and visual rendering even with a CSS
-        `display: block !important` override on them; a plain conditional
-        class is what mobile-nav-toggle.tsx already uses for the same
-        "collapsed on mobile, always visible on desktop" shape.
+        `display: block !important` override on them. Below md this button
+        opens the bottom sheet; from md up the fields are simply inline.
       */}
       <button
         type="button"
+        aria-haspopup="dialog"
         aria-expanded={filtersOpen}
-        aria-controls={filtersId}
-        onClick={() => setFiltersOpen((value) => !value)}
-        className="mb-3 inline-flex items-center gap-1.5 text-sm font-medium sm:hidden"
+        onClick={() => setFiltersOpen(true)}
+        className="press inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border-subtle px-4 text-sm font-medium transition-colors active:bg-surface-muted md:hidden"
       >
         <FilterIcon className="h-4 w-4" />
-        {filtersOpen ? t("hideFilters") : t("showFilters")}
+        {t("showFilters")}
       </button>
-      <div id={filtersId} className={filtersOpen ? "block" : "hidden sm:block"}>
-        {fields}
-      </div>
 
-      <div className="mt-4 flex gap-3">
-        <button
-          type="submit"
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:opacity-90"
+      {isPhone ? (
+        <BottomSheet
+          open={filtersOpen}
+          onClose={() => setFiltersOpen(false)}
+          title={t("showFilters")}
+          keepMounted
+          footer={
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                className="press inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-accent px-5 text-sm font-black text-accent-foreground"
+              >
+                {t("apply")}
+              </button>
+              <Link
+                href="/stories"
+                onClick={() => setFiltersOpen(false)}
+                className="press inline-flex min-h-12 items-center justify-center rounded-full border border-border-subtle px-5 text-sm font-bold"
+              >
+                {t("clear")}
+              </Link>
+            </div>
+          }
         >
-          {t("apply")}
-        </button>
-        <Link
-          href="/stories"
-          className="rounded-md border border-border-subtle px-4 py-2 text-sm font-medium hover:bg-surface"
-        >
-          {t("clear")}
-        </Link>
-      </div>
+          <div className="px-2 pt-1 pb-2">{fields}</div>
+        </BottomSheet>
+      ) : (
+        <>
+          <div className="hidden md:block">{fields}</div>
+
+          <div className="mt-4 hidden gap-3 md:flex">
+            <button
+              type="submit"
+              className="inline-flex min-h-11 items-center rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:opacity-90"
+            >
+              {t("apply")}
+            </button>
+            <Link
+              href="/stories"
+              className="inline-flex min-h-11 items-center rounded-md border border-border-subtle px-4 py-2 text-sm font-medium hover:bg-surface"
+            >
+              {t("clear")}
+            </Link>
+          </div>
+        </>
+      )}
     </form>
   );
 }
