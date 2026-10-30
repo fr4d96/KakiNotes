@@ -2,6 +2,21 @@
 
 ## [1.16.0](https://github.com/fr4d96/KakiNotes/compare/v1.15.0...v1.16.0) (2026-10-30)
 
+### Kakinotes on your iPhone feels more like an app
+
+These changes are for Kakinotes added to your home screen. Kakinotes in a Safari tab works as before.
+
+**A proper launch screen.** Opening Kakinotes from your home screen no longer shows a blank screen while it starts. You see the Kakinotes icon in the middle of the screen, in light or dark to match your phone. If loading takes a moment, a thin loading bar appears under the icon, and the screen fades away as soon as the app is ready. If you added Kakinotes to your home screen before this update, remove it and add it again from Safari to get the launch screen.
+
+**Pull down to refresh.** At the top of any page, pull down until the refresh circle fills, then let go to load the latest stories and changes. A gentle pull just springs back. Pulling on a map, a photo or while typing won't trigger it.
+
+**No accidental zooming.** Pinching with two fingers or double-tapping no longer zooms the whole page, so the app stays put like other apps on your phone. The journey map still zooms with two fingers. If you need things bigger, your iPhone's own Zoom (Settings, then Accessibility, then Zoom) still works.
+
+### Fixes
+
+**Journey map buttons work on every journey.** On a journey with a single pin on the map, the zoom in, zoom out and re-centre buttons did nothing. They now work, both on your own journey pages and on a contributor's profile.
+
+
 
 ### Features
 
