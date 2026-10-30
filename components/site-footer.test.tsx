@@ -12,7 +12,7 @@ beforeEach(() => {
 });
 
 describe("SiteFooter", () => {
-  it("carries the not-immigration/legal/financial-advice disclaimer sitewide", () => {
+  it("carries the not-immigration/legal/financial-advice disclaimer", () => {
     render(<SiteFooter />);
 
     expect(
@@ -49,6 +49,34 @@ describe("SiteFooter", () => {
   });
 });
 
+describe("SiteFooter placement", () => {
+  it("renders on the home pages only", () => {
+    for (const path of ["/", "/cn", "/cn/"]) {
+      usePathnameMock.mockReturnValue(path);
+      const { container, unmount } = render(<SiteFooter />);
+      expect(container.querySelector("footer"), path).not.toBeNull();
+      unmount();
+    }
+  });
+
+  it("renders nothing anywhere else", () => {
+    for (const path of [
+      "/stories",
+      "/stories/some-story",
+      "/contributors",
+      "/about",
+      "/privacy",
+      "/cn/stories",
+      "/sign-in",
+    ]) {
+      usePathnameMock.mockReturnValue(path);
+      const { container, unmount } = render(<SiteFooter />);
+      expect(container.innerHTML, path).toBe("");
+      unmount();
+    }
+  });
+});
+
 describe("SiteFooter in Simplified Chinese", () => {
   // Proves the wiring end to end for a Server Component: the same render,
   // the mocked request locale flipped to zh-CN, and the real
@@ -76,8 +104,8 @@ describe("SiteFooter in Simplified Chinese", () => {
     );
   });
 
-  it("under /cn, links to the China section and uses China copy", () => {
-    usePathnameMock.mockReturnValue("/cn/stories");
+  it("on the /cn home, links to the China section and uses China copy", () => {
+    usePathnameMock.mockReturnValue("/cn");
     render(<SiteFooter />);
 
     expect(screen.getByRole("link", { name: "Stories" })).toHaveAttribute(
@@ -94,7 +122,7 @@ describe("SiteFooter in Simplified Chinese", () => {
     expect(
       screen.queryByText(/working-holiday travellers in Aotearoa/i),
     ).not.toBeInTheDocument();
-    // The not-advice disclaimer stays on every section.
+    // The not-advice disclaimer is on both home pages.
     expect(
       screen.getByText(/does not provide immigration/i),
     ).toBeInTheDocument();

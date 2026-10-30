@@ -385,6 +385,9 @@ text-accent-foreground`.
   transparent header would draw white nav text onto the light page ground. Because
   `--header-solid` and `text-foreground` both resolve per theme, no route needs a special case. Nav links use `.journiq-nav-link`'s underline-on-hover treatment (accent-coloured
   underline that grows in from the left on hover).
+- **Footer (home only):** `SiteFooter` renders on the home pages (`/`, `/cn`) and nowhere else.
+  Every other screen ends with its own content; the header and the phone tab bar carry
+  navigation. The legal pages stay reachable from the home footer and by direct URL.
 - **Phone title (The Named-Bar Rule):** below `md`, a label page names itself in the header —
   logo mark, then the page title in the wordmark's own type (`text-xl font-black tracking-tight`,
   truncating) — and drops its big in-page `<h1>` to screen-reader-only. Content pages (home, a

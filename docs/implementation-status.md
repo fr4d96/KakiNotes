@@ -10736,3 +10736,14 @@ title holds still during page slides. Pages whose heading is the content keep th
 their big title: home, story pages, contributor profiles, the editor, preview, and
 /reset-password (its heading becomes the "link expired" message). On My Stories the New Story pill
 becomes an accent "+" leading the toolbar on phones; three stories now fit the first screen.
+
+## 2026-10-30 — Site footer on the home page only (branch `feat/footer-home-only`)
+
+`SiteFooter` now renders only on the home pages (`/` and `/cn`). It stays in
+`app/(public)/layout.tsx` (outside `<main>`, so it keeps its contentinfo landmark) and returns
+nothing on any other path; the auth, contributor, editorial, moderation, admin and readiness
+layouts no longer render it at all. Why: on phones the header and tab bar carry navigation, and a
+full footer under every list, form and story was a long scroll of links. Trade-off: Privacy, Terms,
+Guidelines and Copyright & Removal are now linked from the home footer only (plus direct URLs);
+story pages keep their own "personal experience, not advice" label (Rule 17), which never depended
+on the footer. Tests: `components/site-footer.test.tsx` covers home-only rendering.
