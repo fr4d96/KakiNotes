@@ -1,5 +1,51 @@
 # Changelog
 
+## [1.15.0](https://github.com/fr4d96/KakiNotes/compare/v1.14.0...v1.15.0) (2026-10-30)
+
+### Smoother on your phone
+
+**Scrolling no longer lights up stories.** Scrolling through Stories or My Stories used to flash each story as your thumb passed over it, as if you had tapped it. Stories now only react when you actually tap them on a phone. On a computer they still highlight as your mouse moves over them.
+
+**Scrolling doesn't get stuck on photos.** Swiping up or down over a story's photos now scrolls the page, instead of catching on the photos and stopping.
+
+**Every button reacts when you tap it.** Buttons give a quick little bounce when tapped, so you know your tap registered, even on a fast tap. If you've asked your device to reduce motion, they fade slightly instead.
+
+**More room at the top of pages.** Pages whose name is shown in the top bar no longer leave an empty gap above their content.
+
+### Getting around
+
+**A back arrow, like other apps.** The "Back to …" text links are gone. Pages you open from somewhere else now have a ← arrow at the top left, beside the page name. Stories have one too, whether you're reading, editing or previewing. It takes you back to wherever you came from: My Stories, the Stories list, a profile or a folder. If you opened the story from a link, it takes you to My Stories (or to Stories for a published story).
+
+**Journey is now a tab.** When you're signed in, the bottom bar's third tab opens your journey map instead of Contributors. Contributors is now at the top of your account menu. Visitors who aren't signed in still see Contributors in the tab bar.
+
+### What's new for contributors
+
+**Story folders work by tapping.** Tap "New folder", pick the main story, then tick its sub stories and save. Dragging is gone, so it now works on a phone too. Each folder shows its main story first and then its sub stories, each with a link to open it. A folder you open again starts with its current sub stories ticked, so you can untick any you want to take out. Drafts no longer fill the page; they're summed up in one line.
+
+**A clearer journey map.** The Journey map lists only your published stories, each main story with its sub stories underneath and a count of how many are pinned. Tap one to open that journey on its own page, with its map at the top and each story ready to pin. "Add place / Change place / Remove" now read "Pin on map / Move pin / Remove pin". Long story names no longer get cut down to a few letters.
+
+**My Photos starts tidy.** Each story is one row showing its cover and how many photos it has. Tap a row to see that story's photos, and opening another story closes the first. Photos only load when you open their story.
+
+**Less clutter on your story's preview.** On a published story, "Download a copy" is now a small download button next to "Edit this story", instead of taking up a row of its own.
+
+**Import from PDF has a back arrow** to take you back to New Story.
+
+
+
+### Features
+
+* **journey:** list published journeys, a page per journey, clearer pin wording ([966ec76](https://github.com/fr4d96/KakiNotes/commit/966ec760ea3a54677e6f6993b4ba7572a9affdd2))
+* **my-photos:** stories start collapsed, one open at a time ([d7f224d](https://github.com/fr4d96/KakiNotes/commit/d7f224d464498c876c4a2e76d91039f95edcaf98))
+* **my-stories:** tap-first story folders and arrow back navigation ([ce8af67](https://github.com/fr4d96/KakiNotes/commit/ce8af67bd6705aaec59c043d6518a0f17fb7dad7))
+* **nav:** back arrow on story pages and PDF import, Journey tab ([aec1389](https://github.com/fr4d96/KakiNotes/commit/aec1389c8a46cada7d680bf249eaa037afa9ee25))
+* **ui:** spring-back pulse on every button tap ([5da2f8c](https://github.com/fr4d96/KakiNotes/commit/5da2f8c2ae50df777e0551572b4b6bf3c9ea6abf))
+
+
+### Bug Fixes
+
+* **mobile:** reclaim space at the top of pages and on story rows ([dcbd35a](https://github.com/fr4d96/KakiNotes/commit/dcbd35a614cc9f2ce7ed7111dd916d0e06337f31))
+* **mobile:** stop scroll from highlighting stories and sticking on photos ([6681a1c](https://github.com/fr4d96/KakiNotes/commit/6681a1c1c196ecd63af2377b2e5a988c97f89c4e))
+
 ## [1.14.0](https://github.com/fr4d96/KakiNotes/compare/v1.13.0...v1.14.0) (2026-10-30)
 
 ### Photos in stories
