@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.17.0](https://github.com/fr4d96/KakiNotes/compare/v1.16.0...v1.17.0) (2026-10-30)
+
+
+### Features
+
+* **search:** keyword search across story text, tags and places ([357e3b5](https://github.com/fr4d96/KakiNotes/commit/357e3b5099dcce37c82c3ac7cb5c9b148f394796))
+* **stories:** search as you type ([0202c39](https://github.com/fr4d96/KakiNotes/commit/0202c39dc506937c4f2c3c88dc7615803b10ca2e))
+
+
+### Bug Fixes
+
+* **home:** show story covers in the record on phones ([1aed9eb](https://github.com/fr4d96/KakiNotes/commit/1aed9eb125395417abfda58087de8105beb01360))
+* **mobile:** pull to refresh reloads the page ([cada3e6](https://github.com/fr4d96/KakiNotes/commit/cada3e66b53002858c2948a638131f7ac0c62687))
+
 ## [1.16.0](https://github.com/fr4d96/KakiNotes/compare/v1.15.0...v1.16.0) (2026-10-30)
 
 ### Kakinotes on your iPhone feels more like an app
