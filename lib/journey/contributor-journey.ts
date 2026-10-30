@@ -139,3 +139,36 @@ export function buildMyJourneyStops(
   }
   return buildJourneyStops(rows);
 }
+
+export type MyJourneyGroup = {
+  main: MyJourneyEntry;
+  subs: MyJourneyEntry[];
+};
+
+/**
+ * The caller's journeys as the Journey map page lists them: published
+ * stories only (a draft can never be pinned, so it is not shown at all),
+ * each main story with its published sub stories. A published sub story
+ * whose main story is not published stands as a journey of its own, so
+ * nothing published goes missing. Keeps the RPC's trip order.
+ */
+export function groupMyJourney(
+  entries: readonly MyJourneyEntry[],
+): MyJourneyGroup[] {
+  const published = entries.filter((e) => e.lifecycleStatus === "published");
+  const ids = new Set(published.map((e) => e.id));
+  const groups: MyJourneyGroup[] = [];
+  const byMain = new Map<string, MyJourneyGroup>();
+  for (const e of published) {
+    if (e.parentStoryId && ids.has(e.parentStoryId)) continue;
+    const group = { main: e, subs: [] };
+    groups.push(group);
+    byMain.set(e.id, group);
+  }
+  for (const e of published) {
+    if (e.parentStoryId && ids.has(e.parentStoryId)) {
+      byMain.get(e.parentStoryId)?.subs.push(e);
+    }
+  }
+  return groups;
+}

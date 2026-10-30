@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "@/components/ui/toast";
-import { JourneyView } from "./journey-view";
+import { JourneyStoryView } from "./journey-view";
 import type { MyJourneyEntry } from "@/lib/journey/contributor-journey";
 
 const mockSetPlace = vi.fn();
@@ -17,13 +17,13 @@ vi.mock("./actions", () => ({
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh, push: vi.fn() }),
-  usePathname: () => "/my-stories/journey",
+  usePathname: () => "/my-stories/journey/11111111-1111-4111-8111-111111111111",
 }));
 
-function renderView(stories: MyJourneyEntry[]) {
+function renderView(main: MyJourneyEntry, subs: MyJourneyEntry[] = []) {
   return render(
     <ToastProvider>
-      <JourneyView stories={stories} />
+      <JourneyStoryView main={main} subs={subs} />
     </ToastProvider>,
   );
 }
@@ -84,74 +84,73 @@ beforeEach(() => {
   refresh.mockReset();
 });
 
-describe("JourneyView", () => {
-  it("renders an empty state when there are no stories", () => {
-    renderView([]);
+describe("JourneyStoryView", () => {
+  it("names the journey and lists its sub stories under the main story", () => {
+    renderView(main, [sub]);
     expect(
-      screen.getByText(/publish a new zealand story to start/i),
+      screen.getByRole("heading", { level: 1, name: "South Island" }),
     ).toBeInTheDocument();
-  });
-
-  it("groups sub stories under their main story and keeps standalone ones apart", () => {
-    renderView([main, sub, draft]);
     const subList = screen.getByRole("list", {
       name: "Sub stories of South Island",
     });
     expect(within(subList).getByText("Arrowtown autumn")).toBeInTheDocument();
-    expect(within(subList).queryByText("Untitled story")).toBeNull();
-    expect(screen.getByText("Untitled story")).toBeInTheDocument();
   });
 
-  it("offers Change place and Remove on a pinned story, Add place on an unpinned one", () => {
-    renderView([main, sub]);
+  it("goes back to the Journey map list", () => {
+    renderView(main);
     expect(
-      screen.getByRole("button", { name: "Change place for South Island" }),
-    ).toBeInTheDocument();
+      screen.getByRole("link", { name: "Back to Journey map" }),
+    ).toHaveAttribute("href", "/my-stories/journey");
+  });
+
+  it("offers Move pin and Remove pin on a pinned story, Pin on map on an unpinned one", () => {
+    renderView(main, [sub]);
     expect(
-      screen.getByRole("button", { name: "Remove South Island from the map" }),
-    ).toBeInTheDocument();
+      screen.getByRole("button", { name: "Move the pin for South Island" }),
+    ).toHaveTextContent("Move pin");
     expect(
-      screen.getByRole("button", { name: "Add place for Arrowtown autumn" }),
-    ).toBeInTheDocument();
+      screen.getByRole("button", { name: "Remove the pin for South Island" }),
+    ).toHaveTextContent("Remove pin");
+    expect(
+      screen.getByRole("button", { name: "Pin Arrowtown autumn on the map" }),
+    ).toHaveTextContent("Pin on map");
     expect(screen.getByText("Pinned at Queenstown")).toBeInTheDocument();
   });
 
-  it("greys out stories that cannot be pinned and says why", () => {
-    renderView([draft, china]);
-    expect(
-      screen.getByText(/only published stories can be pinned/i),
-    ).toBeInTheDocument();
+  it("greys out a story outside New Zealand and says why", () => {
+    renderView(china);
     expect(
       screen.getByText(/only new zealand stories can be pinned/i),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /add place/i })).toBeNull();
-    const rows = screen.getAllByTestId("journey-main-row");
-    for (const row of rows)
-      expect(row).toHaveAttribute("aria-disabled", "true");
+    expect(screen.queryByRole("button", { name: /on the map$/i })).toBeNull();
+    expect(screen.getByTestId("journey-main-row")).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
   });
 
-  it("previews the saved pins as the readers' map", () => {
-    renderView([main]);
+  it("shows this journey on the map, above its stories", () => {
+    renderView(main, [sub]);
     expect(
-      screen.getByRole("heading", { name: /how readers will see it/i }),
+      screen.getByRole("heading", { name: "This journey on the map" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /^Read this story/ }),
     ).toHaveAttribute("href", "/stories/south-island");
   });
 
-  it("shows the empty preview note when nothing is pinned", () => {
-    renderView([sub]);
+  it("says so when nothing from the journey is pinned yet", () => {
+    renderView({ ...main, place: null });
     expect(
-      screen.getByText(/pin a story to see your journey map/i),
+      screen.getByText(/nothing from this journey is on the map yet/i),
     ).toBeInTheDocument();
   });
 
   it("opens the place panel and keeps Save disabled until there is a spot and a name", async () => {
     const user = userEvent.setup();
-    renderView([sub]);
+    renderView(main, [sub]);
     await user.click(
-      screen.getByRole("button", { name: "Add place for Arrowtown autumn" }),
+      screen.getByRole("button", { name: "Pin Arrowtown autumn on the map" }),
     );
     const panel = screen.getByRole("group", {
       name: "Place for Arrowtown autumn",
@@ -161,7 +160,7 @@ describe("JourneyView", () => {
       "60",
     );
     expect(
-      within(panel).getByRole("button", { name: "Save place" }),
+      within(panel).getByRole("button", { name: "Save pin" }),
     ).toBeDisabled();
     // The keyboard route to a spot, then a name.
     await user.click(
@@ -170,11 +169,11 @@ describe("JourneyView", () => {
       }),
     );
     expect(
-      within(panel).getByRole("button", { name: "Save place" }),
+      within(panel).getByRole("button", { name: "Save pin" }),
     ).toBeDisabled();
     await user.type(within(panel).getByLabelText("Place name"), "Arrowtown");
     expect(
-      within(panel).getByRole("button", { name: "Save place" }),
+      within(panel).getByRole("button", { name: "Save pin" }),
     ).toBeEnabled();
   });
 
@@ -184,9 +183,9 @@ describe("JourneyView", () => {
       ok: true,
       place,
     }));
-    renderView([sub]);
+    renderView(main, [sub]);
     await user.click(
-      screen.getByRole("button", { name: "Add place for Arrowtown autumn" }),
+      screen.getByRole("button", { name: "Pin Arrowtown autumn on the map" }),
     );
     const panel = screen.getByRole("group", {
       name: "Place for Arrowtown autumn",
@@ -197,7 +196,7 @@ describe("JourneyView", () => {
       }),
     );
     await user.type(within(panel).getByLabelText("Place name"), "Arrowtown");
-    await user.click(within(panel).getByRole("button", { name: "Save place" }));
+    await user.click(within(panel).getByRole("button", { name: "Save pin" }));
 
     await waitFor(() => expect(mockSetPlace).toHaveBeenCalledTimes(1));
     const [storyId, place] = mockSetPlace.mock.calls[0];
@@ -219,12 +218,12 @@ describe("JourneyView", () => {
       ok: false,
       error: "Only published stories can be pinned on your journey map.",
     });
-    renderView([main]);
+    renderView(main);
     await user.click(
-      screen.getByRole("button", { name: "Change place for South Island" }),
+      screen.getByRole("button", { name: "Move the pin for South Island" }),
     );
     const panel = screen.getByRole("group", { name: "Place for South Island" });
-    await user.click(within(panel).getByRole("button", { name: "Save place" }));
+    await user.click(within(panel).getByRole("button", { name: "Save pin" }));
     expect(await within(panel).findByRole("alert")).toHaveTextContent(
       /only published stories/i,
     );
@@ -234,12 +233,14 @@ describe("JourneyView", () => {
   it("removes a pin after confirmation, with a null place", async () => {
     const user = userEvent.setup();
     mockSetPlace.mockResolvedValue({ ok: true, place: null });
-    renderView([main]);
+    renderView(main);
     await user.click(
-      screen.getByRole("button", { name: "Remove South Island from the map" }),
+      screen.getByRole("button", { name: "Remove the pin for South Island" }),
     );
     const dialog = await screen.findByRole("dialog");
-    await user.click(within(dialog).getByRole("button", { name: "Remove" }));
+    await user.click(
+      within(dialog).getByRole("button", { name: "Remove pin" }),
+    );
     await waitFor(() =>
       expect(mockSetPlace).toHaveBeenCalledWith(main.id, null),
     );

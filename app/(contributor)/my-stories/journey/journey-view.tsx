@@ -7,7 +7,6 @@ import { BackLink } from "@/components/back-link";
 import { setStoryJourneyPlaceAction } from "./actions";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { StatusBadge } from "../status-badge";
 import { JourneyMap } from "@/components/story/journey-map";
 import {
   JourneyPlacePicker,
@@ -23,45 +22,35 @@ import {
 type Draft = { storyId: string; point: PickedPoint | null; label: string };
 
 /**
- * The contributor's journey page (supabase/migrations/
- * 20261029091942_contributor_journey.sql). Their stories, grouped like story
- * folders (a main story with its sub stories indented under it, standalone
- * stories alone), each with a place to pin on the map -- "Add place",
- * "Change place" or "Remove". Only a published New Zealand story can be
- * pinned; any other row is shown greyed out with the reason. A pin is public
- * the moment it is saved. The preview below the list is the same map readers
- * see on the profile's Journey tab, redrawn as the draft changes.
+ * One journey's page (/my-stories/journey/<main story id>, supabase/
+ * migrations/20261029091942_contributor_journey.sql): the main story and its
+ * published sub stories, opened from the Journey map list (journey-list.tsx).
+ * Its map comes first -- the same map readers see, limited to this journey
+ * and redrawn as a pin is edited -- then each story with "Pin on map",
+ * "Move pin" or "Remove pin". Only a New Zealand story can be pinned; a
+ * published one elsewhere is greyed out with the reason (drafts never reach
+ * this page). A pin is public the moment it is saved.
  */
-export function JourneyView({
-  stories: initialStories,
+export function JourneyStoryView({
+  main,
+  subs,
 }: {
-  stories: MyJourneyEntry[];
+  main: MyJourneyEntry;
+  subs: MyJourneyEntry[];
 }) {
   const t = useTranslations("myJourney");
   const router = useRouter();
   const { showToast } = useToast();
-  const [stories, setStories] = useState(initialStories);
+  const [stories, setStories] = useState(() => [main, ...subs]);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<MyJourneyEntry | null>(null);
   const [panelError, setPanelError] = useState<string | null>(null);
   const baseId = useId();
 
-  const ids = useMemo(() => new Set(stories.map((s) => s.id)), [stories]);
-  // Top level: no parent, or a parent that is not in this list.
-  const topLevel = stories.filter(
-    (s) => !s.parentStoryId || !ids.has(s.parentStoryId),
-  );
-  const childrenOf = useMemo(() => {
-    const map = new Map<string, MyJourneyEntry[]>();
-    for (const s of stories) {
-      if (!s.parentStoryId || !ids.has(s.parentStoryId)) continue;
-      const list = map.get(s.parentStoryId) ?? [];
-      list.push(s);
-      map.set(s.parentStoryId, list);
-    }
-    return map;
-  }, [stories, ids]);
+  // Current copies (a save updates `stories`), in page order.
+  const mainStory = stories[0];
+  const subStories = stories.slice(1);
 
   // The map as it would look with the draft applied.
   const previewStops = useMemo(() => {
@@ -143,23 +132,10 @@ export function JourneyView({
     router.refresh();
   }
 
-  if (stories.length === 0) {
-    return (
-      <div className="mx-auto max-w-3xl px-4 pt-4 pb-12 sm:px-6 sm:py-16">
-        <JourneyHeader />
-        <p className="mt-6 text-sm text-muted-foreground">{t("empty")}</p>
-      </div>
-    );
-  }
-
   function renderRow(story: MyJourneyEntry, nested: boolean) {
     const editing = draft?.storyId === story.id;
     const title = story.title ?? story.slug;
-    const reason = story.pinnable
-      ? null
-      : !story.isNewZealand
-        ? t("rows.notNewZealand")
-        : t("rows.notPublished");
+    const reason = story.pinnable ? null : t("rows.notNewZealand");
     return (
       <li
         key={story.id}
@@ -174,10 +150,8 @@ export function JourneyView({
             left the title a few characters wide. One row from sm up. */}
         <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">
-            <div className="flex items-start gap-2">
-              <p className="line-clamp-2 min-w-0 flex-1 font-medium">{title}</p>
-              <StatusBadge status={story.lifecycleStatus} />
-            </div>
+            {/* No status badge: every story on this page is published. */}
+            <p className="line-clamp-2 font-medium">{title}</p>
             {story.place ? (
               <p className="text-sm text-muted-foreground">
                 {t("rows.placeLabel", { place: story.place.label })}
@@ -319,46 +293,37 @@ export function JourneyView({
 
   return (
     <div className="mx-auto max-w-3xl px-4 pt-4 pb-12 sm:px-6 sm:py-16">
-      <JourneyHeader />
-      <p className="mt-2 text-sm text-muted-foreground">{t("intro")}</p>
+      <JourneyHeader title={mainStory.title ?? mainStory.slug} />
 
-      <ul className="mt-6 space-y-3" aria-label={t("listLabel")}>
-        {topLevel.map((story) => {
-          const subs = childrenOf.get(story.id) ?? [];
-          return (
-            <li key={story.id} className="list-none">
-              <ul className="space-y-2">
-                {renderRow(story, false)}
-                {subs.length > 0 ? (
-                  <li className="list-none">
-                    <ul
-                      aria-label={t("subStoriesOf", {
-                        story: story.title ?? story.slug,
-                      })}
-                      className="ml-4 space-y-2 border-l-2 border-dotted border-border-subtle pl-3 sm:ml-6 sm:pl-4"
-                    >
-                      {subs.map((sub) => renderRow(sub, true))}
-                    </ul>
-                  </li>
-                ) : null}
-              </ul>
-            </li>
-          );
-        })}
-      </ul>
-
-      <section className="mt-10" aria-labelledby={`${baseId}-preview`}>
-        <h2 id={`${baseId}-preview`} className="text-lg font-semibold">
-          {t("previewTitle")}
+      <section className="mt-3" aria-labelledby={`${baseId}-preview`}>
+        <h2 id={`${baseId}-preview`} className="sr-only">
+          {t("mapTitle")}
         </h2>
         {previewStops.length > 0 ? (
           <JourneyMap key={previewKey} stops={previewStops} />
         ) : (
-          <p className="mt-2 text-sm text-muted-foreground">
-            {t("previewEmpty")}
+          <p className="rounded-lg border border-dashed border-border-subtle p-4 text-sm text-muted-foreground">
+            {t("mapEmpty")}
           </p>
         )}
       </section>
+
+      <p className="mt-6 text-sm text-muted-foreground">{t("storyIntro")}</p>
+      <ul className="mt-3 space-y-2" aria-label={t("listLabel")}>
+        {renderRow(mainStory, false)}
+        {subStories.length > 0 ? (
+          <li className="list-none">
+            <ul
+              aria-label={t("subStoriesOf", {
+                story: mainStory.title ?? mainStory.slug,
+              })}
+              className="ml-4 space-y-2 border-l-2 border-dotted border-border-subtle pl-3 sm:ml-6 sm:pl-4"
+            >
+              {subStories.map((sub) => renderRow(sub, true))}
+            </ul>
+          </li>
+        ) : null}
+      </ul>
 
       <ConfirmDialog
         open={removeTarget !== null}
@@ -382,13 +347,13 @@ export function JourneyView({
   );
 }
 
-function JourneyHeader() {
-  const t = useTranslations("myJourney");
+function JourneyHeader({ title }: { title: string }) {
+  // The phone top bar says "← Journey map"; the heading names the journey.
   return (
     <div className="flex items-center gap-3">
       <BackLink />
-      <h1 className="journiq-heading text-[2rem] max-md:sr-only">
-        {t("title")}
+      <h1 className="line-clamp-2 text-2xl font-bold tracking-tight sm:text-3xl">
+        {title}
       </h1>
     </div>
   );

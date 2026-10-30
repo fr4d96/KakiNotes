@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-30 (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+Last updated: 2026-10-30 (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
 one-level folder shape — a story is either a main story, a sub story filed under exactly one main
 story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
 "Move to…" select; migration applied to the dev project — see the entry at the end of this
@@ -10895,3 +10895,28 @@ never sends a reader off the site. Label `common.back` ("Back", en, zh-CN). Test
 - _Journey map rows_ (`journey-view.tsx`): on a phone the title (up to two lines, badge beside it)
   gets its own line, the place under it and the buttons on a row below; they had squeezed the
   title to a few characters. One row from sm up.
+
+## 2026-10-30 — Journey map revamp: journeys list, a page per journey, pin wording
+
+Branch `feat/journey-revamp` (from `main` at `0cee8bc`). Checked in the iPhone 17 frame against
+the dev project, read-only. No schema, RPC or RLS change.
+
+- **Journey map tab** (`/my-stories/journey`, new `journey-list.tsx`): published stories only —
+  drafts are never shown (they can't be pinned). One card per journey: the main story with its
+  published sub stories listed under it and "N of M on the map"; tapping it opens that journey.
+  The whole-journey readers' preview stays below. Grouping is `groupMyJourney()`
+  (`lib/journey/contributor-journey.ts`); a published sub story whose main story isn't published
+  stands as its own journey.
+- **A page per journey** (`/my-stories/journey/[storyId]`, `JourneyStoryView` in
+  `journey-view.tsx`): top bar "← Journey map" (`pageTitleKey`/`pageBack` pattern), the journey's
+  name as a visible heading, its map first (only this journey's pins, redrawn while editing), then
+  the main story and its sub stories with the pin controls. The id only picks from
+  `get_my_journey()` (owner-scoped), so anyone else's id, a draft's or a sub story's 404s. Saving
+  revalidates the page.
+- **Wording**: "Add place / Change place / Remove" → "Pin on map / Move pin / Remove pin" (named:
+  "Pin {story} on the map", "Move the pin for {story}", "Remove the pin for {story}"); "Save place"
+  → "Save pin". The Published badge is gone from journey rows (everything there is published).
+  `myJourney.intro` and `rows.notPublished` removed; new `listIntro`, `onMap`, `storyIntro`,
+  `mapTitle`, `mapEmpty` (en, zh-CN).
+- Tests: `journey-list.test.tsx` (new), `journey-view.test.tsx` (rewritten for one journey),
+  `contributor-journey.test.ts` (`groupMyJourney`), `page-titles.test.ts`.

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildJourneyStops,
+  groupMyJourney,
   parsePublishedJourneyRows,
   type PublishedJourneyRow,
 } from "@/lib/journey/contributor-journey";
@@ -121,5 +122,38 @@ describe("buildJourneyStops", () => {
     expect(buildJourneyStops([row("a", { slug: "a b" })])[0].href).toBe(
       "/stories/a%20b",
     );
+  });
+});
+
+describe("groupMyJourney", () => {
+  const base = {
+    pinnable: true,
+    isNewZealand: true,
+    place: null,
+  } as const;
+  const e = (
+    id: string,
+    lifecycleStatus: string,
+    parentStoryId: string | null = null,
+  ) => ({ ...base, id, slug: id, title: id, lifecycleStatus, parentStoryId });
+
+  it("keeps published stories only, each main with its published sub stories", () => {
+    const groups = groupMyJourney([
+      e("main", "published"),
+      e("sub", "published", "main"),
+      e("draft-sub", "draft", "main"),
+      e("draft", "draft"),
+    ]);
+    expect(groups.map((g) => [g.main.id, g.subs.map((s) => s.id)])).toEqual([
+      ["main", ["sub"]],
+    ]);
+  });
+
+  it("lets a published sub story of an unpublished main stand alone", () => {
+    const groups = groupMyJourney([
+      e("main", "draft"),
+      e("sub", "published", "main"),
+    ]);
+    expect(groups.map((g) => g.main.id)).toEqual(["sub"]);
   });
 });

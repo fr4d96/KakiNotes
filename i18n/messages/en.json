@@ -1306,21 +1306,24 @@
   "myJourney": {
     "metaTitle": "Journey map",
     "title": "Journey map",
-    "intro": "Pin each of your published New Zealand stories on a map. Readers see one journey on your profile, and each pin opens its story. Sub stories sit inside their main story’s pin. Pins go public as soon as you save them.",
+    "listIntro": "Your published stories, each main story with its sub stories. Tap one to open its journey and pin its stories on the map.",
+    "onMap": "{pinned} of {total} on the map",
+    "storyIntro": "Pin each story where it happened. Pins go public as soon as you save them.",
+    "mapTitle": "This journey on the map",
+    "mapEmpty": "Nothing from this journey is on the map yet. Pin a story below to start.",
     "empty": "Publish a New Zealand story to start your journey map.",
     "listLabel": "Your stories",
     "subStoriesOf": "Sub stories of {story}",
     "rows": {
       "placeLabel": "Pinned at {place}",
       "noPlace": "Not on the map yet",
-      "notPublished": "Not on the map: only published stories can be pinned.",
       "notNewZealand": "Not on the map: only New Zealand stories can be pinned.",
-      "add": "Add place",
-      "change": "Change place",
-      "remove": "Remove",
-      "addNamed": "Add place for {story}",
-      "changeNamed": "Change place for {story}",
-      "removeNamed": "Remove {story} from the map"
+      "add": "Pin on map",
+      "change": "Move pin",
+      "remove": "Remove pin",
+      "addNamed": "Pin {story} on the map",
+      "changeNamed": "Move the pin for {story}",
+      "removeNamed": "Remove the pin for {story}"
     },
     "panel": {
       "label": "Place for {story}",
@@ -1332,7 +1335,7 @@
       "needsPlace": "Choose a spot on the map first.",
       "needsName": "Give this place a name to save it.",
       "publicNote": "Readers see the place name and an approximate spot (about 1 km), never exact coordinates. It is public as soon as you save.",
-      "save": "Save place",
+      "save": "Save pin",
       "saving": "Saving…",
       "cancel": "Cancel"
     },
@@ -1341,9 +1344,9 @@
       "removed": "Removed “{story}” from your journey map."
     },
     "removeDialog": {
-      "title": "Remove from the map?",
+      "title": "Remove the pin?",
       "description": "“{story}” will no longer appear on your journey map. The story itself isn’t changed.",
-      "confirm": "Remove"
+      "confirm": "Remove pin"
     },
     "previewTitle": "Preview: how readers will see it",
     "previewEmpty": "Pin a story to see your journey map here."

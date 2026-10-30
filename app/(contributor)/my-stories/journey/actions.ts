@@ -103,6 +103,7 @@ export async function setStoryJourneyPlaceAction(
   }
 
   revalidatePath("/my-stories/journey");
+  revalidatePath("/my-stories/journey/[storyId]", "page");
   revalidatePath("/my-stories");
   await invalidateJourneyPublicCache(parsedStory.data);
   logAppEvent({
