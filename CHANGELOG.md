@@ -2,6 +2,23 @@
 
 ## [1.14.0](https://github.com/fr4d96/KakiNotes/compare/v1.13.0...v1.14.0) (2026-10-30)
 
+### Photos in stories
+
+**Swipe through a story's photos.** A story's photos now sit in one frame you swipe through, like a post on Instagram. A counter in the corner shows where you are ("2/5"), and dots underneath light up as you go. Photos an author placed back to back in the story text are grouped the same way. A single photo in the text stays exactly where and how big the author put it.
+
+**Tap a photo to see it full screen.** The photo grows out of the page to fill the screen, and shrinks back into place when you close it. Swipe left or right to move between photos, and drag a photo down to close it. On a computer, use the arrow buttons or the arrow keys. If you've asked your device to reduce motion, photos open and close without the zoom.
+
+**Photos load more gently.** Instead of a spinning wheel, each photo's space shows a soft shimmer until the photo has fully arrived, then the photo fades into place.
+
+### What's new for contributors
+
+**Covers fill your My Stories list.** In the list view, each story's cover photo now runs down the whole left side of its row instead of sitting as a small thumbnail in the corner.
+
+### Easier to use
+
+**The footer is only on the home page.** Other pages now end with their own content instead of a long block of links, and the tab bar and top bar handle getting around. Privacy, Terms, Guidelines and Copyright & Removal are linked from the home page footer.
+
+
 
 ### Features
 
