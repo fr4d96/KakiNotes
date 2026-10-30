@@ -40,6 +40,7 @@
     "working": "处理中…",
     "requiredSuffix": "（必填）",
     "photoLightbox": {
+      "carouselLabel": "故事照片",
       "open": "查看大图",
       "close": "关闭图片查看器",
       "previous": "上一张",

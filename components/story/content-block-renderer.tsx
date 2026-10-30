@@ -5,6 +5,11 @@ import type { StoryContentBlock } from "@/lib/validation/story";
 import { storyContentText } from "@/lib/validation/story";
 import { remarkMediaEmbed } from "@/lib/story/remark-media-embed";
 import { remarkSoftBreaks } from "@/lib/story/remark-soft-breaks";
+import { remarkMediaCarousel } from "@/lib/story/remark-media-carousel";
+import {
+  PhotoCarousel,
+  type CarouselPhoto,
+} from "@/components/story/photo-carousel";
 import { remarkHeadingIds } from "@/lib/story/heading-ids";
 import { ResolvingImage } from "@/components/ui/resolving-image";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
@@ -104,8 +109,47 @@ function MediaEmbed({
   );
 }
 
+/**
+ * A run of photos the author placed together (remarkMediaCarousel) as one
+ * swipeable carousel -- the same PhotoCarousel the gallery uses. A photo
+ * missing from the media map is skipped, like a lone missing embed.
+ */
+function MediaCarousel({
+  ids,
+  media,
+}: {
+  ids: string[];
+  media: ContentBlockMediaMap;
+}) {
+  const photos = ids.flatMap((id): CarouselPhoto[] => {
+    const resolved = media[id];
+    if (!resolved) return [];
+    if (resolved === "loading") return [{ id, url: null, alt: "" }];
+    return [
+      {
+        id,
+        url: resolved.url,
+        alt: resolved.decorative ? "" : (resolved.altText ?? ""),
+      },
+    ];
+  });
+  if (photos.length === 0) return null;
+  return (
+    <div className="my-6">
+      <PhotoCarousel photos={photos} />
+    </div>
+  );
+}
+
 function buildComponents(media: ContentBlockMediaMap): Components {
   return {
+    div({ node, ...props }) {
+      const ids = node?.properties?.["data-media-ids"];
+      if (typeof ids === "string" && ids) {
+        return <MediaCarousel ids={ids.split(",")} media={media} />;
+      }
+      return <div {...props} />;
+    },
     span({ node, ...props }) {
       const mediaId = node?.properties?.["data-media-id"];
       if (typeof mediaId === "string") {
@@ -275,6 +319,8 @@ export function ContentBlockRenderer({
           ...(anchorHeadings ? [remarkHeadingIds] : []),
           remarkMediaEmbed,
           remarkSoftBreaks,
+          // After both: groups runs of back-to-back photos into a carousel.
+          remarkMediaCarousel,
         ]}
         components={buildComponents(media)}
       >

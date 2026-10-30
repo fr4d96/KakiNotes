@@ -356,6 +356,23 @@ text-accent-foreground`.
   plus name and trip metadata (destination pin icon, trip-year icon) — the reusable identity unit
   across story cards and story detail pages.
 
+### Photo Carousel
+
+- A story's gallery, and any run of two or more photos the author placed back to back in the
+  text, is one swipeable frame (`components/story/photo-carousel.tsx`), the way Instagram shows a
+  post: full-bleed on phones, native scroll-snap swipe, a `2/5` counter pill top right, and dots
+  underneath (accent = current; at most five shown, the row sliding with smaller edge dots).
+- One shape per carousel: the first photo's ratio clamped to 4:5–1.91:1, the rest cropped to it,
+  so the frame never jumps. Tapping a photo opens the lightbox. Previous/next buttons appear on
+  hover/focus from `md` up; the scroller is keyboard-focusable.
+- A lone in-text photo is never put in a carousel — it keeps the width its author set.
+- **Photo viewer (lightbox):** modelled on the iPhone Photos app. Opening zooms the tapped photo
+  out of its place on the page to full screen while the black ground fades up; closing zooms it
+  back into place (or settles it away with a small scale-and-fade when that place is off screen).
+  All photos sit on one native scroll-snap track, so a swipe follows the finger; dragging a photo
+  down pulls it after the finger and closes past 110px. Web Animations on transform/opacity only,
+  none under reduced motion. Ends are ends (no wrap-around), as in Photos.
+
 ### Cards / Containers
 
 - **Corner Style:** `rounded-xl` (12px) for the standard story card; 28px (20px mobile) for the

@@ -10769,3 +10769,29 @@ paint, and switches to the sheen in a layout effect only if the `<img>` is not y
 image that loaded (or failed) before hydration is never hidden, and a failure clears the sheen.
 Placeholder name: `editor.images.loading` ("Loading image"). Tests: `resolving-image.test.tsx`;
 `content-block-renderer.test.tsx` updated for the extra wrapper and the sheen.
+
+**Story photos as an Instagram-style carousel (same branch, 2026-10-30).** New
+`components/story/photo-carousel.tsx`: one swipeable frame with CSS scroll-snap, a "2/5" counter,
+Instagram-style dots (max five, sliding window, accent for the current photo) and the active
+photo's caption under them; frame ratio from the first photo, clamped to 4:5–1.91:1; full-bleed on
+phones; desktop prev/next buttons; slides labelled "Photo n of N". The current slide is read from
+`scrollLeft / width` whenever an IntersectionObserver fires. Used by both galleries
+(`PreviewGallery` — contributor preview and moderation — and the published `StoryGallery`), and by
+`ContentBlockRenderer` for in-text photos via a new `lib/story/remark-media-carousel.ts`: a run of
+two or more `![[mediaId]]` embeds with no words between them (one paragraph or consecutive
+photo-only paragraphs) becomes one carousel. A single in-text photo, or photos with text between
+them, render exactly as before, so author-set widths survive. New key
+`common.photoLightbox.carouselLabel` (en, zh-CN). Tests: `photo-carousel.test.tsx`, new grouping
+cases in `content-block-renderer.test.tsx`.
+
+**Photo viewer zooms and swipes (same branch, 2026-10-30).** `components/ui/photo-lightbox.tsx`
+reworked, iPhone Photos style: the tapped photo zooms out of its place on the page (Web Animations
+transform from the source element's rect, 340ms) as the black ground fades in, and zooms back on
+close (button, Escape via `cancel`, tap on the ground, or drag down past 110px); if its source is
+off screen it scales and fades away instead. Every photo now sits on one horizontal scroll-snap
+track (`touch-pan-x`), so swiping follows the finger with native momentum; buttons and arrow keys
+drive the same track; only the current slide is exposed to assistive tech. No wrap-around any more
+(was last → first). The dialog-level CSS fade on `.journiq-lightbox` was removed so it cannot replay
+over the zoom-out. Prev/next buttons are desktop-only (`max-md:hidden!` — the unlayered
+`.journiq-lightbox-control` sets `display`). Tests rewritten in `photo-lightbox.test.tsx` (buttons
+stop at the ends, track structure, drag-down close and spring-back, sideways drag ignored, Escape).

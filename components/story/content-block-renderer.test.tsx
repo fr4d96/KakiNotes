@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { ContentBlockRenderer } from "@/components/story/content-block-renderer";
 import { markdownToStoryContent } from "@/lib/validation/story";
 
@@ -239,5 +239,94 @@ describe("ContentBlockRenderer heading anchors", () => {
     for (const h of screen.getAllByRole("heading")) {
       expect(h).not.toHaveAttribute("id");
     }
+  });
+
+  describe("photos placed together", () => {
+    const media = {
+      "11111111-1111-4111-8111-111111111111": {
+        url: "https://example.com/a.jpg",
+        altText: "Lake",
+        decorative: false,
+      },
+      "22222222-2222-4222-8222-222222222222": {
+        url: "https://example.com/b.jpg",
+        altText: "Hut",
+        decorative: false,
+      },
+      "33333333-3333-4333-8333-333333333333": {
+        url: "https://example.com/c.jpg",
+        altText: "Track",
+        decorative: false,
+      },
+    };
+
+    it("turns back-to-back photos into one swipeable carousel", () => {
+      const blocks = markdownToStoryContent(
+        [
+          "Day one.",
+          "",
+          "![[11111111-1111-4111-8111-111111111111]]",
+          "![[22222222-2222-4222-8222-222222222222]]",
+          "",
+          "![[33333333-3333-4333-8333-333333333333]]",
+          "",
+          "Day two.",
+        ].join("\n"),
+      );
+      render(<ContentBlockRenderer blocks={blocks} media={media} />);
+
+      const carousel = screen.getByRole("region", { name: "Story photos" });
+      expect(within(carousel).getAllByRole("group")).toHaveLength(3);
+      expect(
+        within(carousel).getByRole("img", { name: "Track" }),
+      ).toBeInTheDocument();
+      // The words around the run are untouched.
+      expect(screen.getByText("Day one.")).toBeInTheDocument();
+      expect(screen.getByText("Day two.")).toBeInTheDocument();
+    });
+
+    it("leaves a single photo, and photos with words between them, as written", () => {
+      const blocks = markdownToStoryContent(
+        [
+          "![[11111111-1111-4111-8111-111111111111|480]]",
+          "",
+          "Then we walked.",
+          "",
+          "![[22222222-2222-4222-8222-222222222222]]",
+        ].join("\n"),
+      );
+      render(<ContentBlockRenderer blocks={blocks} media={media} />);
+
+      expect(
+        screen.queryByRole("region", { name: "Story photos" }),
+      ).not.toBeInTheDocument();
+      expect(screen.getAllByRole("img")).toHaveLength(2);
+    });
+
+    it("holds a sheen for a photo in the run that is still minting", () => {
+      const blocks = markdownToStoryContent(
+        [
+          "![[11111111-1111-4111-8111-111111111111]]",
+          "![[22222222-2222-4222-8222-222222222222]]",
+        ].join("\n"),
+      );
+      render(
+        <ContentBlockRenderer
+          blocks={blocks}
+          media={{
+            ...media,
+            "22222222-2222-4222-8222-222222222222": "loading",
+          }}
+        />,
+      );
+      const carousel = screen.getByRole("region", { name: "Story photos" });
+      const second = within(carousel).getByRole("group", {
+        name: "Photo 2 of 2",
+      });
+      expect(
+        within(second).getByRole("status", { name: "Loading image" }),
+      ).toHaveClass("nf-skeleton");
+      expect(within(second).queryByRole("img")).not.toBeInTheDocument();
+    });
   });
 });
