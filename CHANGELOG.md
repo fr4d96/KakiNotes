@@ -2,6 +2,19 @@
 
 ## [1.17.0](https://github.com/fr4d96/KakiNotes/compare/v1.16.0...v1.17.0) (2026-10-30)
 
+### Finding stories
+
+**Search as you type.** On the Stories page, results now update while you type. There's no need to press Enter or tap Apply, and any filters you've chosen stay on. While new results load, the search icon turns into a small spinner.
+
+**Search by keywords.** You no longer need a story's exact words. Type a few keywords in any order, and you'll get every story that mentions all of them, in its title, summary, story text, tags or places. Part of a word is enough: "kiw" finds "Kiwi", and "supermarket" also finds "Supermarkets". A search like "cheap food" now finds stories that talk about both, even when those words aren't in the title.
+
+### Fixes
+
+**Pull to refresh really refreshes.** In the home-screen app, pulling down at the top of a page now reloads it completely, so you always see the latest stories and changes. Before, it often looked like nothing happened. The launch screen doesn't flash up during the reload.
+
+**Story photos on the home page.** On a phone, the list of stories on the home page now shows each story's cover photo beside its title. Stories without a photo show the Kakinotes sketch instead of an empty space.
+
+
 
 ### Features
 
