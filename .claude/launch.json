@@ -1,0 +1,31 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "kakinotes-app",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "KAKINOTES_DEVICE_FRAME=1",
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3102"
+      ],
+      "port": 3102
+    },
+    {
+      "name": "kakinotes-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "3100"],
+      "port": 3100
+    },
+    {
+      "name": "kakinotes-prod",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start", "--", "--port", "3101"],
+      "port": 3101
+    }
+  ]
+}

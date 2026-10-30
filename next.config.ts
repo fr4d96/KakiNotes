@@ -35,7 +35,30 @@ const SERVER_ACTION_BODY_SIZE_LIMIT = "2.5mb";
 // a transport ceiling only, never the product-level limit.
 const PROXY_CLIENT_MAX_BODY_SIZE = "80mb";
 
+// The `kakinotes-app` launch config (.claude/launch.json) starts `next dev`
+// with KAKINOTES_DEVICE_FRAME=1 so the browser pane -- which can only open a
+// server at its origin -- lands in the iPhone 17 frame (app/dev/iphone-17,
+// itself dev-only). Only a top-level page load of "/" is redirected
+// (Sec-Fetch-Dest: document); the frame loads the app into an <iframe>
+// (Sec-Fetch-Dest: iframe), so the app inside it is never redirected. Never
+// on in production: both the env flag and a dev build are required.
+const DEVICE_FRAME =
+  process.env.KAKINOTES_DEVICE_FRAME === "1" &&
+  process.env.NODE_ENV !== "production";
+
 const nextConfig: NextConfig = {
+  ...(DEVICE_FRAME && {
+    async redirects() {
+      return [
+        {
+          source: "/",
+          has: [{ type: "header", key: "sec-fetch-dest", value: "document" }],
+          destination: "/dev/iphone-17?src=/&theme=dark",
+          permanent: false,
+        },
+      ];
+    },
+  }),
   experimental: {
     serverActions: {
       bodySizeLimit: SERVER_ACTION_BODY_SIZE_LIMIT,
