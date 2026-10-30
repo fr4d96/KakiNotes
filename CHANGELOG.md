@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.13.0](https://github.com/fr4d96/KakiNotes/compare/v1.12.0...v1.13.0) (2026-10-30)
+
+### Kakinotes on your iPhone
+
+**Add Kakinotes to your home screen.** In Safari, tap Share, then "Add to Home Screen". Kakinotes gets its own icon and opens full screen like an app, without Safari's address bar. You'll need to sign in once inside the home-screen app, because iPhone keeps its sign-ins separate from Safari's.
+
+**A tab bar at the bottom.** On a phone, Home, Stories, Contributors and My Stories (or Sign in) are always one tap away at the bottom of the screen. Tap the tab you're already on to jump back to the top. The bar tucks itself away while you're writing a story or typing, so it never sits on top of the keyboard.
+
+**Pages move like an app.** Opening a story slides it in from the right, and going back slides it the other way. Switching tabs fades between them. If you've asked your phone to reduce motion, pages just fade quickly instead.
+
+**The page you're on is named at the top.** On a phone, the top bar now shows where you are, such as "Stories" or "My Stories", next to the Kakinotes logo. Pages no longer repeat that as a big heading, which leaves more room for the stories themselves. Story pages and contributor profiles keep their big titles.
+
+**Menus and filters slide up from the bottom.** On a phone, the menu, your account menu and the story filters open as panels from the bottom of the screen. Swipe one down, tap outside it or tap × to close it.
+
+### What's new for contributors
+
+**My Stories fits your phone.** Your stories now start on the first screen instead of below a stack of buttons. New Story is the green + button, and story folders, journey map, My Photos and Import are small icons in one row, with nothing to scroll sideways. Region, destination and tag filters are behind the filter button, which shows how many filters are on, and "Show N stories" closes them.
+
+### Easier to use on a phone
+
+**Bigger tap targets.** Buttons, links, step dots in the story editor, journey map pins and download buttons are now easier to hit with a thumb, mostly without looking any bigger. Buttons respond when you press them.
+
+**Nothing hides under the notch.** The top bar, the editor's step bar and the bottom tab bar keep clear of the camera cut-out and the home bar on newer iPhones.
+
+### Good to know
+
+**No offline mode, on purpose.** The home-screen app always loads fresh from Kakinotes. It never saves pages or photos on your phone, so a story that has been taken down or isn't public yet can't reappear from a stored copy.
+
+
+
+### Features
+
+* **mobile:** installable iPhone web app with native-feel navigation ([d0096f3](https://github.com/fr4d96/KakiNotes/commit/d0096f393f4f0d4695b5b4fb36a709c288e92d14))
+* **mobile:** page titles in the phone header and a compact My Stories ([cf1f784](https://github.com/fr4d96/KakiNotes/commit/cf1f78424e9af18873769060f48dd587251dc8d4))
+
 ## [1.12.0](https://github.com/fr4d96/KakiNotes/compare/v1.11.0...v1.12.0) (2026-10-29)
 
 ### What's new for readers
