@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-30 (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+Last updated: 2026-10-30 (pull to refresh now reloads the page, home page covers on phones, search as you type and keyword search, on `fix/pull-to-refresh-reload` — see the entry at the end of this file); earlier the same day (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
 one-level folder shape — a story is either a main story, a sub story filed under exactly one main
 story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
 "Move to…" select; migration applied to the dev project — see the entry at the end of this
@@ -10958,3 +10958,41 @@ real iPhone — the launch image in particular only shows when iOS launches the 
   `gesturechange`). Safari tabs keep pinch-zoom; the journey map's own pinch still works; iOS
   system Zoom remains. Accessibility trade-off (Rule 19, WCAG 1.4.4) accepted for the installed app
   only. Test: `no-pinch-zoom.test.tsx`. Not checked on a real iPhone.
+
+**Pull to refresh reloads the page (2026-10-30, branch `fix/pull-to-refresh-reload`).** The soft
+refresh (`router.refresh()`) looked like it did nothing: content rarely differs (publishes already
+invalidate their pages), nothing on screen resets, and story folders / a journey's page copy their
+server data into state once and ignored refreshed props. Now a pull past the threshold does
+`location.reload()`; the launch splash is skipped on reloads via the head script, moved to
+`lib/theme-init-script.ts` so it can be tested. Tests: `pull-to-refresh.test.tsx`,
+`lib/theme-init-script.test.ts`. Checked in the iPhone frame with simulated standalone mode and
+touches: real reload, navigation type `reload`, splash skipped, page at the top. Not on a real
+iPhone.
+
+**Home page record shows covers on phones (same branch).** In the home page's story record
+(`components/home/story-index.tsx`) each row's cover frame was `hidden md:block`, so on a phone no
+cover showed — or even loaded. Phones now get the cover on the right of the row
+([numeral | text | cover], 80×64); desktop is unchanged. A story without a cover shows the shared
+sketch placeholder (`StoryCoverFallback`) instead of an empty box. Test:
+`components/home/story-index.test.tsx` (fails on the old markup). Checked in the iPhone 17 frame.
+
+**Stories search as you type (same branch).** The Stories search box (`components/story/filter-bar.tsx`)
+used to need Enter or Apply. It now searches 300ms after typing pauses: `router.replace` with the
+form's own values (every active filter kept, empty ones dropped, no pagination cursor — the same
+params a submit sends), `scroll: false`, so the box keeps focus and the keyboard stays up. The
+search icon becomes a spinner while results load (`useTransition`); IME composition (Chinese input)
+is waited out. Uses the current pathname, so `/cn/stories` stays in its section. Enter and Apply
+unchanged. Tests in `filter-bar.test.tsx`. Checked in the iPhone 17 frame: "kiwi" → `?q=kiwi`,
+20 stories → 1, focus kept; clearing → all 20 back.
+
+**Keyword search (same branch; migration `20261030102530_keyword_story_search.sql`).** Story search
+matched whole words in the title and excerpt only, so search-as-you-type found nothing for "kiw"
+and "cheap food" found 0 stories. `list_published_stories()` now splits the search into keywords
+(letters/digits only — no tsquery or LIKE syntax from the reader) and requires every keyword to
+appear, in any order, as a word prefix across title, excerpt, story text (`content_json` strings),
+tags and places (English and Chinese names), or as a substring of the title/excerpt (mid-word and
+mid-Chinese-phrase). Still newest-first; signature, return columns and grants unchanged, so the
+deployed release keeps working. Dry-run against live data via a temporary `pg_temp` copy before
+applying: kiw 0→2, supermarket 1→3, market →3, pak 1→4, "cheap food" 0→2, visa 3→3,
+"queenstown kiwi" →1; symbol-only input = no search. Not indexed beyond the existing title/excerpt
+GIN index — fine at today's size.
