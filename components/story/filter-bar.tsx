@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { StorySearchFilters } from "@/lib/validation/discovery";
 import { costBands } from "@/lib/validation/discovery";
@@ -15,6 +16,24 @@ import { useIsPhone } from "@/components/ui/use-is-phone";
 // the row's uuid. Tags keep the contributor's own words, always.
 type Option = { id: string; name: string };
 type DestinationOption = Option & { regionId: string };
+
+/** Typing pause before a live search runs, so it doesn't fire per letter. */
+export const SEARCH_DEBOUNCE_MS = 300;
+
+/**
+ * The form's current values as URL params, empty ones dropped -- exactly
+ * what a native GET submit would send, so a live search keeps every active
+ * filter and (like a submit) carries no pagination cursor.
+ */
+function formParams(form: HTMLFormElement): URLSearchParams {
+  const params = new URLSearchParams();
+  for (const [key, value] of new FormData(form)) {
+    if (typeof value === "string" && value.trim() !== "") {
+      params.set(key, key === "q" ? value.trim() : value);
+    }
+  }
+  return params;
+}
 
 /**
  * Native GET <form> to /stories: works with JS disabled, and a submission
@@ -32,6 +51,13 @@ type DestinationOption = Option & { regionId: string };
  * closed, so a plain search-and-Enter still submits every active filter.
  * The sheet sits inside the <form> in the DOM, so Apply is an ordinary
  * submit button: same native GET, same params, same pagination reset.
+ *
+ * The search box also searches as you type (2026-10-30): after a short
+ * pause it replaces the URL with the form's values (router.replace, no
+ * scroll, no history entry per letter), and the server page re-renders the
+ * results while the box keeps focus. The search icon becomes a spinner
+ * while results load. It waits out IME composition, so Chinese input isn't
+ * searched mid-word. Enter and Apply still submit the form as before.
  */
 export function FilterBar({
   regions,
@@ -50,6 +76,24 @@ export function FilterBar({
   const [selectedRegion, setSelectedRegion] = useState(current.region ?? "");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const isPhone = useIsPhone();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [searching, startSearch] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
+  const debounce = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(debounce.current), []);
+
+  function searchSoon() {
+    window.clearTimeout(debounce.current);
+    debounce.current = window.setTimeout(() => {
+      const form = formRef.current;
+      if (!form) return;
+      const query = formParams(form).toString();
+      const next = query ? `${pathname}?${query}` : pathname;
+      startSearch(() => router.replace(next, { scroll: false }));
+    }, SEARCH_DEBOUNCE_MS);
+  }
+
   const visibleDestinations = selectedRegion
     ? destinations.filter((d) => d.regionId === selectedRegion)
     : destinations;
@@ -171,20 +215,39 @@ export function FilterBar({
 
   return (
     <form
+      ref={formRef}
       method="get"
       action="/stories"
-      onSubmit={() => setFiltersOpen(false)}
+      onSubmit={() => {
+        window.clearTimeout(debounce.current);
+        setFiltersOpen(false);
+      }}
       className="rounded-xl border border-border-subtle bg-surface p-4 shadow-sm"
     >
       <label className="mb-4 flex flex-col gap-1 text-sm">
         <span className="font-medium">{t("search")}</span>
         <span className="relative">
-          <StorySearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/50" />
+          {searching ? (
+            <span
+              aria-hidden="true"
+              data-testid="search-spinner"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-foreground/20 border-t-accent"
+            />
+          ) : (
+            <StorySearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/50" />
+          )}
           <input
             type="search"
             name="q"
             defaultValue={current.q ?? ""}
             placeholder={t("searchPlaceholder")}
+            // Live search; IME composition (e.g. Chinese) waits for the
+            // finished word, then the change after it searches.
+            onChange={(e) => {
+              if (!(e.nativeEvent as InputEvent).isComposing) searchSoon();
+            }}
+            onCompositionEnd={searchSoon}
+            aria-busy={searching || undefined}
             className="min-h-11 w-full rounded-md border border-border-subtle bg-surface py-2 pl-9 pr-3"
           />
         </span>

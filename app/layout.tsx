@@ -8,6 +8,7 @@ import { TouchActive } from "@/components/touch-active";
 import { AppSplash } from "@/components/app-splash";
 import { ClickPulse } from "@/components/click-pulse";
 import { appleStartupImages } from "@/lib/pwa/splash-screens";
+import { themeInitScript } from "@/lib/theme-init-script";
 import { InAppHistory } from "@/components/in-app-history";
 import { NoPinchZoom } from "@/components/no-pinch-zoom";
 import { PullToRefresh } from "@/components/pull-to-refresh";
@@ -79,19 +80,6 @@ export const viewport: Viewport = {
  * same 60s/3600s windows), so the database sees the same load as before;
  * only the HTML is re-rendered per request.
  */
-// Blocking, pre-hydration: reads the persisted theme (or the system
-// preference) and sets data-theme before first paint so there is never a
-// flash of the wrong theme or a client/server hydration mismatch.
-const themeInitScript = `(() => {
-  try {
-    const saved = localStorage.getItem("journiq-theme");
-    const system = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    document.documentElement.dataset.theme = saved === "dark" || saved === "light" ? saved : system;
-  } catch {
-    document.documentElement.dataset.theme = "light";
-  }
-})();`;
-
 export default async function RootLayout({
   children,
 }: Readonly<{

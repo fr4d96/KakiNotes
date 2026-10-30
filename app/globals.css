@@ -1783,6 +1783,11 @@ svg g[role="button"]:focus-visible {
     display: none;
   }
 }
+/* A reload (pull to refresh) is not a launch: the head script in
+   app/layout.tsx marks it before first paint, so the splash never shows. */
+html[data-splash="skip"] .app-splash {
+  display: none;
+}
 .app-splash-icon {
   width: 120px;
   height: 120px;

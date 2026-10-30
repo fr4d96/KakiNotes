@@ -3172,11 +3172,17 @@ App Store build, Capacitor or any native code. Files:
   `NextIntlClientProvider` (it has translated text — outside it the whole page crashes). Home-screen
   app only (`display-mode: standalone` / `navigator.standalone`; Safari tabs have their own). At
   `scrollY` 0 a one-finger drag down shows a round icon under the top bar that follows the finger
-  at half speed and turns; released past 72px it spins while `router.refresh()` re-fetches the
-  server data (no reload), at least 500ms. Passive listeners only. Never starts in a `<dialog>`,
-  the journey map (`svg[role=group]`), a carousel, a text field, `[data-no-pull]`, a scrolled inner
-  box or while a scroll lock is on. `globals.css` sets `overscroll-behavior-y: none` on `html` in
-  standalone so iOS's rubber-band doesn't move the page under the indicator.
+  at half speed and turns; released past 72px it spins and the page does a **full reload**
+  (`location.reload()`, 150ms after release so the spinner paints; gives up spinning after 10s).
+  It was `router.refresh()` at first, but that changed nothing visible when nothing had changed,
+  and pages that copy server data into state on first render (story folders, a journey's page)
+  ignored it. The launch splash is skipped on a reload: the head script
+  (`lib/theme-init-script.ts`) sets `data-splash="skip"` on `<html>` when the navigation type is
+  `reload`, before first paint; a cold launch is a `navigate`. Passive listeners only. Never
+  starts in a `<dialog>`, the journey map (`svg[role=group]`), a carousel, a text field,
+  `[data-no-pull]`, a scrolled inner box or while a scroll lock is on. `globals.css` sets
+  `overscroll-behavior-y: none` on `html` in standalone so iOS's rubber-band doesn't move the page
+  under the indicator.
 - `components/touch-active.tsx` — rendered once by `app/layout.tsx`: one passive no-op `touchstart`
   listener on `document`, which is what makes iOS apply `:active` (the `.press` feedback in
   `app/globals.css`) to non-link elements. `globals.css` also sets `touch-action: manipulation` on

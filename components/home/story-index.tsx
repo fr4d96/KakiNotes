@@ -10,6 +10,7 @@ import {
   stringList,
 } from "@/lib/story/card-fields";
 import type { StoryCardData } from "@/components/story/story-card";
+import { StoryCoverFallback } from "@/components/story/story-cover-fallback";
 import { ALL, FilterRow } from "@/components/story/filter-row";
 import { ArrowRightIcon } from "@/components/icons";
 
@@ -352,13 +353,15 @@ function IndexEntry({
 
   return (
     <li className="nf-entry nf-lift">
-      {/* One grid, two shapes. Mobile: [numeral | stacked content]. Desktop:
-          the inner wrapper switches to `display: contents` so its children
-          drop into the parent grid as real catalogue columns
+      {/* One grid, two shapes. Mobile: [numeral | stacked content | cover],
+          the cover placed explicitly on the right (it used to be hidden on
+          phones, so the home page's record showed no photos at all).
+          Desktop: the inner wrapper switches to `display: contents` so its
+          children drop into the parent grid as real catalogue columns
           [numeral | thumb | title | meta | arrow]. */}
       <Link
         href={`/stories/${story.slug}`}
-        className="group grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-x-3 [@media(hover:hover)]:active:bg-accent/10 py-6 md:grid-cols-[3rem_5rem_minmax(0,1fr)_13rem_1.5rem] md:items-center md:gap-x-6"
+        className="group grid grid-cols-[2.5rem_minmax(0,1fr)_5rem] items-start gap-x-3 [@media(hover:hover)]:active:bg-accent/10 py-6 md:grid-cols-[3rem_5rem_minmax(0,1fr)_13rem_1.5rem] md:items-center md:gap-x-6"
       >
         <span
           aria-hidden="true"
@@ -367,7 +370,7 @@ function IndexEntry({
           {String(position + 1).padStart(2, "0")}
         </span>
 
-        <div className="hidden overflow-hidden rounded-md border border-border-subtle bg-surface-muted md:block">
+        <div className="relative h-16 w-20 overflow-hidden rounded-md border border-border-subtle bg-surface-muted max-md:col-start-3 max-md:row-start-1 md:h-14">
           {coverUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- public bucket URLs are content-addressed, not a Next.js image-optimizable source list
             <img
@@ -375,14 +378,14 @@ function IndexEntry({
               alt=""
               loading="lazy"
               decoding="async"
-              className="h-14 w-20 object-cover transition-transform duration-500 group-hover:scale-105"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
-            <div className="h-14 w-20" />
+            <StoryCoverFallback sizes="80px" />
           )}
         </div>
 
-        <div className="md:contents">
+        <div className="max-md:col-start-2 max-md:row-start-1 md:contents">
           <div className="min-w-0">
             <h3 className="text-lg leading-snug font-bold tracking-[-.01em] text-balance text-foreground transition-colors group-hover:text-accent md:text-xl">
               {story.title}

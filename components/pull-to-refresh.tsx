@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 /** How far (after resistance) a pull must travel to refresh on release. */
@@ -10,8 +9,10 @@ export const PULL_THRESHOLD = 72;
 const MAX_PULL = 110;
 /** Finger travel is halved, so it takes a deliberate, "hard" pull. */
 const RESISTANCE = 0.5;
-/** Keep the spinner up at least this long, so a fast refresh still reads. */
-const MIN_SPIN_MS = 500;
+/** Let the spinner paint before the page is torn down for the reload. */
+const RELOAD_DELAY_MS = 150;
+/** If the reload never happens (offline, blocked), stop spinning after this. */
+const GIVE_UP_MS = 10_000;
 
 /**
  * Where a pull must never start: anything with its own drag or scroll
@@ -40,10 +41,16 @@ function insideScrolledBox(start: Element | null): boolean {
  * Instagram-style pull to refresh for the home-screen app, where iOS gives
  * none (Safari tabs have their own, so this stays off there). At the very
  * top of a page, dragging down shows a round refresh icon that follows the
- * finger and turns as it fills; released past the threshold it spins while
- * router.refresh() re-fetches the page's server data -- fresh content
- * without a reload, so nothing on screen is lost. Released short of it, it
- * springs back.
+ * finger and turns as it fills; released past the threshold it spins and
+ * the page RELOADS -- everything re-fetched, every component starting from
+ * fresh data, at the top (a pull can only start at the top). Released short
+ * of it, it springs back.
+ *
+ * A full reload, not router.refresh() (2026-10-30): the soft refresh changed
+ * nothing visible when nothing had changed, and pages that copy their server
+ * data into state on first render (story folders, a journey's page) ignored
+ * it altogether. The launch splash is skipped on a reload by the head
+ * script in app/layout.tsx, so the reader sees the spinner, then the page.
  *
  * Listeners are passive (they never block scrolling), and a pull is only
  * considered when the page is scrolled to the top, no scroll lock is on (a
@@ -53,15 +60,21 @@ function insideScrolledBox(start: Element | null): boolean {
  * (app/globals.css), so the indicator is the only thing that moves.
  * Rendered once, from the root layout.
  */
-export function PullToRefresh() {
+export function PullToRefresh({
+  reload = () => window.location.reload(),
+}: {
+  /** The reload itself; injectable so tests can watch it. */
+  reload?: () => void;
+} = {}) {
   const t = useTranslations("common.pullToRefresh");
-  const router = useRouter();
   const [pull, setPull] = useState(0);
   const [spinning, setSpinning] = useState(false);
-  const [isPending, startTransition] = useTransition();
   const startY = useRef<number | null>(null);
   const pullRef = useRef(0);
-  const spinStarted = useRef(0);
+  const reloadRef = useRef(reload);
+  useEffect(() => {
+    reloadRef.current = reload;
+  }, [reload]);
 
   useEffect(() => {
     function reset() {
@@ -97,9 +110,8 @@ export function PullToRefresh() {
       const pulled = pullRef.current;
       reset();
       if (pulled < PULL_THRESHOLD) return;
-      spinStarted.current = performance.now();
       setSpinning(true);
-      startTransition(() => router.refresh());
+      window.setTimeout(() => reloadRef.current(), RELOAD_DELAY_MS);
     }
 
     document.addEventListener("touchstart", onStart, { passive: true });
@@ -112,15 +124,15 @@ export function PullToRefresh() {
       document.removeEventListener("touchend", onEnd);
       document.removeEventListener("touchcancel", reset);
     };
-  }, [router]);
+  }, []);
 
-  // The refresh has landed: let the spinner finish its minimum, then go.
+  // Normally the reload replaces this page while it spins; if it never
+  // does, don't spin forever.
   useEffect(() => {
-    if (!spinning || isPending) return;
-    const left = MIN_SPIN_MS - (performance.now() - spinStarted.current);
-    const id = window.setTimeout(() => setSpinning(false), Math.max(0, left));
+    if (!spinning) return;
+    const id = window.setTimeout(() => setSpinning(false), GIVE_UP_MS);
     return () => window.clearTimeout(id);
-  }, [spinning, isPending]);
+  }, [spinning]);
 
   const shown = spinning ? PULL_THRESHOLD : pull;
   const progress = Math.min(1, pull / PULL_THRESHOLD);

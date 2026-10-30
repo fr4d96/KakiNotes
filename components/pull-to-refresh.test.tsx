@@ -1,10 +1,8 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-const refresh = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
-
 import { PullToRefresh } from "./pull-to-refresh";
+
+const reload = vi.fn();
 
 function installed(yes: boolean) {
   vi.stubGlobal(
@@ -28,30 +26,45 @@ function pull(dy: number, target: Element = document.body) {
 }
 
 beforeEach(() => {
-  refresh.mockReset();
+  vi.useFakeTimers();
+  reload.mockReset();
   installed(true);
   window.scrollY = 0;
 });
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
 describe("PullToRefresh", () => {
-  it("refreshes the page after a hard pull from the top", () => {
-    render(<PullToRefresh />);
+  it("reloads the page after a hard pull from the top, spinning meanwhile", () => {
+    render(<PullToRefresh reload={reload} />);
     act(() => pull(200)); // 200px of finger = 100px of pull, past 72
-    expect(refresh).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("status")).toHaveTextContent("Refreshing…");
+    // The spinner gets a moment to paint before the page goes.
+    expect(reload).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(150));
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops spinning if the reload never happens", () => {
+    const { container } = render(<PullToRefresh reload={() => {}} />);
+    act(() => pull(200));
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(
+      container.querySelector<HTMLElement>(".ptr-indicator")!.dataset.state,
+    ).toBe("idle");
   });
 
   it("springs back without refreshing after a light pull", () => {
-    render(<PullToRefresh />);
+    render(<PullToRefresh reload={reload} />);
     act(() => pull(100)); // 50px of pull, short of 72
-    expect(refresh).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1000));
+    expect(reload).not.toHaveBeenCalled();
   });
 
   it("follows the finger while pulling", () => {
-    const { container } = render(<PullToRefresh />);
+    const { container } = render(<PullToRefresh reload={reload} />);
     fireEvent.touchStart(document.body, {
       touches: [{ clientX: 50, clientY: 100 }],
     });
@@ -65,28 +78,31 @@ describe("PullToRefresh", () => {
 
   it("stays off in a browser tab, which has its own pull to refresh", () => {
     installed(false);
-    render(<PullToRefresh />);
+    render(<PullToRefresh reload={reload} />);
     act(() => pull(300));
-    expect(refresh).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1000));
+    expect(reload).not.toHaveBeenCalled();
   });
 
   it("does nothing when the page is not at the top", () => {
     window.scrollY = 120;
-    render(<PullToRefresh />);
+    render(<PullToRefresh reload={reload} />);
     act(() => pull(300));
-    expect(refresh).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1000));
+    expect(reload).not.toHaveBeenCalled();
   });
 
   it("leaves maps, sheets and other gestures alone", () => {
     render(
       <>
-        <PullToRefresh />
+        <PullToRefresh reload={reload} />
         <svg role="group" aria-label="map" data-testid="map" />
         <div data-no-pull data-testid="opt-out" />
       </>,
     );
     act(() => pull(300, screen.getByTestId("map")));
     act(() => pull(300, screen.getByTestId("opt-out")));
-    expect(refresh).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1000));
+    expect(reload).not.toHaveBeenCalled();
   });
 });
