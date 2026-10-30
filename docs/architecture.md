@@ -3128,7 +3128,12 @@ App Store build, Capacitor or any native code. Files:
   generating script was not kept; re-create the same way if the artwork changes.
 - `app/layout.tsx` — `metadata.appleWebApp` (`capable`, title, `statusBarStyle: "default"`) and a
   `viewport` export: `viewportFit: "cover"` plus light/dark `themeColor`. Pinch-zoom stays enabled
-  (the iOS form-field zoom is handled by the 16px input floor in `app/globals.css`).
+  in browser tabs (the iOS form-field zoom is handled by the 16px input floor in `app/globals.css`).
+  In the installed app only, whole-page pinch and double-tap zoom are off (2026-10-30, owner's
+  request, so it feels like an app): `touch-action: pan-x pan-y` on `html` under
+  `display-mode: standalone` plus `components/no-pinch-zoom.tsx` cancelling WebKit's
+  `gesturestart`/`gesturechange`. Touch events are untouched, so the journey map's own two-finger
+  zoom still works; iOS's system Zoom (Accessibility) remains for anyone who needs magnification.
 - `components/bottom-tab-bar.tsx` — a fixed tab bar (Home, Stories, Contributors, and My Stories or
   Sign in) below the `md` breakpoint, rendered by the `(public)`, `(auth)` and `(contributor)`
   layouts beside their header. Client component only for `usePathname()` (active tab,
@@ -3149,6 +3154,29 @@ App Store build, Capacitor or any native code. Files:
   - **Behaviour.** An accent pill slides between tabs; tapping the active tab at its root scrolls
     to the top (instead of re-navigating; deeper in the tab it navigates to the tab root). Tab links
     pass the `tab` view-transition type.
+- **Launch splash (2026-10-30).** Two halves, so there is never a blank screen:
+  - `public/splash/*.png` — iOS launch images (`apple-touch-startup-image`), one per iPhone portrait
+    size in light and dark: the app's `--background` with the icon as a 120pt rounded tile in the
+    exact centre. **Generated** by `scripts/generate-splash-screens.mjs` (sharp) from
+    `public/icons/icon-512.png` and the device list in `lib/pwa/splash-devices.json`; rerun it after
+    changing the icon, colours or devices. `lib/pwa/splash-screens.ts` turns the same list into
+    `metadata.appleWebApp.startupImage` (exact `device-width`/`device-height`/pixel-ratio/
+    `prefers-color-scheme` media queries), and its test fails if an image is missing.
+  - `components/app-splash.tsx` — in the root layout's server HTML, so it is up from the first paint;
+    looks identical to the launch image plus a loading bar that only appears after 350ms. It fades
+    once React has hydrated (at least 400ms after launch). CSS shows it only under
+    `@media (display-mode: standalone)` — never in a browser tab — and a 10s CSS fail-safe hides it
+    even if no script runs. The root layout never re-renders on navigation, so it shows on launch
+    only. No service worker, nothing cached.
+- **Pull to refresh (2026-10-30).** `components/pull-to-refresh.tsx`, inside the root layout's
+  `NextIntlClientProvider` (it has translated text — outside it the whole page crashes). Home-screen
+  app only (`display-mode: standalone` / `navigator.standalone`; Safari tabs have their own). At
+  `scrollY` 0 a one-finger drag down shows a round icon under the top bar that follows the finger
+  at half speed and turns; released past 72px it spins while `router.refresh()` re-fetches the
+  server data (no reload), at least 500ms. Passive listeners only. Never starts in a `<dialog>`,
+  the journey map (`svg[role=group]`), a carousel, a text field, `[data-no-pull]`, a scrolled inner
+  box or while a scroll lock is on. `globals.css` sets `overscroll-behavior-y: none` on `html` in
+  standalone so iOS's rubber-band doesn't move the page under the indicator.
 - `components/touch-active.tsx` — rendered once by `app/layout.tsx`: one passive no-op `touchstart`
   listener on `document`, which is what makes iOS apply `:active` (the `.press` feedback in
   `app/globals.css`) to non-link elements. `globals.css` also sets `touch-action: manipulation` on

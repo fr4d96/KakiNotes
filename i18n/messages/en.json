@@ -51,7 +51,10 @@
       "label": "Choose a country section"
     },
     "back": "Back",
-    "backTo": "Back to {page}"
+    "backTo": "Back to {page}",
+    "pullToRefresh": {
+      "refreshing": "Refreshing…"
+    }
   },
   "nav": {
     "primary": "Primary",

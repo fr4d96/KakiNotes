@@ -439,7 +439,12 @@ export function JourneyMap({ stops: allStops }: { stops: JourneyStopView[] }) {
   }, [placeAtStop, showVehicle]);
 
   const moving = playing && !reducedMotion && count >= 2;
-  const animated = !reducedMotion && count >= 2;
+  // The loop also eases the camera, so it must run even when there is no
+  // van to drive: a one-pin journey (a main story whose sub stories sit
+  // inside its pin) still zooms, pans and re-centres. Only `moving` needs
+  // two stops. (It used to require two here too, which left + / - /
+  // re-centre dead on a single-pin map.)
+  const animated = !reducedMotion;
 
   // One animation loop drives both the van (while playing) and the camera
   // (while it is still easing towards its target, e.g. after a click on a

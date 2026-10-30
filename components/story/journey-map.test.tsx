@@ -467,6 +467,51 @@ describe("JourneyMap camera and dots", () => {
   });
 });
 
+describe("JourneyMap controls with motion on", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  // Regression: the animation loop that eases the camera used to start
+  // only with two or more stops, so on a one-pin map (a main story whose
+  // sub stories sit inside its pin) + / - / re-centre did nothing.
+  it("zooms and re-centres a single-pin map", () => {
+    mockReducedMotion(false);
+    let now = 0;
+    const callbacks: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      callbacks.push(cb);
+      return callbacks.length;
+    });
+    vi.stubGlobal("cancelAnimationFrame", () => {});
+    vi.spyOn(performance, "now").mockImplementation(() => now);
+    const frames = (n: number) => {
+      for (let i = 0; i < n; i += 1) {
+        now += 50;
+        const cb = callbacks.shift();
+        if (cb) act(() => cb(now));
+      }
+    };
+
+    const { container } = render(<JourneyMap stops={[AUCKLAND]} />);
+    const svg = container.querySelector("svg[role='group']")!;
+    const width = () => Number(svg.getAttribute("viewBox")!.split(" ")[2]);
+    frames(5);
+    expect(width()).toBe(220);
+
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    frames(40);
+    expect(width()).toBeLessThan(220);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Re-centre and follow the van" }),
+    );
+    frames(60);
+    expect(width()).toBeCloseTo(220, 0);
+  });
+});
+
 describe("JourneyMap reader zoom and pan", () => {
   beforeEach(() => {
     // Reduced motion applies view changes instantly, which keeps these sync.
