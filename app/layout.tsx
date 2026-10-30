@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ToastProvider } from "@/components/ui/toast";
 import { PhotoLightboxProvider } from "@/components/ui/photo-lightbox";
+import { TouchActive } from "@/components/touch-active";
 import "./globals.css";
 
 // The app's default (sans) typeface is Avenir Next, declared globally via
@@ -27,8 +28,30 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: t("siteDescription"),
     robots: { index: true, follow: true },
+    // Home-screen launch on iOS: full-screen (no Safari chrome) and the
+    // name shown under the icon. See "Installable web app (PWA)" in
+    // docs/architecture.md; there is deliberately no service worker.
+    appleWebApp: {
+      capable: true,
+      title: "Kakinotes",
+      statusBarStyle: "default",
+    },
   };
 }
+
+// `viewportFit: "cover"` lets the page run edge to edge on notched iPhones;
+// the sticky header and the bottom tab bar pad themselves with
+// env(safe-area-inset-*) to compensate. Pinch-zoom is deliberately left
+// enabled (no maximumScale / userScalable): the iOS form-field zoom is
+// handled by a 16px font floor in app/globals.css instead (WCAG 1.4.4).
+// Colours are --background in app/globals.css (light / dark).
+export const viewport: Viewport = {
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#eef2f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#020617" },
+  ],
+};
 
 /**
  * Deliberately bare: no header, footer, or session check here. Each route
@@ -82,6 +105,8 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full flex flex-col">
+        {/* Opts iOS into :active on non-link elements (.press feedback). */}
+        <TouchActive />
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-black focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-blue-600"

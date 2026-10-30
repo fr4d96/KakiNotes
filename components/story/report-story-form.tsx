@@ -46,7 +46,7 @@ export function ReportStoryForm({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-sm text-foreground/60 underline underline-offset-2 hover:text-foreground"
+        className="inline-flex min-h-11 items-center text-sm text-foreground/60 underline underline-offset-2 hover:text-foreground"
       >
         {t("open")}
       </button>
@@ -131,14 +131,14 @@ export function ReportStoryForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:opacity-90 disabled:opacity-60"
+          className="min-h-11 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:opacity-90 disabled:opacity-60"
         >
           {pending ? t("submitting") : t("submit")}
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="text-sm text-foreground/60 hover:text-foreground"
+          className="min-h-11 text-sm text-foreground/60 hover:text-foreground"
         >
           {t("cancel")}
         </button>

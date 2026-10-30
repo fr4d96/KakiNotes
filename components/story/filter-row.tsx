@@ -56,7 +56,7 @@ export function FilterRow({
               type="button"
               aria-pressed={isActive}
               onClick={() => onChange(option)}
-              className={`shrink-0 snap-start rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`press inline-flex min-h-11 shrink-0 snap-start items-center rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
                 isActive
                   ? "border-accent bg-accent text-accent-foreground"
                   : "border-border-subtle text-foreground/80 hover:border-accent/60 hover:text-foreground"

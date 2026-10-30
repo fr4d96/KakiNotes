@@ -197,7 +197,7 @@ export function JourneyView({
                     story: title,
                   },
                 )}
-                className="min-h-[44px] rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium sm:min-h-0"
+                className="press min-h-[44px] rounded-full border border-border-subtle px-4 py-1.5 text-sm font-medium sm:min-h-0"
               >
                 {story.place ? t("rows.change") : t("rows.add")}
               </button>
@@ -208,7 +208,7 @@ export function JourneyView({
                 onClick={() => setRemoveTarget(story)}
                 disabled={saving}
                 aria-label={t("rows.removeNamed", { story: title })}
-                className="min-h-[44px] rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium text-destructive sm:min-h-0"
+                className="press min-h-[44px] rounded-full border border-border-subtle px-4 py-1.5 text-sm font-medium text-destructive sm:min-h-0"
               >
                 {t("rows.remove")}
               </button>
@@ -301,7 +301,7 @@ export function JourneyView({
                 type="button"
                 onClick={() => setDraft(null)}
                 disabled={saving}
-                className="rounded-md border border-border-subtle px-4 py-2 text-sm font-medium"
+                className="press min-h-11 rounded-full border border-border-subtle px-4 py-2 text-sm font-medium"
               >
                 {t("panel.cancel")}
               </button>
@@ -384,7 +384,7 @@ function JourneyHeader() {
       <h1 className="journiq-heading text-[2rem]">{t("title")}</h1>
       <Link
         href="/my-stories"
-        className="text-sm font-medium text-accent underline underline-offset-2"
+        className="press inline-flex min-h-11 items-center self-start text-sm font-medium text-accent underline underline-offset-2 sm:self-auto"
       >
         {t("backToMyStories")}
       </Link>

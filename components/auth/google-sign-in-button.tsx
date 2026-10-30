@@ -74,7 +74,7 @@ export function GoogleSignInButton({ next = "/account" }: { next?: string }) {
         type="button"
         onClick={handleClick}
         disabled={pending}
-        className="flex w-full items-center justify-center gap-2.5 rounded-md border border-border-subtle px-3 py-2 text-sm font-medium transition-colors hover:bg-surface-muted disabled:opacity-60"
+        className="flex min-h-11 w-full items-center justify-center gap-2.5 rounded-md border border-border-subtle px-3 py-2 text-sm font-medium transition-colors hover:bg-surface-muted disabled:opacity-60"
       >
         <GoogleGlyph />
         {pending ? t("redirecting") : t("continue")}

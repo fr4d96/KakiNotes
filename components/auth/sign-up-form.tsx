@@ -36,7 +36,7 @@ export function SignUpForm() {
             type="text"
             autoComplete="name"
             maxLength={120}
-            className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2"
+            className="mt-1 min-h-11 w-full rounded-md border border-border-subtle px-3 py-2"
           />
         </div>
 
@@ -50,7 +50,7 @@ export function SignUpForm() {
             type="email"
             autoComplete="email"
             required
-            className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2"
+            className="mt-1 min-h-11 w-full rounded-md border border-border-subtle px-3 py-2"
           />
         </div>
 
@@ -65,7 +65,7 @@ export function SignUpForm() {
             autoComplete="new-password"
             minLength={6}
             required
-            className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2"
+            className="mt-1 min-h-11 w-full rounded-md border border-border-subtle px-3 py-2"
           />
         </div>
 
@@ -78,14 +78,14 @@ export function SignUpForm() {
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-md bg-accent px-3 py-2 text-accent-foreground hover:opacity-90 disabled:opacity-60"
+          className="min-h-11 w-full rounded-md bg-accent px-3 py-2 text-accent-foreground hover:opacity-90 disabled:opacity-60"
         >
           {pending ? t("submitting") : t("submit")}
         </button>
 
         <p className="text-sm text-muted-foreground">
           {t("haveAccount")}{" "}
-          <Link href="/sign-in" className="hover:underline">
+          <Link href="/sign-in" className="inline-block py-3 hover:underline">
             {t("signInLink")}
           </Link>
         </p>

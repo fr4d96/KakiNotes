@@ -78,7 +78,7 @@ export function ThemeToggle({
       onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label={label}
       title={label}
-      className={`flex h-9 w-9 items-center justify-center rounded-full border transition-transform hover:-translate-y-0.5 ${toneClasses}`}
+      className={`flex h-11 w-11 items-center justify-center rounded-full border transition-transform md:h-9 md:w-9 hover:-translate-y-0.5 ${toneClasses}`}
     >
       <span aria-hidden="true">{isDark ? "☀" : "☾"}</span>
     </button>

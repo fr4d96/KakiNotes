@@ -41,7 +41,7 @@ export function MyPhotosView({
         </div>
         <Link
           href="/my-stories"
-          className="rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium"
+          className="press inline-flex min-h-11 items-center rounded-full border border-border-subtle px-4 text-sm font-medium"
         >
           {t("backToMyStories")}
         </Link>
@@ -193,7 +193,7 @@ function PhotoCard({
       {needsReconnect ? (
         <Link
           href="/account#drive"
-          className="rounded-md border border-border-subtle px-2 py-1.5 text-center text-xs font-medium"
+          className="press inline-flex min-h-11 items-center justify-center rounded-full border border-border-subtle px-3 text-center text-xs font-medium"
         >
           {t("reconnect")}
         </Link>
@@ -207,7 +207,7 @@ function PhotoCard({
               ? t("downloadFullLabel", { photo: label })
               : t("downloadLabel", { photo: label })
           }
-          className="rounded-md border border-border-subtle px-2 py-1.5 text-xs font-medium disabled:opacity-60"
+          className="press inline-flex min-h-11 items-center justify-center rounded-full border border-border-subtle px-3 text-xs font-medium disabled:opacity-60"
         >
           {downloading
             ? t("preparing")

@@ -20,6 +20,11 @@ import {
  * (like ModerationNav/EditorialNav/ReadinessNav) so it can read the
  * caller's own avatar directly, rather than needing every layout above it
  * to fetch and pass it down.
+ *
+ * The app is an installable iPhone web app with `viewportFit: "cover"`
+ * (app/layout.tsx), so this sticky header pads itself with
+ * env(safe-area-inset-*) exactly like SiteHeader -- otherwise the logo and
+ * the bell would sit under the notch / status bar.
  */
 export async function ContributorNav() {
   const [avatarEmoji, role] = await Promise.all([
@@ -28,7 +33,7 @@ export async function ContributorNav() {
   ]);
 
   return (
-    <header className="journiq-header-solid sticky top-0 z-40 border-b border-border-subtle text-foreground">
+    <header className="journiq-header-solid sticky top-0 z-40 border-b border-border-subtle pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] text-foreground">
       <div className="mx-auto flex min-h-[76px] max-w-[1440px] items-center gap-5 px-4 sm:px-6">
         <Link
           href="/"

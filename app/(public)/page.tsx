@@ -147,7 +147,7 @@ export default async function HomePage() {
           re-render. Sits directly under the sticky 76px header. */}
       <div
         aria-hidden="true"
-        className="nf-progress pointer-events-none fixed inset-x-0 top-[76px] z-40 h-px"
+        className="nf-progress pointer-events-none fixed inset-x-0 top-[calc(76px+env(safe-area-inset-top))] z-40 h-px"
       >
         <span className="block h-full w-full bg-accent" />
       </div>

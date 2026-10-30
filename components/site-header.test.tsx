@@ -1,5 +1,5 @@
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 
 const { usePathnameMock, sessionMock } = vi.hoisted(() => ({
   usePathnameMock: vi.fn(() => "/"),
@@ -85,6 +85,27 @@ beforeEach(() => {
     writable: true,
     configurable: true,
   });
+});
+
+// jsdom has no matchMedia. useIsPhone() reads "(max-width: 47.99rem)", so
+// this stands in for a phone-width viewport (and answers "no" to every
+// other query, e.g. the sheet's own "(min-width: 48rem)" growth watcher).
+function pretendPhone() {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: (query: string) => ({
+      matches: query.includes("max-width"),
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }),
+  });
+}
+
+afterEach(() => {
+  // @ts-expect-error -- jsdom has no matchMedia by default; remove the stub
+  delete window.matchMedia;
 });
 
 function getHeader() {
@@ -205,6 +226,22 @@ describe("SiteHeader", () => {
     );
   });
 
+  it("leaves Stories and Contributors to the bottom tab bar in the phone menu", () => {
+    render(<SiteHeader />);
+    // Only the desktop nav carries them before the hamburger opens.
+    expect(screen.getAllByRole("link", { name: "Stories" })).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+
+    // Opening the hamburger adds About (still not in the bar) but no second
+    // Stories / Contributors link.
+    expect(screen.getAllByRole("link", { name: "About" })).toHaveLength(2);
+    expect(screen.getAllByRole("link", { name: "Stories" })).toHaveLength(1);
+    expect(screen.getAllByRole("link", { name: "Contributors" })).toHaveLength(
+      1,
+    );
+  });
+
   it("closes the modal via its close button", () => {
     render(<SiteHeader />);
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
@@ -214,5 +251,90 @@ describe("SiteHeader", () => {
 
     // Unmounted, not just hidden — same reasoning as the open test above.
     expect(screen.queryByText("sign-in-form")).toBeNull();
+  });
+
+  describe("on a phone", () => {
+    it("opens the signed-out menu as a bottom sheet named Menu", () => {
+      pretendPhone();
+      render(<SiteHeader />);
+      const trigger = screen.getByRole("button", { name: "Menu" });
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+      fireEvent.click(trigger);
+
+      expect(trigger).toHaveAttribute("aria-expanded", "true");
+      const sheet = screen.getByRole("dialog", { name: "Menu" });
+      expect(sheet).toHaveAttribute("open");
+      // Rows are >=48px (min-h-12) touch targets.
+      const about = within(sheet).getByRole("link", { name: "About" });
+      expect(about.className).toContain("min-h-12");
+      expect(
+        within(sheet).getByRole("button", { name: "Sign in" }),
+      ).toBeInTheDocument();
+    });
+
+    it("closes the menu sheet from its close button and after choosing an action", () => {
+      pretendPhone();
+      render(<SiteHeader />);
+      fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+      const sheet = screen.getByRole("dialog", { name: "Menu" });
+
+      fireEvent.click(within(sheet).getByRole("button", { name: "Close" }));
+      expect(screen.getByRole("button", { name: "Menu" })).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      );
+
+      // Choosing "Sign in" hands over to the auth modal.
+      fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+      fireEvent.click(
+        within(screen.getByRole("dialog", { name: "Menu" })).getByRole(
+          "button",
+          { name: "Sign in" },
+        ),
+      );
+      expect(screen.getByText("sign-in-form")).toBeInTheDocument();
+    });
+
+    it("opens the avatar menu as a bottom sheet with 48px rows", async () => {
+      pretendPhone();
+      sessionMock.current = { user: { id: "user-1" } };
+      render(<SiteHeader />);
+      const avatars = await screen.findAllByRole("button", {
+        name: "Account menu",
+      });
+
+      // The mobile cluster is the second avatar in document order.
+      fireEvent.click(avatars[1]);
+
+      const sheet = screen.getByRole("dialog", { name: "Account menu" });
+      const myStories = within(sheet).getByRole("menuitem", {
+        name: "My Stories",
+      });
+      expect(myStories).toHaveAttribute("href", "/my-stories");
+      expect(myStories.className).toContain("min-h-12");
+      expect(
+        within(sheet).getByRole("menuitem", { name: "Sign out" }).className,
+      ).toContain("min-h-12");
+      // The sheet replaces the dropdown rather than sitting beside it.
+      expect(
+        screen.getAllByRole("menuitem", { name: "My Stories" }),
+      ).toHaveLength(1);
+    });
+  });
+
+  it("keeps the anchored dropdown (no sheet) at desktop widths", async () => {
+    sessionMock.current = { user: { id: "user-1" } };
+    render(<SiteHeader />);
+    const avatars = await screen.findAllByRole("button", {
+      name: "Account menu",
+    });
+    fireEvent.click(avatars[0]);
+    expect(
+      screen.getByRole("menuitem", { name: "My Stories" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("dialog", { name: "Account menu" }),
+    ).not.toBeInTheDocument();
   });
 });

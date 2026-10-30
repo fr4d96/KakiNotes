@@ -3112,3 +3112,86 @@ case), not a technical default. Every country-varying string (site description, 
 intro, costs framing, about text, the "personal experience, not advice" label, the location-match
 failure message) is read from a per-country `countryContent` i18n namespace or passed as a resolved
 prop — never a hard-coded country name inside a shared component.
+
+## Installable web app (PWA) — 2026-10-30
+
+Kakinotes can be added to an iPhone (or Android) home screen and launches full-screen, without an
+App Store build, Capacitor or any native code. Files:
+
+- `app/manifest.ts` — the web app manifest (`/manifest.webmanifest`): name/short name "Kakinotes",
+  `display: "standalone"`, `start_url`/`scope` `/`, colours from the light `--background` token, and
+  192, 512 and maskable 512 icons. `proxy.ts`'s matcher does not cover it, so it is public.
+- `public/icons/icon-192.png`, `icon-512.png`, `icon-maskable-512.png` and `app/apple-icon.png`
+  (180×180, opaque — iOS handles transparency badly) — made once from `public/kakinotes-icon.png`
+  with `sharp` (cream background, the sketch centred; the maskable one has extra padding). The
+  generating script was not kept; re-create the same way if the artwork changes.
+- `app/layout.tsx` — `metadata.appleWebApp` (`capable`, title, `statusBarStyle: "default"`) and a
+  `viewport` export: `viewportFit: "cover"` plus light/dark `themeColor`. Pinch-zoom stays enabled
+  (the iOS form-field zoom is handled by the 16px input floor in `app/globals.css`).
+- `components/bottom-tab-bar.tsx` — a fixed tab bar (Home, Stories, Contributors, and My Stories or
+  Sign in) below the `md` breakpoint, rendered by the `(public)`, `(auth)` and `(contributor)`
+  layouts beside their header. Client component only for `usePathname()` (active tab,
+  `aria-current="page"`, `/cn` prefix) and a client-side session check, the same way `SiteHeader`
+  does it, so public HTML stays identical for every visitor. It pads for
+  `env(safe-area-inset-bottom)`, and a spacer after the footer keeps the last content clear of it.
+  The headers pad for the top/left/right insets (`SiteHeader` and `ContributorNav`; the story
+  editor's sticky step rail offsets by `76px + env(safe-area-inset-top)`).
+  - **Contributor shell.** Signed in, the last tab is **My Stories** (`/my-stories`); it is active
+    for `/my-stories*`, `/my-photos*`, `/account*`, `/notifications*`, `/stories/new*` and
+    `/stories/<id>/edit|preview`. The public `/stories` list and `/stories/<slug>` reader pages keep
+    the Stories tab. Signed out it stays "Sign in" → `/sign-in`. The bar is rendered per layout, so a
+    switch between route groups remounts it (the pill does not slide across that boundary).
+  - **Hiding.** The bar slides down (`data-hidden`, `inert`) on `/stories/new*` and
+    `/stories/<id>/edit`, and while a text input / textarea / select / contenteditable has focus
+    (document `focusin` / `focusout`), so it never floats above the iOS keyboard. The spacer is not
+    rendered while hidden.
+  - **Behaviour.** An accent pill slides between tabs; tapping the active tab at its root scrolls
+    to the top (instead of re-navigating; deeper in the tab it navigates to the tab root). Tab links
+    pass the `tab` view-transition type.
+- `components/touch-active.tsx` — rendered once by `app/layout.tsx`: one passive no-op `touchstart`
+  listener on `document`, which is what makes iOS apply `:active` (the `.press` feedback in
+  `app/globals.css`) to non-link elements. `globals.css` also sets `touch-action: manipulation` on
+  controls and `scroll-padding-top: calc(76px + env(safe-area-inset-top))` on `html`.
+- `components/page-transition.tsx` — route transitions with React `<ViewTransition>` (no config; the
+  App Router already ships the canary React). Wrapped around `{children}` in each layout's `<main>`
+  and keyed by pathname; the enter class comes from URL depth (deeper = slide in from the right,
+  shallower = from the left, same depth = rise), or from the `tab` / `nav-forward` / `nav-back`
+  transition type when a link passes one. `app/globals.css` holds the `.vt-*` pseudo-element rules,
+  hides the stale root snapshot, and names the header and tab bar only while a transition runs
+  (`:root:active-view-transition`) so they stay put above the sliding page. Reduced motion: 120ms
+  fade. No support: pages swap. The `loading.tsx` boundaries are unchanged.
+
+**Why there is no service worker.** A service worker would cache pages and images for offline use,
+and a cache can keep serving draft, private, rejected or archived content — or an image whose owner
+has revoked access — after the server stopped allowing it (Engineering Rules 12–13). iOS installs a
+manifest-only site to the home screen without one, so nothing is lost. Do not add one without a
+design that provably never caches non-public responses.
+
+**Authentication in the installed app.** iOS keeps a home-screen web app's cookies and storage
+separate from Safari's, so a visitor signs in again inside the installed app. Auth and the
+staff/contributor guards are unchanged.
+
+**Phone bottom sheets.** `components/ui/bottom-sheet.tsx` is the one sheet for phones: a native
+`<dialog>` (`showModal()`, same focus-return/Esc mechanics as `confirm-dialog.tsx`) that slides up
+via `starting:` + `transition-discrete`, dismisses on backdrop tap, Esc, its close button or a
+downward drag/flick on the handle, locks background scroll and pads for the home indicator. Callers
+pick sheet or dropdown with `components/ui/use-is-phone.ts` (below 48rem), so exactly one copy of a
+menu or form is ever in the DOM — two would double landmarks and form fields. Used by the signed-out
+menu (`mobile-nav-toggle.tsx`), the avatar menu and the `/stories` filters (the filter form stays a
+plain GET form; Apply/Clear sit in the sheet footer).
+
+**Tap-target pattern.** Grow the hit area, not the visual: a ≥44px box or a `::before` hit-slop
+around an unchanged dot/icon (story steps, My Stories row actions, journey-map pins via `HIT_R`),
+`.press` on anything tappable, and an `:active` tint on cards and rows.
+
+**Device-frame preview (dev only).** `/dev/iphone-17` (`app/dev/iphone-17/route.ts`) serves
+`.claude/device-preview/iphone-17.html` — an iPhone 17 frame (402×874pt screen, Dynamic Island,
+status bar, side buttons, home indicator) with the live site in a same-origin iframe, e.g.
+`/dev/iphone-17?src=/stories&theme=dark`. It returns 404 unless `NODE_ENV` is `development`. A
+desktop browser reports `env(safe-area-inset-*)` as 0 and `env()` cannot be redefined, so by default
+("Insets: simulated", `&insets=sim`) the app fills the whole screen and the frame clones every
+same-origin CSS rule that uses `env(safe-area-inset-*)` into one unlayered override sheet with the
+iPhone 17 portrait values (top 62px, bottom 34px, sides 0) — re-run whenever a new CSS chunk loads.
+That exercises the app's own safe-area padding the way the installed app does. "Insets: reserved"
+(`&insets=reserved`) instead keeps the app between a 62pt status bar and a 34pt home strip. WebKit
+specifics (real inset values per orientation, Safari's own swipe-back) still need a real iPhone.

@@ -54,7 +54,7 @@ export function CountryToggle({
             key={slug}
             href={countryUrlPrefix(slug) || "/"}
             aria-current={isActive ? "page" : undefined}
-            className={`rounded-full px-3 py-1.5 font-medium transition-colors ${
+            className={`inline-flex min-h-11 items-center rounded-full px-3 font-medium transition-colors md:min-h-0 md:py-1.5 ${
               isActive
                 ? "bg-accent text-accent-foreground"
                 : "text-foreground/70 hover:bg-surface-muted hover:text-foreground"

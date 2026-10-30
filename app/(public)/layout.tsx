@@ -1,5 +1,6 @@
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { BottomTabBar } from "@/components/bottom-tab-bar";
 import { PageTransition } from "@/components/page-transition";
 
 export default function PublicLayout({
@@ -12,6 +13,7 @@ export default function PublicLayout({
         <PageTransition>{children}</PageTransition>
       </main>
       <SiteFooter />
+      <BottomTabBar />
     </>
   );
 }

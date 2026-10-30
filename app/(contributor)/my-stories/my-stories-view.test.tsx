@@ -109,6 +109,100 @@ describe("MyStoriesView", () => {
     ).toHaveAttribute("href", "/my-stories/map");
   });
 
+  describe("phone layout", () => {
+    it("pairs New Story and Import in one two-column row, apart from the secondary links", () => {
+      render(<MyStoriesView stories={[makeStory()]} />);
+
+      const newStory = screen.getByRole("link", { name: "New Story" });
+      const importLink = screen.getByRole("link", { name: "Import" });
+      const row = newStory.parentElement!;
+      expect(importLink.parentElement).toBe(row);
+      expect(row.className).toContain("grid-cols-2");
+      // The secondary links and the view toggle share ONE scrolling pill row.
+      const folders = screen.getByRole("link", { name: "Open story folders" });
+      const strip = folders.parentElement!;
+      expect(strip).not.toBe(row);
+      // The pair leads the header in DOM order too, so focus and screen
+      // readers meet it where a phone draws it; sm:order-last restores the
+      // desktop row.
+      expect(
+        row.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(row.className).toContain("sm:order-last");
+      expect(strip.className).toContain("overflow-x-auto");
+      expect(strip.className).toContain("snap-x");
+      expect(strip.className).toContain("nf-scroll-x");
+      for (const name of ["Open journey map", "My Photos"]) {
+        expect(screen.getByRole("link", { name }).parentElement).toBe(strip);
+      }
+      expect(screen.getByRole("group", { name: "View" }).parentElement).toBe(
+        strip,
+      );
+    });
+
+    it("keeps each secondary pill on one line so none wrap to three", () => {
+      render(<MyStoriesView stories={[makeStory()]} />);
+      for (const name of [
+        "Open story folders",
+        "Open journey map",
+        "My Photos",
+      ]) {
+        const link = screen.getByRole("link", { name });
+        expect(link.className).toContain("whitespace-nowrap");
+        expect(link.className).toContain("shrink-0");
+        expect(link.className).toContain("min-h-11");
+      }
+    });
+
+    it("gives the grid/list toggle 44px buttons", () => {
+      render(<MyStoriesView stories={[makeStory()]} />);
+      for (const name of ["Grid view", "List view"]) {
+        const button = screen.getByRole("button", { name });
+        expect(button.className).toContain("h-11");
+        expect(button.className).toContain("w-11");
+      }
+    });
+
+    it("slides the toggle's selected pill rather than swapping fills", async () => {
+      const user = userEvent.setup();
+      render(<MyStoriesView stories={[makeStory()]} />);
+      const group = screen.getByRole("group", { name: "View" });
+      const thumb = group.querySelector("span[aria-hidden='true']")!;
+      expect(thumb.className).toContain("translate-x-full"); // list is default
+      expect(thumb.className).toContain("motion-reduce:transition-none");
+
+      await user.click(screen.getByRole("button", { name: "Grid view" }));
+      expect(thumb.className).toContain("translate-x-0");
+    });
+
+    it("gives the per-story icon actions a 44px box", () => {
+      render(
+        <MyStoriesView stories={[makeStory({ lifecycle_status: "draft" })]} />,
+      );
+      const edit = screen.getByRole("link", { name: /^Edit / });
+      expect(edit.className).toContain("h-11");
+      expect(edit.className).toContain("w-11");
+      expect(edit.className).toContain("press");
+    });
+
+    it("makes the whole row (and grid card) one link via the title", () => {
+      const { unmount } = render(<MyStoriesView stories={[makeStory()]} />);
+      const rowTitle = screen.getByRole("link", {
+        name: "Picking apples in Hawke's Bay",
+      });
+      expect(rowTitle.className).toContain("after:inset-0");
+      unmount();
+
+      store["kaki-my-stories-view"] = "grid";
+      render(<MyStoriesView stories={[makeStory()]} />);
+      const cardTitle = screen.getByRole("link", {
+        name: "Picking apples in Hawke's Bay",
+      });
+      expect(cardTitle.className).toContain("after:inset-0");
+      expect(cardTitle).toHaveAttribute("href");
+    });
+  });
+
   it("defaults to list view when nothing is stored", () => {
     render(<MyStoriesView stories={[makeStory()]} />);
 

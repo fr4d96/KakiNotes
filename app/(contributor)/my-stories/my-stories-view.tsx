@@ -41,6 +41,11 @@ export { ACTION_ICON_CLASS };
 
 type ViewMode = "grid" | "list";
 
+// The header's secondary links: full pills at the 44px touch minimum, kept on
+// one line so a long label scrolls in the phone pill row instead of wrapping.
+const SECONDARY_PILL_CLASS =
+  "press inline-flex min-h-11 shrink-0 snap-start items-center rounded-full border border-border-subtle px-4 text-sm font-medium whitespace-nowrap";
+
 const VIEW_STORAGE_KEY = "kaki-my-stories-view";
 
 /**
@@ -647,9 +652,19 @@ function StoryGrid({
         const title = story.title ?? t("untitled");
         const href = primaryStoryHref(story);
         return (
-          <li key={story.id}>
+          <li
+            key={story.id}
+            className="relative transition-transform duration-150 ease-out motion-safe:has-[a[data-card-link]:active]:scale-[0.97]"
+          >
+            {/* The title link's ::after stretches over the whole card (cover,
+                title, status), so the card is one big tap target and presses
+                as one (the has() scale above, same dip as .press); the cover
+                link is a duplicate of it and the action row sits above the
+                overlay (relative z-10). */}
             <Link
               href={href}
+              tabIndex={-1}
+              aria-hidden="true"
               className="relative block aspect-square overflow-hidden rounded-md border border-border-subtle"
             >
               <StoryCoverThumbnail
@@ -675,13 +690,19 @@ function StoryGrid({
               </div>
             </Link>
             <div className="mt-2">
-              <p className="truncate text-sm font-medium">{title}</p>
+              <Link
+                href={href}
+                data-card-link=""
+                className="block truncate text-sm font-medium after:absolute after:inset-0 after:content-['']"
+              >
+                {title}
+              </Link>
               {updateInFlight && (
                 <p className="mt-1">
                   <UpdateChip inReview={inReview} />
                 </p>
               )}
-              <div className="-ml-1.5 mt-1 flex flex-wrap items-center">
+              <div className="relative z-10 -ml-3 mt-0.5 flex flex-wrap items-center md:-ml-1.5 md:mt-1">
                 {editable && (
                   <ActionIconLink
                     href={`/stories/${story.id}/edit`}
@@ -782,7 +803,10 @@ function StoryList({
         const title = story.title ?? t("untitled");
         const href = primaryStoryHref(story);
         return (
-          <li key={story.id} className="nf-entry">
+          <li
+            key={story.id}
+            className="nf-entry has-[a[data-card-link]:active]:bg-accent/10"
+          >
             {/* One grid, two shapes. Mobile: [thumb | stacked content],
             numeral hidden (display:none claims no track). From sm up
             the inner wrapper becomes `display: contents` so its
@@ -811,9 +835,13 @@ function StoryList({
               <div className="sm:contents">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
+                    {/* ::after stretches this link over the whole row (the
+                        li is .nf-entry, already position: relative), so the
+                        row is one tap target; the action icons sit above it. */}
                     <Link
                       href={href}
-                      className="font-medium hover:text-accent hover:underline underline-offset-2"
+                      data-card-link=""
+                      className="font-medium underline-offset-2 after:absolute after:inset-0 after:content-[''] hover:text-accent hover:underline"
                     >
                       {title}
                     </Link>
@@ -832,7 +860,7 @@ function StoryList({
                   )}
                 </div>
 
-                <div className="-ml-1.5 mt-1 flex items-center sm:mt-0">
+                <div className="relative z-10 -ml-3 mt-0.5 flex items-center sm:mt-0 md:-ml-1.5">
                   {editable && (
                     <ActionIconLink
                       href={`/stories/${story.id}/edit`}
@@ -1006,73 +1034,87 @@ export function MyStoriesView({
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="journiq-heading text-[2.4rem]">{t("title")}</h1>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/my-stories/map"
-            className="rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium"
-          >
-            {t("storyMapLink")}
-          </Link>
-          <Link
-            href="/my-stories/journey"
-            className="rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium"
-          >
-            {t("journeyLink")}
-          </Link>
-          <Link
-            href="/my-photos"
-            className="rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium"
-          >
-            {t("myPhotosLink")}
-          </Link>
-          {stories.length > 0 && (
-            <div
-              role="group"
-              aria-label={t("viewLabel")}
-              className="flex rounded-md border border-border-subtle p-0.5"
+        {/* Phone: two stacked rows -- New Story + Import as a full-width pair
+            on top (the primary actions), then the secondary links and the
+            grid/list toggle as ONE horizontally scrolling pill row beneath
+            (scroll-snap, no scrollbar, faded edges). From sm up both fold
+            back into the single row they always were. DOM order is the
+            phone reading order (primary pair first, so focus and screen
+            readers meet it where it is drawn); from sm up `sm:order-last`
+            moves the pair back to the end of the row. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="grid grid-cols-2 gap-3 sm:order-last sm:flex sm:items-center">
+            <Link
+              href="/stories/new/import"
+              className="journiq-button border border-border-subtle bg-transparent text-foreground"
             >
-              <button
-                type="button"
-                onClick={() => changeView("grid")}
-                aria-pressed={view === "grid"}
-                aria-label={t("gridView")}
-                title={t("gridView")}
-                className={`rounded px-2 py-1.5 ${
-                  view === "grid"
-                    ? "bg-surface-muted text-foreground"
-                    : "text-foreground/60 hover:bg-surface-muted/60"
-                }`}
+              {t("import")}
+            </Link>
+            <Link
+              href="/stories/new"
+              className="journiq-button bg-accent text-accent-foreground"
+            >
+              {t("newStory")}
+            </Link>
+          </div>
+          <div className="nf-scroll-x -mx-4 -my-2 flex snap-x snap-proximity scroll-px-4 items-center gap-2 overflow-x-auto px-4 py-2 [mask-image:linear-gradient(to_right,transparent,#000_1rem,#000_calc(100%_-_1rem),transparent)] sm:m-0 sm:snap-none sm:gap-3 sm:overflow-visible sm:p-0 sm:[mask-image:none]">
+            <Link href="/my-stories/map" className={SECONDARY_PILL_CLASS}>
+              {t("storyMapLink")}
+            </Link>
+            <Link href="/my-stories/journey" className={SECONDARY_PILL_CLASS}>
+              {t("journeyLink")}
+            </Link>
+            <Link href="/my-photos" className={SECONDARY_PILL_CLASS}>
+              {t("myPhotosLink")}
+            </Link>
+            {stories.length > 0 && (
+              <div
+                role="group"
+                aria-label={t("viewLabel")}
+                className="relative isolate flex shrink-0 snap-start rounded-full border border-border-subtle p-0.5"
               >
-                <GridIcon />
-              </button>
-              <button
-                type="button"
-                onClick={() => changeView("list")}
-                aria-pressed={view === "list"}
-                aria-label={t("listView")}
-                title={t("listView")}
-                className={`rounded px-2 py-1.5 ${
-                  view === "list"
-                    ? "bg-surface-muted text-foreground"
-                    : "text-foreground/60 hover:bg-surface-muted/60"
-                }`}
-              >
-                <ListIcon />
-              </button>
-            </div>
-          )}
-          <Link
-            href="/stories/new/import"
-            className="journiq-button border border-border-subtle bg-transparent text-foreground"
-          >
-            {t("import")}
-          </Link>
-          <Link
-            href="/stories/new"
-            className="journiq-button bg-accent text-accent-foreground"
-          >
-            {t("newStory")}
-          </Link>
+                {/* The selected pill slides between the two buttons (a
+                    transform, so it costs nothing to paint) instead of
+                    swapping background colours. It is exactly one button
+                    wide: the group's padding box is two buttons plus the
+                    2px padding either side. */}
+                <span
+                  aria-hidden="true"
+                  className={`absolute inset-y-0.5 left-0.5 -z-10 w-[calc(50%-0.125rem)] rounded-full bg-surface-muted transition-transform duration-200 ease-out motion-reduce:transition-none ${
+                    view === "list" ? "translate-x-full" : "translate-x-0"
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => changeView("grid")}
+                  aria-pressed={view === "grid"}
+                  aria-label={t("gridView")}
+                  title={t("gridView")}
+                  className={`press flex h-11 w-11 items-center justify-center rounded-full sm:h-9 sm:w-9 ${
+                    view === "grid"
+                      ? "text-foreground"
+                      : "text-foreground/60 hover:text-foreground"
+                  }`}
+                >
+                  <GridIcon />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => changeView("list")}
+                  aria-pressed={view === "list"}
+                  aria-label={t("listView")}
+                  title={t("listView")}
+                  className={`press flex h-11 w-11 items-center justify-center rounded-full sm:h-9 sm:w-9 ${
+                    view === "list"
+                      ? "text-foreground"
+                      : "text-foreground/60 hover:text-foreground"
+                  }`}
+                >
+                  <ListIcon />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

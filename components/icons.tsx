@@ -78,6 +78,29 @@ export function ContributorIcon(props: IconProps) {
   );
 }
 
+/** A house outline — the Home tab. */
+export function HomeIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M4 10.5 12 4l8 6.5" />
+      <path d="M5.75 9.5V19.5h12.5V9.5" />
+      <path d="M10 19.5v-5h4v5" />
+    </svg>
+  );
+}
+
+/** Two people — the Contributors tab. */
+export function UsersIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="9" cy="8.5" r="3" />
+      <path d="M3.5 19c0-3.04 2.46-5.5 5.5-5.5s5.5 2.46 5.5 5.5" />
+      <path d="M15.5 5.75a3 3 0 0 1 0 5.5" />
+      <path d="M17 13.75c2.07.5 3.5 2.3 3.5 4.75" />
+    </svg>
+  );
+}
+
 /** Blockquote — one of the story content block types. */
 export function QuoteBlockIcon(props: IconProps) {
   return (
