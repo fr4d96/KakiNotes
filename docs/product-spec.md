@@ -99,7 +99,13 @@ Moderators are not the same role as editors, even though one person may hold bot
 Explicitly out of scope for MVP — do not build:
 
 - Audio or video stories, or transcription of either.
-- Comments, likes, following, messaging, or any social/feed mechanic.
+- Comments, likes, following, messaging, or any social/feed mechanic. **Overridden narrowly for
+  private affirmation notes, 2026-10-31** (owner decision, recorded in
+  [docs/implementation-status.md](implementation-status.md)): a signed-in contributor may create
+  share links, and anyone holding a link may leave that contributor a short, private note of
+  encouragement. The notes are readable only by the link owner (and admins), and are never public,
+  indexed, moderated or shown to readers. No replies, likes, threads, feeds or public comments; this
+  is not a reopening of social features in general.
 - Live job listings.
 - Budgeting tools.
 - Preparation checklists.

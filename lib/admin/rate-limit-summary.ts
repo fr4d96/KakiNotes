@@ -11,6 +11,9 @@ import {
   PDF_ATTACH_LIMIT,
   PDF_PREVIEW_LIMIT,
   PDF_IMPORT_WINDOW_SECONDS,
+  AFFIRMATION_IP_LIMIT,
+  AFFIRMATION_TOKEN_LIMIT,
+  AFFIRMATION_WINDOW_SECONDS,
 } from "@/lib/rate-limit-config";
 
 /**
@@ -117,6 +120,24 @@ export function rateLimitRows(): RateLimitRow[] {
       limit: PDF_ATTACH_LIMIT,
       windowMinutes: minutes(PDF_IMPORT_WINDOW_SECONDS),
       whenExceeded: HTTP_429,
+    },
+    {
+      key: "affirmation-ip",
+      surface: "Affirmation notes",
+      scope: "per IP address",
+      counts: "every request",
+      limit: AFFIRMATION_IP_LIMIT,
+      windowMinutes: minutes(AFFIRMATION_WINDOW_SECONDS),
+      whenExceeded: TELLS_YOU,
+    },
+    {
+      key: "affirmation-token",
+      surface: "Affirmation notes",
+      scope: "per share link",
+      counts: "every request",
+      limit: AFFIRMATION_TOKEN_LIMIT,
+      windowMinutes: minutes(AFFIRMATION_WINDOW_SECONDS),
+      whenExceeded: TELLS_YOU,
     },
   ];
 }

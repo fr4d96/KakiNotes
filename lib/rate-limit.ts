@@ -15,6 +15,9 @@ import {
   PDF_IMPORT_WINDOW_SECONDS,
   PDF_PREVIEW_LIMIT,
   PDF_ATTACH_LIMIT,
+  AFFIRMATION_WINDOW_SECONDS,
+  AFFIRMATION_IP_LIMIT,
+  AFFIRMATION_TOKEN_LIMIT,
 } from "@/lib/rate-limit-config";
 
 // Re-exported so every existing `from "@/lib/rate-limit"` import keeps
@@ -33,6 +36,9 @@ export {
   PDF_IMPORT_WINDOW_SECONDS,
   PDF_PREVIEW_LIMIT,
   PDF_ATTACH_LIMIT,
+  AFFIRMATION_WINDOW_SECONDS,
+  AFFIRMATION_IP_LIMIT,
+  AFFIRMATION_TOKEN_LIMIT,
 };
 
 /**
@@ -121,7 +127,9 @@ type Bucket =
   | "signup_ip"
   | "signup_email"
   | "pdf_preview_user"
-  | "pdf_attach_user";
+  | "pdf_attach_user"
+  | "affirmation_ip"
+  | "affirmation_token";
 
 async function checkBucket(
   scope: Bucket,
@@ -450,6 +458,71 @@ export async function recordPdfImportAttempt(
       p_key_hash: hashKey(scope, userId),
       p_window_seconds: PDF_IMPORT_WINDOW_SECONDS,
     });
+  } catch {
+    // Fail open, same as every other counter here.
+  }
+}
+
+/**
+ * Affirmation-note limits (anonymous submissions through a share link).
+ *
+ * Counts EVERY submission, like signup: the row is written when the call
+ * SUCCEEDS. Two buckets, checked IP first so one source runs out of its own
+ * allowance before it can touch the per-link one:
+ *
+ * - per IP (10 / hour): the defence against one source flooding notes
+ *   across any number of links. Skipped when the address is unknown (local
+ *   development), as for every other IP bucket here.
+ * - per link token (30 / hour): stops a link being flooded from many
+ *   addresses. The key is the hash of the token the VISITOR supplied, valid
+ *   or not, so the throttle itself cannot be used to tell whether a token
+ *   exists.
+ *
+ * Keys are hashed before leaving this process, so the table holds neither
+ * an address nor a token. Fails open like every other limiter here.
+ */
+export async function checkAffirmationRateLimit(
+  token: string,
+): Promise<RateLimitVerdict> {
+  try {
+    const ip = await clientIp();
+    if (ip) {
+      const verdict = await checkBucket(
+        "affirmation_ip",
+        hashKey("affirmation_ip", ip),
+        AFFIRMATION_IP_LIMIT,
+        AFFIRMATION_WINDOW_SECONDS,
+      );
+      if (!verdict.allowed) return verdict;
+    }
+
+    return await checkBucket(
+      "affirmation_token",
+      hashKey("affirmation_token", token),
+      AFFIRMATION_TOKEN_LIMIT,
+      AFFIRMATION_WINDOW_SECONDS,
+    );
+  } catch {
+    return ALLOWED;
+  }
+}
+
+export async function recordAffirmationAttempt(token: string): Promise<void> {
+  try {
+    const supabase = await createClient();
+    const ip = await clientIp();
+
+    const record = (scope: Bucket, keyHash: string) =>
+      supabase.rpc("record_rate_limit_attempt", {
+        p_scope: scope,
+        p_key_hash: keyHash,
+        p_window_seconds: AFFIRMATION_WINDOW_SECONDS,
+      });
+
+    await Promise.all([
+      ...(ip ? [record("affirmation_ip", hashKey("affirmation_ip", ip))] : []),
+      record("affirmation_token", hashKey("affirmation_token", token)),
+    ]);
   } catch {
     // Fail open, same as every other counter here.
   }

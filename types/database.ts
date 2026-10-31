@@ -14,6 +14,68 @@ export type Database = {
   };
   public: {
     Tables: {
+      affirmation_links: {
+        Row: {
+          created_at: string;
+          id: string;
+          is_active: boolean;
+          label: string | null;
+          owner_id: string;
+          token: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          is_active?: boolean;
+          label?: string | null;
+          owner_id: string;
+          token: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          is_active?: boolean;
+          label?: string | null;
+          owner_id?: string;
+          token?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      affirmation_notes: {
+        Row: {
+          author_name: string | null;
+          body: string;
+          created_at: string;
+          id: string;
+          link_id: string;
+        };
+        Insert: {
+          author_name?: string | null;
+          body: string;
+          created_at?: string;
+          id?: string;
+          link_id: string;
+        };
+        Update: {
+          author_name?: string | null;
+          body?: string;
+          created_at?: string;
+          id?: string;
+          link_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "affirmation_notes_link_id_fkey";
+            columns: ["link_id"];
+            isOneToOne: false;
+            referencedRelation: "affirmation_links";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       contributor_drive_connections: {
         Row: {
           created_at: string;
@@ -2136,6 +2198,16 @@ export type Database = {
         }[];
       };
       count_my_unread_notifications: { Args: never; Returns: number };
+      create_affirmation_link: {
+        Args: { p_label?: string };
+        Returns: {
+          created_at: string;
+          id: string;
+          is_active: boolean;
+          label: string;
+          token: string;
+        }[];
+      };
       create_editorial_import_draft: {
         Args: {
           p_assigned_editor_id?: string;
@@ -2248,6 +2320,13 @@ export type Database = {
         Args: { p_run_id: string };
         Returns: {
           story_id: string;
+        }[];
+      };
+      get_affirmation_link_for_writing: {
+        Args: { p_token: string };
+        Returns: {
+          label: string;
+          recipient_name: string;
         }[];
       };
       get_consent_terms_version: {
@@ -2770,6 +2849,28 @@ export type Database = {
           version: number;
         }[];
       };
+      list_my_affirmation_links: {
+        Args: never;
+        Returns: {
+          created_at: string;
+          id: string;
+          is_active: boolean;
+          label: string;
+          note_count: number;
+          token: string;
+        }[];
+      };
+      list_my_affirmation_notes: {
+        Args: { p_limit?: number };
+        Returns: {
+          author_name: string;
+          body: string;
+          created_at: string;
+          id: string;
+          link_id: string;
+          link_label: string;
+        }[];
+      };
       list_my_drive_move_cleanup_due: {
         Args: never;
         Returns: {
@@ -3259,6 +3360,10 @@ export type Database = {
       };
       set_story_parent: {
         Args: { p_parent_id: string; p_story_id: string };
+        Returns: undefined;
+      };
+      submit_affirmation_note: {
+        Args: { p_author_name?: string; p_body: string; p_token: string };
         Returns: undefined;
       };
       submit_revision_with_consent: {

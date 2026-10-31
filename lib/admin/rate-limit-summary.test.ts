@@ -23,6 +23,10 @@ describe("rateLimitRows", () => {
     expect(byKey["sign-up-ip"].limit).toBe(limits.SIGN_UP_IP_LIMIT);
     expect(byKey["pdf-preview"].limit).toBe(limits.PDF_PREVIEW_LIMIT);
     expect(byKey["pdf-attach"].limit).toBe(limits.PDF_ATTACH_LIMIT);
+    expect(byKey["affirmation-ip"].limit).toBe(limits.AFFIRMATION_IP_LIMIT);
+    expect(byKey["affirmation-token"].limit).toBe(
+      limits.AFFIRMATION_TOKEN_LIMIT,
+    );
   });
 
   it("converts each window to whole minutes from the real seconds", () => {
@@ -50,6 +54,8 @@ describe("rateLimitRows", () => {
         .map((r) => r.key)
         .sort(),
     ).toEqual([
+      "affirmation-ip",
+      "affirmation-token",
       "pdf-attach",
       "pdf-preview",
       "reset-email",
@@ -78,6 +84,8 @@ describe("rateLimitRows", () => {
       "sign-up-ip",
       "pdf-preview",
       "pdf-attach",
+      "affirmation-ip",
+      "affirmation-token",
     ]) {
       expect(byKey[key].counts).toBe("every request");
     }

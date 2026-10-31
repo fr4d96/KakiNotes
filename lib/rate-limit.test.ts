@@ -31,6 +31,11 @@ const {
   SIGN_UP_WINDOW_SECONDS,
   checkPdfImportRateLimit,
   recordPdfImportAttempt,
+  checkAffirmationRateLimit,
+  recordAffirmationAttempt,
+  AFFIRMATION_IP_LIMIT,
+  AFFIRMATION_TOKEN_LIMIT,
+  AFFIRMATION_WINDOW_SECONDS,
   tooManyRequestsResponse,
   PDF_PREVIEW_LIMIT,
   PDF_ATTACH_LIMIT,
@@ -468,6 +473,79 @@ describe("PDF import limits", () => {
     expect(mockRpc.mock.calls[0][1]).toMatchObject({
       p_scope: "pdf_attach_user",
     });
+  });
+});
+
+describe("affirmation-note limits", () => {
+  const token = "a".repeat(64);
+
+  it("checks the IP bucket first, then the token's, with their own limits", async () => {
+    mockRpc.mockResolvedValue(allow);
+    await checkAffirmationRateLimit(token);
+
+    expect(mockRpc).toHaveBeenCalledTimes(2);
+    expect(mockRpc.mock.calls[0][1]).toMatchObject({
+      p_scope: "affirmation_ip",
+      p_limit: AFFIRMATION_IP_LIMIT,
+      p_window_seconds: AFFIRMATION_WINDOW_SECONDS,
+    });
+    expect(mockRpc.mock.calls[1][1]).toMatchObject({
+      p_scope: "affirmation_token",
+      p_limit: AFFIRMATION_TOKEN_LIMIT,
+      p_window_seconds: AFFIRMATION_WINDOW_SECONDS,
+    });
+  });
+
+  it("short-circuits when the IP bucket is spent", async () => {
+    mockRpc.mockResolvedValueOnce(deny(900));
+    await expect(checkAffirmationRateLimit(token)).resolves.toEqual({
+      allowed: false,
+      retryAfterSeconds: 900,
+    });
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks on the token bucket and reports the retry time", async () => {
+    mockRpc.mockResolvedValueOnce(allow).mockResolvedValueOnce(deny(120));
+    await expect(checkAffirmationRateLimit(token)).resolves.toEqual({
+      allowed: false,
+      retryAfterSeconds: 120,
+    });
+  });
+
+  it("skips the IP bucket when the address is unknown", async () => {
+    mockHeaders.mockResolvedValue(headerMap({}));
+    mockRpc.mockResolvedValue(allow);
+    await checkAffirmationRateLimit(token);
+
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+    expect(mockRpc.mock.calls[0][1].p_scope).toBe("affirmation_token");
+  });
+
+  it("never sends the raw token or address to the database", async () => {
+    mockRpc.mockResolvedValue(allow);
+    await checkAffirmationRateLimit(token);
+    await recordAffirmationAttempt(token);
+
+    const sent = JSON.stringify(mockRpc.mock.calls);
+    expect(sent).not.toContain(token);
+    expect(sent).not.toContain("203.0.113.9");
+  });
+
+  it("fails OPEN on a returned error", async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: "nope" } });
+    await expect(checkAffirmationRateLimit(token)).resolves.toEqual({
+      allowed: true,
+    });
+  });
+
+  it("records one attempt against each bucket", async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null });
+    await recordAffirmationAttempt(token);
+
+    const scopes = mockRpc.mock.calls.map((call) => call[1].p_scope).sort();
+    expect(scopes).toEqual(["affirmation_ip", "affirmation_token"]);
+    expect(mockRpc.mock.calls[0][0]).toBe("record_rate_limit_attempt");
   });
 });
 
