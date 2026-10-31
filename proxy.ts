@@ -57,6 +57,11 @@ const PROTECTED_PATHS = [
   // rows. So it belongs here with the ordinary session-protected routes,
   // not with the STAFF_* patterns below.
   "/notifications",
+  // The owner's private affirmation-notes inbox (signed-in only, not
+  // role-gated; both reads are RLS-scoped to the caller). The PUBLIC writing
+  // page, /notes/:token, is deliberately NOT here or in the matcher: it is
+  // anonymous by design and never touches a session.
+  "/affirmations",
 ];
 // Dynamic authoring routes added in Prompt 4 Sub-phase 3 — /stories/:id/edit
 // (plus its nested upload Route Handler) and /stories/:id/preview both
@@ -555,6 +560,7 @@ export const config = {
     "/stories/new/:path*",
     "/account/:path*",
     "/notifications",
+    "/affirmations",
     "/stories/:id/edit/:path*",
     "/stories/:id/preview/:path*",
     // Route Handler, so it is deliberately NOT added to the exact-match

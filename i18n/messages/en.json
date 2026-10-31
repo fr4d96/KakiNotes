@@ -74,7 +74,8 @@
     "staff": "Staff",
     "myPhotos": "My Photos",
     "home": "Home",
-    "tabBar": "Quick navigation"
+    "tabBar": "Quick navigation",
+    "affirmations": "Affirmation notes"
   },
   "footer": {
     "tagline": "A storytelling community for honest working-holiday experiences across Aotearoa New Zealand.",
@@ -200,6 +201,13 @@
     },
     "drive": {
       "confirmationRequired": "Tick the box to confirm before disconnecting."
+    },
+    "affirmation": {
+      "bodyRequired": "Write a few words before sending.",
+      "bodyTooLong": "Notes can be up to {max} characters.",
+      "authorNameTooLong": "A name can be up to {max} characters.",
+      "labelTooLong": "A link name can be up to {max} characters.",
+      "tokenInvalid": "That link isn't valid."
     }
   },
   "stories": {
@@ -1404,6 +1412,77 @@
       "personalExperienceLabel": "One person's experience, not advice.",
       "madeFor": "Made for travellers exploring China",
       "placeExample": "Guangzhou"
+    }
+  },
+  "affirmations": {
+    "metaTitle": "Affirmation notes",
+    "title": "Affirmation notes",
+    "intro": "Make a link and send it to friends, family or people you travelled with. Anyone with it can leave you a short, kind note. Only you can read them; nothing here is ever public.",
+    "links": {
+      "heading": "Your links",
+      "labelLabel": "Name this link (optional)",
+      "labelPlaceholder": "e.g. Family chat",
+      "create": "Create link",
+      "creating": "Creating…",
+      "empty": "No links yet. Create one, then send it to people who might like to say something kind.",
+      "untitled": "Untitled link",
+      "noteCount": "{count, plural, one {1 note} other {# notes}}",
+      "statusOn": "Accepting notes",
+      "statusOff": "Switched off",
+      "on": "On",
+      "off": "Off",
+      "toggleLabel": "Accept notes on {name}",
+      "urlLabel": "Address of {name}",
+      "copy": "Copy link",
+      "copied": "Copied",
+      "share": "Share",
+      "rename": "Rename",
+      "save": "Save",
+      "saving": "Saving…",
+      "delete": "Delete",
+      "deleteTitle": "Delete this link?",
+      "deleteBody": "The link stops working straight away, and {count, plural, =0 {it has no notes} one {its 1 note is deleted too} other {its # notes are deleted too}}. This can't be undone."
+    },
+    "notes": {
+      "heading": "Notes for you",
+      "empty": "No notes yet. When someone writes to you through one of your links, it shows up here.",
+      "viaLink": "via {label}",
+      "viaUntitled": "via an untitled link",
+      "delete": "Delete",
+      "deleteTitle": "Delete this note?",
+      "deleteBody": "It will be gone for good."
+    },
+    "share": {
+      "title": "Leave me a note",
+      "text": "I'd love a short, kind note from you."
+    },
+    "errors": {
+      "linkLimit": "You can have up to {max} links. Delete one to make another.",
+      "createFailed": "We couldn't create that link. Please try again.",
+      "updateFailed": "We couldn't save that change. Please try again.",
+      "deleteFailed": "We couldn't delete that. Please try again."
+    }
+  },
+  "affirmationWrite": {
+    "metaTitle": "Leave a note",
+    "metaDescription": "Write a short, private note of encouragement.",
+    "headingNamed": "Leave a note for {name}",
+    "headingNeutral": "Leave a note of encouragement",
+    "intro": "Write something kind. Only the person who shared this link will ever read it, and it won't be posted anywhere.",
+    "bodyLabel": "Your note",
+    "bodyPlaceholder": "What would you like them to know?",
+    "characterCount": "{count} / {max}",
+    "nameLabel": "Your name (optional)",
+    "nameHint": "Leave it blank to send your note anonymously.",
+    "honeypotLabel": "Leave this field empty",
+    "send": "Send note",
+    "sending": "Sending…",
+    "privacyNote": "Notes are private and plain text. Please keep it kind.",
+    "thanksTitle": "Thank you",
+    "thanksBody": "Your note has been sent. It will mean a lot.",
+    "errors": {
+      "sendFailed": "We couldn't send your note. Please try again in a little while.",
+      "rateLimited": "Too many notes have been sent recently. Please try again in about {minutes, plural, one {# minute} other {# minutes}}."
     }
   }
 }

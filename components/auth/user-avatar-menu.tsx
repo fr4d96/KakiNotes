@@ -23,6 +23,7 @@ import { staffMenuItemsForRole } from "@/lib/auth/staff-menu";
 const authoringItems = [
   { href: "/my-stories", key: "myStories" },
   { href: "/my-photos", key: "myPhotos" },
+  { href: "/affirmations", key: "affirmations" },
   { href: "/stories/new", key: "newStory" },
 ] as const;
 

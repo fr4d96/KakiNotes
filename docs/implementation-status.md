@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-31 (home page redesign: a short, app-style home with search, a swipeable latest-stories row, place tiles and the quiz behind one row, on `main`, uncommitted — see the entry at the end of this file); earlier, 2026-10-30 (pull to refresh now reloads the page, home page covers on phones, search as you type and keyword search, on `fix/pull-to-refresh-reload` — see the entry at the end of this file); earlier the same day (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+Last updated: 2026-10-31 (affirmation notes: private notes from share links, on `feat/affirmation-notes`; migration written but NOT yet applied — see the last entry in this file); earlier the same day (home page redesign: a short, app-style home with search, a swipeable latest-stories row, place tiles and the quiz behind one row, on `main`, uncommitted — see the entry at the end of this file); earlier, 2026-10-30 (pull to refresh now reloads the page, home page covers on phones, search as you type and keyword search, on `fix/pull-to-refresh-reload` — see the entry at the end of this file); earlier the same day (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
 one-level folder shape — a story is either a main story, a sub story filed under exactly one main
 story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
 "Move to…" select; migration applied to the dev project — see the entry at the end of this
@@ -11023,3 +11023,85 @@ Privacy, Terms, Guidelines and Copyright & Removal (44px tap height each), and t
 since the header, tab bar and home page already carry them. Desktop is unchanged. One markup for
 both shapes (`contents` on phones), so no link is duplicated. Tests in
 `components/site-footer.test.tsx`. Checked in the iPhone 17 frame on `/` and `/cn`, and at 1440px.
+
+## 2026-10-31 — Affirmation notes: private notes through a share link (branch `feat/affirmation-notes`)
+
+**Owner decision (2026-10-31): build this, despite the "comments / messaging / social" MVP non-goal.**
+The non-goal is overridden narrowly: a signed-in contributor can create share links, and anyone
+holding a link (no account) can leave that contributor a short, private note of encouragement. The
+notes are **never public, never indexed, never moderated and never shown to readers** — only the
+link owner (and admins, via RLS) can read them. It is not a comment system, a feed, a reply thread or
+a conversation: there is no reply, no like, no follow, nothing visible to anyone else. Recorded in
+[docs/product-spec.md](product-spec.md) next to the China override.
+
+**What was built.**
+
+- **Migration `supabase/migrations/20261031084021_affirmation_notes.sql` — WRITTEN, NOT APPLIED.**
+  Nothing has been pushed or run against any database (the hosted dev project is also production —
+  see memory). The parent session applies it, then runs `npm run supabase:types:linked`. It adds
+  `affirmation_links` and `affirmation_notes` (RLS on, closed to `anon`), five RPCs, and widens
+  `rate_limits_scope_known` with `affirmation_ip` / `affirmation_token`. **It has not been executed
+  anywhere** — there is no local Postgres/Docker on this machine — so the first apply is its first
+  run; read it once before pushing.
+  - Links: `create_affirmation_link(label)` (RPC-only creation, token and owner chosen by the
+    function, max 20 per owner, advisory lock against a double-click race); owner
+    SELECT/UPDATE/DELETE by RLS. `owner_id` and `token` are immutable through **column-level grants**
+    (`authenticated` holds UPDATE on `label, is_active` only), not a trigger.
+  - Tokens: 64 hex chars from two `gen_random_uuid()` values (~244 random bits), core Postgres, so no
+    pgcrypto/`extensions` schema dependency.
+  - Notes: no INSERT/UPDATE policy or grant. SELECT for the link owner or an admin; DELETE for the
+    link owner only. Body 1–1000 chars (trimmed), author name ≤ 60.
+  - Anonymous surface is exactly two `SECURITY DEFINER` RPCs: `get_affirmation_link_for_writing(token)`
+    (label + recipient name of an ACTIVE link, else no rows) and `submit_affirmation_note(token, body,
+name)` (raises `not_found` for unknown and switched-off alike). `recipient_name` is
+    `contributors.display_name` only when that contributor is `public_status = 'public'`, has a
+    public slug and is not `anonymous` (Engineering Rule 16); otherwise null and the page uses a
+    neutral heading. `profiles.display_name` is never read.
+  - Owner reads are `SECURITY INVOKER` RPCs (`list_my_affirmation_links`, `list_my_affirmation_notes`),
+    so RLS applies.
+- **Server code.** `lib/validation/affirmation.ts` (Zod, plain text, token shape);
+  `lib/affirmations/` (queries and row types — hand-written because `types/database.ts` does not
+  know the new objects yet; the RPCs go through `callUntypedRpc`, table writes through a new
+  `untypedMutableFrom` beside `untypedFrom`); owner actions in
+  `app/(contributor)/affirmations/actions.ts` (create, rename, switch on/off, delete link, delete
+  note — no owner id accepted from the client, ownership by RLS, "matched no row" reported as a
+  failure); the anonymous `submitAffirmationNoteAction` in `app/(public)/notes/[token]/actions.ts`
+  (honeypot field `website` → fake success with nothing inserted; Zod; rate limit; RPC; one generic
+  message for every failure after validation so it is not a token oracle).
+- **Rate limits** (`lib/rate-limit-config.ts`, `lib/rate-limit.ts`, shown in the admin Rate limits
+  table): `affirmation_ip` 10/hour and `affirmation_token` 30/hour, every submission counted,
+  fail-open like the others.
+- **Pages.** `/affirmations` (contributor area; "Your links" with create / copy / native share /
+  on-off switch / rename / delete-with-confirm, and "Notes for you", newest first, with delete-with-
+  confirm; entry point is the account menu, which is the phone sheet too — no new tab) and the public
+  `/notes/[token]` (inside `(public)`; heading with the contributor's public name or a neutral one,
+  textarea with live count, optional name, thank-you state; unknown/inactive token → `notFound()`).
+  Notes render as React text with `white-space: pre-wrap`, never HTML. `/notes/[token]` is
+  `noindex, nofollow, nocache`, `referrer: no-referrer`, with generic title/Open Graph; `/notes/` and
+  `/affirmations` are disallowed in `app/robots.ts`; the sitemap lists neither. `/affirmations` is in
+  `proxy.ts`' protected paths and matcher. English and Simplified Chinese copy.
+- **Tests.** Zod schemas, owner actions, the anonymous action (honeypot, rate-limit, generic-failure
+  branches), the writing form, the owner view, the limiter, the admin rate-limit table, `robots`
+  and the account-menu entry. `npm run verify` passes. Not run: Playwright, and any test against
+  a real database (the RLS integration suite has no affirmation cases yet).
+
+**Known gaps and risks.**
+
+- **Direct RPC calls bypass the app-level rate limit.** `submit_affirmation_note` is callable by
+  `anon` with the public key, so a script can skip the server action and its limiter. The DB bounds
+  each note's size and needs a valid active token, but there is no in-database throttle. If it is
+  abused, add a per-link count check inside the function.
+- A switched-off or unknown `/notes/<token>` shows the not-found page with HTTP 200 (the same
+  streamed-`notFound()` soft-404 documented for other pages); it is noindex and disallowed, so it
+  does not matter for crawlers. No `proxy.ts` existence check was added, to keep this page free of a
+  second anonymous lookup per request.
+- The link label is shown to the writer on the public page. It is the owner's own text, but they
+  should not put anything in it they would not want the recipient of the link to see.
+- No RLS integration tests yet for the new tables (owner-only reads, no anon table access, column
+  immutability). Worth adding to `tests/integration` once the migration is applied.
+- `lib/affirmations/types.ts` and `untypedMutableFrom` should be deleted in favour of generated types
+  after `npm run supabase:types:linked`.
+
+**Next.** Apply the migration, regenerate types, switch the call sites to typed access, add RLS
+integration cases, and try the flow end to end in the iPhone 17 frame (not yet looked at in a
+browser).

@@ -379,6 +379,26 @@ revision as a whole, exactly as they already do for `custom_destination_label` a
 the same "a revision is one unit" rule every other contributor-authored free-text field already
 follows.
 
+## Affirmation notes (private, outside the publication pipeline)
+
+Added 2026-10-31 (owner decision; see [docs/product-spec.md](product-spec.md) non-goals). A
+contributor can share a link that lets anyone, with no account, leave them a short plain-text note
+(1–1000 characters, optional name up to 60).
+
+- These notes are **not** stories or images and never enter the publication pipeline: no draft,
+  revision, consent, moderation or publication state. They are never public, never in any public
+  query, sitemap, metadata or preview, and the writing page is `noindex`/`nofollow` and disallowed in
+  `robots.txt`. Only the link owner (and admins, by RLS) can read a note; only the link owner can
+  delete one.
+- **Because nothing is moderated, nothing is shown to anyone but the person addressed.** Deleting a
+  note, switching a link off, or deleting a link (which deletes its notes) is the recipient's remedy
+  for an unkind one. There is no reporting flow for these notes yet; if unkind notes become a
+  pattern, revisit before adding any visibility beyond the owner.
+- Anonymous submission is throttled (per IP and per link) and has a honeypot. The writing page names
+  the recipient only if their contributor profile is already public (Engineering Rule 16).
+- Notes are plain text, rendered as text (Engineering Rule 7). No real contributor content is seeded
+  (Rule 22).
+
 ## Reporting
 
 - Any reader can report a published story or image for review (e.g. suspected impersonation, rights

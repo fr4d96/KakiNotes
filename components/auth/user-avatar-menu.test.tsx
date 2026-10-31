@@ -36,6 +36,9 @@ describe("UserAvatarMenu", () => {
       "href",
       "/stories/new",
     );
+    expect(
+      screen.getByRole("menuitem", { name: "Affirmation notes" }),
+    ).toHaveAttribute("href", "/affirmations");
     expect(screen.getByRole("menuitem", { name: "Account" })).toBeVisible();
     expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
   });

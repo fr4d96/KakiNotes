@@ -32,6 +32,7 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
   "/my-stories/journey": "myJourney.title",
   "/my-photos": "myPhotos.title",
   "/notifications": "notifications.title",
+  "/affirmations": "affirmations.title",
   "/account": "account.title",
   "/stories/new": "newStory.title",
   "/stories/new/import": "pdfImport.title",

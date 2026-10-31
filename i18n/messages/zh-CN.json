@@ -74,7 +74,8 @@
     "staff": "工作人员",
     "myPhotos": "我的照片",
     "home": "首页",
-    "tabBar": "快捷导航"
+    "tabBar": "快捷导航",
+    "affirmations": "鼓励便条"
   },
   "footer": {
     "tagline": "一个分享新西兰打工度假真实经历的故事社区。",
@@ -200,6 +201,13 @@
     },
     "drive": {
       "confirmationRequired": "请先勾选确认框，然后再断开连接。"
+    },
+    "affirmation": {
+      "bodyRequired": "发送前请先写几句话。",
+      "bodyTooLong": "便条最多 {max} 个字符。",
+      "authorNameTooLong": "名字最多 {max} 个字符。",
+      "labelTooLong": "链接名称最多 {max} 个字符。",
+      "tokenInvalid": "这个链接无效。"
     }
   },
   "stories": {
@@ -1404,6 +1412,77 @@
       "personalExperienceLabel": "个人经历分享，非专业建议。",
       "madeFor": "为在中国旅行的人而建",
       "placeExample": "广州"
+    }
+  },
+  "affirmations": {
+    "metaTitle": "鼓励便条",
+    "title": "鼓励便条",
+    "intro": "生成一个链接，发给朋友、家人或一起旅行过的人。拿到链接的人可以给你留一张简短而温暖的便条。只有你能看到，这里的内容永远不会公开。",
+    "links": {
+      "heading": "你的链接",
+      "labelLabel": "给链接起个名字（可选）",
+      "labelPlaceholder": "例如：家人群",
+      "create": "创建链接",
+      "creating": "正在创建…",
+      "empty": "还没有链接。创建一个，再发给想对你说句温暖话的人。",
+      "untitled": "未命名链接",
+      "noteCount": "{count, plural, other {# 张便条}}",
+      "statusOn": "正在接收便条",
+      "statusOff": "已关闭",
+      "on": "开",
+      "off": "关",
+      "toggleLabel": "接收「{name}」的便条",
+      "urlLabel": "「{name}」的链接地址",
+      "copy": "复制链接",
+      "copied": "已复制",
+      "share": "分享",
+      "rename": "重命名",
+      "save": "保存",
+      "saving": "正在保存…",
+      "delete": "删除",
+      "deleteTitle": "删除这个链接？",
+      "deleteBody": "链接会立即失效，{count, plural, =0 {它还没有便条} other {它的 # 张便条也会一并删除}}。此操作无法撤销。"
+    },
+    "notes": {
+      "heading": "给你的便条",
+      "empty": "还没有便条。有人通过你的链接给你留言后，会显示在这里。",
+      "viaLink": "来自「{label}」",
+      "viaUntitled": "来自未命名链接",
+      "delete": "删除",
+      "deleteTitle": "删除这张便条？",
+      "deleteBody": "删除后将无法找回。"
+    },
+    "share": {
+      "title": "给我留一张便条",
+      "text": "我很想收到你写的一张简短而温暖的便条。"
+    },
+    "errors": {
+      "linkLimit": "最多可以有 {max} 个链接。请先删除一个再创建。",
+      "createFailed": "无法创建这个链接，请再试一次。",
+      "updateFailed": "无法保存这项更改，请再试一次。",
+      "deleteFailed": "无法删除，请再试一次。"
+    }
+  },
+  "affirmationWrite": {
+    "metaTitle": "留下便条",
+    "metaDescription": "写一张简短的私人鼓励便条。",
+    "headingNamed": "给 {name} 留一张便条",
+    "headingNeutral": "留一张鼓励的便条",
+    "intro": "写点温暖的话吧。只有分享这个链接的人才能看到，也不会发布到任何地方。",
+    "bodyLabel": "你的便条",
+    "bodyPlaceholder": "你想让对方知道什么？",
+    "characterCount": "{count} / {max} 字",
+    "nameLabel": "你的名字（可选）",
+    "nameHint": "留空则匿名发送。",
+    "honeypotLabel": "请将此栏留空",
+    "send": "发送便条",
+    "sending": "正在发送…",
+    "privacyNote": "便条是私密的纯文本。请保持友善。",
+    "thanksTitle": "谢谢你",
+    "thanksBody": "你的便条已发送，对方会很开心。",
+    "errors": {
+      "sendFailed": "无法发送你的便条，请稍后再试。",
+      "rateLimited": "最近发送的便条太多了，请约 {minutes} 分钟后再试。"
     }
   }
 }

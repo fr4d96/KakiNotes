@@ -220,6 +220,7 @@ function isContributorArea(pathname: string | null): boolean {
     isWithin(pathname, "/my-photos") ||
     isWithin(pathname, "/account") ||
     isWithin(pathname, "/notifications") ||
+    isWithin(pathname, "/affirmations") ||
     isWithin(pathname, "/stories/new") ||
     /^\/stories\/[^/]+\/(edit|preview)(\/|$)/.test(pathname)
   );

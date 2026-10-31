@@ -39,3 +39,14 @@ export const SIGN_UP_EMAIL_LIMIT = 3;
 export const PDF_IMPORT_WINDOW_SECONDS = 60 * 60;
 export const PDF_PREVIEW_LIMIT = 20;
 export const PDF_ATTACH_LIMIT = 20;
+
+/**
+ * Affirmation notes (anonymous submissions through a share link): counts
+ * every submission. Per IP is the defence against one source flooding
+ * notes anywhere; per token stops a leaked or guessed-at link being
+ * flooded from many addresses. Generous for a shared NAT (a hostel, a
+ * workplace sharing a link in a group chat).
+ */
+export const AFFIRMATION_WINDOW_SECONDS = 60 * 60;
+export const AFFIRMATION_IP_LIMIT = 10;
+export const AFFIRMATION_TOKEN_LIMIT = 30;

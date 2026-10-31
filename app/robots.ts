@@ -15,6 +15,12 @@ export default function robots(): MetadataRoute.Robots {
         "/stories/*/edit",
         "/stories/*/preview",
         "/account",
+        // Affirmation notes: the owner's private inbox, and the writing
+        // pages, whose URL is a private capability (whoever holds the token
+        // can write a note) and must never be crawled. The pages are also
+        // noindex/nofollow and absent from the sitemap.
+        "/affirmations",
+        "/notes/",
         // Auth flows -- never useful to index, and some carry a `next`
         // query param that shouldn't be crawled/cached.
         "/sign-in",
