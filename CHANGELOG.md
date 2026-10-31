@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.0.0](https://github.com/fr4d96/KakiNotes/compare/v1.17.0...v2.0.0) (2026-10-31)
+
+
+### Features
+
+* **home:** shorter app-style home page and slim phone footer ([759de6c](https://github.com/fr4d96/KakiNotes/commit/759de6c77d60133716bc6ef96cf02702aca2ec2e))
+
+
+### Miscellaneous Chores
+
+* release 2.0.0 ([8c5da78](https://github.com/fr4d96/KakiNotes/commit/8c5da7813d12a59421741710028a9fab08411564))
+
 ## [1.17.0](https://github.com/fr4d96/KakiNotes/compare/v1.16.0...v1.17.0) (2026-10-30)
 
 ### Finding stories
