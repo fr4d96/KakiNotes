@@ -2,6 +2,17 @@
 
 ## [2.1.2](https://github.com/fr4d96/KakiNotes/compare/v2.1.1...v2.1.2) (2026-10-31)
 
+### Affirmation notes
+
+**A simpler page for the people writing to you.** When someone opens your link, they now see only your link's name, a box for their note and an optional box for their name. Nothing else is on the page.
+
+**No menus or site links.** The Kakinotes header, footer and bottom tabs are gone from this page, so friends can't wander off before they send their note.
+
+**Less text.** The "Leave a note for…" heading and the extra explanations are gone. The name you gave the link (like "Thrillzone Buddies") is now the page's title.
+
+**Your links still work.** The address of each link hasn't changed, so anything you've already shared opens the new page.
+
+
 
 ### Bug Fixes
 
