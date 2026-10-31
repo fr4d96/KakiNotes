@@ -1467,7 +1467,7 @@
     "metaTitle": "Leave a note",
     "metaDescription": "Write a short, private note of encouragement.",
     "bodyLabel": "Your note",
-    "bodyPlaceholder": "What would you like them to know?",
+    "bodyPlaceholder": "Leave a memorable message",
     "characterCount": "{count} / {max}",
     "nameLabel": "Your name (optional)",
     "honeypotLabel": "Leave this field empty",

@@ -1467,7 +1467,7 @@
     "metaTitle": "留下便条",
     "metaDescription": "写一张简短的私人鼓励便条。",
     "bodyLabel": "你的便条",
-    "bodyPlaceholder": "你想让对方知道什么？",
+    "bodyPlaceholder": "留下一段难忘的话",
     "characterCount": "{count} / {max} 字",
     "nameLabel": "你的名字（可选）",
     "honeypotLabel": "请将此栏留空",
