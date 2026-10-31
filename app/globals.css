@@ -1005,72 +1005,9 @@ svg g[role="button"]:focus-visible {
   }
 }
 
-/*
- * Depth-stacked "card stack" carousel (components/home/featured-story-stack.tsx).
- * The transform composes a base depth position (--stack-x/y/scale/rotate,
- * set inline per card by depth) with a live drag offset (--drag-x/rotate,
- * set inline only while that card is being dragged) -- Tailwind utilities
- * can't express that composed calc(), so it's hand-authored here.
- */
-.story-stack-card {
-  --stack-x: 0px;
-  --stack-y: 0px;
-  --stack-scale: 1;
-  --stack-rotate: 0deg;
-  --drag-x: 0px;
-  --drag-rotate: 0deg;
-  border-radius: 28px;
-  overflow: hidden;
-  box-shadow: var(--elevation-5);
-  transform-origin: 50% 96%;
-  transform: translate3d(
-      calc(var(--stack-x) + var(--drag-x)),
-      var(--stack-y),
-      0
-    )
-    rotate(calc(var(--stack-rotate) + var(--drag-rotate)))
-    scale(var(--stack-scale));
-  transition:
-    transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1),
-    opacity 0.4s ease;
-  touch-action: pan-y;
-}
-/* Applied imperatively by featured-story-stack.tsx's pointer handlers (not
-   via React state) so a drag never re-renders the stack -- the cursor lives
-   here rather than as a utility class for the same reason. `transition:
-   none` is what makes the card track the pointer 1:1 instead of easing
-   toward it. */
-.story-stack-card.is-dragging {
-  transition: none;
-  cursor: grabbing;
-}
-.story-stack-card.is-throwing-left {
-  z-index: 20 !important;
-  opacity: 0 !important;
-  transform: translate3d(-118%, -14px, 0) rotate(-12deg) scale(0.96) !important;
-  transition:
-    transform 0.5s cubic-bezier(0.55, 0.02, 0.8, 0.35),
-    opacity 0.38s ease !important;
-}
-.story-stack-card.is-throwing-right {
-  z-index: 20 !important;
-  opacity: 0 !important;
-  transform: translate3d(118%, -14px, 0) rotate(12deg) scale(0.96) !important;
-  transition:
-    transform 0.5s cubic-bezier(0.55, 0.02, 0.8, 0.35),
-    opacity 0.38s ease !important;
-}
-@media (prefers-reduced-motion: reduce) {
-  .story-stack-card {
-    transition: none !important;
-  }
-}
 @media (max-width: 640px) {
   .journiq-heading {
     font-size: clamp(2.3rem, 13vw, 3.65rem);
-  }
-  .story-stack-card {
-    border-radius: 20px;
   }
 }
 
@@ -1328,16 +1265,6 @@ svg g[role="button"]:focus-visible {
   display: none;
 }
 
-/* Hide scrollbar on the featured-story carousel track -- scroll-snap plus
-   visible prev/next buttons and dots already communicate scrollability. */
-.carousel-track {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.carousel-track::-webkit-scrollbar {
-  display: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1505,8 +1432,7 @@ svg g[role="button"]:focus-visible {
 
 /* Story thumbnails settle rather than snap. Scoped to the image inside an
    overflow-hidden frame, so the frame's own corners stay crisp. */
-.nf-entry img,
-.story-stack-card img {
+.nf-entry img {
   transition: transform 420ms var(--nf-ease-out);
 }
 @media (hover: hover) {

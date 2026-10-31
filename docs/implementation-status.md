@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-30 (pull to refresh now reloads the page, home page covers on phones, search as you type and keyword search, on `fix/pull-to-refresh-reload` — see the entry at the end of this file); earlier the same day (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+Last updated: 2026-10-31 (home page redesign: a short, app-style home with search, a swipeable latest-stories row, place tiles and the quiz behind one row, on `main`, uncommitted — see the entry at the end of this file); earlier, 2026-10-30 (pull to refresh now reloads the page, home page covers on phones, search as you type and keyword search, on `fix/pull-to-refresh-reload` — see the entry at the end of this file); earlier the same day (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
 one-level folder shape — a story is either a main story, a sub story filed under exactly one main
 story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
 "Move to…" select; migration applied to the dev project — see the entry at the end of this
@@ -10996,3 +10996,30 @@ deployed release keeps working. Dry-run against live data via a temporary `pg_te
 applying: kiw 0→2, supermarket 1→3, market →3, pak 1→4, "cheap food" 0→2, visa 3→3,
 "queenstown kiwi" →1; symbol-only input = no search. Not indexed beyond the existing title/excerpt
 GIN index — fine at today's size.
+
+**Home page redesign: app-style and short (2026-10-31, uncommitted on `main`).** Owner feedback:
+too many words, hard to navigate. The home page was about 6,600px (≈7.5 iPhone screens) with
+about 720 words, and showed the same batch of stories three ways (hero points, a draggable
+featured stack whose gesture needed a written hint, and a filtered/paginated "record"). It is now
+about 3,400px including the footer, and about 350 words: a shorter hero plate (point field and NZ |
+China switch kept) with a search box (a plain GET form to `/stories?q=`); a "Latest stories"
+swipe row (`components/home/story-shelf.tsx`, 8 newest, scroll-snap, whole card is the link);
+"Browse by place" photo tiles (`components/home/place-tiles.tsx`), only regions the batch
+actually holds, each linking to `/stories?region=<id>` with no story counts (the page only
+fetches 24, so a count would be a claim it can't back); three one-line trust points; the
+destination quiz behind a native `<details>` row; one contribute CTA. Removed:
+`featured-story-stack`, `featured-story-slide`, `story-index` (and their tests, the
+`.story-stack-card`/`.carousel-track` CSS, and the `home.featured`/`home.index`/`home.steps`
+copy). `home.heroCta` and `home.recordHeading` stay because `/cn` reads them. Tests:
+`app/(public)/page.test.tsx` rewritten (search target, shelf links, place links/ids, quiz
+collapsed, CTA), `tests/e2e/home.spec.ts` updated (shelf, hero search, quiz opens first, "Browse by
+place"); e2e not run. Checked in the iPhone 17 frame in dark and light, with the quiz open, and at
+1440px wide: no horizontal overflow, no console errors.
+
+**Slim footer on phones (2026-10-31, same uncommitted change).** The footer (home pages only)
+stacked to about 990px on a phone. Below `md` it is now the disclaimer, one wrapped row of About,
+Privacy, Terms, Guidelines and Copyright & Removal (44px tap height each), and the copyright line:
+237px. Logo, tagline, Stories, Share a story, Contributors and the "made for" line are md-only,
+since the header, tab bar and home page already carry them. Desktop is unchanged. One markup for
+both shapes (`contents` on phones), so no link is duplicated. Tests in
+`components/site-footer.test.tsx`. Checked in the iPhone 17 frame on `/` and `/cn`, and at 1440px.

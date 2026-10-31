@@ -59,8 +59,7 @@ export function StoryCard({
 }) {
   const t = useTranslations("common");
   // useLocale(), not the async getLocale(): this component is rendered by
-  // CLIENT components too (components/home/featured-story-stack.tsx and
-  // story-index.tsx), and a Client Component cannot render an async Server
+  // CLIENT components too, and a Client Component cannot render an async Server
   // Component. The hook works in both, exactly as useTranslations above
   // already does.
   const rawLocale = useLocale();

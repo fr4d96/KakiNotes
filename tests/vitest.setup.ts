@@ -66,9 +66,8 @@ if (typeof HTMLDialogElement !== "undefined") {
 
 // jsdom has no layout engine, so it implements no scrolling at all --
 // Element.prototype.scrollIntoView simply doesn't exist, and calling it
-// throws. components/home/story-index.tsx calls it when the reader pages
-// the record (to put the new page's first entry at the top), and any
-// component that moves the viewport will hit the same wall. A no-op is the
+// throws, and any component that moves the viewport (the old home-page
+// story index did, when the reader paged it) hits that wall. A no-op is the
 // honest stub: there is no scroll position in jsdom to assert against, and
 // what the paging tests actually check is which entries render and where
 // focus lands.

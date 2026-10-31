@@ -571,8 +571,7 @@ function ListIcon() {
 }
 
 // Client-side filtering over the contributor's already-loaded stories --
-// the same shape as the landing page's catalogue index
-// (components/home/story-index.tsx): each axis is built only from values
+// the same shape the landing page's old catalogue index used: each axis is built only from values
 // present in this list, and an axis earns its row only if it can actually
 // split the list (more than one value, or a single value that not every
 // story carries), so a chip can never lead to an empty result and a
@@ -778,7 +777,7 @@ function StoryGrid({
 
 /**
  * The ruled-row list, for one section's stories. Styled after the landing
- * page's catalogue index (components/home/story-index.tsx): hairline-ruled
+ * page's former catalogue index: hairline-ruled
  * rows (.nf-entry), a mono tabular numeral, and a cover thumbnail beside the
  * title. Unlike that index, a row here can't be one big <Link> -- each story
  * carries its own Edit/Preview actions -- so the thumbnail and title are the

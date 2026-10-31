@@ -29,8 +29,8 @@ export function getImageUrl(media: ImageUrlMedia): string | null {
 
 /**
  * Cover-specific sibling for the card/hero/sub-story sites
- * (components/story/story-card.tsx, components/home/featured-story-slide.tsx,
- * components/home/story-index.tsx, components/story/story-family.tsx), all
+ * (components/story/story-card.tsx, components/home/story-shelf.tsx,
+ * the home page's place tiles, components/story/story-family.tsx), all
  * of which share list_published_stories()'s row shape. `cover_media_id`/
  * `cover_storage_backend` are optional so a caller that never set them
  * (every existing test fixture, from before these two columns existed)
