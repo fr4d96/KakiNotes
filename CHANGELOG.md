@@ -2,6 +2,19 @@
 
 ## [2.1.0](https://github.com/fr4d96/KakiNotes/compare/v2.0.0...v2.1.0) (2026-10-31)
 
+### Affirmation notes
+
+**Collect kind words from the people who know you.** Contributors have a new page, Affirmation notes, in the account menu. Make a link, send it to friends, family or people you travelled with, and they can leave you a short note.
+
+**No account needed to write.** Anyone with your link can open it, write up to 1,000 characters, add their name if they want to, and send it.
+
+**Only you can read them.** Notes land in "Notes for you" on the same page. They are never shown on the site, never listed in search engines and never seen by other readers. You can delete any note.
+
+**You stay in control of your links.** Give each link a name (like "Family chat"), copy or share it from your phone, switch it off when you're done collecting, or delete it. You can have up to 20 links.
+
+**Protected against spam.** Each link and each person can only send a limited number of notes per hour, so one link can't be used to flood your inbox.
+
+
 
 ### Features
 
