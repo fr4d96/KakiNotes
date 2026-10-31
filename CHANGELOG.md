@@ -2,6 +2,25 @@
 
 ## [2.0.0](https://github.com/fr4d96/KakiNotes/compare/v1.17.0...v2.0.0) (2026-10-31)
 
+### A new home page
+
+**Shorter, and easier to find your way.** The home page has been rebuilt for phones. It is now less than half as long, with far less to read, and real stories show up on the very first screen.
+
+**Search straight away.** There's a search box at the top. Type a place, a job or a year, and you go straight to the stories that match.
+
+**Swipe through the latest stories.** The newest stories sit in a row you can swipe sideways. Tap anywhere on a card to read it, or tap "See all" for the full list.
+
+**Browse by place.** Photo tiles show the regions people have written about. Tap one to see every story from that region.
+
+**Less to read.** The reasons you can trust what you read are now three short lines. The "Not sure where to start?" quiz is folded into one row; tap it to answer the five questions.
+
+**Removed from the home page.** The draggable stack of featured stories and the long numbered list with filters and pages are gone. The Stories tab still has every story, with search and filters.
+
+### A smaller footer on phones
+
+At the bottom of the home page, phones now show only the note that Kakinotes isn't advice, one row of links (About, Privacy, Terms, Guidelines, Copyright & Removal) and the copyright line. On a computer, the footer is unchanged.
+
+
 
 ### Features
 
