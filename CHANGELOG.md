@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/fr4d96/KakiNotes/compare/v2.1.0...v2.1.1) (2026-10-31)
+
+
+### Bug Fixes
+
+* affirmation share links open on the current site ([59aee6f](https://github.com/fr4d96/KakiNotes/commit/59aee6f56ebea11cbf9d9a600346cdafd1b3c2dd))
+
 ## [2.1.0](https://github.com/fr4d96/KakiNotes/compare/v2.0.0...v2.1.0) (2026-10-31)
 
 ### Affirmation notes
