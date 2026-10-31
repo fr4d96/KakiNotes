@@ -10,7 +10,7 @@ import { ArrowRightIcon } from "@/components/icons";
 /**
  * China's landing page. Deliberately NOT a reuse of the NZ home page's
  * "Night Field" art direction (app/(public)/page.tsx's hero-field/
- * featured-story-stack/destination-quiz components carry a lot of WHV- and
+ * destination-quiz components carry a lot of WHV- and
  * NZ-specific prose and visual direction baked into their own design
  * contract) -- a straightforward, real, mobile-first page instead, built
  * from the same generic building blocks the rest of the app already uses

@@ -49,6 +49,53 @@ describe("SiteFooter", () => {
   });
 });
 
+describe("SiteFooter on phones", () => {
+  // jsdom applies no CSS, so these read the breakpoint classes directly:
+  // something is on the phone footer unless it, or a parent inside the
+  // footer, is marked `hidden` (md-only).
+  function hiddenOnPhones(element: HTMLElement) {
+    for (
+      let node: HTMLElement | null = element;
+      node && node.tagName !== "FOOTER";
+      node = node.parentElement
+    ) {
+      if (node.classList.contains("hidden")) return true;
+    }
+    return false;
+  }
+
+  function phoneLinks() {
+    return screen
+      .getAllByRole("link")
+      .filter((link) => !hiddenOnPhones(link))
+      .map((link) => link.textContent);
+  }
+
+  it("keeps only About and the four legal links, in one row order", () => {
+    render(<SiteFooter />);
+
+    expect(phoneLinks()).toEqual([
+      "About",
+      "Privacy",
+      "Terms",
+      "Guidelines",
+      "Copyright & Removal",
+    ]);
+  });
+
+  it("keeps the disclaimer and copyright line, and drops the tagline", () => {
+    render(<SiteFooter />);
+
+    expect(
+      hiddenOnPhones(screen.getByText(/does not provide immigration/i)),
+    ).toBe(false);
+    expect(hiddenOnPhones(screen.getByText("© 2026 Kakinotes"))).toBe(false);
+    expect(hiddenOnPhones(screen.getByText(/A storytelling community/i))).toBe(
+      true,
+    );
+  });
+});
+
 describe("SiteFooter placement", () => {
   it("renders on the home pages only", () => {
     for (const path of ["/", "/cn", "/cn/"]) {

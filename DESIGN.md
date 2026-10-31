@@ -278,8 +278,8 @@ site:
 | `--elevation-5` | `shadow-2xl`               | the story-card stack, the destination-quiz panel |
 
 Light renders each as three layers — a 1px ring at 0.06 (the edge: a white card on a near-white
-ground has no fill contrast, and without the ring the featured deck's stacked cards read as loose
-strips rather than a stack), a tight contact shadow, and a wide ambient one — in the theme's own
+ground has no fill contrast, and without the ring white cards read as loose
+strips rather than surfaces), a tight contact shadow, and a wide ambient one — in the theme's own
 **slate ink** (`rgba(11, 18, 34, …)` at 0.06–0.18), never neutral black, which reads as a flat
 grey smudge on the cool ground. Dark renders the same geometry in neutral black at low alpha,
 near-invisible by design: it exists only to stop a raised surface fusing with the ground at its
@@ -329,8 +329,8 @@ follows this; new photographic sections should too.
 Pill (`border-radius: 999px`) is the signature shape for anything interactive at button/chip scale
 — primary/secondary buttons, filter chips, tag badges, icon-only controls (theme toggle, avatar
 menu, carousel prev/next), and the destination-quiz progress bar. Cards use a softer `rounded-xl`
-(12px, story cards) up to a deliberately large 28px on the featured story-card-stack (20px on
-mobile) for its photo-stack feel. Inputs use the smaller `--radius` scale (`rounded-md`, 6px)
+(12px, story cards) 20px on the home screen's shelf cards and
+plates (28px plates from `sm`), and 16px on place tiles. Inputs use the smaller `--radius` scale (`rounded-md`, 6px)
 inherited from the shadcn/ui token mapping. Borders are always `--border-subtle`, never a harder
 gray/black line.
 
@@ -375,8 +375,8 @@ text-accent-foreground`.
 
 ### Cards / Containers
 
-- **Corner Style:** `rounded-xl` (12px) for the standard story card; 28px (20px mobile) for the
-  featured story-card-stack.
+- **Corner Style:** `rounded-xl` (12px) for the standard story card; 20px for home shelf cards;
+  16px for place tiles.
 - **Background:** `--surface` (white/dark-surface); `--surface-muted` for image placeholders.
 - **Shadow Strategy:** flat at rest; see Elevation & Depth.
 - **Border:** `border border-border-subtle` on the standard story card only — the story-card-stack
@@ -477,25 +477,26 @@ The bare `:root` block plus the `prefers-color-scheme` block are only the pre-hy
 fallback; an explicit `[data-theme]` attribute always wins, because attribute selectors outrank the
 plain `:root` pseudo-class regardless of source order.
 
-## The archive index
+## The home screen
 
-Structure seed `494761b9` (`--scope surface --mode persuade`), assigned candidate 7: **the archive
-index**. The page's spine is a real catalogue, not a sequence of photo-card grids.
+**Superseded 2026-10-31:** the "archive index" home (structure seed `494761b9`) ran ~7.5 phone
+screens and showed one batch of stories three ways. The home page is now an **app-style home
+screen** for the iOS PWA: hero plate with search → "Latest stories" swipe row → "Browse by place"
+photo tiles → three one-line trust points → quiz behind one `<details>` row → one contribute band.
+Full browsing and filtering belong to the Stories tab; the home page only points into it.
 
-The page previously carried three separate browse surfaces — a featured stack, a filter-chip card
-grid, and a region tile grid — all rendering the same small batch of stories in three shapes. Those
-are consolidated into one `StoryIndex` (`components/home/story-index.tsx`): hairline-ruled entries
-(`.nf-entry`), mono numerals, and columns that are fields the story actually carries. Section order
-is hero → featured lead → index → why-you-can-trust → quiz → contribute.
+**The One-Line Rule.** On the home screen every section is a heading plus at most one short line.
+A section that needs written instructions to be operated ("drag a card aside…") is redesigned, not
+captioned.
 
-**The Real Fields Rule.** Every index column is a field the record actually holds (place, work,
-trip year). A field a story lacks is omitted, never rendered as a placeholder dash, and never
-estimated. Filter axes are built only from values present in the fetched batch, and an axis is
-rendered only when it can actually split that batch — a control that would return everything is
-not shown.
+**The Real Fields Rule.** Every record field a card or tile shows is one the story actually holds.
+A field a story lacks is omitted, never a placeholder dash and never estimated. Place tiles list
+only regions present in the fetched batch, and carry no counts, because the batch is not the whole
+catalogue.
 
 **The Separate Axes Rule.** Place (regions), Work (work types), and Topic (tags) are distinct
-filter axes. Never merge tags into the Work axis: it files "South Island" as a kind of job.
+filter axes wherever filters appear (the Stories tab, My Stories). Never merge tags into the Work
+axis: it files "South Island" as a kind of job.
 
 ## Motion — the focus pull
 
@@ -608,18 +609,18 @@ unstyled at rest, so that trap is gone, but keeping the bar in flow costs nothin
 - **Primary button** (`.night-button-primary`): pill, `1px solid var(--accent)` outline at rest,
   fills solid cyan with `--accent-foreground` text on hover — ghost-first, not filled-first.
 - **Secondary action** (`.night-button-ghost`): plain underlined text link, not a second button
-  shape — mirrors the "or see how this works" pattern in the hero.
-- **Index entry** (`.nf-entry`): hairline top rule, no card border and no card background — the
-  section reads as one continuous record rather than stacked tiles. Hover (pointer devices only)
+  shape.
+- **Index entry** (`.nf-entry`, My Stories): hairline top rule, no card border and no card
+  background — the section reads as one continuous record rather than stacked tiles. Hover (pointer devices only)
   tints the row with `color-mix(in srgb, var(--accent) 7%, transparent)` and insets it 0.75rem;
   `:focus-within` gets the same tint so keyboard traversal reads identically.
 - **Filter axis row**: edge-to-edge horizontal scroll on phones (`.nf-scroll-x`, scrollbar hidden —
   the cut-off chip is the affordance), wrapping normally from `sm` up.
-- **Featured story card** (`FeaturedStorySlide`): deliberately **not** the stretched-link pattern
-  `StoryCard` uses. The card is draggable, and a full-card `<a>` fights that gesture — it made the
-  whole surface interactive, which the stack's pointer-down guard rejected, so the card could not
-  be dragged at all. Only the title and the explicit "Read story" button navigate; every other
-  part of the card is drag surface.
+- **Shelf card** (`StoryShelf`): compact story card in a horizontal scroll-snap row, 76% of the
+  phone width so the next card's edge shows (the edge is the swipe affordance, no hint text).
+  Stretched title link, so the whole card is one tap target.
+- **Place tile** (`PlaceTiles`): always-dark photo tile (newest cover from that region, or the
+  `#0b1222` ground) with a bottom scrim and a white label, so it clears contrast in both themes.
 - **No kicker/eyebrow labels.** The `Eyebrow` component was deleted. Headings carry their own
   weight.
 - **No glyph or emoji icons.** `DestinationQuiz`'s answer labels previously opened with emoji

@@ -43,39 +43,35 @@ test("home page loads with title, heading, and working public nav", async ({
   ).toBeVisible();
 });
 
-test("featured-story stack carousel is present and its cards link to real stories", async ({
-  page,
-}) => {
+test("latest-stories shelf links to real stories", async ({ page }) => {
   await page.goto("/");
 
-  const carousel = page.getByRole("region", {
-    name: "Featured Working Holiday stories",
-  });
-
-  if ((await carousel.count()) === 0) {
+  const heading = page.getByRole("heading", { name: "Latest stories" });
+  if ((await heading.count()) === 0) {
     // No published stories in this environment's data -- the section is
     // conditionally rendered, so there's nothing further to assert.
     return;
   }
 
-  await expect(carousel).toBeVisible();
-
-  const readLink = carousel.getByRole("link", { name: /Read story/ }).first();
-  const href = await readLink.getAttribute("href");
+  const shelf = heading.locator("xpath=ancestor::section[1]");
+  const storyLink = shelf.locator('a[href^="/stories/"]').first();
+  const href = await storyLink.getAttribute("href");
   expect(href).toMatch(/^\/stories\//);
 
   const storyResponse = await page.request.get(href!);
   expect(storyResponse.status()).toBeLessThan(400);
+});
 
-  // Keyboard operability: focus the stack and advance with the arrow key.
-  const liveRegion = carousel.locator("[aria-live='polite']");
-  const before = await liveRegion.textContent();
-  await carousel.locator("[tabindex='0']").focus();
-  await page.keyboard.press("ArrowRight");
-  await expect(liveRegion).not.toHaveText(before ?? "");
+test("hero search lands on the stories index with the query applied", async ({
+  page,
+}) => {
+  await page.goto("/");
 
-  const nextButton = carousel.getByRole("button", { name: "Next stories" });
-  await expect(nextButton).toBeEnabled();
+  const search = page.getByRole("searchbox", { name: "Search stories" });
+  await search.fill("Otago");
+  await search.press("Enter");
+
+  await expect(page).toHaveURL(/\/stories\?q=Otago/);
 });
 
 test("destination quiz walks through to a result linking into /stories", async ({
@@ -89,6 +85,8 @@ test("destination quiz walks through to a result linking into /stories", async (
     return;
   }
 
+  // The quiz sits collapsed behind its <summary> row until the reader asks.
+  await quizSection.locator("summary").click();
   const quiz = quizSection;
   // Bounded generously above the quiz's actual question count (5, see
   // components/home/destination-quiz.tsx's QUESTIONS array) -- the loop
@@ -111,7 +109,7 @@ test("region explorer links navigate into the filtered stories index", async ({
   await page.goto("/");
 
   const heading = page.getByRole("heading", {
-    name: "Explore New Zealand by region",
+    name: "Browse by place",
   });
   if ((await heading.count()) === 0) return;
 

@@ -1,7 +1,9 @@
 import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { listPublishedStoriesCached } from "@/lib/story/public-queries";
+import {
+  listPublicRegions,
+  listPublishedStoriesCached,
+} from "@/lib/story/public-queries";
 
 vi.mock("@/lib/story/public-queries", () => ({
   listPublishedStoriesCached: vi.fn(async () => []),
@@ -41,8 +43,6 @@ const fixtureStory = {
   tags: ["Fruit picking"],
 };
 
-// A second, materially different record -- different region, different tags
-// -- so the index's filter axes have something real to split on.
 const otherStory = {
   ...fixtureStory,
   story_id: "2",
@@ -56,10 +56,22 @@ const otherStory = {
   tags: ["Farm work"],
 };
 
+const regionRows = [
+  { id: "r-cant", name: "Canterbury", slug: "canterbury", name_zh_cn: null },
+  { id: "r-otago", name: "Otago", slug: "otago", name_zh_cn: null },
+  { id: "r-west", name: "West Coast", slug: "west-coast", name_zh_cn: null },
+];
+
 function mockStories(...batch: unknown[]) {
   vi.mocked(listPublishedStoriesCached).mockResolvedValueOnce(
     batch as unknown as Awaited<ReturnType<typeof listPublishedStoriesCached>>,
   );
+}
+
+function sectionByHeading(name: string) {
+  return screen
+    .getByRole("heading", { level: 2, name })
+    .closest("section") as HTMLElement;
 }
 
 describe("HomePage", () => {
@@ -78,300 +90,113 @@ describe("HomePage", () => {
     ).toBeInTheDocument();
   });
 
+  it("offers a search that submits to the stories index", async () => {
+    render(await HomePage());
+
+    const search = screen.getByRole("search");
+    expect(search).toHaveAttribute("action", "/stories");
+    expect(search).toHaveAttribute("method", "get");
+    expect(
+      within(search).getByRole("searchbox", { name: "Search stories" }),
+    ).toHaveAttribute("name", "q");
+  });
+
   it("renders nothing for the story-driven sections when there are no published stories", async () => {
     render(await HomePage());
 
     expect(
-      screen.queryByRole("region", {
-        name: "Featured Working Holiday stories",
-      }),
+      screen.queryByRole("heading", { name: "Latest stories" }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText("The record")).not.toBeInTheDocument();
     expect(
-      screen.queryByText("Not sure where to start reading?"),
+      screen.queryByRole("heading", { name: "Browse by place" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Not sure where to start?"),
     ).not.toBeInTheDocument();
   });
 
   it("still explains the model when there are no published stories", async () => {
     render(await HomePage());
 
+    const trust = sectionByHeading("Why you can trust these");
     expect(
-      screen.getByText("Why you can trust what you read here"),
+      within(trust).getByText("Written by the person who lived it"),
+    ).toBeInTheDocument();
+    expect(
+      within(trust).getByText("Personal experience, not advice"),
     ).toBeInTheDocument();
   });
 
-  it("renders the featured-story stack carousel when published stories exist", async () => {
-    mockStories(fixtureStory);
+  it("shelves the latest stories as links to the story pages", async () => {
+    mockStories(fixtureStory, otherStory);
 
     render(await HomePage());
 
+    const latest = sectionByHeading("Latest stories");
     expect(
-      screen.getByRole("region", {
-        name: "Featured Working Holiday stories",
+      within(latest).getByRole("link", {
+        name: "Six months picking fruit in Central Otago",
       }),
-    ).toBeInTheDocument();
+    ).toHaveAttribute("href", "/stories/story-one");
     expect(
-      screen.getAllByText("Six months picking fruit in Central Otago").length,
-    ).toBeGreaterThan(0);
-    const readLinks = screen.getAllByRole("link", { name: /Read story/ });
-    expect(readLinks[0]).toHaveAttribute("href", "/stories/story-one");
-  });
-
-  it("lists each published story as an index entry with its real metadata", async () => {
-    mockStories(fixtureStory);
-
-    render(await HomePage());
-
-    const index = screen
-      .getByText("The record")
-      .closest("section") as HTMLElement;
-
-    // The entry links to the story and exposes the fields it actually carries.
-    const entry = within(index).getByRole("link", {
-      name: /Six months picking fruit in Central Otago/,
-    });
-    expect(entry).toHaveAttribute("href", "/stories/story-one");
+      within(latest).getByRole("link", {
+        name: "A winter on the Canterbury dairy run",
+      }),
+    ).toHaveAttribute("href", "/stories/story-two");
+    // Each card shows the record fields it actually has, and its writer.
+    expect(within(latest).getByText("Queenstown, Otago · 2024")).toBeVisible();
+    expect(within(latest).getByText("Aiman R.")).toBeInTheDocument();
     expect(
-      within(index).getAllByText("Queenstown, Otago").length,
-    ).toBeGreaterThan(0);
-    expect(within(index).getAllByText("2024").length).toBeGreaterThan(0);
-
-    expect(within(index).getByText("1 ENTRY")).toBeInTheDocument();
-    expect(
-      within(index).getByRole("link", { name: /Browse the full catalogue/ }),
+      within(latest).getByRole("link", { name: /See all/ }),
     ).toHaveAttribute("href", "/stories");
   });
 
-  it("offers index filters built only from values present in the batch", async () => {
+  it("links each place in the batch into the filtered stories index", async () => {
+    vi.mocked(listPublicRegions).mockResolvedValueOnce(regionRows);
     mockStories(fixtureStory, otherStory);
 
     render(await HomePage());
 
-    const index = screen
-      .getByText("The record")
-      .closest("section") as HTMLElement;
-
-    const placeFilters = within(index).getByRole("group", {
-      name: "Filter stories by place",
-    });
-    expect(
-      within(placeFilters).getByRole("button", { name: "Otago" }),
-    ).toBeInTheDocument();
-    expect(
-      within(placeFilters).getByRole("button", { name: "Canterbury" }),
-    ).toBeInTheDocument();
-
-    const topicFilters = within(index).getByRole("group", {
-      name: "Filter stories by topic",
-    });
-    expect(
-      within(topicFilters).getByRole("button", { name: "Fruit picking" }),
-    ).toBeInTheDocument();
-    expect(
-      within(topicFilters).getByRole("button", { name: "Farm work" }),
-    ).toBeInTheDocument();
-
-    // A value the batch never mentions is never offered as a filter, and an
-    // axis the batch can't populate at all never gets a row. Work types are
-    // no longer an axis at all (retired 2026-08-16).
-    expect(
-      within(index).queryByRole("button", { name: "Ski-field work" }),
-    ).not.toBeInTheDocument();
-    expect(
-      within(index).queryByRole("group", { name: "Filter stories by work" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("hides a filter axis that cannot split the batch", async () => {
-    // Both stories share one region, so filtering by it would return the
-    // whole batch -- a control that does nothing.
-    mockStories(fixtureStory, { ...otherStory, regions: fixtureStory.regions });
-
-    render(await HomePage());
-
-    const index = screen
-      .getByText("The record")
-      .closest("section") as HTMLElement;
-
-    expect(
-      within(index).queryByRole("group", { name: "Filter stories by place" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("narrows the index to the chosen filter", async () => {
-    const user = userEvent.setup();
-    mockStories(fixtureStory, otherStory);
-
-    render(await HomePage());
-
-    const index = screen
-      .getByText("The record")
-      .closest("section") as HTMLElement;
-    expect(within(index).getByText("2 ENTRIES")).toBeInTheDocument();
-
-    const placeFilters = within(index).getByRole("group", {
-      name: "Filter stories by place",
-    });
-    await user.click(
-      within(placeFilters).getByRole("button", { name: "Canterbury" }),
+    const places = sectionByHeading("Browse by place");
+    expect(within(places).getByRole("link", { name: "Otago" })).toHaveAttribute(
+      "href",
+      "/stories?region=r-otago",
     );
-
-    expect(within(index).getByText(/^1 ENTRY/)).toBeInTheDocument();
     expect(
-      within(index).getByRole("link", {
-        name: /A winter on the Canterbury dairy run/,
-      }),
-    ).toBeInTheDocument();
+      within(places).getByRole("link", { name: "Canterbury" }),
+    ).toHaveAttribute("href", "/stories?region=r-cant");
+    // A region no published story carries is never offered.
     expect(
-      within(index).queryByRole("link", {
-        name: /Six months picking fruit in Central Otago/,
-      }),
+      within(places).queryByRole("link", { name: "West Coast" }),
     ).not.toBeInTheDocument();
   });
 
-  it("renders the destination quiz when stories exist", async () => {
+  it("hides the place tiles when the regions lookup has nothing to link to", async () => {
     mockStories(fixtureStory);
 
     render(await HomePage());
 
     expect(
-      screen.getByText("Not sure where to start reading?"),
-    ).toBeInTheDocument();
-  });
-});
-
-describe("the record — pagination", () => {
-  /** `count` stories, all in one region/tag so no filter axis appears. */
-  function batchOf(count: number) {
-    return Array.from({ length: count }, (_, i) => ({
-      ...fixtureStory,
-      story_id: `p${i + 1}`,
-      slug: `paged-${i + 1}`,
-      title: `Paged story ${i + 1}`,
-    }));
-  }
-
-  function recordSection() {
-    return screen.getByText("The record").closest("section") as HTMLElement;
-  }
-
-  it("shows at most five entries at first view", async () => {
-    mockStories(...batchOf(12));
-
-    render(await HomePage());
-    const index = within(recordSection());
-
-    expect(index.getByText("Paged story 1")).toBeInTheDocument();
-    expect(index.getByText("Paged story 5")).toBeInTheDocument();
-    expect(index.queryByText("Paged story 6")).not.toBeInTheDocument();
-    // The count still reports the whole record, not the page.
-    expect(index.getByText(/12 ENTRIES/)).toBeInTheDocument();
-    expect(index.getByText(/SHOWING 1–5/)).toBeInTheDocument();
-  });
-
-  it("does not paginate a record that fits on one page", async () => {
-    mockStories(...batchOf(5));
-
-    render(await HomePage());
-    const index = within(recordSection());
-
-    expect(index.getByText("Paged story 5")).toBeInTheDocument();
-    expect(
-      index.queryByRole("navigation", { name: "Record pages" }),
+      screen.queryByRole("heading", { name: "Browse by place" }),
     ).not.toBeInTheDocument();
   });
 
-  it("moves to the next page of entries", async () => {
-    const user = userEvent.setup();
-    mockStories(...batchOf(12));
+  it("keeps the destination quiz collapsed behind one row when stories exist", async () => {
+    mockStories(fixtureStory);
 
     render(await HomePage());
-    const index = within(recordSection());
 
-    await user.click(index.getByRole("button", { name: "Next page" }));
-
-    expect(index.queryByText("Paged story 5")).not.toBeInTheDocument();
-    expect(index.getByText("Paged story 6")).toBeInTheDocument();
-    expect(index.getByText("Paged story 10")).toBeInTheDocument();
-    expect(index.getByText(/SHOWING 6–10/)).toBeInTheDocument();
+    const summary = screen.getByText("Not sure where to start?");
+    const details = summary.closest("details") as HTMLDetailsElement;
+    expect(details).toBeInTheDocument();
+    expect(details.open).toBe(false);
   });
 
-  // The numerals are the index's spine -- entry 06 has to stay entry 06 on
-  // page two rather than the page restarting the count at 01.
-  it("keeps entry numbering continuous across pages", async () => {
-    const user = userEvent.setup();
-    mockStories(...batchOf(12));
-
+  it("closes on a single contribute call to action", async () => {
     render(await HomePage());
-    const index = within(recordSection());
 
-    expect(index.getByText("01")).toBeInTheDocument();
-    await user.click(index.getByRole("button", { name: "Page 2 of 3" }));
-    expect(index.getByText("06")).toBeInTheDocument();
-    expect(index.queryByText("01")).not.toBeInTheDocument();
-  });
-
-  it("disables Prev on the first page and Next on the last", async () => {
-    const user = userEvent.setup();
-    mockStories(...batchOf(12));
-
-    render(await HomePage());
-    const index = within(recordSection());
-
-    expect(index.getByRole("button", { name: "Previous page" })).toBeDisabled();
-    await user.click(index.getByRole("button", { name: "Page 3 of 3" }));
-    expect(index.getByRole("button", { name: "Next page" })).toBeDisabled();
-    expect(index.getByRole("button", { name: "Previous page" })).toBeEnabled();
-  });
-
-  it("marks the current page for assistive technology", async () => {
-    const user = userEvent.setup();
-    mockStories(...batchOf(12));
-
-    render(await HomePage());
-    const index = within(recordSection());
-
-    expect(index.getByRole("button", { name: "Page 1 of 3" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-    await user.click(index.getByRole("button", { name: "Page 2 of 3" }));
-    expect(index.getByRole("button", { name: "Page 2 of 3" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
     expect(
-      index.getByRole("button", { name: "Page 1 of 3" }),
-    ).not.toHaveAttribute("aria-current");
-  });
-
-  // Narrowing the record while on a later page must not strand the reader
-  // on a page the filtered list no longer has.
-  it("returns to the first page when a filter changes", async () => {
-    const user = userEvent.setup();
-    // 6 Otago stories + 1 Canterbury: two pages, and a place axis that can
-    // split them.
-    mockStories(...batchOf(6), {
-      ...otherStory,
-      story_id: "c1",
-      slug: "cant-1",
-      title: "Canterbury one",
-    });
-
-    render(await HomePage());
-    const index = within(recordSection());
-
-    await user.click(index.getByRole("button", { name: "Page 2 of 2" }));
-    expect(index.getByText(/SHOWING 6–7/)).toBeInTheDocument();
-
-    const placeFilters = index.getByRole("group", {
-      name: "Filter stories by place",
-    });
-    await user.click(
-      within(placeFilters).getByRole("button", { name: "Canterbury" }),
-    );
-
-    expect(index.getByText("Canterbury one")).toBeInTheDocument();
-    expect(index.getByText(/1 ENTRY/)).toBeInTheDocument();
+      screen.getByRole("link", { name: /Share your story/ }),
+    ).toHaveAttribute("href", "/sign-up");
   });
 });

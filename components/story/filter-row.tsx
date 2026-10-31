@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * One labelled row of filter chips over a single axis. Lifted verbatim from
- * components/home/story-index.tsx so the landing-page catalogue index and the
- * contributor's My Stories page share exactly one chip control.
+ * One labelled row of filter chips over a single axis, used by the
+ * contributor's My Stories page. (It was lifted from the landing page's old
+ * catalogue index, which has since been retired.)
  *
  * The caller owns the axis values and the active selection; this component is
  * pure presentation. `ALL` is the conventional "no filter on this axis"
