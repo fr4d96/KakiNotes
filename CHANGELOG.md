@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.2](https://github.com/fr4d96/KakiNotes/compare/v2.1.1...v2.1.2) (2026-10-31)
+
+
+### Bug Fixes
+
+* note-writing page shows only the link name and the form ([b538442](https://github.com/fr4d96/KakiNotes/commit/b5384429421303b223506b9bf004c2be7ddbdb10))
+
 ## [2.1.1](https://github.com/fr4d96/KakiNotes/compare/v2.1.0...v2.1.1) (2026-10-31)
 
 ### Affirmation notes
