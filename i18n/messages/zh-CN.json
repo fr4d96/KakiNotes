@@ -1466,18 +1466,13 @@
   "affirmationWrite": {
     "metaTitle": "留下便条",
     "metaDescription": "写一张简短的私人鼓励便条。",
-    "headingNamed": "给 {name} 留一张便条",
-    "headingNeutral": "留一张鼓励的便条",
-    "intro": "写点温暖的话吧。只有分享这个链接的人才能看到，也不会发布到任何地方。",
     "bodyLabel": "你的便条",
     "bodyPlaceholder": "你想让对方知道什么？",
     "characterCount": "{count} / {max} 字",
     "nameLabel": "你的名字（可选）",
-    "nameHint": "留空则匿名发送。",
     "honeypotLabel": "请将此栏留空",
     "send": "发送便条",
     "sending": "正在发送…",
-    "privacyNote": "便条是私密的纯文本。请保持友善。",
     "thanksTitle": "谢谢你",
     "thanksBody": "你的便条已发送，对方会很开心。",
     "errors": {

@@ -33,19 +33,18 @@ export default async function WriteNotePage({
 
   const t = await getTranslations("affirmationWrite");
 
+  // Only the link's name and the form (owner decision, 2026-10-31): no
+  // recipient heading, no intro. An unnamed link still gets an <h1> for
+  // screen readers, just not a visible one.
   return (
-    <div className="mx-auto max-w-xl px-4 pt-6 pb-16 sm:px-6 sm:py-16">
-      <h1 className="journiq-heading text-[2rem] sm:text-[2.4rem]">
-        {target.recipient_name
-          ? t("headingNamed", { name: target.recipient_name })
-          : t("headingNeutral")}
-      </h1>
-      {target.label && (
-        <p className="mt-2 text-sm font-bold text-muted-foreground">
+    <div className="mx-auto max-w-xl px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-16 sm:px-6 sm:py-16">
+      {target.label ? (
+        <h1 className="journiq-heading text-[2rem] sm:text-[2.4rem]">
           {target.label}
-        </p>
+        </h1>
+      ) : (
+        <h1 className="sr-only">{t("metaTitle")}</h1>
       )}
-      <p className="mt-3 text-sm text-muted-foreground">{t("intro")}</p>
       <NoteForm token={token} />
     </div>
   );

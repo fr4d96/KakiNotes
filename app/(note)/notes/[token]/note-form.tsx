@@ -93,7 +93,6 @@ export function NoteForm({ token }: { token: string }) {
           maxLength={AFFIRMATION_AUTHOR_NAME_MAX}
           className={`${field} min-h-11`}
         />
-        <p className="mt-1 text-xs text-muted-foreground">{t("nameHint")}</p>
       </div>
 
       {/* Honeypot. Not display:none (some bots skip those); moved off-screen,
@@ -127,8 +126,6 @@ export function NoteForm({ token }: { token: string }) {
       >
         {pending ? t("sending") : t("send")}
       </button>
-
-      <p className="text-xs text-muted-foreground">{t("privacyNote")}</p>
     </form>
   );
 }

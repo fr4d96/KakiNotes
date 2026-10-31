@@ -1466,18 +1466,13 @@
   "affirmationWrite": {
     "metaTitle": "Leave a note",
     "metaDescription": "Write a short, private note of encouragement.",
-    "headingNamed": "Leave a note for {name}",
-    "headingNeutral": "Leave a note of encouragement",
-    "intro": "Write something kind. Only the person who shared this link will ever read it, and it won't be posted anywhere.",
     "bodyLabel": "Your note",
     "bodyPlaceholder": "What would you like them to know?",
     "characterCount": "{count} / {max}",
     "nameLabel": "Your name (optional)",
-    "nameHint": "Leave it blank to send your note anonymously.",
     "honeypotLabel": "Leave this field empty",
     "send": "Send note",
     "sending": "Sending…",
-    "privacyNote": "Notes are private and plain text. Please keep it kind.",
     "thanksTitle": "Thank you",
     "thanksBody": "Your note has been sent. It will mean a lot.",
     "errors": {

@@ -11065,7 +11065,7 @@ name)` (raises `not_found` for unknown and switched-off alike). `recipient_name`
   `untypedMutableFrom` beside `untypedFrom`); owner actions in
   `app/(contributor)/affirmations/actions.ts` (create, rename, switch on/off, delete link, delete
   note — no owner id accepted from the client, ownership by RLS, "matched no row" reported as a
-  failure); the anonymous `submitAffirmationNoteAction` in `app/(public)/notes/[token]/actions.ts`
+  failure); the anonymous `submitAffirmationNoteAction` in `app/(note)/notes/[token]/actions.ts`
   (honeypot field `website` → fake success with nothing inserted; Zod; rate limit; RPC; one generic
   message for every failure after validation so it is not a token oracle).
 - **Rate limits** (`lib/rate-limit-config.ts`, `lib/rate-limit.ts`, shown in the admin Rate limits
@@ -11114,3 +11114,11 @@ link from the request's own host (`lib/affirmations/share-origin.ts`, env var on
 **Still open (owner action):** the same env var feeds `robots.txt`'s Sitemap line and
 `sitemap.xml` URLs, which therefore also point at that old deployment — set
 `NEXT_PUBLIC_SITE_URL=https://kakinotes.vercel.app` in Vercel's Production environment.
+
+**2026-10-31 — note-writing page stripped down (owner request).**
+`/notes/[token]` moved from `app/(public)/` to its own `app/(note)/` route group whose layout is a bare
+`<main>`: no site header, footer or bottom tab bar. The page shows only the link's name (its label,
+as the `<h1>`; a screen-reader-only "Leave a note" heading when unnamed), the note field and the
+optional name field. The "Leave a note for {name}" heading, the intro, the name hint and the privacy
+footnote are gone, along with their `affirmationWrite` strings in both locales.
+`get_affirmation_link_for_writing` still returns `recipient_name`; nothing renders it now.
