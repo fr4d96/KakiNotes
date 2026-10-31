@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/fr4d96/KakiNotes/compare/v2.0.0...v2.1.0) (2026-10-31)
+
+
+### Features
+
+* affirmation notes — share a link, collect private notes ([55c04fa](https://github.com/fr4d96/KakiNotes/commit/55c04fa0138ac29da491aff5f84f5b31f34dfe52))
+
 ## [2.0.0](https://github.com/fr4d96/KakiNotes/compare/v1.17.0...v2.0.0) (2026-10-31)
 
 ### A new home page
