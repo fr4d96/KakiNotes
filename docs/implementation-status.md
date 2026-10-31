@@ -11105,3 +11105,12 @@ name)` (raises `not_found` for unknown and switched-off alike). `recipient_name`
 **Next.** Apply the migration, regenerate types, switch the call sites to typed access, add RLS
 integration cases, and try the flow end to end in the iPhone 17 frame (not yet looked at in a
 browser).
+
+**2026-10-31 — affirmation share links pointed at a dead deployment (fix).**
+Copied `/notes/<token>` links 404'd in production: the share URL was built from
+`NEXT_PUBLIC_SITE_URL`, which on Vercel is set to one immutable deployment URL
+(`kakinotes-c2en8qt0k-…vercel.app`) frozen before the feature existed. `/affirmations` now builds the
+link from the request's own host (`lib/affirmations/share-origin.ts`, env var only as a fallback).
+**Still open (owner action):** the same env var feeds `robots.txt`'s Sitemap line and
+`sitemap.xml` URLs, which therefore also point at that old deployment — set
+`NEXT_PUBLIC_SITE_URL=https://kakinotes.vercel.app` in Vercel's Production environment.

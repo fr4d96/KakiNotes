@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import {
   listMyAffirmationLinks,
   listMyAffirmationNotes,
 } from "@/lib/affirmations/queries";
+import { shareOriginFromHeaders } from "@/lib/affirmations/share-origin";
 import { AffirmationsView } from "./affirmations-view";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("affirmations");
@@ -19,10 +19,14 @@ export async function generateMetadata(): Promise<Metadata> {
  * both reads are SECURITY INVOKER RPCs, so RLS scopes them to the caller.
  */
 export default async function AffirmationsPage() {
-  const [links, notes] = await Promise.all([
+  const [links, notes, requestHeaders] = await Promise.all([
     listMyAffirmationLinks(),
     listMyAffirmationNotes(),
+    headers(),
   ]);
+  // The share link must open on the deployment the owner is using; see
+  // lib/affirmations/share-origin.ts for why the env var is only a fallback.
+  const siteUrl = shareOriginFromHeaders(requestHeaders);
 
   return (
     <AffirmationsView
