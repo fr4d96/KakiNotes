@@ -2,6 +2,13 @@
 
 ## [2.1.1](https://github.com/fr4d96/KakiNotes/compare/v2.1.0...v2.1.1) (2026-10-31)
 
+### Affirmation notes
+
+**Shared links now open.** In 2.1.0, a link copied from the Affirmation notes page sent people to an old copy of the site, which said the page didn't exist. Copied links now open on the site you're using, so friends land straight on the page where they write their note.
+
+**Links you already made still work.** Nothing about your existing links has changed. Copy them again from Affirmation notes to get the working address, and send that instead.
+
+
 
 ### Bug Fixes
 
