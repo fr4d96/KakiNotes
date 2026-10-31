@@ -2,6 +2,11 @@
 
 ## [2.1.3](https://github.com/fr4d96/KakiNotes/compare/v2.1.2...v2.1.3) (2026-10-31)
 
+### Affirmation notes
+
+**A warmer prompt in the note box.** When someone opens your link, the empty note box now says "Leave a memorable message" instead of "What would you like them to know?". The Chinese version says the same thing.
+
+
 
 ### Bug Fixes
 
