@@ -3,6 +3,27 @@
 ## [3.0.0](https://github.com/fr4d96/KakiNotes/compare/v2.1.3...v3.0.0) (2026-11-13)
 
 
+### Your photos now live in your own Google Drive
+
+This is a major release because it changes what every contributor has to do before using Kakinotes.
+
+#### For contributors
+
+- **Connecting Google Drive is now required.** The first time you sign in after this update, you'll see a short "Connect your Google Drive" step before anything else. Connect once and you're through; you won't be asked again unless you disconnect.
+- **Your new photos go only to your Drive.** Each photo you add to a story is cleaned up (location and camera details removed) and saved in a Kakinotes folder in your own Drive, with a full-quality copy kept there just for you. Kakinotes doesn't store a copy itself.
+- **Kakinotes can only see what it creates.** The connection lets Kakinotes open only the files it saves to your Drive, never anything else you keep there.
+- **If connecting doesn't work**, the step now tells you why (you cancelled, or something went wrong) and lets you try again straight away.
+- **Disconnecting** is still possible from Account → Google Drive, but you'll be asked to connect a Drive again before you can keep using Kakinotes.
+- Photos you uploaded before this update stay where they are. You can still move them to your Drive from Account → Google Drive.
+
+#### For editors, moderators and admins
+
+- Nothing changes. Staff accounts aren't asked to connect Drive, and editorial imports keep working as before.
+
+#### Behind the scenes
+
+- The database itself now refuses to store a contributor's own photos on Kakinotes' servers without a Drive connection, so storage can't fill up again the way it did this week.
+
 ### ⚠ BREAKING CHANGES
 
 * contributors without a Google Drive connection can no longer use the contributor area or upload photos until they connect.
