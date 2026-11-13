@@ -862,12 +862,14 @@
       "driveNote": "照片会保存到你的 Google Drive，每张还会保留一份原图画质的副本。",
       "count": "{count} 张照片",
       "placedCount": "已放入故事 {count} 张",
+      "uploadQueue": "正在添加的照片",
       "badges": {
         "cover": "封面",
         "inStory": "已在故事中",
         "duplicate": "重复"
       },
       "state": {
+        "queued": "等待中",
         "uploading": "正在上传…",
         "preparing": "正在准备…",
         "processing": "正在处理…",

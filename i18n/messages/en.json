@@ -862,12 +862,14 @@
       "driveNote": "Photos are saved to your Google Drive, with a full-quality copy of each one.",
       "count": "{count, plural, one {# photo} other {# photos}}",
       "placedCount": "{count} in your story",
+      "uploadQueue": "Photos being added",
       "badges": {
         "cover": "Cover",
         "inStory": "In story",
         "duplicate": "Duplicate"
       },
       "state": {
+        "queued": "Waiting",
         "uploading": "Uploading…",
         "preparing": "Preparing…",
         "processing": "Processing…",

@@ -142,7 +142,9 @@ async function uploadDirectlyToStorage(
 type UploadingItem = {
   key: string;
   fileName: string;
-  progress: "uploading" | "processing" | "error";
+  /** "queued": selected, waiting for the photos ahead of it to finish --
+   * photos go up strictly one at a time, in the order they were picked. */
+  progress: "queued" | "uploading" | "processing" | "error";
   error?: string;
   /** Local object URL for the file being uploaded, so the tile can show the
    * actual image (dimmed, with a centered spinner over it) instead of a
@@ -293,6 +295,8 @@ export function ImageUploadManager({
   // the text).
   const placedMedia = media.filter((m) => inlineMediaIds.has(m.mediaId));
   const [uploading, setUploading] = useState<UploadingItem[]>([]);
+  // Serializes batches: see handleFiles' "Pass 2".
+  const uploadChainRef = useRef<Promise<void>>(Promise.resolve());
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
   const [isDragging, setIsDragging] = useState(false);
   // The server's own decision (lib/story/drive-sync.ts#getStoryMediaUploadMode),
@@ -451,9 +455,14 @@ export function ImageUploadManager({
     const remainingSlots =
       MAX_IMAGES_PER_REVISION - media.length - uploading.length;
     const toUpload = Array.from(files).slice(0, Math.max(0, remainingSlots));
+    const batchStamp = Date.now();
 
-    for (const file of toUpload) {
-      const key = `${file.name}-${file.size}-${Date.now()}`;
+    // Pass 1: put EVERY selected photo in the row straight away, so the
+    // contributor sees the whole batch at once and can watch it work through
+    // one tile at a time -- rather than tiles appearing one by one as each
+    // upload happens to start.
+    const batch = toUpload.map((file, index) => {
+      const key = `${batchStamp}-${index}-${file.name}-${file.size}`;
       const previewUrl = BROWSER_RENDERABLE_TYPES.includes(file.type)
         ? URL.createObjectURL(file)
         : null;
@@ -461,222 +470,228 @@ export function ImageUploadManager({
       // Fast client-side pre-checks — UX feedback only. Every real safety
       // decision (true format, dimensions, decode success) happens
       // server-side in lib/story/image-pipeline.ts; nothing here is trusted.
-      if (!isAcceptedFile(file)) {
-        setUploading((prev) => [
-          ...prev,
-          {
-            key,
-            fileName: file.name,
-            progress: "error",
-            error: t("errors.unsupportedType"),
-            previewUrl,
-          },
-        ]);
-        continue;
-      }
       const sizeLimit = looksLikeHeicUpload(file.type, file.name)
         ? MAX_HEIC_UPLOAD_BYTES
         : MAX_UPLOAD_BYTES;
-      if (file.size > sizeLimit) {
-        setUploading((prev) => [
-          ...prev,
-          {
-            key,
-            fileName: file.name,
-            progress: "error",
-            error: `File is too large (max ${Math.floor(sizeLimit / (1024 * 1024))} MB).`,
-            previewUrl,
-          },
-        ]);
-        continue;
-      }
+      const error = !isAcceptedFile(file)
+        ? t("errors.unsupportedType")
+        : file.size > sizeLimit
+          ? `File is too large (max ${Math.floor(sizeLimit / (1024 * 1024))} MB).`
+          : undefined;
+      return { file, key, previewUrl, error };
+    });
+    setUploading((prev) => [
+      ...prev,
+      ...batch.map(({ file, key, previewUrl, error }): UploadingItem =>
+        error
+          ? { key, fileName: file.name, progress: "error", error, previewUrl }
+          : { key, fileName: file.name, progress: "queued", previewUrl },
+      ),
+    ]);
 
-      setUploading((prev) => [
-        ...prev,
-        { key, fileName: file.name, progress: "uploading", previewUrl },
-      ]);
+    // Pass 2: upload the valid ones strictly in order, one at a time. A
+    // second pick made while a batch is still going waits for it on
+    // uploadChainRef instead of uploading alongside it, so there is only
+    // ever one spinner in the row.
+    const runBatch = async () => {
+      for (const { file, key, previewUrl, error } of batch) {
+        if (error) continue;
 
-      const isHeic = looksLikeHeicUpload(file.type, file.name);
-      const sourceMimeType = isHeic
-        ? ("image/heic" as const)
-        : (file.type as "image/jpeg" | "image/png" | "image/webp");
-
-      try {
-        // Drive mode is decided ENTIRELY server-side (uploadMode, fetched
-        // on mount) — this branch is the only place that conditional
-        // appears in this component; everything below it in the non-Drive
-        // branch is the existing code, untouched. See lib/story/drive-
-        // upload-client.ts for why the chunked-PUT-to-Drive logic isn't
-        // inlined here.
-        if (uploadMode === "google_drive") {
-          const [driveActions, driveClient]: [
-            DriveUploadActionsModule,
-            DriveUploadClientModule,
-          ] = await Promise.all([
-            import("@/app/(contributor)/stories/[id]/edit/drive-upload-actions"),
-            import("@/lib/story/drive-upload-client"),
-          ]);
-          const begunDrive = await driveClient.beginAndUploadToDrive(
-            { revisionId, file, mimeType: sourceMimeType },
-            driveActions.beginDriveMediaUploadAction,
-          );
-
-          setUploading((prev) =>
-            prev.map((u) =>
-              u.key === key ? { ...u, progress: "processing" } : u,
-            ),
-          );
-
-          // Same shared-queue reasoning as the Supabase path below: the
-          // version is only ever read inside this serialized callback, so
-          // the next autosave reads the version THIS upload produced
-          // instead of racing it.
-          const finalizedDrive = await new Promise<
-            Awaited<
-              ReturnType<
-                DriveUploadActionsModule["finalizeDriveMediaUploadAction"]
-              >
-            >
-          >((resolve) => {
-            queue.enqueue(`media-finalize:${begunDrive.mediaId}`, async () => {
-              const result = await driveActions.finalizeDriveMediaUploadAction(
-                begunDrive.mediaId,
-                versionRef.current,
-                begunDrive.driveFileId,
-              );
-              if (!("error" in result)) {
-                if (result.version !== null) {
-                  versionRef.current = result.version;
-                }
-                onVersionBumped();
-                resolve(result);
-                return;
-              }
-              resolve(result);
-              if (isStaleVersionConflict(result.error)) {
-                throw new Error(result.error);
-              }
-            });
-          });
-          if ("error" in finalizedDrive) {
-            throw new Error(finalizedDrive.error);
-          }
-        } else {
-          const begun = await beginMediaUploadAction(
-            revisionId,
-            sourceMimeType,
-          );
-          if ("error" in begun) throw new Error(begun.error);
-          const { mediaId, reservedPath } = begun;
-
-          setUploading((prev) =>
-            prev.map((u) =>
-              u.key === key ? { ...u, progress: "processing" } : u,
-            ),
-          );
-
-          const {
-            data: { session },
-          } = await createBrowserSupabaseClient().auth.getSession();
-          if (!session) throw new Error(tCommon("mustBeSignedIn"));
-
-          await uploadDirectlyToStorage(
-            reservedPath,
-            file,
-            sourceMimeType,
-            session.access_token,
-            {
-              tooLarge: t("errors.tooLarge"),
-              failedWithStatus: (status) =>
-                t("errors.uploadFailedStatus", { status }),
-            },
-          );
-
-          if (isHeic) {
-            const transcoded = await transcodeHeicUploadAction(mediaId);
-            if ("error" in transcoded) throw new Error(transcoded.error);
-          }
-
-          // On the shared mutation queue, exactly like this panel's four other
-          // version-bumping mutations below (reorder, cover, detach, caption).
-          //
-          // It used to be a bare `await` outside the queue, and that was a
-          // real data-loss bug: finalize_story_media_upload takes an
-          // expectedVersion, and so does the editor's 600ms-debounced autosave.
-          // Upload a photo just after typing and the two went out
-          // CONCURRENTLY carrying the same version -- whichever landed second
-          // was rejected with "Stale version", and when the loser was the text
-          // save, the words the contributor had just written were simply never
-          // persisted. Queueing it means the version is only ever read inside a
-          // serialized callback, so the autosave that runs next reads the
-          // version this upload produced instead of racing it.
-          const finalized = await new Promise<
-            Awaited<ReturnType<typeof finalizeMediaUploadAction>>
-          >((resolve) => {
-            queue.enqueue(`media-finalize:${mediaId}`, async () => {
-              const result = await finalizeMediaUploadAction(
-                mediaId,
-                versionRef.current,
-              );
-              if (!("error" in result)) {
-                // The server's own post-bump version, not an assumed "+1":
-                // finalizeMediaUploadAction retries a stale version against
-                // the live one, so the bump can start from a number this tab
-                // never held. Null means it could not be read — leave the
-                // counter alone rather than guess it wrong.
-                if (result.version !== null)
-                  versionRef.current = result.version;
-                onVersionBumped();
-                resolve(result);
-                return;
-              }
-              resolve(result);
-              // Every OTHER mutation on this shared queue throws on failure,
-              // which is what lets the queue's own onVersionConflict callback
-              // (story-edit-form.tsx) show the "this draft changed elsewhere —
-              // reload to continue" banner instead of a plain toast that just
-              // invites retrying into the same wall. This one used to swallow
-              // its own error and resolve unconditionally, so a genuine
-              // version conflict on a photo upload never reached that banner
-              // — only a generic "failed to upload" toast, with nothing
-              // telling the contributor their local version was stale. Rethrow
-              // for a version conflict specifically (not every finalize
-              // failure — an unsupported format or a decode failure is not
-              // "reload this page", it's "pick a different photo").
-              if (isStaleVersionConflict(result.error)) {
-                throw new Error(result.error);
-              }
-            });
-          });
-          if ("error" in finalized) throw new Error(finalized.error);
-        }
-        if (previewUrl) {
-          URL.revokeObjectURL(previewUrl);
-          previewUrlsRef.current.delete(previewUrl);
-        }
-        setUploading((prev) => prev.filter((u) => u.key !== key));
-        showToast(t("errors.uploadedToast", { fileName: file.name }));
-        // Deliberately AFTER the success toast and outside the try: by this
-        // point the photo is uploaded, finalized and attached. refresh() only
-        // re-reads the tile list, so letting it throw in here would have
-        // painted a finished upload as a failed one.
-        await refresh().catch(() => {});
-      } catch (error) {
-        const message = getErrorMessage(error, t("errors.uploadFailed"));
         setUploading((prev) =>
           prev.map((u) =>
-            u.key === key
-              ? {
-                  ...u,
-                  progress: "error",
-                  error: message,
-                }
-              : u,
+            u.key === key ? { ...u, progress: "uploading" } : u,
           ),
         );
-        showToast(`${file.name} failed to upload.`, "error");
+
+        const isHeic = looksLikeHeicUpload(file.type, file.name);
+        const sourceMimeType = isHeic
+          ? ("image/heic" as const)
+          : (file.type as "image/jpeg" | "image/png" | "image/webp");
+
+        try {
+          // Drive mode is decided ENTIRELY server-side (uploadMode, fetched
+          // on mount) — this branch is the only place that conditional
+          // appears in this component; everything below it in the non-Drive
+          // branch is the existing code, untouched. See lib/story/drive-
+          // upload-client.ts for why the chunked-PUT-to-Drive logic isn't
+          // inlined here.
+          if (uploadMode === "google_drive") {
+            const [driveActions, driveClient]: [
+              DriveUploadActionsModule,
+              DriveUploadClientModule,
+            ] = await Promise.all([
+              import("@/app/(contributor)/stories/[id]/edit/drive-upload-actions"),
+              import("@/lib/story/drive-upload-client"),
+            ]);
+            const begunDrive = await driveClient.beginAndUploadToDrive(
+              { revisionId, file, mimeType: sourceMimeType },
+              driveActions.beginDriveMediaUploadAction,
+            );
+
+            setUploading((prev) =>
+              prev.map((u) =>
+                u.key === key ? { ...u, progress: "processing" } : u,
+              ),
+            );
+
+            // Same shared-queue reasoning as the Supabase path below: the
+            // version is only ever read inside this serialized callback, so
+            // the next autosave reads the version THIS upload produced
+            // instead of racing it.
+            const finalizedDrive = await new Promise<
+              Awaited<
+                ReturnType<
+                  DriveUploadActionsModule["finalizeDriveMediaUploadAction"]
+                >
+              >
+            >((resolve) => {
+              queue.enqueue(
+                `media-finalize:${begunDrive.mediaId}`,
+                async () => {
+                  const result =
+                    await driveActions.finalizeDriveMediaUploadAction(
+                      begunDrive.mediaId,
+                      versionRef.current,
+                      begunDrive.driveFileId,
+                    );
+                  if (!("error" in result)) {
+                    if (result.version !== null) {
+                      versionRef.current = result.version;
+                    }
+                    onVersionBumped();
+                    resolve(result);
+                    return;
+                  }
+                  resolve(result);
+                  if (isStaleVersionConflict(result.error)) {
+                    throw new Error(result.error);
+                  }
+                },
+              );
+            });
+            if ("error" in finalizedDrive) {
+              throw new Error(finalizedDrive.error);
+            }
+          } else {
+            const begun = await beginMediaUploadAction(
+              revisionId,
+              sourceMimeType,
+            );
+            if ("error" in begun) throw new Error(begun.error);
+            const { mediaId, reservedPath } = begun;
+
+            setUploading((prev) =>
+              prev.map((u) =>
+                u.key === key ? { ...u, progress: "processing" } : u,
+              ),
+            );
+
+            const {
+              data: { session },
+            } = await createBrowserSupabaseClient().auth.getSession();
+            if (!session) throw new Error(tCommon("mustBeSignedIn"));
+
+            await uploadDirectlyToStorage(
+              reservedPath,
+              file,
+              sourceMimeType,
+              session.access_token,
+              {
+                tooLarge: t("errors.tooLarge"),
+                failedWithStatus: (status) =>
+                  t("errors.uploadFailedStatus", { status }),
+              },
+            );
+
+            if (isHeic) {
+              const transcoded = await transcodeHeicUploadAction(mediaId);
+              if ("error" in transcoded) throw new Error(transcoded.error);
+            }
+
+            // On the shared mutation queue, exactly like this panel's four other
+            // version-bumping mutations below (reorder, cover, detach, caption).
+            //
+            // It used to be a bare `await` outside the queue, and that was a
+            // real data-loss bug: finalize_story_media_upload takes an
+            // expectedVersion, and so does the editor's 600ms-debounced autosave.
+            // Upload a photo just after typing and the two went out
+            // CONCURRENTLY carrying the same version -- whichever landed second
+            // was rejected with "Stale version", and when the loser was the text
+            // save, the words the contributor had just written were simply never
+            // persisted. Queueing it means the version is only ever read inside a
+            // serialized callback, so the autosave that runs next reads the
+            // version this upload produced instead of racing it.
+            const finalized = await new Promise<
+              Awaited<ReturnType<typeof finalizeMediaUploadAction>>
+            >((resolve) => {
+              queue.enqueue(`media-finalize:${mediaId}`, async () => {
+                const result = await finalizeMediaUploadAction(
+                  mediaId,
+                  versionRef.current,
+                );
+                if (!("error" in result)) {
+                  // The server's own post-bump version, not an assumed "+1":
+                  // finalizeMediaUploadAction retries a stale version against
+                  // the live one, so the bump can start from a number this tab
+                  // never held. Null means it could not be read — leave the
+                  // counter alone rather than guess it wrong.
+                  if (result.version !== null)
+                    versionRef.current = result.version;
+                  onVersionBumped();
+                  resolve(result);
+                  return;
+                }
+                resolve(result);
+                // Every OTHER mutation on this shared queue throws on failure,
+                // which is what lets the queue's own onVersionConflict callback
+                // (story-edit-form.tsx) show the "this draft changed elsewhere —
+                // reload to continue" banner instead of a plain toast that just
+                // invites retrying into the same wall. This one used to swallow
+                // its own error and resolve unconditionally, so a genuine
+                // version conflict on a photo upload never reached that banner
+                // — only a generic "failed to upload" toast, with nothing
+                // telling the contributor their local version was stale. Rethrow
+                // for a version conflict specifically (not every finalize
+                // failure — an unsupported format or a decode failure is not
+                // "reload this page", it's "pick a different photo").
+                if (isStaleVersionConflict(result.error)) {
+                  throw new Error(result.error);
+                }
+              });
+            });
+            if ("error" in finalized) throw new Error(finalized.error);
+          }
+          if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            previewUrlsRef.current.delete(previewUrl);
+          }
+          setUploading((prev) => prev.filter((u) => u.key !== key));
+          showToast(t("errors.uploadedToast", { fileName: file.name }));
+          // Deliberately AFTER the success toast and outside the try: by this
+          // point the photo is uploaded, finalized and attached. refresh() only
+          // re-reads the tile list, so letting it throw in here would have
+          // painted a finished upload as a failed one.
+          await refresh().catch(() => {});
+        } catch (error) {
+          const message = getErrorMessage(error, t("errors.uploadFailed"));
+          setUploading((prev) =>
+            prev.map((u) =>
+              u.key === key
+                ? {
+                    ...u,
+                    progress: "error",
+                    error: message,
+                  }
+                : u,
+            ),
+          );
+          showToast(`${file.name} failed to upload.`, "error");
+        }
       }
-    }
+    };
+    const next = uploadChainRef.current.then(runBatch, runBatch);
+    uploadChainRef.current = next;
+    await next;
   }
 
   // Swaps two specific items' positions (rather than splicing a range),
@@ -881,49 +896,67 @@ export function ImageUploadManager({
       </div>
 
       {uploading.length > 0 && (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {uploading.map((u) => (
-            <li key={u.key} className="space-y-1">
-              {/* A third the size of the finished-thumbnail tiles below --
-                  this is a transient status preview, not the actual gallery
-                  item, so it doesn't need to fill the same grid cell. */}
-              <div
-                className={`relative aspect-square w-1/3 overflow-hidden rounded-md border-2 ${
-                  u.progress === "error"
-                    ? "border-destructive"
-                    : "border-border-subtle"
-                }`}
+        /* One horizontal row of every selected photo. They go up one at a
+           time: the active tile carries a spinner, the ones still waiting
+           sit dimmed, and a failed one turns red with its reason beneath.
+           No "Uploading…/Processing…" words on screen -- the spinner says
+           it; the state is still spelled out for screen readers. */
+        <ul
+          aria-label={t("uploadQueue")}
+          className="nf-scroll-x -mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+        >
+          {uploading.map((u) => {
+            const isError = u.progress === "error";
+            const isActive =
+              u.progress === "uploading" || u.progress === "processing";
+            return (
+              <li
+                key={u.key}
+                className={`shrink-0 space-y-1 ${isError ? "w-28" : "w-20"}`}
               >
-                {u.previewUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element -- a local object URL for the file being uploaded, not an optimizable static asset */
-                  <img
-                    src={u.previewUrl}
-                    alt=""
-                    className={`h-full w-full object-cover ${u.progress === "error" ? "opacity-40" : "opacity-90"}`}
-                  />
-                ) : (
-                  /* HEIC: no browser-renderable local preview, so the tile
-                     stays a plain muted square until the processed
-                     (JPEG) thumbnail arrives from the server. */
-                  <div className="h-full w-full bg-surface-muted" />
-                )}
-              </div>
-              <p
-                className={`truncate text-xs ${
-                  u.progress === "error"
-                    ? "text-destructive"
-                    : "text-muted-foreground"
-                }`}
-                title={u.fileName}
-              >
-                {u.progress === "error"
-                  ? u.error
-                  : u.progress === "uploading"
-                    ? t("state.uploading")
-                    : t("state.processing")}
-              </p>
-            </li>
-          ))}
+                <div
+                  className={`relative aspect-square w-20 overflow-hidden rounded-md border-2 bg-surface-muted ${
+                    isError ? "border-destructive" : "border-border-subtle"
+                  }`}
+                >
+                  {u.previewUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element -- a local object URL for the file being uploaded, not an optimizable static asset */
+                    <img
+                      src={u.previewUrl}
+                      alt=""
+                      className={`h-full w-full object-cover transition-opacity duration-300 ${
+                        isActive ? "opacity-90" : "opacity-40"
+                      }`}
+                    />
+                  ) : null}
+                  {isActive ? (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/30 text-white">
+                      <Spinner className="h-6 w-6" />
+                    </span>
+                  ) : null}
+                  <span className="sr-only">
+                    {u.fileName}:{" "}
+                    {isError
+                      ? u.error
+                      : u.progress === "queued"
+                        ? t("state.queued")
+                        : u.progress === "uploading"
+                          ? t("state.uploading")
+                          : t("state.processing")}
+                  </span>
+                </div>
+                {isError ? (
+                  <p
+                    aria-hidden="true"
+                    className="line-clamp-2 text-[11px] leading-tight text-destructive"
+                    title={u.error}
+                  >
+                    {u.error}
+                  </p>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       )}
 
