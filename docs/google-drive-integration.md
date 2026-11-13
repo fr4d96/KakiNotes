@@ -608,6 +608,35 @@ Supabase service-role privilege that rule guards:
   `drive-sync.ts` / `token-store.ts` pair — neither gets its own separate
   privileged path.
 
+### Server-rendered images: a contributor's own PDF import (2026-11-13)
+
+A contributor's PDF import (`app/(contributor)/stories/new/pdf-attach`) renders the chosen pages on
+the server, so there is no browser upload and no staging file. `attachPdfPagesToRevision`
+(`lib/story/pdf-page-attachment.ts`) is called with `allowDrive: true` and asks
+`getStoryMediaUploadMode()` (`get_story_media_upload_mode`) for the backend. On `google_drive`,
+each page goes through:
+
+1. `reserveDriveMediaSlot()` → `begin_drive_media_upload` (edit rights, self-submitted owner, active
+   connection and the 12-image cap, all re-derived in SQL);
+2. `attachServerBytesAsDriveMedia()` → `authorize_drive_media_finalize_v2`, then the same shared tail
+   `finalizeDriveMediaUpload` uses: in-memory pipeline, derivative written as `NN.ext` into the
+   story's own folder, `finalize_drive_media_upload`, and (after the response) the owner-only
+   full-quality copy.
+
+The rendered PNG never leaves server memory unprocessed, so Rule 14's transient staging file is not
+needed at all. The batch runs one `syncStoryFolder` pass at the end (`scheduleStoryFolderSync`)
+instead of one per page. On `supabase` (no connection, or any doubt) it uses the original
+`begin_story_media_upload` path, which the mandatory-Drive trigger then refuses for an ordinary
+contributor.
+
+The editorial import (`app/(editor)/editorial/new/pdf-attach`) does not pass `allowDrive`, so it
+never asks for the mode and always stores in Supabase, as before. No migration was needed: every
+RPC above already existed.
+
+Rollback is unchanged: a failure part-way cancels pending reservations and detaches pages already
+attached. A detached Drive page's derivative stays in the contributor's story folder, the same
+detach-and-retain behaviour a Supabase page has. The next folder sync files it as usual.
+
 ## 5. Read/cache path — the proxy route
 
 **The proxy route serves `google_drive`-backend media only.**

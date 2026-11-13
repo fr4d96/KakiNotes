@@ -11170,3 +11170,37 @@ reads.
 **Still to do (owner):** Vercel env vars and a redeploy of `release`; the two GitHub Actions secrets;
 Auth dashboard settings on the new project (see "Manual Supabase settings required"). Free-plan
 limits still apply — originals are retained by the pipeline and will refill storage over time.
+
+## 2026-11-13 — A contributor's PDF import stores page images in their Google Drive
+
+**What changed.** A Drive-connected contributor's own PDF import
+(`app/(contributor)/stories/new/pdf-attach`) now creates only `google_drive`-backed `story_media`
+rows. It used to reserve Supabase storage slots via `begin_story_media_upload`, so it kept filling
+Supabase storage even after Drive became mandatory for contributors. The editorial PDF import
+(`app/(editor)/editorial/new/pdf-attach`) is unchanged and still stores in Supabase.
+
+- `lib/story/pdf-page-attachment.ts`: new `allowDrive` option. When set, the backend comes from
+  `getStoryMediaUploadMode()` (server-side, never the client); `google_drive` pages go through
+  `reserveDriveMediaSlot` + `attachServerBytesAsDriveMedia`, then one `scheduleStoryFolderSync`
+  for the batch. The rollback on a part-way failure covers both backends.
+- `lib/story/drive-sync.ts`: `finalizeDriveMediaUpload`'s process → derivative → record → after()
+  tail is now a shared `processAndRecordDriveMedia`. New exports: `reserveDriveMediaSlot`
+  (`begin_drive_media_upload` only, no resumable session), `attachServerBytesAsDriveMedia`
+  (server-held bytes, no staging file, same `authorize_drive_media_finalize_v2` pre-check) and
+  `scheduleStoryFolderSync`. `beginDriveMediaUpload` and `finalizeDriveMediaUpload` behave as
+  before.
+- No migration. Every RPC used already existed.
+- Docs: `docs/google-drive-integration.md` section 4, "Server-rendered images".
+
+**Verified:** unit tests for the new drive-sync exports (no staging, no download, derivative and
+record only, orphan cleanup on a failed record, optional per-photo sync) and for the Drive branch
+of `attachPdfPagesToRevision` (only `google_drive` rows, no Supabase storage object, no
+`begin_story_media_upload`, rollback, the editorial path never asking for the mode). The contributor
+route test checks that it asks the server for the mode. `npm run verify` passes.
+
+**Not verified:** a real PDF import against a live Drive account (no hosted run was done; the
+hosted project is also production).
+
+**Risk:** the request now does Drive work inline for every page (up to 12 pipeline runs and Drive
+uploads in one request), as the Supabase path already did with `processStoryMedia`. A large
+selection on a slow Drive connection could approach the function's time limit.

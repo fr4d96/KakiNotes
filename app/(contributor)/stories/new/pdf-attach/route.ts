@@ -178,6 +178,10 @@ export async function POST(request: NextRequest) {
     storyId,
     revisionId,
     expectedVersion: 1,
+    // A Drive-connected contributor's pages go to their own Google Drive,
+    // never Supabase storage (docs/google-drive-integration.md, "Mandatory
+    // Drive connection"). The server decides; see attachPdfPagesToRevision.
+    allowDrive: true,
   });
   if (!attachResult.ok) {
     return NextResponse.json(

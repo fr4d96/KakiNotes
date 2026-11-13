@@ -9,6 +9,12 @@ import {
   detachStoryMedia,
 } from "@/lib/story/mutations";
 import { processStoryMedia } from "@/lib/story/image-pipeline";
+import {
+  getStoryMediaUploadMode,
+  reserveDriveMediaSlot,
+  attachServerBytesAsDriveMedia,
+  scheduleStoryFolderSync,
+} from "@/lib/story/drive-sync";
 import { getStoryPreview } from "@/lib/story/contributor-queries";
 import { MAX_IMAGES_PER_REVISION } from "@/lib/story/image-validation";
 import {
@@ -30,7 +36,16 @@ import {
  * manual upload, just driven in a loop over rendered PDF pages instead of
  * one `File` from a form.
  *
- * Not wired into any Server Action, Route Handler, or UI yet (Stage 4).
+ * Storage backend (2026-11-13): with `allowDrive: true` (the contributor's
+ * own PDF import, app/(contributor)/stories/new/pdf-attach) the backend is
+ * whatever get_story_media_upload_mode() answers for this revision --
+ * google_drive for a self-submitted story's own Drive-connected owner --
+ * and Drive pages go through begin_/finalize_drive_media_upload
+ * (lib/story/drive-sync.ts) with no Supabase storage at all. Without it
+ * (the editorial import, app/(editor)/editorial/new/pdf-attach) every page
+ * stays on the Supabase path below, by design: editorial imports always
+ * store in Supabase.
+ *
  * This module assumes it runs inside a request context that already has an
  * authenticated session (cookies) — same assumption every function in
  * `lib/story/mutations.ts` already makes.
@@ -103,6 +118,9 @@ export async function attachPdfPagesToRevision(params: {
   storyId: string;
   revisionId: string;
   expectedVersion: number;
+  /** Follow get_story_media_upload_mode() (contributor self-service only).
+   * Defaults to false: Supabase, whatever the caller's Drive state. */
+  allowDrive?: boolean;
 }): Promise<PdfPageAttachResult> {
   const { bytes, pageNumbers, storyId, revisionId } = params;
 
@@ -137,6 +155,13 @@ export async function attachPdfPagesToRevision(params: {
   const rendered = await renderPagesAtFullQuality(bytes, pageNumbers);
   if (!rendered.ok) return rendered;
 
+  // The server decides the backend (never the client): "google_drive" only
+  // for a self-submitted story's own owner with an active connection, and
+  // "supabase" on any doubt. begin_drive_media_upload re-checks all of it.
+  const backend = params.allowDrive
+    ? await getStoryMediaUploadMode(revisionId)
+    : "supabase";
+
   const supabase = await createClient();
   const {
     data: { session },
@@ -170,6 +195,35 @@ export async function attachPdfPagesToRevision(params: {
 
   try {
     for (const page of rendered.pages) {
+      if (backend === "google_drive") {
+        let mediaId: string;
+        try {
+          mediaId = await reserveDriveMediaSlot(revisionId, "image/png");
+        } catch {
+          await rollback();
+          return { ok: false, error: "capacity_exceeded" };
+        }
+        items.push({ pageNumber: page.pageNumber, mediaId, state: "pending" });
+
+        // Processes in memory, writes the derivative straight into the
+        // story's Drive folder and records it -- one step, no staging file
+        // (the rendered PNG never leaves server memory unprocessed).
+        try {
+          await attachServerBytesAsDriveMedia(mediaId, version, page.bytes, {
+            syncFolder: false,
+          });
+          version += 1;
+        } catch {
+          await rollback();
+          return { ok: false, error: "attach_failed" };
+        }
+        items[items.length - 1] = {
+          ...items[items.length - 1],
+          state: "attached",
+        };
+        continue;
+      }
+
       let mediaId: string;
       let reservedPath: string;
       try {
@@ -227,6 +281,16 @@ export async function attachPdfPagesToRevision(params: {
   } catch {
     await rollback();
     return { ok: false, error: "attach_failed" };
+  }
+
+  // One renumber pass for the whole batch, after the response, instead of
+  // one overlapping pass per page. Best effort, like every folder sync.
+  if (backend === "google_drive") {
+    try {
+      await scheduleStoryFolderSync(storyId);
+    } catch {
+      // Nothing to undo: every page is recorded and correctly named already.
+    }
   }
 
   // Duplicate detection: compare sha256 of every image now on this revision

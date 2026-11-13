@@ -88,6 +88,33 @@ export type BeginDriveMediaUploadResult = {
   sessionUri: string;
 };
 
+export type DriveSourceMimeType =
+  "image/jpeg" | "image/png" | "image/webp" | "image/heic";
+
+/**
+ * Reserves a google_drive-backed story_media slot via
+ * begin_drive_media_upload(), which re-derives edit rights, the
+ * self-submitted-owner gate and an active Drive connection on its own
+ * (Rule 2/3), and enforces the 12-image cap under a lock. Opens nothing in
+ * Drive: beginDriveMediaUpload adds the browser's resumable session on top,
+ * and attachServerBytesAsDriveMedia needs no session at all.
+ */
+export async function reserveDriveMediaSlot(
+  revisionId: string,
+  sourceMimeType: DriveSourceMimeType,
+): Promise<string> {
+  await requireUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("begin_drive_media_upload", {
+    p_revision_id: revisionId,
+    p_source_mime_type: sourceMimeType,
+  });
+  if (error || !data || data.length === 0) {
+    throw new Error(error?.message ?? "Failed to reserve a Drive upload slot");
+  }
+  return data[0].media_id;
+}
+
 /**
  * Drive-mode sibling of beginStoryMediaUpload (lib/story/mutations.ts):
  * reserves the story_media row via begin_drive_media_upload() (which
@@ -99,20 +126,11 @@ export type BeginDriveMediaUploadResult = {
  */
 export async function beginDriveMediaUpload(
   revisionId: string,
-  sourceMimeType: "image/jpeg" | "image/png" | "image/webp" | "image/heic",
+  sourceMimeType: DriveSourceMimeType,
   sizeBytes: number,
 ): Promise<BeginDriveMediaUploadResult> {
   const user = await requireUser();
-
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("begin_drive_media_upload", {
-    p_revision_id: revisionId,
-    p_source_mime_type: sourceMimeType,
-  });
-  if (error || !data || data.length === 0) {
-    throw new Error(error?.message ?? "Failed to reserve a Drive upload slot");
-  }
-  const mediaId = data[0].media_id;
+  const mediaId = await reserveDriveMediaSlot(revisionId, sourceMimeType);
 
   const accessToken = await getAccessToken(user.id);
   const { stagingFolderId } = await ensureAppFolders(user.id, accessToken);
@@ -222,8 +240,113 @@ export async function finalizeDriveMediaUpload(
     );
   }
 
-  // 3. Download, process, upload, record, delete raw — in that order.
+  // 3. Download, then process, upload, record, delete raw — in that order.
   const rawBytes = await downloadFileBytes(accessToken, driveFileId, user.id);
+  await processAndRecordDriveMedia({
+    supabase,
+    accessToken,
+    userId: user.id,
+    mediaId,
+    storyId,
+    expectedVersion,
+    rawBytes,
+    sourceFileSizeBytes: metadata.size,
+    stagingFileId: driveFileId,
+    syncFolder: true,
+  });
+}
+
+/**
+ * Server-held bytes -> a recorded google_drive photo, with no staging file
+ * at all. For images the SERVER produced itself (PDF import's rendered
+ * pages, lib/story/pdf-page-attachment.ts), where there is no browser
+ * upload to verify: the bytes never leave server memory except as the
+ * processed, metadata-stripped derivative (and the owner-only full-quality
+ * copy), so Rule 14's transient raw staging file is skipped entirely.
+ *
+ * `mediaId` must come from reserveDriveMediaSlot(). Authorization is the
+ * same authorize_drive_media_finalize_v2 pre-check finalizeDriveMediaUpload
+ * uses (edit rights + a pending, unexpired google_drive reservation), and
+ * finalize_drive_media_upload re-derives the self-submitted-owner gate
+ * again when recording.
+ *
+ * `syncFolder: false` lets a caller attaching several photos in one request
+ * schedule a single scheduleStoryFolderSync() at the end instead of one
+ * overlapping renumber pass per photo.
+ */
+export async function attachServerBytesAsDriveMedia(
+  mediaId: string,
+  expectedVersion: number,
+  rawBytes: Buffer,
+  options: { syncFolder?: boolean } = {},
+): Promise<void> {
+  const user = await requireUser();
+  const supabase = await createClient();
+
+  const { data: storyId, error: authError } = await supabase.rpc(
+    "authorize_drive_media_finalize_v2",
+    { p_media_id: mediaId },
+  );
+  if (authError || !storyId) {
+    throw new DriveFinalizeRejectedError(
+      authError?.message ?? "not authorized",
+    );
+  }
+
+  const accessToken = await getAccessToken(user.id);
+  await processAndRecordDriveMedia({
+    supabase,
+    accessToken,
+    userId: user.id,
+    mediaId,
+    storyId,
+    expectedVersion,
+    rawBytes,
+    sourceFileSizeBytes: rawBytes.byteLength,
+    stagingFileId: null,
+    syncFolder: options.syncFolder ?? true,
+  });
+}
+
+/**
+ * Schedules one syncStoryFolder() pass after the response, for a caller
+ * that attached photos with `syncFolder: false`.
+ */
+export async function scheduleStoryFolderSync(storyId: string): Promise<void> {
+  const user = await requireUser();
+  after(async () => {
+    await syncStoryFolder(user.id, storyId);
+  });
+}
+
+/**
+ * Shared tail of both Drive upload paths: pipeline -> derivative into the
+ * story's own folder -> finalize_drive_media_upload, then (after the
+ * response) the full-quality copy, the staging-file delete when there is
+ * one, and the folder sync when asked.
+ */
+async function processAndRecordDriveMedia(input: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  accessToken: string;
+  userId: string;
+  mediaId: string;
+  storyId: string;
+  expectedVersion: number;
+  rawBytes: Buffer;
+  sourceFileSizeBytes: number;
+  stagingFileId: string | null;
+  syncFolder: boolean;
+}): Promise<void> {
+  const {
+    supabase,
+    accessToken,
+    mediaId,
+    storyId,
+    expectedVersion,
+    rawBytes,
+    stagingFileId,
+  } = input;
+  const user = { id: input.userId };
   const processed = await processImageBytesInMemory(rawBytes);
 
   // The derivative is written straight into the story's OWN Drive folder
@@ -277,7 +400,7 @@ export async function finalizeDriveMediaUpload(
         p_source_mime_type: processed.sourceMimeType,
         p_source_width: processed.sourceWidth,
         p_source_height: processed.sourceHeight,
-        p_source_file_size_bytes: metadata.size,
+        p_source_file_size_bytes: input.sourceFileSizeBytes,
         p_processed_mime_type: processed.processedMimeType,
         p_processed_file_size_bytes: processed.bytes.byteLength,
         p_processed_width: processed.processedWidth,
@@ -349,16 +472,20 @@ export async function finalizeDriveMediaUpload(
       });
     }
 
-    await deleteFilePermanently(accessToken, driveFileId, user.id).catch(
-      (err) => {
-        console.error("Failed to delete Drive staging file", {
-          mediaId,
-          driveFileId,
-          error: err instanceof Error ? err.message : err,
-        });
-      },
-    );
-    await syncStoryFolder(user.id, storyId);
+    if (stagingFileId) {
+      await deleteFilePermanently(accessToken, stagingFileId, user.id).catch(
+        (err) => {
+          console.error("Failed to delete Drive staging file", {
+            mediaId,
+            driveFileId: stagingFileId,
+            error: err instanceof Error ? err.message : err,
+          });
+        },
+      );
+    }
+    if (input.syncFolder) {
+      await syncStoryFolder(user.id, storyId);
+    }
   });
 }
 

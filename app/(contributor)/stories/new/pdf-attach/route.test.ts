@@ -250,6 +250,11 @@ const fakeSupabase = {
         story.version += 1;
         return { data: story.version, error: null };
       }
+      // The contributor route lets the server pick the backend; this fake
+      // answers "supabase" (a Drive-connected owner's google_drive branch is
+      // covered in lib/story/pdf-page-attachment.test.ts).
+      case "get_story_media_upload_mode":
+        return { data: "supabase", error: null };
       default:
         throw new Error(`Unmocked RPC in test fake: ${name}`);
     }
@@ -386,6 +391,11 @@ describe("POST /stories/new/pdf-attach", () => {
     const body = await response.json();
     expect(body.attachedCount).toBe(2);
     expect(body.storyId).toBeTruthy();
+    // Opts in to the server's backend decision (Drive for a connected owner).
+    const modeCall = fakeSupabase.rpc.mock.calls.find(
+      ([name]) => name === "get_story_media_upload_mode",
+    );
+    expect(modeCall?.[1]).toEqual({ p_revision_id: body.revisionId });
   });
 
   it("defaults to a new-zealand draft when the country field is missing (back-compat)", async () => {

@@ -6,6 +6,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { createHash } from "node:crypto";
 
 vi.mock("server-only", () => ({}));
 
@@ -34,6 +35,7 @@ type FakeMediaRow = {
   privateStoragePath: string;
   processingState: "pending_upload" | "uploaded" | "processed" | "failed";
   sha256: string | null;
+  storageBackend?: "supabase" | "google_drive";
 };
 
 type FakeRevisionMediaRow = {
@@ -351,6 +353,79 @@ vi.mock("@/lib/story/raw-storage-http", () => ({
   },
 }));
 
+// lib/story/drive-sync.ts -- its own Drive/RPC contract is covered in
+// drive-sync.test.ts. Faked here against the SAME in-memory tables so the
+// Drive branch of attachPdfPagesToRevision is exercised end to end:
+// begin_drive_media_upload's capacity rule, finalize_drive_media_upload's
+// version check, and no Supabase storage object ever written.
+let uploadMode: "supabase" | "google_drive" = "supabase";
+let forceDriveAttachFailureOnCall: number | null = null;
+let driveAttachCallCount = 0;
+const getStoryMediaUploadMode = vi.fn(async () => uploadMode);
+const scheduleStoryFolderSync = vi.fn(async () => {});
+const reserveDriveMediaSlot = vi.fn(async (revisionId: string) => {
+  const taken =
+    revisionMediaRows.filter((r) => r.revisionId === revisionId).length +
+    [...mediaRows.values()].filter(
+      (m) =>
+        m.reservedForRevisionId === revisionId &&
+        m.processingState === "pending_upload",
+    ).length;
+  if (taken >= MAX_IMAGES_PER_REVISION) throw new Error("capacity");
+  mediaIdCounter += 1;
+  const id = `drive-media-${mediaIdCounter}`;
+  mediaRows.set(id, {
+    id,
+    storyId: STORY_ID,
+    reservedForRevisionId: revisionId,
+    privateStoragePath: "",
+    processingState: "pending_upload",
+    sha256: null,
+    storageBackend: "google_drive",
+  });
+  return id;
+});
+const attachServerBytesAsDriveMedia = vi.fn(
+  async (
+    mediaId: string,
+    expectedVersion: number,
+    bytes: Buffer,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _options?: { syncFolder?: boolean },
+  ) => {
+    driveAttachCallCount += 1;
+    if (forceDriveAttachFailureOnCall === driveAttachCallCount) {
+      throw new Error("forced drive failure");
+    }
+    const media = mediaRows.get(mediaId);
+    if (!media) throw new Error("no such media");
+    if (expectedVersion !== storyVersion) throw new Error("stale version");
+    const nextSort =
+      Math.max(
+        -1,
+        ...revisionMediaRows
+          .filter((r) => r.revisionId === media.reservedForRevisionId)
+          .map((r) => r.sortOrder),
+      ) + 1;
+    revisionMediaRows.push({
+      revisionId: media.reservedForRevisionId,
+      mediaId,
+      sortOrder: nextSort,
+      decorative: true,
+      altText: null,
+    });
+    media.processingState = "processed";
+    media.sha256 = createHash("sha256").update(bytes).digest("hex");
+    storyVersion += 1;
+  },
+);
+vi.mock("@/lib/story/drive-sync", () => ({
+  getStoryMediaUploadMode,
+  reserveDriveMediaSlot,
+  attachServerBytesAsDriveMedia,
+  scheduleStoryFolderSync,
+}));
+
 const { attachPdfPagesToRevision } = await import("./pdf-page-attachment");
 
 const FIXTURES_DIR = path.join(__dirname, "__fixtures__");
@@ -363,6 +438,13 @@ beforeEach(() => {
   forceFinalizeFailureOnCall = null;
   finalizeCallCount = 0;
   fakeSupabase.rpc.mockClear();
+  uploadMode = "supabase";
+  forceDriveAttachFailureOnCall = null;
+  driveAttachCallCount = 0;
+  getStoryMediaUploadMode.mockClear();
+  scheduleStoryFolderSync.mockClear();
+  reserveDriveMediaSlot.mockClear();
+  attachServerBytesAsDriveMedia.mockClear();
 });
 
 describe("attachPdfPagesToRevision", () => {
@@ -501,5 +583,128 @@ describe("attachPdfPagesToRevision", () => {
     });
 
     expect(result).toEqual({ ok: false, error: "unauthorized" });
+  });
+});
+
+describe("attachPdfPagesToRevision -- storage backend", () => {
+  function rpcNames() {
+    return fakeSupabase.rpc.mock.calls.map(([name]) => name);
+  }
+
+  it("with allowDrive and a Drive-connected owner, creates only google_drive rows and writes nothing to Supabase storage", async () => {
+    uploadMode = "google_drive";
+    const bytes = await fixture("valid-two-page.pdf");
+    const result = await attachPdfPagesToRevision({
+      bytes,
+      pageNumbers: [2, 1],
+      storyId: STORY_ID,
+      revisionId: REVISION_ID,
+      expectedVersion: 1,
+      allowDrive: true,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.attached.map((a) => a.pageNumber)).toEqual([2, 1]);
+    expect(result.attached.map((a) => a.sortOrder)).toEqual([0, 1]);
+    expect(getStoryMediaUploadMode).toHaveBeenCalledWith(REVISION_ID);
+    expect([...mediaRows.values()].map((m) => m.storageBackend)).toEqual([
+      "google_drive",
+      "google_drive",
+    ]);
+    for (const m of mediaRows.values()) {
+      expect(m.processingState).toBe("processed");
+    }
+    // Versions threaded through in order: 1 then 2.
+    expect(attachServerBytesAsDriveMedia.mock.calls.map((c) => c[1])).toEqual([
+      1, 2,
+    ]);
+    expect(
+      attachServerBytesAsDriveMedia.mock.calls.every(
+        (c) => c[3]?.syncFolder === false,
+      ),
+    ).toBe(true);
+    expect(scheduleStoryFolderSync).toHaveBeenCalledTimes(1);
+    expect(scheduleStoryFolderSync).toHaveBeenCalledWith(STORY_ID);
+
+    expect(objects.size).toBe(0);
+    expect(rpcNames()).not.toContain("begin_story_media_upload");
+    expect(rpcNames()).not.toContain("finalize_story_media_upload");
+  });
+
+  it("with allowDrive but a supabase answer from the server, uses the Supabase path", async () => {
+    uploadMode = "supabase";
+    const bytes = await fixture("valid-two-page.pdf");
+    const result = await attachPdfPagesToRevision({
+      bytes,
+      pageNumbers: [1],
+      storyId: STORY_ID,
+      revisionId: REVISION_ID,
+      expectedVersion: 1,
+      allowDrive: true,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(reserveDriveMediaSlot).not.toHaveBeenCalled();
+    expect(scheduleStoryFolderSync).not.toHaveBeenCalled();
+    expect(rpcNames()).toContain("begin_story_media_upload");
+  });
+
+  it("without allowDrive (editorial import), never asks for the upload mode and stays on Supabase", async () => {
+    uploadMode = "google_drive";
+    const bytes = await fixture("valid-two-page.pdf");
+    const result = await attachPdfPagesToRevision({
+      bytes,
+      pageNumbers: [1],
+      storyId: STORY_ID,
+      revisionId: REVISION_ID,
+      expectedVersion: 1,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(getStoryMediaUploadMode).not.toHaveBeenCalled();
+    expect(reserveDriveMediaSlot).not.toHaveBeenCalled();
+    expect(rpcNames()).toContain("begin_story_media_upload");
+  });
+
+  it("rolls back every Drive page it attached when a later one fails", async () => {
+    uploadMode = "google_drive";
+    forceDriveAttachFailureOnCall = 2;
+    const bytes = await fixture("valid-two-page.pdf");
+    const result = await attachPdfPagesToRevision({
+      bytes,
+      pageNumbers: [1, 2],
+      storyId: STORY_ID,
+      revisionId: REVISION_ID,
+      expectedVersion: 1,
+      allowDrive: true,
+    });
+
+    expect(result).toEqual({ ok: false, error: "attach_failed" });
+    expect(revisionMediaRows).toHaveLength(0);
+    // The second page's still-pending reservation was cancelled.
+    expect(
+      [...mediaRows.values()].filter(
+        (m) => m.processingState === "pending_upload",
+      ),
+    ).toHaveLength(0);
+    expect(scheduleStoryFolderSync).not.toHaveBeenCalled();
+  });
+
+  it("maps a refused Drive reservation to capacity_exceeded", async () => {
+    uploadMode = "google_drive";
+    reserveDriveMediaSlot.mockRejectedValueOnce(new Error("no connection"));
+    const bytes = await fixture("valid-two-page.pdf");
+    const result = await attachPdfPagesToRevision({
+      bytes,
+      pageNumbers: [1],
+      storyId: STORY_ID,
+      revisionId: REVISION_ID,
+      expectedVersion: 1,
+      allowDrive: true,
+    });
+
+    expect(result).toEqual({ ok: false, error: "capacity_exceeded" });
+    expect(attachServerBytesAsDriveMedia).not.toHaveBeenCalled();
   });
 });

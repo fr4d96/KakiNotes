@@ -105,6 +105,9 @@ vi.mock("@/lib/story/drive-folders", () => ({
 import {
   beginDriveMediaUpload,
   finalizeDriveMediaUpload,
+  reserveDriveMediaSlot,
+  attachServerBytesAsDriveMedia,
+  scheduleStoryFolderSync,
   getStoryMediaUploadMode,
   DriveFinalizeRejectedError,
 } from "@/lib/story/drive-sync";
@@ -532,5 +535,137 @@ describe("finalizeDriveMediaUpload -- the full-quality copy is best effort", () 
     );
     expect(deleted).toEqual(["full-file-id", "drive-file-1"]);
     expect(deleted).not.toContain("display-file-id");
+  });
+});
+
+describe("reserveDriveMediaSlot", () => {
+  it("reserves via begin_drive_media_upload and opens nothing in Drive", async () => {
+    rpcMock.mockResolvedValue({ data: [{ media_id: "media-9" }], error: null });
+
+    await expect(
+      reserveDriveMediaSlot("revision-1", "image/png"),
+    ).resolves.toBe("media-9");
+    expect(rpcMock).toHaveBeenCalledWith("begin_drive_media_upload", {
+      p_revision_id: "revision-1",
+      p_source_mime_type: "image/png",
+    });
+    expect(getAccessToken).not.toHaveBeenCalled();
+    expect(startResumableUploadSession).not.toHaveBeenCalled();
+  });
+
+  it("throws when signed out, before reserving anything", async () => {
+    currentUser = null;
+    await expect(
+      reserveDriveMediaSlot("revision-1", "image/png"),
+    ).rejects.toThrow();
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("attachServerBytesAsDriveMedia (server-held bytes, no staging file)", () => {
+  function happyRpc() {
+    rpcMock.mockImplementation(async (name: string) => {
+      if (name === "authorize_drive_media_finalize_v2") {
+        return { error: null, data: "story-1" };
+      }
+      if (name === "list_story_drive_media_for_sync") {
+        return { data: [{}, {}], error: null }; // two already -- next is 03
+      }
+      if (name === "finalize_drive_media_upload") return { error: null };
+      if (name === "record_drive_media_full_copy") return { error: null };
+      throw new Error(`unexpected rpc ${name}`);
+    });
+  }
+
+  it("rejects before any Drive call when the pre-check fails", async () => {
+    rpcMock.mockResolvedValue({ data: null, error: { message: "nope" } });
+    await expect(
+      attachServerBytesAsDriveMedia("media-1", 1, Buffer.from("png")),
+    ).rejects.toBeInstanceOf(DriveFinalizeRejectedError);
+    expect(getAccessToken).not.toHaveBeenCalled();
+    expect(processImageBytesInMemory).not.toHaveBeenCalled();
+    expect(uploadDerivativeFile).not.toHaveBeenCalled();
+  });
+
+  it("processes the given bytes, writes only the derivative and records it -- never touches staging", async () => {
+    happyRpc();
+    const raw = Buffer.from("rendered-pdf-page");
+
+    await attachServerBytesAsDriveMedia("media-1", 4, raw);
+
+    expect(processImageBytesInMemory).toHaveBeenCalledWith(raw);
+    expect(ensureAppFolders).not.toHaveBeenCalled();
+    expect(getFileMetadata).not.toHaveBeenCalled();
+    expect(downloadFileBytes).not.toHaveBeenCalled();
+    expect(uploadDerivativeFile).toHaveBeenCalledWith(
+      "access-token",
+      "story-folder-id",
+      "03.jpg",
+      Buffer.from("processed-bytes"),
+      "image/jpeg",
+      "user-1",
+    );
+    expect(rpcMock).toHaveBeenCalledWith(
+      "finalize_drive_media_upload",
+      expect.objectContaining({
+        p_media_id: "media-1",
+        p_expected_version: 4,
+        p_drive_processed_file_id: "derivative-file-id",
+        p_drive_folder_id: "story-folder-id",
+        p_source_file_size_bytes: raw.byteLength,
+      }),
+    );
+
+    await runScheduled();
+    // Full-quality copy still made; nothing deleted (there is no staging
+    // file); folder synced by default.
+    expect(processFullResolutionBytesInMemory).toHaveBeenCalledWith(raw);
+    expect(deleteFilePermanently).not.toHaveBeenCalled();
+    expect(syncStoryFolder).toHaveBeenCalledWith("user-1", "story-1");
+  });
+
+  it("skips the per-photo folder sync when asked to", async () => {
+    happyRpc();
+    await attachServerBytesAsDriveMedia("media-1", 1, Buffer.from("png"), {
+      syncFolder: false,
+    });
+    await runScheduled();
+    expect(processFullResolutionBytesInMemory).toHaveBeenCalled();
+    expect(syncStoryFolder).not.toHaveBeenCalled();
+  });
+
+  it("deletes the orphaned derivative and re-throws if recording fails", async () => {
+    rpcMock.mockImplementation(async (name: string) => {
+      if (name === "authorize_drive_media_finalize_v2") {
+        return { error: null, data: "story-1" };
+      }
+      if (name === "list_story_drive_media_for_sync") {
+        return { data: [], error: null };
+      }
+      if (name === "finalize_drive_media_upload") {
+        return { error: { message: "stale version" } };
+      }
+      throw new Error(`unexpected rpc ${name}`);
+    });
+
+    await expect(
+      attachServerBytesAsDriveMedia("media-1", 1, Buffer.from("png")),
+    ).rejects.toThrow(/stale version/);
+    expect(deleteFilePermanently).toHaveBeenCalledWith(
+      "access-token",
+      "derivative-file-id",
+      "user-1",
+    );
+    expect(afterCalls).toHaveLength(0);
+  });
+});
+
+describe("scheduleStoryFolderSync", () => {
+  it("runs one syncStoryFolder pass after the response", async () => {
+    await scheduleStoryFolderSync("story-1");
+    expect(syncStoryFolder).not.toHaveBeenCalled();
+    await runScheduled();
+    expect(syncStoryFolder).toHaveBeenCalledTimes(1);
+    expect(syncStoryFolder).toHaveBeenCalledWith("user-1", "story-1");
   });
 });
