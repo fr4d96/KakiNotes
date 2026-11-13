@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.1.0](https://github.com/fr4d96/KakiNotes/compare/v3.0.0...v3.1.0) (2026-11-13)
+
+
+### Features
+
+* **media:** store a contributor's PDF-import pages in their Google Drive ([ee22b3e](https://github.com/fr4d96/KakiNotes/commit/ee22b3edd058ddadbdb33e250c443fffe7f94b29))
+
+
+### Bug Fixes
+
+* **drive:** "Delete Kakinotes' old copies" clears a large backlog ([89a18b6](https://github.com/fr4d96/KakiNotes/commit/89a18b6e4c6153019936735a88b61bd4f452ad1a))
+* show "Kakinotes" as the homepage tab title ([682602f](https://github.com/fr4d96/KakiNotes/commit/682602f525a1ace45c9582b96dcf7ce80c1f4213))
+
 ## [3.0.0](https://github.com/fr4d96/KakiNotes/compare/v2.1.3...v3.0.0) (2026-11-13)
 
 
