@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.0](https://github.com/fr4d96/KakiNotes/compare/v2.1.3...v3.0.0) (2026-11-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* contributors without a Google Drive connection can no longer use the contributor area or upload photos until they connect.
+
+### Features
+
+* require Google Drive for every contributor ([225c12e](https://github.com/fr4d96/KakiNotes/commit/225c12e51fa9f5ac9338eb6846cd014018ac1d8f))
+
 ## [2.1.3](https://github.com/fr4d96/KakiNotes/compare/v2.1.2...v2.1.3) (2026-10-31)
 
 ### Affirmation notes
