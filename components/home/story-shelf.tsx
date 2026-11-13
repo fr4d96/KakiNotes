@@ -4,6 +4,7 @@ import { getCardCoverUrl } from "@/lib/story/image-url";
 import { firstRegionLabel } from "@/lib/story/card-fields";
 import type { StoryCardData } from "@/components/story/story-card";
 import { StoryCoverFallback } from "@/components/story/story-cover-fallback";
+import { ResolvingImage } from "@/components/ui/resolving-image";
 import type { Locale } from "@/i18n/locales";
 
 /**
@@ -25,6 +26,7 @@ export function StoryShelf({
   locale: Locale;
 }) {
   const t = useTranslations("common");
+  const tImages = useTranslations("editor.images");
 
   return (
     <ul className="nf-scroll-x -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pt-1 pb-3 sm:-mx-6 sm:scroll-px-6 sm:gap-4 sm:px-6 lg:-mx-8 lg:scroll-px-8 lg:px-8">
@@ -45,12 +47,12 @@ export function StoryShelf({
             <article className="press press-hover-only group relative flex h-full flex-col overflow-hidden rounded-[20px] border border-border-subtle bg-surface shadow-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-lg">
               <div className="relative aspect-[4/3] w-full overflow-hidden bg-surface-muted">
                 {coverUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- public bucket URLs are content-addressed, not a Next.js image-optimizable source list
-                  <img
+                  <ResolvingImage
                     src={coverUrl}
                     alt=""
                     loading={index < 2 ? "eager" : "lazy"}
-                    decoding="async"
+                    loadingLabel={tImages("loading")}
+                    wrapperClassName="relative block h-full w-full"
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                   />
                 ) : (

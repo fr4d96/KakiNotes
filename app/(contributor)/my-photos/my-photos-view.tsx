@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { BackLink } from "@/components/back-link";
 import { ChevronIcon } from "@/components/icons";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
+import { ResolvingImage } from "@/components/ui/resolving-image";
 import { StatusBadge } from "@/app/(contributor)/my-stories/status-badge";
 import { mintPreviewUrlAction } from "@/app/(contributor)/stories/[id]/media-actions";
 import { getPhotoDownloadUrlAction } from "@/app/(contributor)/my-photos/actions";
@@ -90,6 +91,7 @@ function StorySection({
   onToggle: () => void;
 }) {
   const t = useTranslations("myPhotos");
+  const tImages = useTranslations("editor.images");
   const title = story.title?.trim() || t("untitledStory");
   const panelId = `story-photos-${story.storyId}`;
   const rowRef = useRef<HTMLLIElement>(null);
@@ -127,11 +129,12 @@ function StorySection({
         >
           <span className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-surface-muted">
             {cover ? (
-              // eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL or the Drive proxy, not an optimizable static asset
-              <img
+              <ResolvingImage
                 src={cover}
                 alt=""
                 loading="lazy"
+                loadingLabel={tImages("loading")}
+                wrapperClassName="relative block h-full w-full"
                 className="h-full w-full object-cover"
                 onError={() => setCoverFailed(true)}
               />
@@ -180,6 +183,7 @@ function PhotoCard({
   driveConnected: boolean;
 }) {
   const t = useTranslations("myPhotos");
+  const tImages = useTranslations("editor.images");
   const [thumbnail, setThumbnail] = useState(photo.thumbnailUrl);
   const [retried, setRetried] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -229,11 +233,13 @@ function PhotoCard({
             caption={photo.caption}
             className="block h-full w-full"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL or the Drive proxy, not an optimizable static asset */}
-            <img
+            <ResolvingImage
+              key={thumbnail}
               src={thumbnail}
               alt={photo.altText ?? ""}
               loading="lazy"
+              loadingLabel={tImages("loading")}
+              wrapperClassName="relative block h-full w-full"
               className="h-full w-full object-cover"
               onError={() => void retryThumbnail()}
             />

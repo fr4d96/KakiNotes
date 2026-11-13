@@ -3,6 +3,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { getCardCoverUrl } from "@/lib/story/image-url";
 import { firstRegionLabel, stringList } from "@/lib/story/card-fields";
 import { AttributionChip } from "@/components/story/attribution-chip";
+import { ResolvingImage } from "@/components/ui/resolving-image";
 import { DEFAULT_LOCALE, isLocale } from "@/i18n/locales";
 import { StoryCoverFallback } from "@/components/story/story-cover-fallback";
 
@@ -58,6 +59,7 @@ export function StoryCard({
   basePath?: string;
 }) {
   const t = useTranslations("common");
+  const tImages = useTranslations("editor.images");
   // useLocale(), not the async getLocale(): this component is rendered by
   // CLIENT components too, and a Client Component cannot render an async Server
   // Component. The hook works in both, exactly as useTranslations above
@@ -72,12 +74,12 @@ export function StoryCard({
     <article className="press press-hover-only group relative flex flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-lg">
       <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-border-subtle bg-surface-muted">
         {coverUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- public bucket URLs are content-addressed, not a Next.js image-optimizable source list
-          <img
+          <ResolvingImage
             src={coverUrl}
             alt=""
             loading="lazy"
-            decoding="async"
+            loadingLabel={tImages("loading")}
+            wrapperClassName="relative block h-full w-full"
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (

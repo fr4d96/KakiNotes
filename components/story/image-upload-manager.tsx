@@ -18,6 +18,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { useToast } from "@/components/ui/toast";
 import { Spinner } from "@/components/ui/spinner";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
+import { ResolvingImage } from "@/components/ui/resolving-image";
 import {
   DndContext,
   MouseSensor,
@@ -274,6 +275,7 @@ export function ImageUploadManager({
 }: ImageUploadManagerProps) {
   const t = useTranslations("editor.photos");
   const tCommon = useTranslations("common");
+  const tImages = useTranslations("editor.images");
   const [media, setMedia] = useState<RevisionMediaItem[]>(
     [...initialMedia].sort((a, b) => a.sortOrder - b.sortOrder),
   );
@@ -990,10 +992,12 @@ export function ImageUploadManager({
                           caption={item.caption}
                           className="block h-full w-full"
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL, not an optimizable static asset */}
-                          <img
+                          <ResolvingImage
+                            key={thumbnails[item.mediaId]}
                             src={thumbnails[item.mediaId]}
                             alt={item.altText ?? ""}
+                            loadingLabel={tImages("loading")}
+                            wrapperClassName="relative block h-full w-full"
                             className="h-full w-full object-cover"
                             draggable={false}
                             onError={() => retryThumbnail(item.mediaId)}

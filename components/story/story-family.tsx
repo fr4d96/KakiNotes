@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import type { StoryFamilyLink } from "@/lib/story/story-folders";
 import type { StoryCardData } from "@/components/story/story-card";
 import { StoryCoverFallback } from "@/components/story/story-cover-fallback";
+import { ResolvingImage } from "@/components/ui/resolving-image";
 import { getCardCoverUrl } from "@/lib/story/image-url";
 
 // Type-only import above: lib/story/story-folders.ts is "server-only", and
@@ -97,6 +98,7 @@ function SubStoryCard({
   coverUrl: string | null;
   basePath: string;
 }) {
+  const tImages = useTranslations("editor.images");
   return (
     <article className="group relative flex items-center gap-2 rounded-lg border border-border-subtle bg-surface p-2 transition-shadow hover:shadow-md">
       <h3 className="min-w-0 flex-1 text-sm font-medium leading-snug">
@@ -111,12 +113,12 @@ function SubStoryCard({
       </h3>
       <div className="relative h-10 w-14 shrink-0 overflow-hidden rounded-md bg-surface-muted">
         {coverUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- public bucket URLs are content-addressed, not a Next.js image-optimizable source list
-          <img
+          <ResolvingImage
             src={coverUrl}
             alt=""
             loading="lazy"
-            decoding="async"
+            loadingLabel={tImages("loading")}
+            wrapperClassName="relative block h-full w-full"
             className="h-full w-full object-cover"
           />
         ) : (

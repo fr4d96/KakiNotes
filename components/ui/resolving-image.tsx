@@ -30,6 +30,7 @@ export function ResolvingImage({
   reserveClassName = "",
   loadingLabel,
   loading,
+  draggable,
   onError,
 }: {
   src: string;
@@ -40,6 +41,7 @@ export function ResolvingImage({
   /** Accessible name of the placeholder, e.g. "Loading image". */
   loadingLabel: string;
   loading?: "lazy" | "eager";
+  draggable?: boolean;
   onError?: () => void;
 }) {
   const imgRef = useRef<HTMLImageElement>(null);
@@ -77,6 +79,7 @@ export function ResolvingImage({
         src={src}
         alt={alt}
         loading={loading}
+        draggable={draggable}
         decoding="async"
         onLoad={() => {
           if (phase === "loading") {

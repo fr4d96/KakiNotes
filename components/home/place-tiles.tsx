@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { ResolvingImage } from "@/components/ui/resolving-image";
 import { ArrowRightIcon } from "@/components/icons";
 
 export type PlaceTile = {
@@ -19,6 +21,7 @@ export type PlaceTile = {
  * photo) so the white label clears contrast in both themes.
  */
 export function PlaceTiles({ places }: { places: PlaceTile[] }) {
+  const tImages = useTranslations("editor.images");
   return (
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
       {places.map((place) => (
@@ -28,13 +31,13 @@ export function PlaceTiles({ places }: { places: PlaceTile[] }) {
             className="press press-hover-only group relative isolate flex aspect-[5/4] items-end justify-between gap-2 overflow-hidden rounded-[16px] bg-[#0b1222] p-3.5 text-white shadow-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
           >
             {place.coverUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- public bucket URLs are content-addressed, not a Next.js image-optimizable source list
-              <img
+              <ResolvingImage
                 src={place.coverUrl}
                 alt=""
                 loading="lazy"
-                decoding="async"
-                className="absolute inset-0 -z-20 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.05]"
+                loadingLabel={tImages("loading")}
+                wrapperClassName="absolute inset-0 -z-20 block overflow-hidden"
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.05]"
               />
             ) : null}
             <span
