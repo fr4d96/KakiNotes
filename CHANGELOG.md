@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.0](https://github.com/fr4d96/KakiNotes/compare/v3.1.1...v3.2.0) (2026-11-13)
+
+
+### Features
+
+* **photos:** show picked photos in one row, uploading one at a time ([df18cd6](https://github.com/fr4d96/KakiNotes/commit/df18cd6a71053d0d77f841abdce7a849764dc976))
+
 ## [3.1.1](https://github.com/fr4d96/KakiNotes/compare/v3.1.0...v3.1.1) (2026-11-13)
 
 
