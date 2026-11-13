@@ -1,5 +1,29 @@
 # Changelog
 
+## [3.1.0](https://github.com/fr4d96/KakiNotes/compare/v3.0.0...v3.1.0) (2026-11-13)
+
+
+### Your Google Drive, finished off
+
+#### For contributors
+
+- **Stories you start from a PDF now keep their pages in your Google Drive too.** Before, the page images from a PDF import were still stored on Kakinotes even with Drive connected. Now they go to your Drive like every other photo. Stories an editor imports for you are unchanged.
+- **"Delete Kakinotes' old copies" now actually finishes.** After moving a lot of photos to Drive, the button used to say "Moved 0 of 0" and quietly delete only a couple of dozen copies each time you pressed it. It now shows "Deleting old copies… X of Y", keeps going until they're all gone, and tells you how many it deleted. If any can't be deleted yet, it says how many so you can try again later.
+
+#### For everyone
+
+- The browser tab on the home page now simply reads "Kakinotes".
+
+### Features
+
+* **media:** store a contributor's PDF-import pages in their Google Drive ([ee22b3e](https://github.com/fr4d96/KakiNotes/commit/ee22b3edd058ddadbdb33e250c443fffe7f94b29))
+
+
+### Bug Fixes
+
+* **drive:** "Delete Kakinotes' old copies" clears a large backlog ([89a18b6](https://github.com/fr4d96/KakiNotes/commit/89a18b6e4c6153019936735a88b61bd4f452ad1a))
+* show "Kakinotes" as the homepage tab title ([682602f](https://github.com/fr4d96/KakiNotes/commit/682602f525a1ace45c9582b96dcf7ce80c1f4213))
+
 ## [3.0.0](https://github.com/fr4d96/KakiNotes/compare/v2.1.3...v3.0.0) (2026-11-13)
 
 
