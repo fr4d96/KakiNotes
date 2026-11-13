@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.1.1](https://github.com/fr4d96/KakiNotes/compare/v3.1.0...v3.1.1) (2026-11-13)
+
+
+### Photos load more smoothly everywhere
+
+- **Every photo now shows the same gentle loading effect.** Before, only the My Stories page had it. Elsewhere, photos popped in suddenly. Now, while a photo is downloading, its spot shows a soft shimmer, and the photo then fades into focus. You'll see this on the home page ("Latest stories" and "Browse by place"), in story lists and search results, on the smaller story cards at the bottom of a story, in My Photos, and on the photo tiles in the story editor.
+
+### Bug Fixes
+
+* **images:** use the shared loading sheen for every photo ([e7fbd42](https://github.com/fr4d96/KakiNotes/commit/e7fbd42053841668bb733fc20c25c0c8bb6402ee))
+
 ## [3.1.0](https://github.com/fr4d96/KakiNotes/compare/v3.0.0...v3.1.0) (2026-11-13)
 
 
