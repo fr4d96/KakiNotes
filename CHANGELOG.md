@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.2.0](https://github.com/fr4d96/KakiNotes/compare/v3.1.1...v3.2.0) (2026-11-13)
+
+
+### Adding photos is easier to follow
+
+#### For contributors
+
+- **Every photo you pick now shows up in a row straight away.** Before, photos appeared one at a time as each upload started, with "Uploading…" or "Processing…" written under them. Now the whole selection appears at once as small thumbnails, and they upload one by one. The photo currently uploading has a spinner on it, and the ones still waiting are dimmed. Each finished photo moves down into your photo grid.
+- **A photo that can't be added is easy to spot.** It gets a red border, with the reason written underneath.
+- **Picking more photos mid-upload no longer doubles up.** New photos wait for the current batch to finish, so only one photo uploads at a time.
+
+### Features
+
+* **photos:** show picked photos in one row, uploading one at a time ([df18cd6](https://github.com/fr4d96/KakiNotes/commit/df18cd6a71053d0d77f841abdce7a849764dc976))
+
 ## [3.1.1](https://github.com/fr4d96/KakiNotes/compare/v3.1.0...v3.1.1) (2026-11-13)
 
 
