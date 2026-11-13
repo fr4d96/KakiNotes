@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-10-31 (affirmation notes: private notes from share links, on `feat/affirmation-notes`; migration written but NOT yet applied — see the last entry in this file); earlier the same day (home page redesign: a short, app-style home with search, a swipeable latest-stories row, place tiles and the quiz behind one row, on `main`, uncommitted — see the entry at the end of this file); earlier, 2026-10-30 (pull to refresh now reloads the page, home page covers on phones, search as you type and keyword search, on `fix/pull-to-refresh-reload` — see the entry at the end of this file); earlier the same day (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+Last updated: 2026-11-13 (Supabase project moved to `yzaonhjieupxyrmbienf` after the old one was paused over quota — see the last entry in this file); earlier, 2026-10-31 (affirmation notes: private notes from share links, on `feat/affirmation-notes`; migration written but NOT yet applied — see the last entry in this file); earlier the same day (home page redesign: a short, app-style home with search, a swipeable latest-stories row, place tiles and the quiz behind one row, on `main`, uncommitted — see the entry at the end of this file); earlier, 2026-10-30 (pull to refresh now reloads the page, home page covers on phones, search as you type and keyword search, on `fix/pull-to-refresh-reload` — see the entry at the end of this file); earlier the same day (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
 one-level folder shape — a story is either a main story, a sub story filed under exactly one main
 story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
 "Move to…" select; migration applied to the dev project — see the entry at the end of this
@@ -5738,6 +5738,12 @@ Not expressible in a migration — configure on the actual Supabase project (loc
 already has sane defaults; a hosted project needs these set explicitly in the dashboard or via
 `supabase config push`):
 
+> **2026-11-13: the hosted project changed to `yzaonhjieupxyrmbienf`.** Everything below that says
+> "confirmed on the linked project" was checked on the old project (`ybhydepjaantkngngvuf`) and has
+> **not** been re-checked on the new one. Dashboard settings do not travel with migrations or a data
+> import, so Site URL, the redirect allow-list, SMTP, email templates, email confirmations and
+> leaked-password protection must all be set again on `yzaonhjieupxyrmbienf`.
+
 - **Email confirmations**: confirmed **already ON** on the linked project (`ybhydepjaantkngngvuf`) —
   discovered empirically during Prompt 2 verification (a password-grant sign-in before confirming
   returned `email_not_confirmed`), not something this app or its migrations configured.
@@ -11122,3 +11128,45 @@ as the `<h1>`; a screen-reader-only "Leave a note" heading when unnamed), the no
 optional name field. The "Leave a note for {name}" heading, the intro, the name hint and the privacy
 footnote are gone, along with their `affirmationWrite` strings in both locales.
 `get_affirmation_link_for_writing` still returns `recipient_name`; nothing renders it now.
+
+## 2026-11-13 — Supabase project moved to `yzaonhjieupxyrmbienf`
+
+**Why.** The only hosted project, `ybhydepjaantkngngvuf` (also the live site's database), was paused
+and its free-plan organization put under service restrictions after it went over quota. Storage
+held 1,309 files / 1.94 GB, about 82% of it raw `original.*` uploads the pipeline retains. A restore
+was refused unless the organization upgraded, so the data was moved to a new project
+(`yzaonhjieupxyrmbienf`, in a new free organization) from the dashboard's "Download backups"
+export (database cluster dump + storage zip).
+
+**What was moved, and what was deliberately left behind.**
+
+- **Schema:** all 149 repo migrations applied with `supabase db push` (dry run first). The old
+  project had 3 extra migrations that are not in the repo — `20260928100000_trips`,
+  `20260929100000_trip_place_images`, `20260929110000_rate_limit_maps_link_scope` — so the new
+  project has no `trips` / `trip_places` tables; their data (1 trip, 6 places) was not imported.
+- **Data:** 5,016 rows across 34 tables (`auth.users`, `auth.identities` and every `public` table),
+  loaded through `supabase db query --linked` with `session_replication_role = replica`, after a
+  full rehearsal in rolled-back transactions; row counts matched the dump table by table. The
+  migration-seeded lookup tables were truncated and replaced with the old project's rows. Not
+  imported: `rate_limits`, auth sessions/refresh tokens (everyone signs in again), `storage.objects`
+  (recreated by the upload).
+- **Clean-up after import:** 104 e2e / live-verify test stories deleted (240 → 136 stories, child
+  rows first because the story foreign keys are `RESTRICT`); `original_deleted_at` set on the 351
+  remaining Supabase-backed media, since originals were not migrated. 9 abandoned
+  `pending_upload` rows were left untouched (the
+  `story_media_original_deleted_requires_settled_state` check forbids flagging them).
+- **Storage:** only processed images — 644 objects, 295 MB (351 `processed-*` in
+  `story-images-private`, the approved derivatives in `story-images-public`). No originals, no
+  files without a `story_media` row, no folders of deleted stories, no test-story files. Verified:
+  every `processed_private_storage_path` and `approved_public_storage_path` has its object.
+  Drive-backed media (301 rows) were untouched; their bytes stay in Google Drive.
+- **`.env.local`** now points at the new project (URL, publishable key, secret key). The Google
+  Drive variables are unchanged, so saved Drive connections still decrypt.
+
+**Verified locally:** `/stories` and a published story render against the new project, with every
+Supabase-bucket and Drive-proxy image returning `200`; the private bucket refuses unauthenticated
+reads.
+
+**Still to do (owner):** Vercel env vars and a redeploy of `release`; the two GitHub Actions secrets;
+Auth dashboard settings on the new project (see "Manual Supabase settings required"). Free-plan
+limits still apply — originals are retained by the pipeline and will refill storage over time.

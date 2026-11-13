@@ -1090,10 +1090,14 @@ in the story editor's tag suggestions and the public `/stories` filter.
 
 **Docker is not available in this environment**, so the local CLI stack (`supabase start`) has not
 been run or verified here. As of Prompt 2, this project is actively using the **hosted development**
-path instead: linked to project `ybhydepjaantkngngvuf` (`supabase link --project-ref
-ybhydepjaantkngngvuf`), with all migrations applied via `supabase db push` and reviewed with
-`--dry-run` first each time. `.env.local` holds this project's real URL and publishable key. Two
-supported paths exist in general:
+path instead: since 2026-11-13 it is linked to project `yzaonhjieupxyrmbienf` (`supabase link
+--project-ref yzaonhjieupxyrmbienf`), with all migrations applied via `supabase db push` and reviewed
+with `--dry-run` first each time. `.env.local` holds this project's real URL and keys. This hosted
+project also serves the live site, so a migration applied here reaches production immediately.
+(Until 2026-11-12 the project was `ybhydepjaantkngngvuf`; it was paused when its free-plan
+organization went over quota, and its data was moved — see the 2026-11-13 entry in
+[docs/implementation-status.md](implementation-status.md). Older entries that name that ref are
+historical.) Two supported paths exist in general:
 
 ### Local (needs Docker)
 
