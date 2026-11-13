@@ -51,10 +51,11 @@ import { CountryToggle } from "@/components/country-toggle";
 // page-level window became a no-op; the same 60s window now lives on the
 // data reads (the *Cached readers in lib/story/public-queries.ts).
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("home");
-  return { title: t("metaTitle") };
-}
+// The home tab shows the bare brand name. `absolute` skips the root layout's
+// "%s | Kakinotes" template, which would otherwise read "Kakinotes | Kakinotes".
+export const metadata: Metadata = {
+  title: { absolute: "Kakinotes" },
+};
 
 // Message keys under `home.trust`, in reading order.
 const trustPoints = ["written", "checked", "notAdvice"] as const;

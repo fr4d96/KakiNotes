@@ -32,6 +32,33 @@ Plain-language terms used below:
   direct public-bucket URL / signed-preview-URL path — see
   `getImageUrl()` below and section 5.
 
+## Mandatory Drive connection (2026-11-13)
+
+**Update 2026-11-13:** connecting Drive is no longer opt-in for ordinary contributors. The Supabase
+project was paused when its storage filled up, so every signed-in contributor (no staff role) must
+connect Google Drive before using any contributor page; their own photos are never stored in
+Supabase again. Where this doc says "opt-in" or "a contributor who has not connected Drive keeps
+working exactly as today", read it as applying to staff and to deployments with no Drive env vars
+only.
+
+- **Gate (UX):** `app/(contributor)/layout.tsx` redirects to `/connect-drive`
+  (`app/(onboarding)/connect-drive/`) when `callerMustConnectDrive()` says so. Staff
+  (editor/moderator/admin) are exempt: their photo work is editorial imports, which store in
+  Supabase whatever Drive they have. A deployment with no Drive env vars never gates anyone.
+- **OAuth callback:** "cancelled" and "failed" now land on `/connect-drive?drive=<status>` (shown
+  there) instead of Account, which would only bounce back to the gate and drop the message.
+  `/connect-drive` forwards anyone who doesn't need the step to `/account?drive=<status>#drive`.
+- **Database (the real rule):** migration `20261113075945_require_drive_for_contributor_uploads`
+  adds a `BEFORE INSERT` trigger on `story_media` that raises `drive_required` for a Supabase-backed
+  row created by a signed-in, non-staff, self-submitted owner with no active connection. Existing
+  rows, Drive rows, editorial imports, staff and service-role work are untouched.
+  `beginMediaUploadAction` turns `drive_required` into a plain "connect your Google Drive" message.
+- **Disconnecting** still works; the contributor is then sent back to `/connect-drive` on their next
+  page load. The warning copy now says so.
+- **PDF import:** a contributor's own PDF import (`app/(contributor)/stories/new/pdf-attach`)
+  stores its page images in their Google Drive (`google_drive` rows only; see section 4,
+  "Server-rendered images"). The editorial PDF import still stores in Supabase, by design.
+
 ## 1. Summary — what changes for a contributor
 
 **Update 2026-10-11 (full-quality copies):** a Drive-connected contributor's new photos now get a

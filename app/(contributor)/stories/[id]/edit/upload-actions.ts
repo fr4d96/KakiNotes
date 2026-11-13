@@ -60,6 +60,10 @@ import { getErrorMessage } from "@/lib/errors";
 
 const uuidSchema = z.uuid();
 
+/** The exception text the story_media trigger raises. Kept in step with
+ * supabase/migrations/20261113075945_require_drive_for_contributor_uploads.sql. */
+const DRIVE_REQUIRED_ERROR = "drive_required";
+
 export async function beginMediaUploadAction(
   revisionId: string,
   sourceMimeType: "image/jpeg" | "image/png" | "image/webp" | "image/heic",
@@ -81,9 +85,14 @@ export async function beginMediaUploadAction(
     );
     return { mediaId: reserved.media_id, reservedPath: reserved.reserved_path };
   } catch (error) {
-    return {
-      error: getErrorMessage(error, tErr("reserveUploadFailed")),
-    };
+    const message = getErrorMessage(error, tErr("reserveUploadFailed"));
+    // The database refuses a Supabase-stored photo from a contributor with
+    // no active Drive connection (trigger story_media_require_drive_for_
+    // contributors). Say what to do instead of showing the raw code.
+    if (message.includes(DRIVE_REQUIRED_ERROR)) {
+      return { error: tErr("driveRequired") };
+    }
+    return { error: message };
   }
 }
 

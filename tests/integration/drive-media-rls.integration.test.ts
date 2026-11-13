@@ -37,6 +37,8 @@ function assertSafeToRun() {
     "SUPABASE_RLS_TEST_CONFIRM",
     "SUPABASE_RLS_TEST_OWNER_EMAIL",
     "SUPABASE_RLS_TEST_OWNER_PASSWORD",
+    "SUPABASE_RLS_TEST_EDITOR_EMAIL",
+    "SUPABASE_RLS_TEST_EDITOR_PASSWORD",
   ];
   for (const name of required) {
     if (!process.env[name]) {
@@ -73,38 +75,82 @@ function anonClient(): SupabaseClient<Database> {
 }
 
 let owner: { client: SupabaseClient<Database>; userId: string };
+let editor: { client: SupabaseClient<Database>; userId: string };
 let anon: SupabaseClient<Database>;
+let ownerRevisionId: string;
 // A real, draft (pending_upload) SUPABASE-backend media reservation --
 // created via begin_story_media_upload(), no real storage bytes needed:
 // get_drive_media_for_proxy() filters on storage_backend before it ever
 // looks at processing_state, so a bare reservation already proves the
 // "never a supabase row" assertion for real.
+//
+// Made by the EDITOR on an editorial import of the owner's contributor
+// identity, not by the owner: since 20261113075945 a contributor with no
+// active Drive connection can't create a supabase-backed photo of their
+// own any more (trigger story_media_require_drive_for_contributors), and
+// the owner test account has no Drive connection (see the module doc
+// comment). Editorial-import photos still use Supabase by design.
 let supabaseMediaId: string;
 
-beforeAll(async () => {
+async function signIn(email: string, password: string) {
   const client = anonClient();
   const { data, error } = await client.auth.signInWithPassword({
-    email: process.env.SUPABASE_RLS_TEST_OWNER_EMAIL!,
-    password: process.env.SUPABASE_RLS_TEST_OWNER_PASSWORD!,
+    email,
+    password,
   });
   if (error || !data.user) {
-    throw new Error(`Could not sign in as owner: ${error?.message}`);
+    throw new Error(`Could not sign in as ${email}: ${error?.message}`);
   }
-  owner = { client, userId: data.user.id };
+  return { client, userId: data.user.id };
+}
+
+beforeAll(async () => {
+  owner = await signIn(
+    process.env.SUPABASE_RLS_TEST_OWNER_EMAIL!,
+    process.env.SUPABASE_RLS_TEST_OWNER_PASSWORD!,
+  );
+  editor = await signIn(
+    process.env.SUPABASE_RLS_TEST_EDITOR_EMAIL!,
+    process.env.SUPABASE_RLS_TEST_EDITOR_PASSWORD!,
+  );
   anon = anonClient();
 
   const { data: created, error: draftError } = await owner.client.rpc(
     "create_self_service_draft",
-    { p_title: slug("supabase-media") },
+    { p_title: slug("own-draft") },
   );
   if (draftError || !created?.[0]) {
     throw new Error(`Could not create draft: ${draftError?.message}`);
   }
-  const revisionId = created[0].revision_id;
+  ownerRevisionId = created[0].revision_id;
 
-  const { data: media, error: mediaError } = await owner.client.rpc(
+  const { data: contributor, error: contributorError } = await owner.client
+    .from("contributors")
+    .select("id")
+    .eq("linked_user_id", owner.userId)
+    .single();
+  if (contributorError || !contributor) {
+    throw new Error(
+      `Owner has no contributor identity: ${contributorError?.message}`,
+    );
+  }
+
+  const { data: imported, error: importError } = await editor.client.rpc(
+    "create_editorial_import_draft",
+    { p_contributor_id: contributor.id, p_title: slug("supabase-media") },
+  );
+  if (importError || !imported?.[0]) {
+    throw new Error(
+      `Could not create editorial import draft: ${importError?.message}`,
+    );
+  }
+
+  const { data: media, error: mediaError } = await editor.client.rpc(
     "begin_story_media_upload",
-    { p_revision_id: revisionId, p_source_mime_type: "image/jpeg" },
+    {
+      p_revision_id: imported[0].revision_id,
+      p_source_mime_type: "image/jpeg",
+    },
   );
   if (mediaError || !media?.[0]) {
     throw new Error(
@@ -116,6 +162,18 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await owner?.client.auth.signOut();
+  await editor?.client.auth.signOut();
+});
+
+describe("mandatory Google Drive for a contributor's own photos", () => {
+  it("refuses a supabase upload slot for the owner of a self-submitted story with no active Drive connection", async () => {
+    const { data, error } = await owner.client.rpc("begin_story_media_upload", {
+      p_revision_id: ownerRevisionId,
+      p_source_mime_type: "image/jpeg",
+    });
+    expect(data).toBeNull();
+    expect(error?.message).toContain("drive_required");
+  });
 });
 
 describe("get_drive_media_for_proxy() RLS", () => {
@@ -140,7 +198,7 @@ describe("get_drive_media_for_proxy() RLS", () => {
     expect((data ?? []) as unknown[]).toEqual([]);
   });
 
-  it("the owner doesn't get their own supabase-backend row from this RPC either -- it's not what this RPC is for", async () => {
+  it("the story's contributor doesn't get its supabase-backend row from this RPC either -- it's not what this RPC is for", async () => {
     const { data, error } = await owner.client.rpc(
       "get_drive_media_for_proxy" as never,
       { p_media_id: supabaseMediaId } as never,

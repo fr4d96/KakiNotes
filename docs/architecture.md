@@ -41,7 +41,9 @@ app/
                                 # the `code` (PKCE) and `token_hash`+`type` (email link) shapes.
   (contributor)/
     layout.tsx                 # the ONLY place that resolves the session (getCurrentUser());
-                                # redirects to /sign-in or renders its own contributor nav
+                                # redirects to /sign-in, then (since 2026-11-13) sends an ordinary
+                                # contributor with no active Google Drive connection to
+                                # /connect-drive; otherwise renders its own contributor nav
     actions.ts                 # 'use server' — profile update, contributor identity create/update
     my-stories/                 # real: list from list_my_stories(), status badges, Edit/Preview links
     stories/new/                 # real: title-only form -> create_self_service_draft -> redirect
@@ -53,6 +55,10 @@ app/
       preview/page.tsx             # force-dynamic, no-store, noindex — get_story_preview() only
       media-actions.ts             # shared signed-URL minting, used by edit + preview
     account/                    # real: profile form, contributor-identity form, sign-out
+  (onboarding)/                 # signed-in steps that must be finished before (contributor) opens.
+    layout.tsx                  # same sign-in check; SiteHeader only, no contributor nav
+    connect-drive/              # the mandatory "connect Google Drive" step (see
+                                # docs/google-drive-integration.md, "Mandatory Drive connection")
   (editor)/editorial/           # real UI as of Prompt 4 Sub-phase 4 — layout.tsx does the role
                                  # check (notFound()), proxy.ts's middleware is the real 404
                                  # guarantee (see "Staff routes" below); dashboard, new/, contributors/,
@@ -1298,6 +1304,14 @@ their Google Drive from Account settings — no image upload or read path change
   exchange. Both re-derive the signed-in user server-side rather than trusting anything in the
   query string (Rule 2); `proxy.ts`'s existing `/account/:path*` matcher already redirects a
   signed-out visitor away before either handler runs.
+- **Mandatory for contributors (2026-11-13).** `lib/auth/drive-binding-guard.ts#mustConnectDrive`
+  (pure) and `lib/auth/drive-binding.ts#callerMustConnectDrive` (server wrapper) decide whether the
+  caller must connect Drive first: only when Drive is configured on the deployment, never for
+  editor/moderator/admin, otherwise until there is an active connection. The `(contributor)`
+  layout redirects to `/connect-drive` (`app/(onboarding)/`), outside that group so it can't loop.
+  The database repeats the rule as the real guarantee: trigger
+  `story_media_require_drive_for_contributors` refuses a Supabase-backed photo from a signed-in,
+  non-staff, self-submitted owner with no active connection (`drive_required`).
 - `app/(contributor)/account/drive/actions.ts` — the disconnect Server Action: requires an explicit
   confirmation field (Zod), best-effort revoke at Google, then deletes the local row via
   `token-store.ts`.
