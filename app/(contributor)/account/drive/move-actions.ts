@@ -7,6 +7,7 @@ import { isDriveConfigured } from "@/lib/env.server";
 import {
   DriveMoveFatalError,
   beginDriveMoveRun,
+  cleanUpMovedPhotos,
   finishDriveMoveRun,
   moveNextPhotoToDrive,
 } from "@/lib/story/media-move";
@@ -35,6 +36,10 @@ export type DriveMoveStepResult =
   | { ok: false; error: string };
 
 export type FinishDriveMoveResult = { ok: true } | { ok: false; error: string };
+
+export type CleanUpOldCopiesResult =
+  | { ok: true; deleted: number; remaining: number }
+  | { ok: false; error: string };
 
 type Translator = Awaited<ReturnType<typeof getTranslations>>;
 
@@ -117,6 +122,26 @@ export async function finishDriveMoveAction(
     await finishDriveMoveRun(parsed.data);
     revalidatePath("/account");
     return { ok: true };
+  } catch (err) {
+    return { ok: false, error: errorMessage(t, err) };
+  }
+}
+
+/**
+ * "Delete Kakinotes' old copies". One call deletes as many due old copies as
+ * fit in ~40s (well inside the page's 60s maxDuration) and reports how many
+ * are left; the Drive tab calls it again until nothing is left or a call
+ * makes no progress. Which copies are due, and whose, is decided entirely by
+ * list_my_drive_move_cleanup_due() / get_drive_move_cleanup_target() for the
+ * signed-in caller -- nothing is taken from the browser.
+ */
+export async function cleanUpOldCopiesAction(): Promise<CleanUpOldCopiesResult> {
+  const { t, error } = await guard();
+  if (error) return { ok: false, error };
+  try {
+    const result = await cleanUpMovedPhotos({ timeBudgetMs: 40_000 });
+    if (result.remaining === 0) revalidatePath("/account");
+    return { ok: true, ...result };
   } catch (err) {
     return { ok: false, error: errorMessage(t, err) };
   }

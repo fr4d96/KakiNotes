@@ -11261,3 +11261,28 @@ hosted project is also production).
 **Risk:** the request now does Drive work inline for every page (up to 12 pipeline runs and Drive
 uploads in one request), as the Supabase path already did with `processStoryMedia`. A large
 selection on a slow Drive connection could approach the function's time limit.
+
+## 2026-11-13 — "Delete Kakinotes' old copies" actually finishes
+
+**Bug.** After a 307-photo move, pressing "Delete Kakinotes' old copies" showed "Moved 0 of 0" and
+then nothing, and most old copies stayed in Supabase (282 left, ~255 MB). Two causes:
+
+- The button reused the whole move loop (start → step → finish) with nothing to move, so the page
+  showed move progress and never said how many copies were deleted.
+- `cleanUpMovedPhotos()` deleted one photo at a time (~2.5 s each, several storage/RPC round trips)
+  with no time limit, so each request hit Vercel's 60 s limit after ~24 photos and was killed
+  silently. The database showed exactly that: bursts of ~24 deletions per press.
+
+**Fix.**
+
+- `lib/story/media-move.ts#cleanUpMovedPhotos({ timeBudgetMs })`: 6 deletions at once, stops starting
+  new ones after the budget, returns `{ deleted, remaining }`. Budgets: 10 s when a move starts,
+  20 s when it finishes, 40 s per press of the button.
+- New `cleanUpOldCopiesAction()` in `app/(contributor)/account/drive/move-actions.ts`.
+- `drive-move-panel.tsx`: the button runs its own loop, calling the action until nothing is left
+  or a call deletes nothing (so it can't spin forever), with "Deleting old copies… X of Y" and a
+  final "Deleted N old copies" / "N couldn't be deleted yet" message. New strings in en and zh-CN.
+
+**Verified:** `npm run verify`; new tests for the panel's cleanup loop (multi-call, stop on no
+progress) and for `cleanUpMovedPhotos` (concurrency ≤ 6, time budget, a failed deletion counted as
+remaining). Not yet checked live: needs a deploy, then one press on the affected account.

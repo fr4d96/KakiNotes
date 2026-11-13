@@ -583,6 +583,10 @@
         "runningElsewhere": "A move is already running in another tab or window.",
         "cleanupExplainer": "{count, plural, one {1 published photo has} other {# published photos have}} moved to your Drive. Kakinotes keeps its old copy for 5 minutes after a move so nobody sees a broken image, and deletes it when you press the button below.",
         "cleanup": "Delete Kakinotes' old copies",
+        "cleanupProgress": "Deleting old copies… {done} of {total}",
+        "cleanupKeepOpen": "Keep this page open until it finishes. If you leave, whatever is left is deleted next time you press the button.",
+        "cleanedCount": "{count, plural, one {Deleted 1 old copy from Kakinotes. Your photos are now only in your Drive.} other {Deleted # old copies from Kakinotes. Your photos are now only in your Drive.}}",
+        "cleanupIncomplete": "{count, plural, one {1 old copy couldn’t be deleted yet. Try again in a few minutes.} other {# old copies couldn’t be deleted yet. Try again in a few minutes.}}",
         "nothingToMove": "There are no photos on Kakinotes to move. All your photos are in your Drive.",
         "reasons": {
           "being_published": "its story is being published right now. Try again in a few minutes.",

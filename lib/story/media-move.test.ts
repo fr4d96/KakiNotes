@@ -74,6 +74,7 @@ vi.mock("@/lib/story/drive-folders", () => ({
 import {
   DriveMoveFatalError,
   beginDriveMoveRun,
+  cleanUpMovedPhotos,
   finishDriveMoveRun,
   moveNextPhotoToDrive,
 } from "@/lib/story/media-move";
@@ -393,5 +394,72 @@ describe("finishDriveMoveRun", () => {
     await Promise.all(afterCalls.map((cb) => cb()));
     expect(syncStoryFolder).toHaveBeenCalledWith("user-1", "story-1");
     expect(syncStoryFolder).toHaveBeenCalledWith("user-1", "story-2");
+  });
+});
+
+describe("cleanUpMovedPhotos", () => {
+  beforeEach(() => {
+    deleteMovedSupabaseCopies.mockReset();
+    deleteMovedSupabaseCopies.mockResolvedValue(true);
+  });
+
+  function due(count: number) {
+    rpcResponses.set("list_my_drive_move_cleanup_due", {
+      data: Array.from({ length: count }, (_, i) => ({ job_id: `job-${i}` })),
+      error: null,
+    });
+  }
+
+  it("deletes every due job, several at a time, and reports none left", async () => {
+    due(20);
+    let inFlight = 0;
+    let maxInFlight = 0;
+    deleteMovedSupabaseCopies.mockImplementation(async () => {
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      inFlight -= 1;
+      return true;
+    });
+
+    expect(await cleanUpMovedPhotos()).toEqual({ deleted: 20, remaining: 0 });
+    expect(deleteMovedSupabaseCopies).toHaveBeenCalledTimes(20);
+    expect(maxInFlight).toBeGreaterThan(1);
+    expect(maxInFlight).toBeLessThanOrEqual(6);
+  });
+
+  it("stops starting new deletions once the time budget is used up", async () => {
+    due(50);
+    let clock = 1_000_000;
+    const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => clock);
+    deleteMovedSupabaseCopies.mockImplementation(async () => {
+      clock += 2_500; // each deletion "takes" 2.5s
+      return true;
+    });
+
+    try {
+      const result = await cleanUpMovedPhotos({ timeBudgetMs: 10_000 });
+      expect(result.deleted).toBeLessThan(50);
+      expect(result.deleted + result.remaining).toBe(50);
+      expect(deleteMovedSupabaseCopies.mock.calls.length).toBe(result.deleted);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it("counts a failed deletion as remaining, and keeps going with the rest", async () => {
+    due(3);
+    deleteMovedSupabaseCopies
+      .mockImplementationOnce(async () => {
+        throw new Error("storage said no");
+      })
+      .mockImplementation(async () => true);
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      expect(await cleanUpMovedPhotos()).toEqual({ deleted: 2, remaining: 1 });
+    } finally {
+      consoleSpy.mockRestore();
+    }
   });
 });

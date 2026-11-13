@@ -4,7 +4,9 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 const startDriveMoveAction = vi.hoisted(() => vi.fn());
 const moveNextDrivePhotoAction = vi.hoisted(() => vi.fn());
 const finishDriveMoveAction = vi.hoisted(() => vi.fn());
+const cleanUpOldCopiesAction = vi.hoisted(() => vi.fn());
 vi.mock("@/app/(contributor)/account/drive/move-actions", () => ({
+  cleanUpOldCopiesAction,
   startDriveMoveAction,
   moveNextDrivePhotoAction,
   finishDriveMoveAction,
@@ -19,6 +21,7 @@ beforeEach(() => {
   moveNextDrivePhotoAction.mockReset();
   finishDriveMoveAction.mockReset();
   finishDriveMoveAction.mockResolvedValue({ ok: true });
+  cleanUpOldCopiesAction.mockReset();
 });
 
 describe("DriveMovePanel", () => {
@@ -152,6 +155,66 @@ describe("DriveMovePanel", () => {
     ).toBeEnabled();
     expect(
       screen.getByText(/2 published photos have moved/i),
+    ).toBeInTheDocument();
+  });
+
+  it("deletes old copies over several calls until none are left, without starting a move", async () => {
+    cleanUpOldCopiesAction
+      .mockResolvedValueOnce({ ok: true, deleted: 3, remaining: 2 })
+      .mockResolvedValueOnce({ ok: true, deleted: 2, remaining: 0 });
+
+    render(
+      <DriveMovePanel
+        summary={{
+          movableCount: 0,
+          cleanupPendingCount: 5,
+          runInProgress: false,
+        }}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: /delete kakinotes' old copies/i }),
+    );
+
+    expect(
+      await screen.findByText(/deleted 5 old copies from kakinotes/i),
+    ).toBeInTheDocument();
+    expect(cleanUpOldCopiesAction).toHaveBeenCalledTimes(2);
+    expect(startDriveMoveAction).not.toHaveBeenCalled();
+    expect(screen.queryByText(/moved 0 of 0/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /delete kakinotes' old copies/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("stops when a call deletes nothing, and says how many are left", async () => {
+    cleanUpOldCopiesAction
+      .mockResolvedValueOnce({ ok: true, deleted: 1, remaining: 2 })
+      .mockResolvedValueOnce({ ok: true, deleted: 0, remaining: 2 });
+
+    render(
+      <DriveMovePanel
+        summary={{
+          movableCount: 0,
+          cleanupPendingCount: 3,
+          runInProgress: false,
+        }}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: /delete kakinotes' old copies/i }),
+    );
+
+    expect(
+      await screen.findByText(/2 old copies couldn.t be deleted yet/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/deleted 1 old copy from kakinotes/i),
+    ).toBeInTheDocument();
+    expect(cleanUpOldCopiesAction).toHaveBeenCalledTimes(2);
+    // Still offered, so it can be tried again later.
+    expect(
+      screen.getByRole("button", { name: /delete kakinotes' old copies/i }),
     ).toBeInTheDocument();
   });
 

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
+  cleanUpOldCopiesAction,
   finishDriveMoveAction,
   moveNextDrivePhotoAction,
   startDriveMoveAction,
@@ -14,7 +15,9 @@ type Failure = { storyTitle: string; reason: string };
 type Phase =
   | { kind: "idle" }
   | { kind: "running"; done: number; total: number; stopping: boolean }
-  | { kind: "finished"; moved: number; failures: Failure[]; error?: string };
+  | { kind: "finished"; moved: number; failures: Failure[]; error?: string }
+  | { kind: "cleaning"; deleted: number; total: number }
+  | { kind: "cleaned"; deleted: number; remaining: number; error?: string };
 
 /**
  * "Move my existing photos to Drive" on Account -> Google Drive
@@ -29,7 +32,7 @@ export function DriveMovePanel({ summary }: { summary: DriveMoveSummary }) {
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const stopRequested = useRef(false);
 
-  const running = phase.kind === "running";
+  const running = phase.kind === "running" || phase.kind === "cleaning";
 
   // Warn before leaving mid-move. Leaving is safe (the move pauses), but
   // the contributor should know it stops.
@@ -102,6 +105,34 @@ export function DriveMovePanel({ summary }: { summary: DriveMoveSummary }) {
     setConfirmed(false);
   }
 
+  /**
+   * "Delete Kakinotes' old copies". Its own loop, not the move loop: each
+   * call deletes what fits in one request and says how many are left, so a
+   * backlog of hundreds is cleared over several calls with visible progress.
+   * Stops when nothing is left, or when a call deletes nothing (those copies
+   * failed and stay for a later try) so it can never spin forever.
+   */
+  async function runCleanup() {
+    let deleted = 0;
+    let remaining = summary.cleanupPendingCount;
+    let error: string | undefined;
+    setPhase({ kind: "cleaning", deleted, total: remaining });
+
+    for (;;) {
+      const result = await cleanUpOldCopiesAction();
+      if (!result.ok) {
+        error = result.error;
+        break;
+      }
+      deleted += result.deleted;
+      remaining = result.remaining;
+      if (remaining === 0 || result.deleted === 0) break;
+      setPhase({ kind: "cleaning", deleted, total: deleted + remaining });
+    }
+
+    setPhase({ kind: "cleaned", deleted, remaining, error });
+  }
+
   function stop() {
     stopRequested.current = true;
     setPhase((current) =>
@@ -110,7 +141,11 @@ export function DriveMovePanel({ summary }: { summary: DriveMoveSummary }) {
   }
 
   const hasPhotos = summary.movableCount > 0;
-  const hasCleanup = summary.cleanupPendingCount > 0;
+  // Once a cleanup has finished, its result replaces the offer (the
+  // summary prop only refreshes on the next page load).
+  const hasCleanup =
+    summary.cleanupPendingCount > 0 &&
+    !(phase.kind === "cleaned" && phase.remaining === 0);
 
   return (
     <section
@@ -121,7 +156,20 @@ export function DriveMovePanel({ summary }: { summary: DriveMoveSummary }) {
         {t("title")}
       </h3>
 
-      {phase.kind === "running" ? (
+      {phase.kind === "cleaning" ? (
+        <div className="mt-3 space-y-3">
+          <p role="status" aria-live="polite">
+            {t("cleanupProgress", { done: phase.deleted, total: phase.total })}
+          </p>
+          <progress
+            className="h-2 w-full"
+            max={phase.total || 1}
+            value={phase.deleted}
+            aria-label={t("progressLabel")}
+          />
+          <p className="text-foreground/65">{t("cleanupKeepOpen")}</p>
+        </div>
+      ) : phase.kind === "running" ? (
         <div className="mt-3 space-y-3">
           <p role="status" aria-live="polite">
             {phase.stopping
@@ -176,6 +224,24 @@ export function DriveMovePanel({ summary }: { summary: DriveMoveSummary }) {
             </div>
           )}
 
+          {phase.kind === "cleaned" && (
+            <div role="status" className="space-y-2">
+              {phase.error && (
+                <p role="alert" className="text-destructive">
+                  {phase.error}
+                </p>
+              )}
+              {phase.deleted > 0 && (
+                <p className="text-fern">
+                  {t("cleanedCount", { count: phase.deleted })}
+                </p>
+              )}
+              {phase.remaining > 0 && (
+                <p>{t("cleanupIncomplete", { count: phase.remaining })}</p>
+              )}
+            </div>
+          )}
+
           {summary.runInProgress && phase.kind === "idle" && (
             <p className="text-foreground/65">{t("runningElsewhere")}</p>
           )}
@@ -210,7 +276,7 @@ export function DriveMovePanel({ summary }: { summary: DriveMoveSummary }) {
               </p>
               <button
                 type="button"
-                onClick={run}
+                onClick={runCleanup}
                 className="journiq-button bg-accent text-sm text-accent-foreground"
               >
                 {t("cleanup")}

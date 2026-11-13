@@ -583,6 +583,10 @@
         "runningElsewhere": "另一个标签页或窗口正在移动照片。",
         "cleanupExplainer": "有 {count} 张已发布的照片已移到你的 Drive。为了不让任何人看到加载失败的图片，Kakinotes 会在移动后把旧副本保留 5 分钟，点击下面的按钮即可删除。",
         "cleanup": "删除 Kakinotes 的旧副本",
+        "cleanupProgress": "正在删除旧副本… {done} / {total}",
+        "cleanupKeepOpen": "请保持此页面打开直到完成。如果你离开，剩下的会在你下次按下按钮时删除。",
+        "cleanedCount": "{count, plural, other {已从 Kakinotes 删除 # 个旧副本。你的照片现在只保存在你的 Drive 中。}}",
+        "cleanupIncomplete": "{count, plural, other {还有 # 个旧副本暂时无法删除。请过几分钟再试一次。}}",
         "nothingToMove": "Kakinotes 上没有需要移动的照片。你的照片都在你的 Drive 里。",
         "reasons": {
           "being_published": "它所在的故事正在发布，请几分钟后再试。",

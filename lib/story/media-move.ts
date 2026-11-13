@@ -131,31 +131,62 @@ function fatalFromDriveError(err: unknown): DriveMoveFatalError | null {
   return null;
 }
 
+export type CleanUpResult = {
+  /** Old copies deleted by this call. */
+  deleted: number;
+  /** Due jobs this call didn't get to or couldn't delete (left `switched`). */
+  remaining: number;
+};
+
+/** How many photos' old copies are deleted at the same time. */
+const CLEANUP_CONCURRENCY = 6;
+
 /**
  * Deletes the old Supabase copies of every moved photo that is due (see
  * list_my_drive_move_cleanup_due). Best effort: a failure is logged and the
- * job stays `switched`, so the next run tries again.
+ * job stays `switched`, so the next call tries again.
+ *
+ * Runs CLEANUP_CONCURRENCY deletions at once and stops STARTING new ones
+ * once `timeBudgetMs` has passed. Each deletion is several storage/RPC
+ * round trips (~2.5s); done one at a time with no budget, a backlog of a
+ * few hundred photos ran into Vercel's 60s limit and the request was killed
+ * after ~24, silently (2026-11-13). Callers loop on `remaining` instead.
  */
-export async function cleanUpMovedPhotos(): Promise<number> {
+export async function cleanUpMovedPhotos({
+  timeBudgetMs = 20_000,
+}: { timeBudgetMs?: number } = {}): Promise<CleanUpResult> {
   await requireUser();
+  const startedAt = Date.now();
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("list_my_drive_move_cleanup_due");
   if (error) {
     console.error("list_my_drive_move_cleanup_due failed", error.message);
-    return 0;
+    return { deleted: 0, remaining: 0 };
   }
+  const jobIds = (data ?? []).map((row) => row.job_id);
+
+  let next = 0;
   let deleted = 0;
-  for (const { job_id: jobId } of data ?? []) {
-    try {
-      if (await deleteMovedSupabaseCopies(jobId)) deleted += 1;
-    } catch (err) {
-      console.error("Failed to delete old Supabase copies after a move", {
-        jobId,
-        error: err instanceof Error ? err.message : err,
-      });
+  async function worker() {
+    while (next < jobIds.length && Date.now() - startedAt < timeBudgetMs) {
+      const jobId = jobIds[next++];
+      try {
+        if (await deleteMovedSupabaseCopies(jobId)) deleted += 1;
+      } catch (err) {
+        console.error("Failed to delete old Supabase copies after a move", {
+          jobId,
+          error: err instanceof Error ? err.message : err,
+        });
+      }
     }
   }
-  return deleted;
+  await Promise.all(
+    Array.from(
+      { length: Math.min(CLEANUP_CONCURRENCY, jobIds.length) },
+      worker,
+    ),
+  );
+  return { deleted, remaining: jobIds.length - deleted };
 }
 
 export async function beginDriveMoveRun(): Promise<{
@@ -163,7 +194,9 @@ export async function beginDriveMoveRun(): Promise<{
   total: number;
 }> {
   await requireUser();
-  await cleanUpMovedPhotos();
+  // Short budget: starting a move shouldn't wait on a big cleanup backlog.
+  // Whatever is left is handled by finish, or the "Delete old copies" button.
+  await cleanUpMovedPhotos({ timeBudgetMs: 10_000 });
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("begin_drive_move_run");
