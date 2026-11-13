@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.1](https://github.com/fr4d96/KakiNotes/compare/v3.1.0...v3.1.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* **images:** use the shared loading sheen for every photo ([e7fbd42](https://github.com/fr4d96/KakiNotes/commit/e7fbd42053841668bb733fc20c25c0c8bb6402ee))
+
 ## [3.1.0](https://github.com/fr4d96/KakiNotes/compare/v3.0.0...v3.1.0) (2026-11-13)
 
 
