@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getDriveEnv, isDriveConfigured } from "@/lib/env.server";
 import { DRIVE_OAUTH_STATE_COOKIE, statesMatch } from "@/lib/drive/oauth-state";
 import { saveDriveConnection } from "@/lib/drive/token-store";
+import { CONNECT_DRIVE_PATH } from "@/lib/auth/drive-binding-guard";
 import { driveCallbackQuerySchema } from "@/lib/validation/drive";
 
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
@@ -11,8 +12,20 @@ const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const ABOUT_ENDPOINT =
   "https://www.googleapis.com/drive/v3/about?fields=user(emailAddress,permissionId)";
 
+/**
+ * "connected" and "unavailable" land on Account's Drive tab, as before.
+ * "cancelled" and "failed" land on /connect-drive instead: for a contributor
+ * who still has no connection, Account would only bounce straight back there
+ * (the (contributor) layout's mandatory Drive gate) and the reason would be
+ * lost. /connect-drive itself forwards anyone who doesn't need the step
+ * (staff, an already-connected account) on to Account with the same status.
+ */
 function redirectToAccount(request: NextRequest, status: string) {
-  const url = new URL(`/account?drive=${status}#drive`, request.url);
+  const path =
+    status === "cancelled" || status === "failed"
+      ? `${CONNECT_DRIVE_PATH}?drive=${status}`
+      : `/account?drive=${status}#drive`;
+  const url = new URL(path, request.url);
   const response = NextResponse.redirect(url);
   // Single-use: cleared whether the state check passed or failed.
   response.cookies.delete({

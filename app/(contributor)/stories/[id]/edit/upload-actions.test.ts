@@ -22,9 +22,11 @@ vi.mock("@/lib/auth/get-current-user", () => ({
 const mockFinalizeStoryMediaUpload = vi.fn();
 const mockCancelPendingStoryMediaUpload = vi.fn();
 const mockStoryVersionForMedia = vi.fn();
+const mockBeginStoryMediaUpload = vi.fn();
 vi.mock("@/lib/story/mutations", () => ({
   authorizeHeicTranscode: vi.fn(),
-  beginStoryMediaUpload: vi.fn(),
+  beginStoryMediaUpload: (...args: unknown[]) =>
+    mockBeginStoryMediaUpload(...args),
   finalizeStoryMediaUpload: (...args: unknown[]) =>
     mockFinalizeStoryMediaUpload(...args),
   recordHeicTranscodedOriginal: vi.fn(),
@@ -45,7 +47,10 @@ vi.mock("@/lib/story/heic", () => ({
   HeicTranscodeError: class HeicTranscodeError extends Error {},
 }));
 
-import { finalizeMediaUploadAction } from "./upload-actions";
+import {
+  beginMediaUploadAction,
+  finalizeMediaUploadAction,
+} from "./upload-actions";
 
 const user = { id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" };
 const mediaId = "11111111-1111-4111-8111-111111111111";
@@ -57,6 +62,51 @@ beforeEach(() => {
   mockCancelPendingStoryMediaUpload.mockReset();
   mockCancelPendingStoryMediaUpload.mockResolvedValue(undefined);
   mockStoryVersionForMedia.mockReset();
+  mockBeginStoryMediaUpload.mockReset();
+});
+
+describe("beginMediaUploadAction", () => {
+  const revisionId = "22222222-2222-4222-8222-222222222222";
+
+  it("returns the reservation on success", async () => {
+    mockBeginStoryMediaUpload.mockResolvedValueOnce({
+      media_id: mediaId,
+      reserved_path: "story/media/original.jpg",
+    });
+
+    const result = await beginMediaUploadAction(revisionId, "image/jpeg");
+
+    expect(result).toEqual({
+      mediaId,
+      reservedPath: "story/media/original.jpg",
+    });
+  });
+
+  it("turns the database's drive_required refusal into a plain instruction", async () => {
+    // Plain PostgrestError-shaped object, as the Supabase client rejects with.
+    mockBeginStoryMediaUpload.mockRejectedValueOnce({
+      message: "drive_required",
+    });
+
+    const result = await beginMediaUploadAction(revisionId, "image/jpeg");
+
+    expect(result).toEqual({
+      error:
+        "Connect your Google Drive before adding photos. Kakinotes no longer stores photos itself.",
+    });
+  });
+
+  it("passes any other database error through unchanged", async () => {
+    mockBeginStoryMediaUpload.mockRejectedValueOnce(
+      new Error("Revision already has 12 images attached or reserved (max 12)"),
+    );
+
+    const result = await beginMediaUploadAction(revisionId, "image/jpeg");
+
+    expect(result).toEqual({
+      error: "Revision already has 12 images attached or reserved (max 12)",
+    });
+  });
 });
 
 describe("finalizeMediaUploadAction", () => {

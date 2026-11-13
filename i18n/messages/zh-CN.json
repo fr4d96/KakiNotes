@@ -343,7 +343,6 @@
     "footerAfter": "去看看数字背后的行程 — 通常真正重要的是那些来龙去脉。"
   },
   "home": {
-    "metaTitle": "来自新西兰各地的真实故事",
     "heroSub": "打工度假的真实故事，由亲历者亲笔写下。",
     "searchLabel": "搜索故事",
     "searchPlaceholder": "地点、工作或年份",
@@ -482,7 +481,7 @@
       "contributorIdentity": "投稿人身份",
       "contributorIdentityDescription": "你在每篇故事上的署名方式，以及读者在你的投稿人主页看到的内容。这由你自己选择 — 我们不会从账户信息推断。",
       "drive": "Google Drive",
-      "driveDescription": "可选。连接你自己的 Google Drive，以后上传的照片会存到那里，而不是存在 Kakinotes。"
+      "driveDescription": "连接你自己的 Google Drive。你的故事照片会保存在那里，而不是 Kakinotes 上。"
     },
     "profile": {
       "nameLabel": "账户名称",
@@ -548,13 +547,13 @@
     },
     "drive": {
       "notAvailableHere": "此部署环境暂不支持连接 Google Drive。",
-      "notConnectedExplainer": "连接你的 Google Drive 后，以后上传的新照片会存到你自己的 Drive，而不是 Kakinotes，并且每张照片都会在那里保留一份原图画质的副本。你已经上传的照片不受影响，在你连接之前什么都不会改变。",
+      "notConnectedExplainer": "连接你的 Google Drive 才能继续使用 Kakinotes。你上传的新照片会保存到你自己的 Drive，而不是 Kakinotes，每张照片的原画质副本也会保存在那里。已经上传的照片会保留在原处，直到你移动它们。",
       "connect": "连接 Google Drive",
       "connectedTitle": "已连接 Google Drive",
       "connectedAs": "已连接账号：{email}",
       "connectedSince": "连接时间：{date}",
       "warningTitle": "断开连接前请注意",
-      "warningBody": "断开连接后，存在 Drive 里的照片将无法在你已发布和草稿中的故事里显示。我们没有在别处保留这些照片的副本，所以一旦断开，我们这边无法把它们找回来。这个操作我们这边无法撤销。",
+      "warningBody": "断开连接后，存放在 Drive 中的照片将不会再显示在你已发布的故事和草稿中。我们不会在其他任何地方保留这些照片的副本，所以一旦断开，我们无法恢复它们。此操作无法由我们撤销。断开后，你需要重新连接一个 Google Drive 才能继续使用 Kakinotes。",
       "confirmLabel": "我明白这个操作无法撤销，并确定要断开连接。",
       "disconnect": "断开 Google Drive",
       "disconnecting": "正在断开…",
@@ -1200,6 +1199,7 @@
     "heicConvertFailed": "无法转换这张 HEIC 照片，请再试一次。",
     "finalizeUploadFailed": "无法完成上传。",
     "driveDisconnected": "你的 Google Drive 已断开连接。请在账户设置中重新连接，然后再试一次。",
+    "driveRequired": "添加照片前请先连接你的 Google Drive。Kakinotes 本身不再存储照片。",
     "submitFailed": "无法提交这篇故事送审。",
     "savePrivateFailed": "无法把这篇故事保存为私密。",
     "requestChangesFailed": "无法提交修改请求。",
@@ -1479,5 +1479,16 @@
       "sendFailed": "无法发送你的便条，请稍后再试。",
       "rateLimited": "最近发送的便条太多了，请约 {minutes} 分钟后再试。"
     }
+  },
+  "connectDrive": {
+    "metaTitle": "连接 Google Drive",
+    "title": "还差一步：连接你的 Google Drive",
+    "intro": "Kakinotes 会把你的故事照片保存在你自己的 Google Drive 里，而不是我们的服务器上。连接一次后就可以继续使用。",
+    "points": {
+      "yourDrive": "你为故事添加的新照片会先经过处理（去除位置和相机信息），然后保存到你 Drive 中的 Kakinotes 文件夹。",
+      "onlyOurFiles": "Kakinotes 只能看到它自己在那里创建的文件，无法打开你 Drive 里的其他任何内容。",
+      "fullQuality": "每张照片的原画质副本也会保存在那个文件夹里，只有你能看到。"
+    },
+    "whyRequired": "每位投稿者都需要完成这一步，因为 Kakinotes 本身不再存储故事照片。之后你可以在 账户 → Google Drive 中查看或更改连接。"
   }
 }

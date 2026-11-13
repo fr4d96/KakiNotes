@@ -51,6 +51,9 @@ const PROTECTED_PATHS = [
   "/my-photos",
   "/stories/new",
   "/account",
+  // The mandatory Google Drive step ((onboarding) route group). Signed-in
+  // only, never role-gated.
+  "/connect-drive",
   // /notifications is signed-in-only but NOT role-gated: a contributor's
   // inbox and a moderator's queue alerts are the same table and the same
   // page, and list_my_notifications() shows each caller only their own
@@ -559,6 +562,7 @@ export const config = {
     // against the compiled middleware matcher in .next's middleware-manifest).
     "/stories/new/:path*",
     "/account/:path*",
+    "/connect-drive",
     "/notifications",
     "/affirmations",
     "/stories/:id/edit/:path*",

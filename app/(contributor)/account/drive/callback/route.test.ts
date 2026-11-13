@@ -77,6 +77,9 @@ describe("GET /account/drive/callback", () => {
     const response = await GET(
       callbackRequest({ code: "abc", state: "attacker-state" }, "real-state"),
     );
+    expect(new URL(response.headers.get("location")!).pathname).toBe(
+      "/connect-drive",
+    );
     expect(response.headers.get("location")).toContain("drive=failed");
     expect(fetchMock).not.toHaveBeenCalled();
     expect(saveDriveConnection).not.toHaveBeenCalled();
@@ -88,6 +91,11 @@ describe("GET /account/drive/callback", () => {
         { error: "access_denied", state: "real-state" },
         "real-state",
       ),
+    );
+    // Back to the mandatory Drive step, not Account: for a contributor with
+    // no connection, Account would just bounce there and drop the reason.
+    expect(new URL(response.headers.get("location")!).pathname).toBe(
+      "/connect-drive",
     );
     expect(response.headers.get("location")).toContain("drive=cancelled");
     expect(fetchMock).not.toHaveBeenCalled();
@@ -144,6 +152,9 @@ describe("GET /account/drive/callback", () => {
       googleAccountEmail: "person@example.com",
       googleAccountSub: null,
     });
+    expect(new URL(response.headers.get("location")!).pathname).toBe(
+      "/account",
+    );
     expect(response.headers.get("location")).toContain("drive=connected");
   });
 

@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-11-13 (Supabase project moved to `yzaonhjieupxyrmbienf` after the old one was paused over quota — see the last entry in this file); earlier, 2026-10-31 (affirmation notes: private notes from share links, on `feat/affirmation-notes`; migration written but NOT yet applied — see the last entry in this file); earlier the same day (home page redesign: a short, app-style home with search, a swipeable latest-stories row, place tiles and the quiz behind one row, on `main`, uncommitted — see the entry at the end of this file); earlier, 2026-10-30 (pull to refresh now reloads the page, home page covers on phones, search as you type and keyword search, on `fix/pull-to-refresh-reload` — see the entry at the end of this file); earlier the same day (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+Last updated: 2026-11-13 (mandatory Google Drive: every ordinary contributor must connect Google Drive before using the app, and the database refuses their photos in Supabase storage; migration applied to the live project, app code not yet deployed — see the last entry in this file); earlier the same day (Supabase project moved to `yzaonhjieupxyrmbienf` after the old one was paused over quota — see the last entry in this file); earlier, 2026-10-31 (affirmation notes: private notes from share links, on `feat/affirmation-notes`; migration written but NOT yet applied — see the last entry in this file); earlier the same day (home page redesign: a short, app-style home with search, a swipeable latest-stories row, place tiles and the quiz behind one row, on `main`, uncommitted — see the entry at the end of this file); earlier, 2026-10-30 (pull to refresh now reloads the page, home page covers on phones, search as you type and keyword search, on `fix/pull-to-refresh-reload` — see the entry at the end of this file); earlier the same day (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
 one-level folder shape — a story is either a main story, a sub story filed under exactly one main
 story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
 "Move to…" select; migration applied to the dev project — see the entry at the end of this
@@ -11170,3 +11170,59 @@ reads.
 **Still to do (owner):** Vercel env vars and a redeploy of `release`; the two GitHub Actions secrets;
 Auth dashboard settings on the new project (see "Manual Supabase settings required"). Free-plan
 limits still apply — originals are retained by the pipeline and will refill storage over time.
+
+## 2026-11-13 — Mandatory Google Drive for contributors
+
+**Why.** The Supabase project was paused because storage filled up (previous entry). To stop that
+happening again, every ordinary contributor now has to connect Google Drive, and their own photos
+go only to their Drive. Owner decisions: contributors only (staff exempt); enforce in the app AND
+the database; the Drive OAuth consent screen is already "In production", so any Google account can
+connect and refresh tokens don't expire after 7 days.
+
+**What was built.**
+
+- `lib/auth/drive-binding-guard.ts` (`mustConnectDrive`, pure) and `lib/auth/drive-binding.ts`
+  (`callerMustConnectDrive`, server). Required only when Drive is configured on the deployment,
+  never for editor/moderator/admin, and a missing role row fails closed to "contributor".
+- `app/(contributor)/layout.tsx` redirects to `/connect-drive` when required. New route group
+  `app/(onboarding)/` (layout + `connect-drive/page.tsx`, `status.ts`): explains why, has the
+  Connect button and Sign out, shows a cancelled/failed result, and forwards anyone who doesn't
+  need the step to Account's Drive tab. `/connect-drive` added to `proxy.ts`'s protected paths and
+  matcher.
+- Drive OAuth callback: "cancelled"/"failed" go to `/connect-drive?drive=<status>`; "connected" and
+  "unavailable" still go to Account.
+- `getMyDriveConnectionStatus()` is now `cache()`d, so the gate and the Account / My Photos pages
+  share one RPC per request.
+- Migration `20261113075945_require_drive_for_contributor_uploads.sql`: `BEFORE INSERT` trigger
+  `story_media_require_drive_for_contributors` raises `drive_required` for a Supabase-backed photo
+  from a signed-in, non-staff, self-submitted owner with no active Drive connection.
+  `beginMediaUploadAction` maps it to a plain message (`actionErrors.driveRequired`).
+- Copy: new `connectDrive` namespace (en, zh-CN); the Drive tab's explainer no longer says
+  connecting is optional, and the disconnect warning says you'll have to reconnect.
+
+**Verified:** `npm run verify` (see below); unit tests for the gate decision, the status parser,
+the upload action's error mapping and the callback's new redirect targets.
+`tests/integration/drive-media-rls.integration.test.ts` reworked (its Supabase fixture is now an
+editor's editorial-import photo, and a new case asserts the owner's own Supabase reservation is
+refused), but NOT run: the RLS suite writes to the hosted project, which is also production.
+
+**Not applied / not done.**
+
+- **Migration applied 2026-11-13** to `yzaonhjieupxyrmbienf` (also the live site) with
+  `supabase db push` after a dry run showing only this migration; the Supabase MCP has no
+  permission on the new organization. Verified: trigger present and enabled, function is
+  `security definer` and not executable by `authenticated`, remote version `20261113075945` matches
+  the file. **The app code is not deployed yet:** until it is, the live site has no
+  `/connect-drive` gate, and an unconnected contributor's upload fails with the raw
+  `drive_required` text instead of the friendly message.
+- **E2E:** `npm run verify:full`'s Playwright suite runs `next start` against `.env.local` (hosted
+  project, Drive configured), so its contributor test accounts, which have no real Google
+  connection, now land on `/connect-drive`. Contributor specs (`cross-contributor-access`,
+  `contributor-story-update`, `story-starters`, …) need a decision: run e2e with the Drive env vars
+  unset (no gate, but then the trigger still refuses their photo uploads), or give the test
+  accounts a real Drive connection.
+- **PDF import gap:** a contributor's own PDF import still stores page images in Supabase (allowed
+  for Drive-connected contributors). Routing it to Drive is the next step if storage keeps growing.
+
+**Next prompt:** deploy this code to `release`; then route contributor PDF-import page images to
+Drive, and settle the e2e approach above.
