@@ -1,5 +1,28 @@
 # Changelog
 
+## [3.6.0](https://github.com/fr4d96/KakiNotes/compare/v3.5.0...v3.6.0) (2026-11-15)
+
+
+### Faster photos, and swiping on profile pages
+
+#### For readers
+
+- **Photos load much faster.** Photos used to be fetched again from the contributor's Google Drive after only 5 minutes, which could take up to 5 seconds per photo. They are now kept ready for a week, so most photos appear in a fraction of a second.
+- **Swipe through a story's photos on contributor profiles too.** The story cards on a contributor's profile now work like the ones on the home page and the Stories tab: swipe sideways to see up to 10 photos, with dots showing where you are.
+
+#### Privacy stays the same
+
+- When a story is unpublished, archived or taken down, its photos stop being shown straight away. Keeping photos ready for longer doesn't change that: the stored copies are cleared the moment anything stops being public.
+
+### Features
+
+* **contributors:** swipe each story's photos on profile pages ([f2d4a3c](https://github.com/fr4d96/KakiNotes/commit/f2d4a3c0362ab903764d82f4568c23e8da0bad07))
+
+
+### Performance Improvements
+
+* **media:** cache published Drive photos for 7 days, purge on change ([3e4b394](https://github.com/fr4d96/KakiNotes/commit/3e4b3940d1dda32d84eda9b7d26d6826e4d7c622))
+
 ## [3.5.0](https://github.com/fr4d96/KakiNotes/compare/v3.4.0...v3.5.0) (2026-11-15)
 
 
