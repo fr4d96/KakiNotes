@@ -802,7 +802,6 @@
     },
     "stepHints": {
       "title": "故事叫什么",
-      "story": "正文本身",
       "photos": "可选",
       "trip": "可选",
       "expenses": "可选",
@@ -858,11 +857,10 @@
       "backToMyStories": "← 我的故事"
     },
     "photos": {
-      "dropzone": "把图片拖到这里，或点击浏览文件",
-      "driveNote": "照片会保存到你的 Google Drive，每张还会保留一份原图画质的副本。",
+      "dropzone": "添加照片",
+      "dropzoneLimits": "最多 {max} 张 · 每张 {mb} MB",
       "count": "{count} 张照片",
       "placedCount": "已放入故事 {count} 张",
-      "uploadQueue": "正在添加的照片",
       "badges": {
         "cover": "封面",
         "inStory": "已在故事中",
@@ -893,7 +891,8 @@
         "unsupportedType": "请使用 JPEG、PNG、WebP 或 HEIC 格式。",
         "uploadFailed": "上传失败。",
         "uploadFailedStatus": "上传失败（错误 {status}）。",
-        "uploadedToast": "{fileName} 已上传。"
+        "uploadedToast": "{fileName} 已上传。",
+        "notAddedToast": "{fileName} 未能添加 — {reason}"
       },
       "drag": {
         "hint": "拖动照片即可调整顺序。在手机上请先按住照片。",
@@ -944,6 +943,7 @@
     },
     "starters": {
       "title": "不知道从哪里开始？",
+      "toggle": "写作灵感",
       "writeAbout": "写这个",
       "another": "换一个",
       "hide": "隐藏",

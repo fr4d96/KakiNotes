@@ -19,6 +19,7 @@ import { useToast } from "@/components/ui/toast";
 import { Spinner } from "@/components/ui/spinner";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
 import { ResolvingImage } from "@/components/ui/resolving-image";
+import { PlusIcon } from "@/components/icons";
 import {
   DndContext,
   MouseSensor,
@@ -144,12 +145,11 @@ type UploadingItem = {
   fileName: string;
   /** "queued": selected, waiting for the photos ahead of it to finish --
    * photos go up strictly one at a time, in the order they were picked. */
-  progress: "queued" | "uploading" | "processing" | "error";
-  error?: string;
+  progress: "queued" | "uploading" | "processing";
   /** Local object URL for the file being uploaded, so the tile can show the
    * actual image (dimmed, with a centered spinner over it) instead of a
    * blank placeholder while the real upload/processing is in flight.
-   * Revoked once the item leaves `uploading` (see handleFiles/removeUploading).
+   * Revoked once the item leaves `uploading` (see dropFromQueue).
    * null for a HEIC file: most browsers cannot render one in an <img>, so a
    * plain muted tile beats a broken-image icon. */
   previewUrl: string | null;
@@ -443,8 +443,15 @@ export function ImageUploadManager({
     });
   }
 
+  // refresh() is fired without waiting during a batch (so the next photo
+  // starts straight away), so two can be in flight at once. Only the newest
+  // one may write, or an older, slower reply could hide a photo that a later
+  // refresh had already shown.
+  const refreshSeqRef = useRef(0);
   async function refresh() {
+    const seq = ++refreshSeqRef.current;
     const result = await refreshMediaAction(storyId);
+    if (seq !== refreshSeqRef.current) return;
     if ("media" in result) {
       setMedia([...result.media].sort((a, b) => a.sortOrder - b.sortOrder));
     }
@@ -480,14 +487,41 @@ export function ImageUploadManager({
           : undefined;
       return { file, key, previewUrl, error };
     });
+    // A photo that fails the pre-checks never joins the queue: it is
+    // reported once, in a toast, and that's it.
+    for (const { file, previewUrl, error } of batch) {
+      if (!error) continue;
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        previewUrlsRef.current.delete(previewUrl);
+      }
+      showToast(
+        t("errors.notAddedToast", { fileName: file.name, reason: error }),
+        "error",
+      );
+    }
     setUploading((prev) => [
       ...prev,
-      ...batch.map(({ file, key, previewUrl, error }): UploadingItem =>
-        error
-          ? { key, fileName: file.name, progress: "error", error, previewUrl }
-          : { key, fileName: file.name, progress: "queued", previewUrl },
-      ),
+      ...batch
+        .filter(({ error }) => !error)
+        .map(({ file, key, previewUrl }): UploadingItem => ({
+          key,
+          fileName: file.name,
+          progress: "queued",
+          previewUrl,
+        })),
     ]);
+
+    // Every photo leaves the queue the moment it is done with -- finished or
+    // failed alike. A finished one reappears as a real tile once refresh()
+    // lands; a failed one is explained by its toast.
+    const dropFromQueue = (key: string, previewUrl: string | null) => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        previewUrlsRef.current.delete(previewUrl);
+      }
+      setUploading((prev) => prev.filter((u) => u.key !== key));
+    };
 
     // Pass 2: upload the valid ones strictly in order, one at a time. A
     // second pick made while a batch is still going waits for it on
@@ -661,31 +695,21 @@ export function ImageUploadManager({
             });
             if ("error" in finalized) throw new Error(finalized.error);
           }
-          if (previewUrl) {
-            URL.revokeObjectURL(previewUrl);
-            previewUrlsRef.current.delete(previewUrl);
-          }
-          setUploading((prev) => prev.filter((u) => u.key !== key));
+          dropFromQueue(key, previewUrl);
           showToast(t("errors.uploadedToast", { fileName: file.name }));
-          // Deliberately AFTER the success toast and outside the try: by this
-          // point the photo is uploaded, finalized and attached. refresh() only
-          // re-reads the tile list, so letting it throw in here would have
-          // painted a finished upload as a failed one.
-          await refresh().catch(() => {});
+          // Deliberately AFTER the success toast, and never thrown: by this
+          // point the photo is uploaded, finalized and attached. refresh()
+          // only re-reads the tile list, so letting it throw in here would
+          // have painted a finished upload as a failed one. Not awaited, so
+          // the next photo in the queue starts at once.
+          void refresh().catch(() => {});
         } catch (error) {
           const message = getErrorMessage(error, t("errors.uploadFailed"));
-          setUploading((prev) =>
-            prev.map((u) =>
-              u.key === key
-                ? {
-                    ...u,
-                    progress: "error",
-                    error: message,
-                  }
-                : u,
-            ),
+          dropFromQueue(key, previewUrl);
+          showToast(
+            t("errors.notAddedToast", { fileName: file.name, reason: message }),
+            "error",
           );
-          showToast(`${file.name} failed to upload.`, "error");
         }
       }
     };
@@ -861,25 +885,30 @@ export function ImageUploadManager({
             setIsDragging(false);
             void handleFiles(e.dataTransfer.files);
           }}
-          className={`flex w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed px-4 py-10 text-center transition-colors ${
+          className={`flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg border-2 border-dashed px-4 py-4 transition-colors ${
             isDragging
               ? "border-accent bg-accent/5"
               : "border-border-subtle hover:bg-surface-muted"
           }`}
         >
-          <span className="text-sm font-medium">{t("dropzone")}</span>
-          <span className="text-sm text-muted-foreground">
-            Up to {MAX_IMAGES_PER_REVISION} images, JPEG/PNG/WebP/HEIC (iPhone
-            photos), 15 MB each.
+          {/* Compact on purpose: one action and one line of limits. The
+              file-type list and the Drive note are gone -- a photo that
+              breaks a rule is explained in its own toast when it happens. */}
+          <span
+            aria-hidden="true"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent"
+          >
+            <PlusIcon className="h-5 w-5" />
           </span>
-          {/* Quiet, not a banner: this is informational, not a decision the
-              contributor makes here (the server already decided the mode --
-              see uploadMode above). */}
-          {uploadMode === "google_drive" && (
+          <span className="flex flex-col">
+            <span className="text-sm font-medium">{t("dropzone")}</span>
             <span className="text-xs text-muted-foreground">
-              {t("driveNote")}
+              {t("dropzoneLimits", {
+                max: MAX_IMAGES_PER_REVISION,
+                mb: Math.floor(MAX_UPLOAD_BYTES / (1024 * 1024)),
+              })}
             </span>
-          )}
+          </span>
         </label>
         <input
           ref={fileInputRef}
@@ -895,72 +924,7 @@ export function ImageUploadManager({
         />
       </div>
 
-      {uploading.length > 0 && (
-        /* One horizontal row of every selected photo. They go up one at a
-           time: the active tile carries a spinner, the ones still waiting
-           sit dimmed, and a failed one turns red with its reason beneath.
-           No "Uploading…/Processing…" words on screen -- the spinner says
-           it; the state is still spelled out for screen readers. */
-        <ul
-          aria-label={t("uploadQueue")}
-          className="nf-scroll-x -mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
-        >
-          {uploading.map((u) => {
-            const isError = u.progress === "error";
-            const isActive =
-              u.progress === "uploading" || u.progress === "processing";
-            return (
-              <li
-                key={u.key}
-                className={`shrink-0 space-y-1 ${isError ? "w-28" : "w-20"}`}
-              >
-                <div
-                  className={`relative aspect-square w-20 overflow-hidden rounded-md border-2 bg-surface-muted ${
-                    isError ? "border-destructive" : "border-border-subtle"
-                  }`}
-                >
-                  {u.previewUrl ? (
-                    /* eslint-disable-next-line @next/next/no-img-element -- a local object URL for the file being uploaded, not an optimizable static asset */
-                    <img
-                      src={u.previewUrl}
-                      alt=""
-                      className={`h-full w-full object-cover transition-opacity duration-300 ${
-                        isActive ? "opacity-90" : "opacity-40"
-                      }`}
-                    />
-                  ) : null}
-                  {isActive ? (
-                    <span className="absolute inset-0 flex items-center justify-center bg-black/30 text-white">
-                      <Spinner className="h-6 w-6" />
-                    </span>
-                  ) : null}
-                  <span className="sr-only">
-                    {u.fileName}:{" "}
-                    {isError
-                      ? u.error
-                      : u.progress === "queued"
-                        ? t("state.queued")
-                        : u.progress === "uploading"
-                          ? t("state.uploading")
-                          : t("state.processing")}
-                  </span>
-                </div>
-                {isError ? (
-                  <p
-                    aria-hidden="true"
-                    className="line-clamp-2 text-[11px] leading-tight text-destructive"
-                    title={u.error}
-                  >
-                    {u.error}
-                  </p>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      {media.length > 0 && (
+      {(media.length > 0 || uploading.length > 0) && (
         <div>
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <p className="text-sm font-medium">
@@ -1253,6 +1217,46 @@ export function ImageUploadManager({
                         </>
                       )}
                     </SortablePhotoTile>
+                  );
+                })}
+                {/* Photos on their way in sit at the end of the same grid,
+                    the size of a real tile, so each one turns into its
+                    finished photo in place instead of a separate row
+                    pushing the grid down. One spinner at a time: the photo
+                    being sent; the ones behind it wait, dimmed. No words on
+                    screen -- the state is spelled out for screen readers. */}
+                {uploading.map((u) => {
+                  const isActive = u.progress !== "queued";
+                  return (
+                    <li
+                      key={u.key}
+                      data-upload-queue-item
+                      className="relative aspect-square overflow-hidden rounded-md border border-border-subtle bg-surface-muted"
+                    >
+                      {u.previewUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element -- a local object URL for the file being uploaded, not an optimizable static asset */
+                        <img
+                          src={u.previewUrl}
+                          alt=""
+                          className={`h-full w-full object-cover transition-opacity duration-300 ${
+                            isActive ? "opacity-80" : "opacity-35"
+                          }`}
+                        />
+                      ) : null}
+                      {isActive ? (
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-white">
+                          <Spinner className="h-7 w-7" />
+                        </span>
+                      ) : null}
+                      <span className="sr-only">
+                        {u.fileName}:{" "}
+                        {u.progress === "queued"
+                          ? t("state.queued")
+                          : u.progress === "uploading"
+                            ? t("state.uploading")
+                            : t("state.processing")}
+                      </span>
+                    </li>
                   );
                 })}
               </ul>

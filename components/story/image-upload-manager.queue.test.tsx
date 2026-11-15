@@ -5,11 +5,17 @@ import { createRef } from "react";
 
 import { MutationQueue } from "@/lib/story/mutation-queue";
 
-// The upload row: every selected photo appears at once, and they go up one
-// at a time with a spinner on the active tile -- no "Uploading…" or
-// "Processing…" words on screen. beginMediaUploadAction never settles here,
-// so the first photo stays mid-upload and the rest stay queued behind it.
-const beginMediaUploadAction = vi.fn(() => new Promise<never>(() => {}));
+// The upload queue: every selected photo appears at once as a tile at the
+// end of the photo grid, and they go up one at a time with a spinner on the
+// active tile -- no "Uploading…" or "Processing…" words on screen. A photo
+// leaves the queue the moment it is done with, failed or not.
+//
+// beginMediaUploadAction fails the first photo, then never settles, so the
+// second photo stays mid-upload and the third stays queued behind it.
+const beginMediaUploadAction = vi
+  .fn<() => Promise<{ error: string }>>()
+  .mockResolvedValueOnce({ error: "That file could not be read." })
+  .mockImplementation(() => new Promise<never>(() => {}));
 
 vi.mock("@/app/(contributor)/stories/[id]/edit/actions", () => ({
   reorderMediaAction: vi.fn(async () => ({ ok: true })),
@@ -57,8 +63,8 @@ function jpeg(name: string) {
   return new File(["x"], name, { type: "image/jpeg" });
 }
 
-describe("ImageUploadManager — the upload row", () => {
-  it("lists every selected photo at once and works through them one at a time", async () => {
+describe("ImageUploadManager — the upload queue", () => {
+  it("shows the batch as grid tiles, works through them one at a time, and drops a failed one at once", async () => {
     URL.createObjectURL = vi.fn(() => "blob:preview");
     URL.revokeObjectURL = vi.fn();
     const { container } = renderPanel();
@@ -72,23 +78,27 @@ describe("ImageUploadManager — the upload row", () => {
       jpeg("c.jpg"),
     ]);
 
-    const row = await screen.findByRole("list", {
-      name: "Photos being added",
-    });
+    // a.jpg failed: gone from the queue, not left behind with a red border.
     await waitFor(() =>
-      expect(within(row).getAllByRole("listitem")).toHaveLength(3),
+      expect(
+        container.querySelectorAll("[data-upload-queue-item]"),
+      ).toHaveLength(2),
     );
+    expect(screen.queryByText(/a\.jpg:/)).toBeNull();
 
-    // Exactly one spinner: the first photo is in flight, the others wait.
-    expect(within(row).getAllByRole("status")).toHaveLength(1);
-    expect(within(row).getByText(/a\.jpg: Uploading/)).toBeInTheDocument();
-    expect(within(row).getByText(/b\.jpg: Waiting/)).toBeInTheDocument();
-    expect(within(row).getByText(/c\.jpg: Waiting/)).toBeInTheDocument();
-    expect(beginMediaUploadAction).toHaveBeenCalledTimes(1);
+    // Exactly one spinner: b is in flight, c waits.
+    const tiles = [
+      ...container.querySelectorAll<HTMLElement>("[data-upload-queue-item]"),
+    ];
+    expect(
+      tiles.flatMap((tile) => within(tile).queryAllByRole("status")),
+    ).toHaveLength(1);
+    expect(screen.getByText(/b\.jpg: Uploading/)).toHaveClass("sr-only");
+    expect(screen.getByText(/c\.jpg: Waiting/)).toHaveClass("sr-only");
+    expect(beginMediaUploadAction).toHaveBeenCalledTimes(2);
 
-    // The state words are for screen readers only, never on screen.
-    for (const label of within(row).getAllByText(/: (Uploading|Waiting)/)) {
-      expect(label).toHaveClass("sr-only");
-    }
+    // The queue lives inside the photo grid, not in a separate row above it.
+    const grid = tiles[0].closest("ul")!;
+    expect(grid).toHaveClass("grid");
   });
 });

@@ -802,7 +802,6 @@
     },
     "stepHints": {
       "title": "What it's called",
-      "story": "The writing itself",
       "photos": "Optional",
       "trip": "Optional",
       "expenses": "Optional",
@@ -858,11 +857,10 @@
       "backToMyStories": "← My Stories"
     },
     "photos": {
-      "dropzone": "Drag and drop images here, or click to browse",
-      "driveNote": "Photos are saved to your Google Drive, with a full-quality copy of each one.",
+      "dropzone": "Add photos",
+      "dropzoneLimits": "Up to {max} · {mb} MB each",
       "count": "{count, plural, one {# photo} other {# photos}}",
       "placedCount": "{count} in your story",
-      "uploadQueue": "Photos being added",
       "badges": {
         "cover": "Cover",
         "inStory": "In story",
@@ -893,7 +891,8 @@
         "unsupportedType": "Use JPEG, PNG, WebP, or HEIC.",
         "uploadFailed": "Upload failed.",
         "uploadFailedStatus": "Upload failed (error {status}).",
-        "uploadedToast": "{fileName} uploaded."
+        "uploadedToast": "{fileName} uploaded.",
+        "notAddedToast": "{fileName} wasn't added — {reason}"
       },
       "drag": {
         "hint": "Drag a photo to change its place. On a phone, press and hold first.",
@@ -944,6 +943,7 @@
     },
     "starters": {
       "title": "Not sure where to start?",
+      "toggle": "Ideas for what to write",
       "writeAbout": "Write about this",
       "another": "Show me another",
       "hide": "Hide",
