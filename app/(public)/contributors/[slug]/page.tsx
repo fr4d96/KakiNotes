@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
   getPublicContributorDeduped,
+  listCardPhotoUrlsCached,
   listContributorPublishedStories,
 } from "@/lib/story/public-queries";
 import { getPublishedContributorJourney } from "@/lib/story/journey-queries";
@@ -113,6 +114,14 @@ export default async function ContributorDetailPage({
     getPublishedContributorJourney(contributor.contributor_id),
   ]);
 
+  // Each card swipes through its published photos, as on the home page and
+  // the Stories tab. One cached read per card; a failed read keeps the cover.
+  const cardPhotos = await Promise.all(
+    stories.map((story) =>
+      listCardPhotoUrlsCached(story.story_id).catch(() => [] as string[]),
+    ),
+  );
+
   const from = formatCountryName(
     contributor.home_country_code,
     locale,
@@ -160,8 +169,12 @@ export default async function ContributorDetailPage({
           {t("publishedStories")}
         </h2>
         <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {stories.map((story) => (
-            <StoryCard key={story.story_id} story={story} />
+          {stories.map((story, index) => (
+            <StoryCard
+              key={story.story_id}
+              story={story}
+              photos={cardPhotos[index]}
+            />
           ))}
         </div>
       </div>
