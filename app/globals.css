@@ -1805,7 +1805,13 @@ html[data-splash="skip"] .app-splash {
 }
 @media (display-mode: standalone) {
   html {
-    overscroll-behavior-y: none;
+    /* iOS's own rubber-band bounce stays ON at the top and bottom of every
+       page, as in a native app (2026-11-15; it used to be turned off with
+       overscroll-behavior-y: none). At the top, pull to refresh rides on it:
+       the page bounces down and the refresh icon fills in above it. Inner
+       sheets and carousels keep overscroll-behavior: contain, so they never
+       drag the page with them. The bounce shows the body's background, so
+       dark mode never flashes white. */
     /* No pinch or double-tap zoom of the whole page in the installed app;
        with components/no-pinch-zoom.tsx. Safari tabs keep both. */
     touch-action: pan-x pan-y;

@@ -55,9 +55,9 @@ function insideScrolledBox(start: Element | null): boolean {
  * Listeners are passive (they never block scrolling), and a pull is only
  * considered when the page is scrolled to the top, no scroll lock is on (a
  * sheet or the photo viewer is open), and the touch did not start inside
- * anything in NO_PULL or an inner box that is itself scrolled. In the
- * installed app the page's own rubber-band is turned off
- * (app/globals.css), so the indicator is the only thing that moves.
+ * anything in NO_PULL or an inner box that is itself scrolled. The page's
+ * own iOS rubber-band stays on (app/globals.css), so a pull bounces the
+ * page down like a native app while the indicator fills in above it.
  * Rendered once, from the root layout.
  */
 export function PullToRefresh({

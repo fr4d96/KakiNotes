@@ -3199,9 +3199,9 @@ App Store build, Capacitor or any native code. Files:
   (`lib/theme-init-script.ts`) sets `data-splash="skip"` on `<html>` when the navigation type is
   `reload`, before first paint; a cold launch is a `navigate`. Passive listeners only. Never
   starts in a `<dialog>`, the journey map (`svg[role=group]`), a carousel, a text field,
-  `[data-no-pull]`, a scrolled inner box or while a scroll lock is on. `globals.css` sets
-  `overscroll-behavior-y: none` on `html` in standalone so iOS's rubber-band doesn't move the page
-  under the indicator.
+  `[data-no-pull]`, a scrolled inner box or while a scroll lock is on. Since 2026-11-15 iOS's own
+  rubber-band bounce is left on in standalone too (it was `overscroll-behavior-y: none`), so pages
+  bounce at the top and bottom like a native app and a pull bounces the page under the indicator.
 - `components/touch-active.tsx` — rendered once by `app/layout.tsx`: one passive no-op `touchstart`
   listener on `document`, which is what makes iOS apply `:active` (the `.press` feedback in
   `app/globals.css`) to non-link elements. `globals.css` also sets `touch-action: manipulation` on
