@@ -18,6 +18,11 @@ vi.mock("@/lib/drive/drive-client", () => ({
   downloadFileBytes,
 }));
 
+const resizeForCard = vi.hoisted(() =>
+  vi.fn(async () => Buffer.from("card-bytes")),
+);
+vi.mock("@/lib/story/card-photo-resize", () => ({ resizeForCard }));
+
 import { GET } from "@/app/media/[mediaId]/route";
 
 function requestFor(mediaId: string, query = "") {
@@ -31,6 +36,7 @@ beforeEach(() => {
   rpcMock.mockReset();
   getAccessToken.mockClear();
   downloadFileBytes.mockClear();
+  resizeForCard.mockClear();
 });
 
 describe("GET /media/[mediaId]", () => {
@@ -288,6 +294,86 @@ describe("GET /media/[mediaId]", () => {
       expect(rpcMock.mock.calls.map(([name]) => name)).toEqual([
         "get_drive_full_copy_for_owner",
       ]);
+    });
+  });
+
+  // The card-sized version (lib/story/card-photo-size.ts): same check, same
+  // caching and purge tag, smaller WebP bytes.
+  describe("?w= card sizes", () => {
+    const publishedRow = {
+      data: [
+        {
+          drive_processed_file_id: "drive-file-1",
+          processed_mime_type: "image/jpeg",
+          owner_user_id: "owner-1",
+          is_published: true,
+        },
+      ],
+      error: null,
+    };
+
+    it.each(["640", "828", "1080"])(
+      "serves a %spx WebP card version, cached and tagged like the photo",
+      async (width) => {
+        rpcMock.mockResolvedValue(publishedRow);
+        const { request, context } = requestFor(
+          "00000000-0000-4000-8000-000000000010",
+          `?w=${width}`,
+        );
+        const response = await GET(request, context);
+        expect(response.status).toBe(200);
+        expect(resizeForCard).toHaveBeenCalledWith(
+          Buffer.from("image-bytes"),
+          Number(width),
+        );
+        expect(response.headers.get("Content-Type")).toBe("image/webp");
+        expect(Buffer.from(await response.arrayBuffer()).toString()).toBe(
+          "card-bytes",
+        );
+        expect(response.headers.get("Cache-Control")).toBe(
+          "public, s-maxage=604800, stale-while-revalidate=86400",
+        );
+        expect(response.headers.get("Vercel-Cache-Tag")).toBe("public-media");
+      },
+    );
+
+    it.each(["300", "640.0", "abc", ""])(
+      "404s any other width (%j) before touching the database or Drive",
+      async (width) => {
+        const { request, context } = requestFor(
+          "00000000-0000-4000-8000-000000000011",
+          `?w=${width}`,
+        );
+        const response = await GET(request, context);
+        expect(response.status).toBe(404);
+        expect(rpcMock).not.toHaveBeenCalled();
+        expect(downloadFileBytes).not.toHaveBeenCalled();
+      },
+    );
+
+    it("still 404s an unauthorized photo asked for at a card size", async () => {
+      rpcMock.mockResolvedValue({ data: [], error: null });
+      const { request, context } = requestFor(
+        "00000000-0000-4000-8000-000000000012",
+        "?w=640",
+      );
+      const response = await GET(request, context);
+      expect(response.status).toBe(404);
+      expect(resizeForCard).not.toHaveBeenCalled();
+    });
+
+    it("keeps a preview private at a card size", async () => {
+      rpcMock.mockResolvedValue({
+        data: [{ ...publishedRow.data[0], is_published: false }],
+        error: null,
+      });
+      const { request, context } = requestFor(
+        "00000000-0000-4000-8000-000000000013",
+        "?w=640",
+      );
+      const response = await GET(request, context);
+      expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+      expect(response.headers.get("Vercel-Cache-Tag")).toBeNull();
     });
   });
 });

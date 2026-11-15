@@ -24,6 +24,8 @@ import { useLayoutEffect, useRef, useState } from "react";
  */
 export function ResolvingImage({
   src,
+  srcSet,
+  sizes,
   alt,
   className = "",
   wrapperClassName = "relative block",
@@ -34,6 +36,10 @@ export function ResolvingImage({
   onError,
 }: {
   src: string;
+  /** Optional responsive sources, e.g. the card sizes (cardPhotoSrcSet()). */
+  srcSet?: string;
+  /** How wide the image is drawn, so the browser can pick from srcSet. */
+  sizes?: string;
   alt: string;
   className?: string;
   wrapperClassName?: string;
@@ -77,6 +83,8 @@ export function ResolvingImage({
       <img
         ref={imgRef}
         src={src}
+        srcSet={srcSet}
+        sizes={srcSet ? sizes : undefined}
         alt={alt}
         loading={loading}
         draggable={draggable}

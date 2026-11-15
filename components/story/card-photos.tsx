@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ChevronIcon } from "@/components/icons";
 import { ResolvingImage } from "@/components/ui/resolving-image";
+import { cardPhotoSrc, cardPhotoSrcSet } from "@/lib/story/card-photo-size";
 
 /** Dots shown at once before the row starts sliding (as PhotoCarousel). */
 const DOT_WINDOW = 5;
@@ -30,9 +31,16 @@ export function CardPhotos({
   urls,
   href,
   eager = false,
+  sizes = "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw",
 }: {
   urls: string[];
   href: string;
+  /**
+   * How wide the card is drawn at each breakpoint, so the browser picks the
+   * 640, 828 or 1080px card version (lib/story/card-photo-size.ts) instead of
+   * the full photo.
+   */
+  sizes?: string;
   /** First card(s) on the page: load the first photo straight away. */
   eager?: boolean;
 }) {
@@ -103,7 +111,9 @@ export function CardPhotos({
             className="block h-full w-full shrink-0 snap-center snap-always"
           >
             <ResolvingImage
-              src={url}
+              src={cardPhotoSrc(url, 1080)}
+              srcSet={cardPhotoSrcSet(url)}
+              sizes={sizes}
               alt=""
               loading={index === 0 && eager ? "eager" : "lazy"}
               loadingLabel={tImages("loading")}

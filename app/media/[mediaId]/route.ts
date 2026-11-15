@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { driveMediaIdSchema } from "@/lib/validation/drive";
 import { getAccessToken, downloadFileBytes } from "@/lib/drive/drive-client";
 import { photoDownloadFilename } from "@/lib/story/photo-download-name";
+import { parseCardPhotoWidth } from "@/lib/story/card-photo-size";
+import { resizeForCard } from "@/lib/story/card-photo-resize";
 import {
   PUBLIC_MEDIA_CACHE_CONTROL,
   PUBLIC_MEDIA_TAG,
@@ -87,6 +89,15 @@ export async function GET(
     return serveFullQualityCopy(supabase, parsedId.data);
   }
 
+  // ?w=640|828|1080: the card-sized version (lib/story/card-photo-size.ts). Any
+  // other ?w is the same 404 as a missing photo, so the cache can't be
+  // flooded with arbitrary sizes. Checked before any database or Drive work.
+  const rawWidth = request.nextUrl.searchParams.get("w");
+  const cardWidth = parseCardPhotoWidth(rawWidth);
+  if (rawWidth !== null && cardWidth === null) {
+    return notFound();
+  }
+
   const { data, error } = await supabase.rpc("get_drive_media_for_proxy", {
     p_media_id: parsedId.data,
   });
@@ -135,6 +146,25 @@ export async function GET(
     return driveFailure();
   }
 
+  // The card size: same authorization and caching as the full photo, only
+  // smaller bytes. A download always gets the full photo.
+  let contentType = row.processed_mime_type;
+  if (
+    cardWidth !== null &&
+    request.nextUrl.searchParams.get("download") !== "1"
+  ) {
+    try {
+      bytes = await resizeForCard(bytes, cardWidth);
+      contentType = "image/webp";
+    } catch (err) {
+      console.error("Card photo resize failed", {
+        mediaId: parsedId.data,
+        error: err instanceof Error ? err.message : err,
+      });
+      return driveFailure();
+    }
+  }
+
   // Published: cached by the CDN for days (lib/story/public-media-cache.ts)
   // and tagged, so an unpublish/archive/reject/takedown purges it at once
   // instead of waiting out the window (section 5's active purge). Anything
@@ -151,7 +181,7 @@ export async function GET(
     : "private, no-store";
 
   const headers: Record<string, string> = {
-    "Content-Type": row.processed_mime_type,
+    "Content-Type": contentType,
     // SMALL 3: stops a browser from ever re-sniffing/re-interpreting
     // these bytes as something other than the declared, whitelisted
     // image type above.

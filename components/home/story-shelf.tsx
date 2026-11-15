@@ -55,6 +55,7 @@ export function StoryShelf({
                     urls={storyPhotos}
                     href={`/stories/${story.slug}`}
                     eager={index < 2}
+                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
                   />
                 ) : (
                   <StoryCoverFallback sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" />

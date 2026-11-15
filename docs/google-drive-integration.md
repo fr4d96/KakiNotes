@@ -813,6 +813,15 @@ One tag covers every photo: the purge sites do not all know which photos
 changed, and over-purging only costs speed (the next viewers go back to
 Drive once), never correctness.
 
+**Card sizes (2026-11-15).** `?w=640`, `?w=828` and `?w=1080` on the same route return a
+4:3, centre-cropped WebP of the same approved, metadata-stripped derivative,
+for story cards (`lib/story/card-photo-size.ts`, `lib/story/card-photo-resize.ts`).
+Same authorization check, same `Cache-Control` and `public-media` purge tag.
+Made in memory on each cache miss and never stored, so Drive still holds
+exactly one public derivative per photo (Engineering Rule 14). Any other `w`
+is a 404 before any database or Drive work, so the cache can't be filled with
+arbitrary sizes. Measured: 65/50/14 KB at 640px against 482/328/127 KB.
+
 _Original design (2026-10-03, superseded):_ `s-maxage=300` as a bounded
 window, with an active purge described but not yet built.
 
