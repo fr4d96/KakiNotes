@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.3.0](https://github.com/fr4d96/KakiNotes/compare/v3.2.0...v3.3.0) (2026-11-15)
+
+
+### Features
+
+* **editor:** open writing prompts from a light bulb ([7237428](https://github.com/fr4d96/KakiNotes/commit/72374280e688749493ceefdfe85ac96d659fd5e3))
+* **home:** swipe a story's photos right on its home card ([216ae85](https://github.com/fr4d96/KakiNotes/commit/216ae85c349d4e6beea171144f23f29a64eab01d))
+* **photos:** queue uploads inside the photo grid and slim the drop box ([e2daf91](https://github.com/fr4d96/KakiNotes/commit/e2daf91d66165f582d260d2abddf3410965d24b8))
+
 ## [3.2.0](https://github.com/fr4d96/KakiNotes/compare/v3.1.1...v3.2.0) (2026-11-13)
 
 
