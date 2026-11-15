@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.7.0](https://github.com/fr4d96/KakiNotes/compare/v3.6.1...v3.7.0) (2026-11-15)
+
+
+### Features
+
+* **app:** let the installed app bounce at the top and bottom like iOS ([c6aa647](https://github.com/fr4d96/KakiNotes/commit/c6aa6477e53b190305fd6e79a1b05d2eb15a840e))
+* **stories:** show sub story covers and swipe related stories' photos ([553c819](https://github.com/fr4d96/KakiNotes/commit/553c8191280cc64a0155746e43ab850eef4d5ba6))
+
 ## [3.6.1](https://github.com/fr4d96/KakiNotes/compare/v3.6.0...v3.6.1) (2026-11-15)
 
 
