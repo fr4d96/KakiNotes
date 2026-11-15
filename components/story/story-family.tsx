@@ -11,7 +11,7 @@ import { cardPhotoSrc } from "@/lib/story/card-photo-size";
 // erased type imports never pull it into a bundle.
 
 /**
- * "Part of: <main story>" -- the small breadcrumb at the top of a sub
+ * "Main story: <main story>" -- the small breadcrumb at the top of a sub
  * story's public page (supabase/migrations/20261021085920_story_folders.sql).
  * Titles are plain text children, never HTML.
  */

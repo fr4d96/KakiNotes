@@ -89,7 +89,8 @@ available.
 - **Contributor attribution chip** — name/pseudonym plus trip metadata (destination, year),
   reusable on both the story card and the story detail page.
 - **"Personal experience, not advice" label** — a small, consistently-placed, always-visible
-  component near the top of every published story.
+  component on every published story; at the end of the story, above Report, since 2026-11-15
+  (owner decision: the page opens on the title).
 
 ### Layout principles
 
@@ -128,7 +129,8 @@ Status: does not exist yet — fully greenfield.
   paragraph/heading/quote/list blocks.
 - Ordered image gallery, placed distinctly from the body text (not inline).
 - Contributor attribution block.
-- The "personal experience, not advice" label, placed prominently near the top.
+- The "personal experience, not advice" label, at the end of the story above Report (moved from
+  near the top on 2026-11-15, owner decision).
 - A related-stories module at the end of the page.
 
 ## 5. Technical constraints

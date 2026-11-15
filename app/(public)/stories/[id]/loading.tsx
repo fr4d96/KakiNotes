@@ -22,11 +22,11 @@ export default function StoryDetailLoading() {
   return (
     <LoadingScreen
       label={t("story")}
-      className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16"
+      className="mx-auto max-w-5xl px-4 pt-4 pb-12 sm:px-6 sm:py-16"
     >
-      <Skeleton className="h-7 w-64 rounded-full" />
-
-      <Skeleton className="mt-6 h-10 w-full max-w-3xl sm:h-12" />
+      {/* No label pill here: the "not advice" label is at the end of the
+          story now, so the title is the first thing on the page. */}
+      <Skeleton className="h-10 w-full max-w-3xl sm:h-12" />
       <Skeleton className="mt-3 h-10 w-3/5 max-w-xl sm:h-12" />
 
       <div className="mt-5 flex flex-col gap-2">

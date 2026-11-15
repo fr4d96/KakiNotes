@@ -117,4 +117,20 @@ describe("Story page card lists", () => {
       within(relatedSection()).getByRole("link", { name: "Wanaka Tree" }),
     ).toBeInTheDocument();
   });
+
+  // Engineering Rule 17: every public story carries the "personal
+  // experience, not advice" label. Since 2026-11-15 it sits at the end of
+  // the story rather than above the title -- still always there.
+  it("still carries the not-advice label, after the story rather than above the title", async () => {
+    render(await StoryDetail({ country: "new-zealand", slug: main.slug }));
+
+    const label = screen.getByText(/One person.s experience/);
+    const title = screen.getByRole("heading", {
+      level: 1,
+      name: "Queenstown Spots",
+    });
+    expect(
+      title.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
 });

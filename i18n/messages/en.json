@@ -284,8 +284,8 @@
       }
     },
     "family": {
-      "partOfLabel": "Part of a larger story",
-      "partOf": "Part of:",
+      "partOfLabel": "Main story",
+      "partOf": "Main story:",
       "subStoriesHeading": "Sub stories"
     },
     "seeOnJourney": "See this on {name}’s journey"

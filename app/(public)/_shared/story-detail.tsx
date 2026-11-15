@@ -343,7 +343,9 @@ export async function StoryDetail({
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
+    // pt-4 on a phone, like the other app screens: the top bar already sits
+    // above, and py-12 left a 48px gap before the breadcrumb.
+    <div className="mx-auto max-w-5xl px-4 pt-4 pb-12 sm:px-6 sm:py-16">
       {/* Controlled JSON-LD only, see jsonLdScript() above -- never user content. */}
       <script
         type="application/ld+json"
@@ -354,10 +356,6 @@ export async function StoryDetail({
         parent={family.parent}
         basePath={`${countryUrlPrefix(country)}/stories`}
       />
-
-      <div className="mb-4">
-        <PersonalExperienceLabel countrySlug={country} />
-      </div>
 
       <h1
         id="story-title"
@@ -437,7 +435,15 @@ export async function StoryDetail({
         basePath={`${countryUrlPrefix(country)}/stories`}
       />
 
-      <div className="mt-10 border-t border-border-subtle pt-6">
+      {/* Engineering Rule 17's "personal experience, not advice" label, at
+          the end of the story (owner decision 2026-11-15): the top of the
+          page starts with the title, and the label is read where a reader
+          finishes, right above the Report option. */}
+      <div className="mt-10">
+        <PersonalExperienceLabel countrySlug={country} />
+      </div>
+
+      <div className="mt-6 border-t border-border-subtle pt-6">
         <ReportStoryForm storyId={story.story_id} storySlug={story.slug} />
       </div>
 

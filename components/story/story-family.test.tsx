@@ -7,8 +7,9 @@ describe("PartOfStory", () => {
   it("links to the main story inside a labelled nav", () => {
     render(<PartOfStory parent={{ slug: "food-queenstown", title: "Food" }} />);
     expect(
-      screen.getByRole("navigation", { name: /part of a larger story/i }),
+      screen.getByRole("navigation", { name: "Main story" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("Main story:")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Food" })).toHaveAttribute(
       "href",
       "/stories/food-queenstown",

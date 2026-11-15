@@ -284,8 +284,8 @@
       }
     },
     "family": {
-      "partOfLabel": "所属的完整故事",
-      "partOf": "属于：",
+      "partOfLabel": "主故事",
+      "partOf": "主故事：",
       "subStoriesHeading": "子故事"
     },
     "seeOnJourney": "在 {name} 的旅程地图上查看"
