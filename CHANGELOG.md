@@ -1,5 +1,26 @@
 # Changelog
 
+## [3.5.0](https://github.com/fr4d96/KakiNotes/compare/v3.4.0...v3.5.0) (2026-11-15)
+
+
+### Swipe photos on the Stories tab, and an easy way back to the top
+
+#### For readers
+
+- **Swipe through a story's photos on the Stories tab too.** Like the home page, each story card now lets you swipe sideways through up to 10 of its photos, with dots showing where you are. On a computer, arrows appear when you hover over the photo. Tapping a card still opens the story.
+- **A back-to-top button.** When you reach the bottom of a long page, a round arrow button appears. Tap it to glide back to the top. On a phone it sits just above the tab bar.
+- **No more jump when opening the Stories page.** Tapping "See all" on the home page used to show a placeholder shaped for a big screen, so the stories jumped up when they arrived. On a phone the placeholder now matches the real page, so nothing moves.
+
+### Features
+
+* **nav:** add a back-to-top button at the bottom of long pages ([fbb6808](https://github.com/fr4d96/KakiNotes/commit/fbb6808e365961be6153159a5a1b44bb133a4c23))
+* **stories:** swipe each story's photos on the Stories tab ([765e3dd](https://github.com/fr4d96/KakiNotes/commit/765e3dd12a95d9c62a28c033b5acd5da042666f5))
+
+
+### Bug Fixes
+
+* **stories:** stop the Stories page jumping as it loads on a phone ([411ea94](https://github.com/fr4d96/KakiNotes/commit/411ea947304d3662902bcbcac7994289d09f421d))
+
 ## [3.4.0](https://github.com/fr4d96/KakiNotes/compare/v3.3.0...v3.4.0) (2026-11-15)
 
 
