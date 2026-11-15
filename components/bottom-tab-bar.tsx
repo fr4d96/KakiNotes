@@ -13,6 +13,7 @@ import {
   UsersIcon,
 } from "@/components/icons";
 import { createClient } from "@/lib/supabase/client";
+import { ScrollToTopButton } from "@/components/scroll-to-top-button";
 import { countryFromPathname, countryUrlPrefix } from "@/lib/story/countries";
 
 /**
@@ -142,6 +143,9 @@ export function BottomTabBar({
     <>
       {/* Keeps the footer and last content clear of the fixed bar. Gone while
           the bar is hidden, so a task screen gets its full height back. */}
+      {/* Shows once the reader reaches the bottom of a long page; left out
+          wherever the bar itself is hidden (editor, typing). */}
+      {!hidden && <ScrollToTopButton />}
       {!hidden && (
         <div
           aria-hidden="true"

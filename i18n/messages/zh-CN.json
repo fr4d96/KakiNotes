@@ -53,6 +53,7 @@
     },
     "back": "返回",
     "backTo": "返回{page}",
+    "backToTop": "回到顶部",
     "pullToRefresh": {
       "refreshing": "正在刷新…"
     }

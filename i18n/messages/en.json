@@ -53,6 +53,7 @@
     },
     "back": "Back",
     "backTo": "Back to {page}",
+    "backToTop": "Back to top",
     "pullToRefresh": {
       "refreshing": "Refreshing…"
     }
