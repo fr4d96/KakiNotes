@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.4.0](https://github.com/fr4d96/KakiNotes/compare/v3.3.0...v3.4.0) (2026-11-15)
+
+
+### Features
+
+* **folders:** make Folders the tab, with a journey icon per folder ([ecc9677](https://github.com/fr4d96/KakiNotes/commit/ecc96778ddf878eb346a5977fa2688841743ac58))
+
+
+### Bug Fixes
+
+* **loading:** keep contributor skeletons inside a phone screen ([a39d3cf](https://github.com/fr4d96/KakiNotes/commit/a39d3cf0f74881479faeb40d0c70dd7c8132e972))
+
 ## [3.3.0](https://github.com/fr4d96/KakiNotes/compare/v3.2.0...v3.3.0) (2026-11-15)
 
 
