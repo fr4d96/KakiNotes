@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.7.0](https://github.com/fr4d96/KakiNotes/compare/v3.6.1...v3.7.0) (2026-11-15)
+
+
+### Sub stories with real covers, swipeable related stories, and a bouncier app
+
+#### For readers
+
+- **Sub stories now show their own cover photos.** On a main story like "Queenstown Spots", the list at the bottom used to show a "no image" picture for every sub story when the writer didn't have a public profile. Each sub story now shows its real cover.
+- **"More in this story" is now called "Sub stories"** (子故事 in Chinese), since they are stories filed under the main one.
+- **Swipe through photos on related stories too.** The "Related stories" cards at the end of a story now let you swipe through each story's photos, with dots, like every other story card.
+- **The app bounces like an iPhone app.** If you added Kakinotes to your home screen, scrolling past the top or bottom of a page now gives that familiar little bounce. Pulling down at the top to refresh bounces the page too.
+
+### Features
+
+* **app:** let the installed app bounce at the top and bottom like iOS ([c6aa647](https://github.com/fr4d96/KakiNotes/commit/c6aa6477e53b190305fd6e79a1b05d2eb15a840e))
+* **stories:** show sub story covers and swipe related stories' photos ([553c819](https://github.com/fr4d96/KakiNotes/commit/553c8191280cc64a0155746e43ab850eef4d5ba6))
+
 ## [3.6.1](https://github.com/fr4d96/KakiNotes/compare/v3.6.0...v3.6.1) (2026-11-15)
 
 
