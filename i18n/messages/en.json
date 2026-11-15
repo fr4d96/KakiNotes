@@ -286,7 +286,7 @@
     "family": {
       "partOfLabel": "Part of a larger story",
       "partOf": "Part of:",
-      "subStoriesHeading": "More in this story"
+      "subStoriesHeading": "Sub stories"
     },
     "seeOnJourney": "See this on {name}’s journey"
   },

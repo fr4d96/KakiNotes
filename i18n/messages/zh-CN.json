@@ -286,7 +286,7 @@
     "family": {
       "partOfLabel": "所属的完整故事",
       "partOf": "属于：",
-      "subStoriesHeading": "这篇故事里的更多内容"
+      "subStoriesHeading": "子故事"
     },
     "seeOnJourney": "在 {name} 的旅程地图上查看"
   },

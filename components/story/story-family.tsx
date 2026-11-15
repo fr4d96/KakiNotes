@@ -5,6 +5,7 @@ import type { StoryCardData } from "@/components/story/story-card";
 import { StoryCoverFallback } from "@/components/story/story-cover-fallback";
 import { ResolvingImage } from "@/components/ui/resolving-image";
 import { getCardCoverUrl } from "@/lib/story/image-url";
+import { cardPhotoSrc } from "@/lib/story/card-photo-size";
 
 // Type-only import above: lib/story/story-folders.ts is "server-only", and
 // erased type imports never pull it into a bundle.
@@ -49,8 +50,11 @@ export function SubStoryList({
   basePath = "/stories",
 }: {
   cards?: StoryCardData[];
-  /** Sub stories with no card row -- shown with the placeholder image. */
-  subStories: StoryFamilyLink[];
+  /**
+   * Sub stories with no card row, with their cover when the page found one
+   * (the placeholder image otherwise).
+   */
+  subStories: (StoryFamilyLink & { coverUrl?: string | null })[];
   /** See StoryCard's basePath -- defaults to the NZ path unchanged. */
   basePath?: string;
 }) {
@@ -64,7 +68,7 @@ export function SubStoryList({
     ...subStories.map((s) => ({
       slug: s.slug,
       title: s.title,
-      coverUrl: null,
+      coverUrl: s.coverUrl ?? null,
     })),
   ];
   if (items.length === 0) return null;
@@ -114,7 +118,8 @@ function SubStoryCard({
       <div className="relative h-10 w-14 shrink-0 overflow-hidden rounded-md bg-surface-muted">
         {coverUrl ? (
           <ResolvingImage
-            src={coverUrl}
+            // A 56x40 thumbnail: the smallest card version is plenty.
+            src={cardPhotoSrc(coverUrl, 640)}
             alt=""
             loading="lazy"
             loadingLabel={tImages("loading")}

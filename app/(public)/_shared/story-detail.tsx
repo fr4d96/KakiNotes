@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
   getPublishedStoryBySlugDeduped,
+  listCardPhotoUrlsCached,
   getPublishedStoryMediaDeduped,
   getPublicContributorDeduped,
   coverOf,
@@ -235,6 +236,24 @@ export async function StoryDetail({
   );
   const subStoryIds = new Set(subStoryCards.cards.map((s) => s.story_id));
 
+  // Sub stories with no card row -- always the case when the contributor
+  // has no public profile, which used to leave every sub story on the
+  // placeholder image. Look each one up by slug through the same
+  // published-only reader as this page (so a story that isn't public
+  // resolves to nothing), then take its cover from its published photos.
+  const unmatchedSubStories = await Promise.all(
+    subStoryCards.unmatched.map(async (link) => {
+      try {
+        const sub = await getPublishedStoryBySlugDeduped(link.slug, country);
+        const photos = sub ? await listCardPhotoUrlsCached(sub.story_id) : [];
+        if (sub) subStoryIds.add(sub.story_id);
+        return { ...link, coverUrl: photos[0] ?? null };
+      } catch {
+        return { ...link, coverUrl: null };
+      }
+    }),
+  );
+
   const firstRegionName = regionLabelsRaw(story.regions)[0] ?? null;
   const matchedRegionId = firstRegionName
     ? activeRegions.find((r) => r.name === firstRegionName)?.id
@@ -268,6 +287,13 @@ export async function StoryDetail({
   // Already shown as sub story cards at the end of the story -- don't repeat them.
   const relatedWithoutSubStories = relatedStories.filter(
     (s) => !subStoryIds.has(s.story_id),
+  );
+  // Related cards swipe through their published photos, like every other
+  // story card. One cached read per card; a failed read keeps the cover.
+  const relatedPhotos = await Promise.all(
+    relatedWithoutSubStories.map((s) =>
+      listCardPhotoUrlsCached(s.story_id).catch(() => [] as string[]),
+    ),
   );
 
   const parsedContent = normalizeStoryContentJson(story.content_json);
@@ -407,7 +433,7 @@ export async function StoryDetail({
 
       <SubStoryList
         cards={subStoryCards.cards}
-        subStories={subStoryCards.unmatched}
+        subStories={unmatchedSubStories}
         basePath={`${countryUrlPrefix(country)}/stories`}
       />
 
@@ -421,11 +447,12 @@ export async function StoryDetail({
             {t("relatedStories")}
           </h2>
           <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {relatedWithoutSubStories.map((s) => (
+            {relatedWithoutSubStories.map((s, index) => (
               <StoryCard
                 key={s.story_id}
                 story={s}
                 basePath={`${countryUrlPrefix(country)}/stories`}
+                photos={relatedPhotos[index]}
               />
             ))}
           </div>

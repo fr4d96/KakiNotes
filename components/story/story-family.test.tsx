@@ -52,7 +52,7 @@ describe("SubStoryList", () => {
       />,
     );
     expect(
-      screen.getByRole("heading", { level: 2, name: /more in this story/i }),
+      screen.getByRole("heading", { level: 2, name: "Sub stories" }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
     expect(screen.getByRole("link", { name: "Fergburger" })).toHaveAttribute(
@@ -83,6 +83,27 @@ describe("SubStoryList", () => {
       "href",
       "/stories/pie-place",
     );
+  });
+
+  // A sub story with no card row (e.g. its contributor has no public
+  // profile) still shows its own cover once the page has looked it up --
+  // the small card-sized version, as the thumbnail is 56x40.
+  it("shows the cover the page found for a sub story without a card row", () => {
+    const { container } = render(
+      <SubStoryList
+        subStories={[
+          { slug: "hill-walk", title: "Hill walk", coverUrl: "/media/abc" },
+          { slug: "no-photo", title: "No photo", coverUrl: null },
+        ]}
+      />,
+    );
+    const hillWalk = screen
+      .getByRole("link", { name: "Hill walk" })
+      .closest("article")!;
+    expect(hillWalk.querySelector("img")?.getAttribute("src")).toBe(
+      "/media/abc?w=640",
+    );
+    expect(container.querySelectorAll("li")).toHaveLength(2);
   });
 
   it("renders titles as text, not markup", () => {
