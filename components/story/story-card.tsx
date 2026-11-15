@@ -4,6 +4,7 @@ import { getCardCoverUrl } from "@/lib/story/image-url";
 import { firstRegionLabel, stringList } from "@/lib/story/card-fields";
 import { AttributionChip } from "@/components/story/attribution-chip";
 import { ResolvingImage } from "@/components/ui/resolving-image";
+import { CardPhotos } from "@/components/story/card-photos";
 import { DEFAULT_LOCALE, isLocale } from "@/i18n/locales";
 import { StoryCoverFallback } from "@/components/story/story-cover-fallback";
 
@@ -45,8 +46,15 @@ export type StoryCardData = {
 export function StoryCard({
   story,
   basePath = "/stories",
+  photos,
 }: {
   story: StoryCardData;
+  /**
+   * The story's published photo URLs, cover first. When given (the Stories
+   * tab passes them), the photo swipes sideways with dots, like the home
+   * page's cards; without it the card shows its cover alone, as before.
+   */
+  photos?: string[];
   /**
    * Where the card's title link points, before `/${story.slug}`. Defaults
    * to the NZ path so every pre-existing call site (home page, /stories,
@@ -73,7 +81,9 @@ export function StoryCard({
   return (
     <article className="press press-hover-only group relative flex flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-lg">
       <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-border-subtle bg-surface-muted">
-        {coverUrl ? (
+        {photos && photos.length > 0 ? (
+          <CardPhotos urls={photos} href={`${basePath}/${story.slug}`} />
+        ) : coverUrl ? (
           <ResolvingImage
             src={coverUrl}
             alt=""

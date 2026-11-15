@@ -4,7 +4,7 @@ import { getCardCoverUrl } from "@/lib/story/image-url";
 import { firstRegionLabel } from "@/lib/story/card-fields";
 import type { StoryCardData } from "@/components/story/story-card";
 import { StoryCoverFallback } from "@/components/story/story-cover-fallback";
-import { CardPhotos } from "@/components/home/card-photos";
+import { CardPhotos } from "@/components/story/card-photos";
 import type { Locale } from "@/i18n/locales";
 
 /**

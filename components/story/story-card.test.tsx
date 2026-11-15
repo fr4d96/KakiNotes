@@ -107,4 +107,29 @@ describe("StoryCard", () => {
       screen.getByRole("link", { name: /picking apples in hawke's bay/i }),
     ).toHaveAttribute("href", `/cn/stories/${baseStory.slug}`);
   });
+
+  // The Stories tab passes the story's published photos: they swipe with
+  // dots, link to the story, and stay out of the tab order (the title link
+  // is the card's one stop).
+  it("swipes through the photos it is given, linking each to the story", () => {
+    const { container } = render(
+      <StoryCard
+        story={baseStory}
+        basePath="/cn/stories"
+        photos={["https://cdn.test/a.jpg", "https://cdn.test/b.jpg"]}
+      />,
+    );
+
+    const photoLinks = [
+      ...container.querySelectorAll<HTMLAnchorElement>('a[tabindex="-1"]'),
+    ];
+    expect(
+      photoLinks.map((a) => a.querySelector("img")?.getAttribute("src")),
+    ).toEqual(["https://cdn.test/a.jpg", "https://cdn.test/b.jpg"]);
+    for (const a of photoLinks) {
+      expect(a).toHaveAttribute("href", `/cn/stories/${baseStory.slug}`);
+      expect(a).toHaveAttribute("aria-hidden", "true");
+    }
+    expect(container.querySelectorAll("[data-active]")).toHaveLength(1);
+  });
 });

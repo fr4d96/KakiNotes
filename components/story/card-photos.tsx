@@ -10,7 +10,8 @@ import { ResolvingImage } from "@/components/ui/resolving-image";
 const DOT_WINDOW = 5;
 
 /**
- * A story card's photos, swipeable right on the home page -- the way a
+ * A story card's photos, swipeable right in the list (the home page's
+ * "Latest stories" and the Stories tab) -- the way a
  * listing app shows a place: native momentum swipe with snap (CSS
  * scroll-snap, the browser's own physics), dots along the bottom, and on
  * desktop previous/next buttons on hover or focus. Every photo is cropped to

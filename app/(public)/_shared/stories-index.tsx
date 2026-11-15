@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
+  listCardPhotoUrlsCached,
   listPublishedStories,
   listDistinctPublicTravelStyles,
   listPublicRegions,
@@ -81,6 +82,14 @@ export async function StoriesIndex({
     loadError = true;
   }
 
+  // Each card swipes through its published photos, like the home page's.
+  // One cached read per card; a card whose read fails keeps its cover.
+  const cardPhotos = await Promise.all(
+    stories.map((story) =>
+      listCardPhotoUrlsCached(story.story_id).catch(() => [] as string[]),
+    ),
+  );
+
   const last = stories[stories.length - 1];
   const nextPageParams = new URLSearchParams();
   for (const [key, value] of Object.entries(rawParams)) {
@@ -140,11 +149,12 @@ export async function StoriesIndex({
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {stories.map((story) => (
+            {stories.map((story, index) => (
               <StoryCard
                 key={story.story_id}
                 story={story}
                 basePath={basePath}
+                photos={cardPhotos[index]}
               />
             ))}
           </div>
