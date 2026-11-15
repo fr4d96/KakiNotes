@@ -3,6 +3,18 @@
 ## [3.3.0](https://github.com/fr4d96/KakiNotes/compare/v3.2.0...v3.3.0) (2026-11-15)
 
 
+### Browse photos from the home page, and a tidier story editor
+
+#### For readers
+
+- **Swipe through a story's photos right on the home page.** "Latest stories" is now a list you scroll down, and each story card's photo can be swiped sideways to see up to 10 of its photos, with dots showing where you are. On a computer, arrows appear when you hover over the photo. Tapping a card still opens the story.
+
+#### For contributors
+
+- **Writing ideas are now tucked behind a light bulb.** The "Not sure where to start?" box no longer shows up by default. Tap the light bulb next to "Your story" whenever you'd like an idea, and tap it again (or press "Hide") to put it away. The small "The writing itself" line under the heading is gone.
+- **Adding photos looks calmer.** The upload box is now one small row: "Add photos" and the limits. Photos you're adding appear at the end of your photo grid instead of in a separate row that pushed everything down.
+- **Each photo leaves the queue as soon as it's done.** Finished photos appear in your grid straight away, and the next one starts at once. If a photo can't be added, it's removed right away and a message tells you why.
+
 ### Features
 
 * **editor:** open writing prompts from a light bulb ([7237428](https://github.com/fr4d96/KakiNotes/commit/72374280e688749493ceefdfe85ac96d659fd5e3))
