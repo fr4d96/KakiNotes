@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.6.0](https://github.com/fr4d96/KakiNotes/compare/v3.5.0...v3.6.0) (2026-11-15)
+
+
+### Features
+
+* **contributors:** swipe each story's photos on profile pages ([f2d4a3c](https://github.com/fr4d96/KakiNotes/commit/f2d4a3c0362ab903764d82f4568c23e8da0bad07))
+
+
+### Performance Improvements
+
+* **media:** cache published Drive photos for 7 days, purge on change ([3e4b394](https://github.com/fr4d96/KakiNotes/commit/3e4b3940d1dda32d84eda9b7d26d6826e4d7c622))
+
 ## [3.5.0](https://github.com/fr4d96/KakiNotes/compare/v3.4.0...v3.5.0) (2026-11-15)
 
 
