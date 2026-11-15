@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.8.0](https://github.com/fr4d96/KakiNotes/compare/v3.7.0...v3.8.0) (2026-11-15)
+
+
+### Stories open straight on the title
+
+#### For readers
+
+- **Less empty space at the top of a story.** On a phone, a story now starts just under the top bar instead of after a large gap.
+- **"Main story:" instead of "Part of:".** A sub story now shows "Main story: …" (主故事： in Chinese) above its title, linking back to the story it belongs to.
+- **The "not advice" note has moved to the end.** "One person's experience — not immigration, legal, employment, tax, or financial advice" is still on every story, but it now sits after the story, just above the Report option, so the page opens on the title.
+
+### Features
+
+* **stories:** open story pages on the title ([a29fe4a](https://github.com/fr4d96/KakiNotes/commit/a29fe4ab82511e1fef1b51afb90c07cce1294e59))
+
 ## [3.7.0](https://github.com/fr4d96/KakiNotes/compare/v3.6.1...v3.7.0) (2026-11-15)
 
 
