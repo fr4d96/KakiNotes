@@ -787,18 +787,34 @@ every page view — this is the real mitigation for Drive API read volume.
 (A `supabase` row's public-bucket URL already gets CDN-level caching from
 Supabase/Vercel today, unchanged by this feature.)
 
-**The bound on "how long can an unpublished/archived/rejected story's image
-keep being served from cache":** `s-maxage` is set short enough that this is
-a real, statable number rather than "eventually" — recommended **5 minutes**
-(`s-maxage=300`), matching the kind of window this codebase already treats
-as acceptable staleness elsewhere (`app/sitemap.ts`'s `revalidate = 3600` is
-far looser, precisely because a sitemap entry going stale for an hour is low
-stakes; a still-servable image for an unpublished story is not, so it gets
-a tighter number). On unpublish/archive/reject, the moderation/editorial
-action that flips `lifecycle_status` should also actively purge that
-story's media URLs from the CDN cache (Vercel's on-demand cache
-invalidation API, keyed by the proxy path) so the real-world bound is
-"immediately, with a 5-minute worst case if the active purge itself fails."
+**Built 2026-11-15: long caching with an active purge.** A published photo is
+cached for **7 days** (`public, s-maxage=604800, stale-while-revalidate=86400`,
+`lib/story/public-media-cache.ts`) and every such response carries the
+`Vercel-Cache-Tag: public-media` header. Every action that changes what is
+public already goes through `invalidateStoryListingsPublicCache()` /
+`invalidateStoryPublicCache()` / `invalidateContributorPublicCache()`
+(`lib/story/public-cache.ts`); those now also purge that tag, with both
+`revalidateTag("public-media", { expire: 0 })` and Vercel's hard
+`dangerouslyDeleteByTag("public-media")` (never `invalidateByTag`, which would
+serve the stale copy once more). So an unpublished/archived/rejected/taken-down
+story's photos stop being served **immediately**.
+
+Why: measured on the live site the same day, a cache miss took 1.9-5s (a
+Supabase check, a Google token and a full Drive download per photo) against
+~0.1s for a hit, and at 5 minutes most visits on a low-traffic site were
+misses.
+
+The bound if the active purge itself fails (it is logged, never thrown,
+because the mutation has already committed), or if visibility changes by a
+path that does not call those helpers: up to 7 days, plus one more day of
+stale-while-revalidate. Any new code that changes public visibility must call
+the matching helper (the rule already stated in `lib/story/public-cache.ts`).
+One tag covers every photo: the purge sites do not all know which photos
+changed, and over-purging only costs speed (the next viewers go back to
+Drive once), never correctness.
+
+_Original design (2026-10-03, superseded):_ `s-maxage=300` as a bounded
+window, with an active purge described but not yet built.
 
 ### Every current image URL/byte-read site, and how each changes
 
@@ -1075,7 +1091,7 @@ switches which one `story_media` points to, the same discipline section
 10's Rule 11 walkthrough already requires of ordinary uploads.
 
 What this means for caching specifically: the proxy's CDN cache
-(`s-maxage=300`, section 5) and a Supabase public-bucket URL can both keep
+(7 days since 2026-11-15, purged on every visibility change and whenever a published photo is moved, section 5) and a Supabase public-bucket URL can both keep
 serving the **old** location for up to that cache window after the DB flip
 commits, which is fine — the old object is still there and still correct,
 because the delete step hasn’t run yet. The old copy is only deleted once
@@ -1412,7 +1428,9 @@ image-validation.ts`) as-is for Drive mode; no stricter Drive-specific
    `user_id` foreign key (section 3) already assumes this, so no schema
    change is needed, just confirmation that this is intentional, not a gap.
 7. **`s-maxage` — 300 seconds (5 minutes), as recommended.** Section 5's
-   caching discussion is confirmed as-is, no change needed.
+   caching discussion is confirmed as-is, no change needed. _Superseded
+   2026-11-15 by the owner: 7 days, with an active purge on every visibility
+   change (section 5)._
 8. **CORS on the resumable `PUT` — settled 2026-10-07: it works (with `Origin` set), so Option D is built.** See the spike result in section 4(a). Original note: The
    spike (section 11, slice 2) still decides between Option D and the
    Option A fallback; nothing about the decision process itself changed.

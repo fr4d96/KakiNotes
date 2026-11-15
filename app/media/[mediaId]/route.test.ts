@@ -90,9 +90,12 @@ describe("GET /media/[mediaId]", () => {
     );
     const response = await GET(request, context);
     expect(response.status).toBe(200);
+    // Cached for days, because every visibility change purges this tag
+    // (lib/story/public-cache.ts#purgePublicMediaCache).
     expect(response.headers.get("Cache-Control")).toBe(
-      "public, s-maxage=300, stale-while-revalidate=60",
+      "public, s-maxage=604800, stale-while-revalidate=86400",
     );
+    expect(response.headers.get("Vercel-Cache-Tag")).toBe("public-media");
     expect(response.headers.get("Content-Type")).toBe("image/jpeg");
     // SMALL 3 (round A review): nosniff on every served image.
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
@@ -161,6 +164,7 @@ describe("GET /media/[mediaId]", () => {
     const response = await GET(request, context);
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(response.headers.get("Vercel-Cache-Tag")).toBeNull();
   });
 
   it("returns 502 with no-store when the Drive fetch itself fails", async () => {
@@ -185,6 +189,7 @@ describe("GET /media/[mediaId]", () => {
     const response = await GET(request, context);
     expect(response.status).toBe(502);
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(response.headers.get("Vercel-Cache-Tag")).toBeNull();
   });
 
   describe("?download=1 (My Photos)", () => {
@@ -213,6 +218,7 @@ describe("GET /media/[mediaId]", () => {
         'attachment; filename="kakinotes-photo-37cd5afe.png"',
       );
       expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+      expect(response.headers.get("Vercel-Cache-Tag")).toBeNull();
       expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
     });
 
@@ -268,6 +274,7 @@ describe("GET /media/[mediaId]", () => {
         'attachment; filename="kakinotes-photo-37cd5afe-full.jpg"',
       );
       expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+      expect(response.headers.get("Vercel-Cache-Tag")).toBeNull();
       expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
     });
 

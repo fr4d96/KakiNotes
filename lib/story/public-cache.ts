@@ -1,5 +1,7 @@
 import "server-only";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { dangerouslyDeleteByTag, waitUntil } from "@vercel/functions";
+import { PUBLIC_MEDIA_TAG } from "@/lib/story/public-media-cache";
 import {
   PUBLIC_CONTRIBUTORS_TAG,
   PUBLIC_STORIES_TAG,
@@ -100,6 +102,40 @@ export function invalidateStoryListingsPublicCache() {
   revalidatePath("/");
   revalidatePath("/sitemap.xml");
   revalidateTag(PUBLIC_STORIES_TAG, { expire: 0 });
+  purgePublicMediaCache();
+}
+
+/**
+ * Drops every published photo the /media proxy has put in Vercel's CDN
+ * (all tagged PUBLIC_MEDIA_TAG, see lib/story/public-media-cache.ts), so a
+ * photo that just stopped being public is never served from cache again --
+ * it is cached for days precisely because this runs on every visibility
+ * change. Called by both helpers that every such action already goes
+ * through.
+ *
+ * Two calls on purpose. revalidateTag(tag, { expire: 0 }) is Next's own
+ * purge, which Vercel applies to its CDN too; dangerouslyDeleteByTag() is
+ * Vercel's explicit CDN delete (not invalidateByTag(): that one serves the
+ * stale copy once more, and a takedown must not). The delete is async;
+ * waitUntil keeps it running after the action has answered. Both are
+ * no-ops off Vercel (local dev, tests). A purge failure is logged, never
+ * thrown: the mutation has already committed.
+ */
+function purgePublicMediaCache() {
+  revalidateTag(PUBLIC_MEDIA_TAG, { expire: 0 });
+  try {
+    waitUntil(
+      dangerouslyDeleteByTag(PUBLIC_MEDIA_TAG).catch((error: unknown) => {
+        console.error("Public media CDN purge failed", {
+          error: error instanceof Error ? error.message : error,
+        });
+      }),
+    );
+  } catch (error) {
+    console.error("Public media CDN purge failed", {
+      error: error instanceof Error ? error.message : error,
+    });
+  }
 }
 
 export function invalidateStoryPublicCache(slug: string) {
@@ -112,4 +148,6 @@ export function invalidateContributorPublicCache(contributorSlug: string) {
   revalidatePath("/contributors");
   revalidatePath("/sitemap.xml");
   revalidateTag(PUBLIC_CONTRIBUTORS_TAG, { expire: 0 });
+  // A contributor leaving public view can take their photos with them.
+  purgePublicMediaCache();
 }

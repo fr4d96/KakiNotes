@@ -7,6 +7,14 @@ vi.mock("next/cache", () => ({
   revalidateTag: (tag: string, profile: unknown) => revalidateTag(tag, profile),
 }));
 vi.mock("server-only", () => ({}));
+const dangerouslyDeleteByTag = vi.fn<(tag: string) => Promise<void>>(
+  async () => {},
+);
+const waitUntil = vi.fn();
+vi.mock("@vercel/functions", () => ({
+  dangerouslyDeleteByTag: (tag: string) => dangerouslyDeleteByTag(tag),
+  waitUntil: (promise: Promise<unknown>) => waitUntil(promise),
+}));
 // Only the two tag constants are needed; the rest of public-queries builds
 // Supabase clients and is not under test here.
 vi.mock("@/lib/story/public-queries", () => ({
@@ -31,6 +39,8 @@ function tags() {
 beforeEach(() => {
   revalidatePath.mockClear();
   revalidateTag.mockClear();
+  dangerouslyDeleteByTag.mockClear();
+  waitUntil.mockClear();
 });
 
 describe("data-cache tags", () => {
@@ -41,7 +51,7 @@ describe("data-cache tags", () => {
   // after one more visitor sees it (Engineering Rule 12).
   it("expires the stories tag immediately on any story visibility change", () => {
     invalidateStoryListingsPublicCache();
-    expect(tags()).toEqual(["public-stories"]);
+    expect(tags()).toEqual(["public-stories", "public-media"]);
     expect(revalidateTag).toHaveBeenCalledWith("public-stories", {
       expire: 0,
     });
@@ -49,7 +59,7 @@ describe("data-cache tags", () => {
 
   it("expires the contributors tag immediately on a profile change", () => {
     invalidateContributorPublicCache("kaki");
-    expect(tags()).toEqual(["public-contributors"]);
+    expect(tags()).toEqual(["public-contributors", "public-media"]);
     expect(revalidateTag).toHaveBeenCalledWith("public-contributors", {
       expire: 0,
     });
@@ -103,5 +113,33 @@ describe("invalidateContributorPublicCache", () => {
       "/contributors",
       "/sitemap.xml",
     ]);
+  });
+});
+
+// Published photos sit in Vercel's CDN for days (app/media/[mediaId]), so
+// every visibility change must drop them at once: Next's tag expiry and
+// Vercel's hard CDN delete (never the serve-stale-once invalidate), kept
+// alive past the response with waitUntil.
+describe("public photo cache purge", () => {
+  it.each([
+    ["a story's visibility change", () => invalidateStoryPublicCache("s")],
+    ["a listings-only change", () => invalidateStoryListingsPublicCache()],
+    ["a contributor change", () => invalidateContributorPublicCache("c")],
+  ])("hard-deletes every cached public photo on %s", (_label, run) => {
+    run();
+    expect(revalidateTag).toHaveBeenCalledWith("public-media", { expire: 0 });
+    expect(dangerouslyDeleteByTag).toHaveBeenCalledWith("public-media");
+    expect(waitUntil).toHaveBeenCalledTimes(1);
+  });
+
+  it("never throws when the CDN purge itself fails", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    dangerouslyDeleteByTag.mockRejectedValueOnce(new Error("429"));
+    expect(() => invalidateStoryListingsPublicCache()).not.toThrow();
+    await waitUntil.mock.calls[0][0];
+    expect(error).toHaveBeenCalledWith("Public media CDN purge failed", {
+      error: "429",
+    });
+    error.mockRestore();
   });
 });

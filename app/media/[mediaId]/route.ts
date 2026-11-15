@@ -3,6 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { driveMediaIdSchema } from "@/lib/validation/drive";
 import { getAccessToken, downloadFileBytes } from "@/lib/drive/drive-client";
 import { photoDownloadFilename } from "@/lib/story/photo-download-name";
+import {
+  PUBLIC_MEDIA_CACHE_CONTROL,
+  PUBLIC_MEDIA_TAG,
+} from "@/lib/story/public-media-cache";
 
 /**
  * docs/google-drive-integration.md section 5. Serves `google_drive`-backend
@@ -131,20 +135,20 @@ export async function GET(
     return driveFailure();
   }
 
-  // Published: cacheable by a shared/CDN cache for a bounded window
-  // (section 5 — 5 minutes, short enough that an unpublish/archive/reject
-  // has a real, statable worst-case staleness). Anything else a
-  // contributor/moderator is previewing: never cacheable by a shared
+  // Published: cached by the CDN for days (lib/story/public-media-cache.ts)
+  // and tagged, so an unpublish/archive/reject/takedown purges it at once
+  // instead of waiting out the window (section 5's active purge). Anything
+  // else a contributor/moderator is previewing: never cacheable by a shared
   // cache, same as today's signed-URL preview path.
   //
   // ?download=1 (My Photos, section 7): the same bytes and the same
   // authorization, but saved as a file instead of shown -- and never put in
   // a shared cache, whatever the photo's status.
   const isDownload = request.nextUrl.searchParams.get("download") === "1";
-  const cacheControl =
-    row.is_published && !isDownload
-      ? "public, s-maxage=300, stale-while-revalidate=60"
-      : "private, no-store";
+  const sharedCache = row.is_published && !isDownload;
+  const cacheControl = sharedCache
+    ? PUBLIC_MEDIA_CACHE_CONTROL
+    : "private, no-store";
 
   const headers: Record<string, string> = {
     "Content-Type": row.processed_mime_type,
@@ -154,6 +158,10 @@ export async function GET(
     "X-Content-Type-Options": "nosniff",
     "Cache-Control": cacheControl,
   };
+  if (sharedCache) {
+    // What purgePublicMediaCache() deletes by (lib/story/public-cache.ts).
+    headers["Vercel-Cache-Tag"] = PUBLIC_MEDIA_TAG;
+  }
   if (isDownload) {
     headers["Content-Disposition"] =
       `attachment; filename="${photoDownloadFilename(

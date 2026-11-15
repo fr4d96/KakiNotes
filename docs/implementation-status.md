@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-11-13 (a contributor's PDF import now stores its page images in their Google Drive, not Supabase; the editorial PDF import is unchanged — see the last entry in this file); earlier the same day (mandatory Google Drive: every ordinary contributor must connect Google Drive before using the app, and the database refuses their photos in Supabase storage; migration applied to the live project, app code not yet deployed — see the last entry in this file); earlier the same day (Supabase project moved to `yzaonhjieupxyrmbienf` after the old one was paused over quota — see the last entry in this file); earlier, 2026-10-31 (affirmation notes: private notes from share links, on `feat/affirmation-notes`; migration written but NOT yet applied — see the last entry in this file); earlier the same day (home page redesign: a short, app-style home with search, a swipeable latest-stories row, place tiles and the quiz behind one row, on `main`, uncommitted — see the entry at the end of this file); earlier, 2026-10-30 (pull to refresh now reloads the page, home page covers on phones, search as you type and keyword search, on `fix/pull-to-refresh-reload` — see the entry at the end of this file); earlier the same day (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+Last updated: 2026-11-15 (published Drive photos are cached by Vercel's CDN for 7 days instead of 5 minutes, and purged the moment anything stops being public — see the last entry in this file); earlier, 2026-11-13 (a contributor's PDF import now stores its page images in their Google Drive, not Supabase; the editorial PDF import is unchanged — see the last entry in this file); earlier the same day (mandatory Google Drive: every ordinary contributor must connect Google Drive before using the app, and the database refuses their photos in Supabase storage; migration applied to the live project, app code not yet deployed — see the last entry in this file); earlier the same day (Supabase project moved to `yzaonhjieupxyrmbienf` after the old one was paused over quota — see the last entry in this file); earlier, 2026-10-31 (affirmation notes: private notes from share links, on `feat/affirmation-notes`; migration written but NOT yet applied — see the last entry in this file); earlier the same day (home page redesign: a short, app-style home with search, a swipeable latest-stories row, place tiles and the quiz behind one row, on `main`, uncommitted — see the entry at the end of this file); earlier, 2026-10-30 (pull to refresh now reloads the page, home page covers on phones, search as you type and keyword search, on `fix/pull-to-refresh-reload` — see the entry at the end of this file); earlier the same day (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
 one-level folder shape — a story is either a main story, a sub story filed under exactly one main
 story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
 "Move to…" select; migration applied to the dev project — see the entry at the end of this
@@ -11286,3 +11286,47 @@ then nothing, and most old copies stayed in Supabase (282 left, ~255 MB). Two ca
 **Verified:** `npm run verify`; new tests for the panel's cleanup loop (multi-call, stop on no
 progress) and for `cleanUpMovedPhotos` (concurrency ≤ 6, time budget, a failed deletion counted as
 remaining). Not yet checked live: needs a deploy, then one press on the affected account.
+
+---
+
+## 2026-11-15 — Faster photos: 7-day CDN cache for published Drive photos, purged on visibility change
+
+**Why.** Measured on kakinotes.vercel.app: a published Drive photo took 1.9-5 s on a CDN miss (a
+Supabase authorization check, a Google access token and a full Drive download, all inside the
+`/media/[mediaId]` function) and 0.06-0.35 s on a hit. The CDN window was 5 minutes, so on a
+low-traffic site most visits were misses. Not a Vercel plan issue: the Hobby CDN served the hits.
+
+**Change.**
+
+- `lib/story/public-media-cache.ts` (new): `PUBLIC_MEDIA_TAG = "public-media"` and
+  `PUBLIC_MEDIA_CACHE_CONTROL = "public, s-maxage=604800, stale-while-revalidate=86400"`.
+- `app/media/[mediaId]/route.ts`: a published, non-download response uses that Cache-Control and
+  carries `Vercel-Cache-Tag: public-media`. Previews and downloads stay `private, no-store`, untagged.
+- `lib/story/public-cache.ts`: `invalidateStoryListingsPublicCache()` (and so
+  `invalidateStoryPublicCache()`) and `invalidateContributorPublicCache()` now also purge the tag:
+  `revalidateTag("public-media", { expire: 0 })` plus `dangerouslyDeleteByTag("public-media")`
+  from `@vercel/functions` (hard delete, never serve-stale-once), kept alive with `waitUntil`, and
+  logged rather than thrown on failure. Both are no-ops off Vercel.
+- New dependency: `@vercel/functions@3.11.3` (Vercel's own package for the explicit CDN purge by tag
+  and `waitUntil`; one dependency, `@vercel/oidc`).
+- Docs: docs/google-drive-integration.md section 5 (and decision 7 marked superseded),
+  docs/architecture.md proxy note.
+
+**Decisions.**
+
+- One tag for every photo, purged on any visibility change (including folder/journey edits and
+  published-photo moves, which call the same helper). Over-purging only costs speed.
+- Owner decision (2026-11-15) supersedes the 2026-10-03 "5 minutes" decision.
+
+**Risks.**
+
+- If the purge call fails, or visibility changes by a path that doesn't call the helpers, a photo
+  can stay cached for up to 7 days (+1 day stale). Any new visibility-changing code must call the
+  helper (rule already stated in `lib/story/public-cache.ts`).
+- Not yet verified live that Vercel honours the purge for a Route Handler response tagged by header:
+  after the deploy, check one real unpublish/takedown and confirm the photo's next request is a
+  cache MISS.
+
+**Verified:** `npm run verify`; route test asserts the 7-day header and tag (and no tag on private
+responses); public-cache tests assert every helper hard-deletes the tag and a purge failure never
+throws.

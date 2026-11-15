@@ -1387,7 +1387,8 @@ admin.ts`; DB writes go through the RPCs above on the caller's normal session cl
   itself returns — never by anything the client sends — and the RPC only ever returns that column
   for a row it has already authorized, so an anonymous reader can never cause an arbitrary
   contributor's token to be used. `Cache-Control: public, s-maxage=300, stale-while-revalidate=60`
-  for a published row (the RPC's `is_published` flag), `private, no-store` for anything a
+  (7 days plus a `Vercel-Cache-Tag: public-media` purge tag since 2026-11-15, see
+  docs/google-drive-integration.md section 5) for a published row (the RPC's `is_published` flag), `private, no-store` for anything a
   contributor/moderator is previewing, `502`/`private, no-store` on a Drive-side failure. Ships no
   placeholder image yet (slice 5, out of scope this round).
 - **Update (round A review, 2026-10-07):** the open question above is resolved — `20261007063355_
