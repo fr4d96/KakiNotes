@@ -2,71 +2,36 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  STARTERS_HIDE_THRESHOLD_WORDS,
-  StoryStartersCard,
-} from "./story-starters-card";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { StoryStartersCard } from "./story-starters-card";
 import { getStoryStarters } from "@/lib/story/story-starters";
 
 const STORY_ID = "story-1";
-
-// jsdom in this repo's Vitest config runs with an opaque origin (no `url`
-// set), under which real jsdom throws SecurityError just touching
-// `window.localStorage` -- unrelated to anything this component does. Stub
-// a minimal in-memory localStorage so these tests exercise the component's
-// actual read/write behaviour instead of that jsdom gap.
-function createMemoryStorage(): Storage {
-  const store = new Map<string, string>();
-  return {
-    getItem: (key: string) => (store.has(key) ? store.get(key)! : null),
-    setItem: (key: string, value: string) => {
-      store.set(key, value);
-    },
-    removeItem: (key: string) => {
-      store.delete(key);
-    },
-    clear: () => {
-      store.clear();
-    },
-    key: (index: number) => Array.from(store.keys())[index] ?? null,
-    get length() {
-      return store.size;
-    },
-  };
-}
 
 function setup(
   overrides: Partial<React.ComponentProps<typeof StoryStartersCard>> = {},
 ) {
   const onWriteAbout = vi.fn();
   const onInsertOutline = vi.fn();
+  const onHide = vi.fn();
   const props = {
     storyId: STORY_ID,
-    wordCount: 0,
     bodyIsEmpty: true,
     onWriteAbout,
     onInsertOutline,
+    onHide,
     ...overrides,
   };
   const view = render(<StoryStartersCard {...props} />);
-  return { onWriteAbout, onInsertOutline, ...view };
+  return { onWriteAbout, onInsertOutline, onHide, ...view };
 }
 
 describe("StoryStartersCard", () => {
-  beforeEach(() => {
-    Object.defineProperty(window, "localStorage", {
-      value: createMemoryStorage(),
-      configurable: true,
-      writable: true,
-    });
-  });
-
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("renders title, a question, and the three buttons at wordCount 0", () => {
+  it("renders title, a question, and the three buttons", () => {
     setup();
 
     expect(screen.getByText("Not sure where to start?")).toBeInTheDocument();
@@ -121,32 +86,15 @@ describe("StoryStartersCard", () => {
     expect(changed).toBe(true);
   });
 
-  it("hides on Hide and sets the localStorage key", async () => {
+  // The editor owns open/closed now (the light bulb); Hide just asks it to
+  // close, and nothing is written to storage.
+  it("asks the editor to close it on Hide", async () => {
     const user = userEvent.setup();
-    const { container } = setup();
+    const { onHide } = setup();
 
     await user.click(screen.getByRole("button", { name: "Hide" }));
 
-    expect(container).toBeEmptyDOMElement();
-    expect(
-      window.localStorage.getItem(`kakinotes:starters-hidden:${STORY_ID}`),
-    ).toBe("1");
-  });
-
-  it("hides after mount on a fresh render when the key is already set", async () => {
-    window.localStorage.setItem(`kakinotes:starters-hidden:${STORY_ID}`, "1");
-
-    const { container } = setup();
-
-    await vi.waitFor(() => {
-      expect(container).toBeEmptyDOMElement();
-    });
-  });
-
-  it("renders nothing at wordCount 50", () => {
-    const { container } = setup({ wordCount: STARTERS_HIDE_THRESHOLD_WORDS });
-
-    expect(container).toBeEmptyDOMElement();
+    expect(onHide).toHaveBeenCalledTimes(1);
   });
 
   it("shows the outline line when bodyIsEmpty and calls onInsertOutline", async () => {
@@ -181,10 +129,10 @@ describe("StoryStartersCard", () => {
     // not care, because its order comes from the story id.
     const props = {
       storyId: STORY_ID,
-      wordCount: 0,
       bodyIsEmpty: true,
       onWriteAbout: vi.fn(),
       onInsertOutline: vi.fn(),
+      onHide: vi.fn(),
     };
     const random = vi.spyOn(Math, "random").mockReturnValue(0);
     const serverHtml = renderToString(<StoryStartersCard {...props} />);

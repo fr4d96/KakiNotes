@@ -40,7 +40,13 @@ vi.mock("@/components/story/content-import-panel", () => ({
   ContentImportPanel: () => null,
 }));
 vi.mock("@/components/story/story-starters-card", () => ({
-  StoryStartersCard: () => null,
+  StoryStartersCard: ({ onHide }: { onHide: () => void }) => (
+    <aside aria-label="Writing prompts">
+      <button type="button" onClick={onHide}>
+        Hide
+      </button>
+    </aside>
+  ),
 }));
 vi.mock("@/components/story/tag-editor", () => ({
   TagEditor: () => null,
@@ -323,5 +329,38 @@ describe("StoryEditForm — Add a location manually (free-text region row)", () 
       screen.getByDisplayValue("A village near Chengdu"),
     ).toBeInTheDocument();
     expect(screen.queryByLabelText("Region")).not.toBeInTheDocument();
+  });
+});
+
+describe("StoryEditForm — writing prompts behind the light bulb", () => {
+  it("keeps the prompts closed until the bulb is pressed, and drops the step subtitle", async () => {
+    const user = userEvent.setup();
+    render(<StoryEditForm {...baseProps()} initialStep="story" />);
+
+    expect(screen.queryByLabelText("Writing prompts")).toBeNull();
+    expect(screen.queryByText("The writing itself")).toBeNull();
+
+    const bulb = screen.getByRole("button", {
+      name: "Ideas for what to write",
+    });
+    expect(bulb).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(bulb);
+    expect(bulb).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByLabelText("Writing prompts")).toBeInTheDocument();
+
+    // "Hide" inside the card closes it again; so does a second bulb press.
+    await user.click(screen.getByRole("button", { name: "Hide" }));
+    expect(screen.queryByLabelText("Writing prompts")).toBeNull();
+    await user.click(bulb);
+    await user.click(bulb);
+    expect(screen.queryByLabelText("Writing prompts")).toBeNull();
+  });
+
+  it("shows the bulb only on the story step", () => {
+    render(<StoryEditForm {...baseProps()} />);
+    expect(
+      screen.queryByRole("button", { name: "Ideas for what to write" }),
+    ).toBeNull();
   });
 });

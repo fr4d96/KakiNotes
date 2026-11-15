@@ -347,6 +347,17 @@ export function ChevronIcon(props: IconProps) {
 }
 
 /** Notifications — the header bell. */
+/** A light bulb -- "ideas", e.g. the story editor's writing prompts. */
+export function LightBulbIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M9 17.25h6" />
+      <path d="M10 20.25h4" />
+      <path d="M9.25 14.25c0-1.6-2.75-3-2.75-6a5.5 5.5 0 0 1 11 0c0 3-2.75 4.4-2.75 6v.75h-5.5z" />
+    </svg>
+  );
+}
+
 export function BellIcon(props: IconProps) {
   return (
     <svg {...base(props)}>

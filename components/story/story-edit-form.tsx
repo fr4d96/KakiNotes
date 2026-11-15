@@ -12,9 +12,9 @@ import {
   type StoryContentBlock,
 } from "@/lib/validation/story";
 import { removeMediaEmbeds } from "@/lib/story/markdown-media";
-import { markdownWordCount } from "@/lib/story/markdown-text";
 import { getStoryStarters, outlineMarkdown } from "@/lib/story/story-starters";
 import { StoryStartersCard } from "@/components/story/story-starters-card";
+import { LightBulbIcon } from "@/components/icons";
 import type { Locale } from "@/i18n/locales";
 import {
   expensePerMonth,
@@ -186,6 +186,9 @@ const FIELDS_SAVE_DEBOUNCE_MS = 600;
 
 /** See the StoryStepProgress call below. Module-level so it is one stable array. */
 const REVIEW_STEP_LOCK: StoryStepId[] = ["review"];
+
+/** The writing-prompts card, which the light bulb button opens and closes. */
+const STARTERS_CARD_ID = "story-starters";
 
 /** Ties the disabled "Review & submit" button to the reason it is disabled. */
 const MISSING_REQUIREMENTS_ID = "story-missing-requirements";
@@ -564,6 +567,8 @@ export function StoryEditForm({
   // visible document and all of its undo history, and the image panel
   // would drop any upload still in flight.
   const [step, setStep] = useState<StoryStepId>(initialStep);
+  // Writing prompts start closed; the light bulb by "Your story" opens them.
+  const [startersOpen, setStartersOpen] = useState(false);
   const stepIndex = STORY_STEPS.findIndex((s) => s.id === step);
   const stepHeadingRef = useRef<HTMLHeadingElement>(null);
   // Set only by goToStep(), so the focus effect below fires on a real step
@@ -1195,10 +1200,9 @@ export function StoryEditForm({
   // complain about this". Photos and Trip are genuinely optional: they tick
   // when filled, but their absence never blocks anything.
   const contentFilled = Boolean(storyContentText(content).trim());
-  // The starter card (below) wants the same "is there anything here yet"
-  // answer plus a word count, both from the same `content` state the tick
-  // uses, so the card and the tick can never disagree about emptiness.
-  const contentWordCount = markdownWordCount(storyContentText(content));
+  // The starter card (below) reuses the same "is there anything here yet"
+  // answer, from the same `content` state the tick uses, so the card and the
+  // tick can never disagree about emptiness.
   const outline = useMemo(
     () => outlineMarkdown(getStoryStarters(locale).outline),
     [locale],
@@ -1359,16 +1363,39 @@ export function StoryEditForm({
           the thing focus moves to on every step change, so it has to say
           which step you just landed on. tabIndex -1 makes it focusable
           without putting it in the tab order. */}
-        <h2
-          ref={stepHeadingRef}
-          tabIndex={-1}
-          className="mt-6 text-2xl font-semibold tracking-tight outline-none sm:text-3xl"
-        >
-          {t(`stepLabels.${STORY_STEPS[stepIndex].id}` as never)}
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t(`stepHints.${STORY_STEPS[stepIndex].id}` as never)}
-        </p>
+        <div className="mt-6 flex items-center gap-2">
+          {/* Writing prompts are opt-in: the card under "Story" stays shut
+            until this bulb is pressed. */}
+          {step === "story" && (
+            <button
+              type="button"
+              aria-expanded={startersOpen}
+              aria-controls={STARTERS_CARD_ID}
+              aria-label={t("starters.toggle")}
+              title={t("starters.toggle")}
+              onClick={() => setStartersOpen((open) => !open)}
+              className={`-ml-1.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                startersOpen
+                  ? "bg-accent/15 text-accent"
+                  : "text-muted-foreground hover:bg-surface-muted hover:text-foreground"
+              }`}
+            >
+              <LightBulbIcon className="h-6 w-6" />
+            </button>
+          )}
+          <h2
+            ref={stepHeadingRef}
+            tabIndex={-1}
+            className="text-2xl font-semibold tracking-tight outline-none sm:text-3xl"
+          >
+            {t(`stepLabels.${STORY_STEPS[stepIndex].id}` as never)}
+          </h2>
+        </div>
+        {step !== "story" && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t(`stepHints.${STORY_STEPS[stepIndex].id}` as never)}
+          </p>
+        )}
 
         <div className="mt-6">
           <StepSection id="title" activeStep={step}>
@@ -1427,19 +1454,22 @@ export function StoryEditForm({
                 <RequiredMark />
               </span>
               {/* Above the editor, never beside it: on a phone there is no
-                  beside. Hides itself past 50 words or on "Hide" -- see the
-                  component. */}
-              <StoryStartersCard
-                storyId={storyId}
-                wordCount={contentWordCount}
-                bodyIsEmpty={!contentFilled}
-                onWriteAbout={(heading) =>
-                  richTextEditorRef.current?.insertHeading(heading)
-                }
-                onInsertOutline={() =>
-                  richTextEditorRef.current?.insertOutline()
-                }
-              />
+                  beside. Only shown once the light bulb by the step heading
+                  is pressed; "Hide" closes it again. */}
+              {startersOpen && (
+                <StoryStartersCard
+                  id={STARTERS_CARD_ID}
+                  storyId={storyId}
+                  bodyIsEmpty={!contentFilled}
+                  onHide={() => setStartersOpen(false)}
+                  onWriteAbout={(heading) =>
+                    richTextEditorRef.current?.insertHeading(heading)
+                  }
+                  onInsertOutline={() =>
+                    richTextEditorRef.current?.insertOutline()
+                  }
+                />
+              )}
               <div className="mt-1">
                 <StoryContentEditor
                   ref={richTextEditorRef}
