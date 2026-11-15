@@ -3,6 +3,15 @@
 ## [3.4.0](https://github.com/fr4d96/KakiNotes/compare/v3.3.0...v3.4.0) (2026-11-15)
 
 
+### Folders is now its own tab
+
+#### For contributors
+
+- **The Journey tab is now Folders.** Tapping the third tab at the bottom of the screen opens your story folders: each main story with its sub stories.
+- **See a trip's journey from its folder.** Every folder has a journey icon on the right. Tap it to see that trip on the map, where you can pin each story. The back arrow takes you straight back to your folders.
+- **One place for journeys.** The separate journey list, and its shortcut on My Stories, are gone. Old links to it now open your folders. A published story that isn't in any folder can't be pinned on the map for now.
+- **Smoother loading on phones.** While Folders loads, you now see a placeholder shaped like your folder list. The loading placeholders on other My Stories pages no longer spill past the edge of a phone screen.
+
 ### Features
 
 * **folders:** make Folders the tab, with a journey icon per folder ([ecc9677](https://github.com/fr4d96/KakiNotes/commit/ecc96778ddf878eb346a5977fa2688841743ac58))
