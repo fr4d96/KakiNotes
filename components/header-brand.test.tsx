@@ -39,7 +39,7 @@ describe("HeaderBrand", () => {
   });
 
   it("swaps the logo for a back arrow on a phone sub-page", () => {
-    usePathnameMock.mockReturnValue("/my-stories/map");
+    usePathnameMock.mockReturnValue("/my-photos");
     render(<HeaderBrand />);
     const back = screen.getByRole("link", { name: "Back to My Stories" });
     expect(back).toHaveAttribute("href", "/my-stories");

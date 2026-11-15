@@ -37,7 +37,6 @@ import {
   HiddenEyeIcon,
   ImportIcon,
   PlusIcon,
-  RouteIcon,
   TrashIcon,
 } from "@/components/icons";
 import type { MyStoryWithCover } from "@/lib/story/contributor-queries";
@@ -1116,14 +1115,6 @@ export function MyStoriesView({
           >
             <FolderIcon className="h-5 w-5" />
             <span className="sr-only md:not-sr-only">{t("storyMapLink")}</span>
-          </Link>
-          <Link
-            href="/my-stories/journey"
-            className={TOOL_CLASS}
-            title={t("journeyLink")}
-          >
-            <RouteIcon className="h-5 w-5" />
-            <span className="sr-only md:not-sr-only">{t("journeyLink")}</span>
           </Link>
           <Link
             href="/my-photos"

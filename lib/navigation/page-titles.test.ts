@@ -52,7 +52,6 @@ describe("pageTitleKey", () => {
       "/forgot-password",
       "/my-stories",
       "/my-stories/map",
-      "/my-stories/journey",
       "/my-photos",
       "/notifications",
       "/account",
@@ -70,7 +69,7 @@ describe("pageTitleKey", () => {
 
 describe("pageBack", () => {
   it("sends a sub-page back to its parent, keeping the country prefix", () => {
-    expect(pageBack("/my-stories/map")).toEqual({
+    expect(pageBack("/my-photos")).toEqual({
       href: "/my-stories",
       labelKey: "myStories.title",
     });
@@ -82,6 +81,8 @@ describe("pageBack", () => {
 
   it("gives top-level pages no back arrow", () => {
     expect(pageBack("/my-stories")).toBeNull();
+    // Folders is a tab now, not a page under My Stories.
+    expect(pageBack("/my-stories/map")).toBeNull();
     expect(pageBack("/stories")).toBeNull();
     expect(pageBack(null)).toBeNull();
   });
@@ -117,11 +118,12 @@ describe("pageBack for a story's own pages", () => {
 });
 
 describe("a journey's own page", () => {
-  it("keeps Journey map in the bar and goes back to the list", () => {
+  // Only reachable from its folder's journey icon, so back is the folders.
+  it("keeps Journey map in the bar and goes back to the folders", () => {
     expect(pageTitleKey("/my-stories/journey/abc-123")).toBe("myJourney.title");
     expect(pageBack("/my-stories/journey/abc-123")).toEqual({
-      href: "/my-stories/journey",
-      labelKey: "myJourney.title",
+      href: "/my-stories/map",
+      labelKey: "storyFolders.title",
     });
   });
 

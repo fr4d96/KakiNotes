@@ -24,7 +24,7 @@ type Draft = { storyId: string; point: PickedPoint | null; label: string };
 /**
  * One journey's page (/my-stories/journey/<main story id>, supabase/
  * migrations/20261029091942_contributor_journey.sql): the main story and its
- * published sub stories, opened from the Journey map list (journey-list.tsx).
+ * published sub stories, opened from its folder's journey icon (Story folders).
  * Its map comes first -- the same map readers see, limited to this journey
  * and redrawn as a pin is edited -- then each story with "Pin on map",
  * "Move pin" or "Remove pin". Only a New Zealand story can be pinned; a

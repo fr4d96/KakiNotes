@@ -8,8 +8,8 @@ import {
   EditorialPencilIcon,
   ContributorIcon,
   HomeIcon,
+  FolderIcon,
   JournalIcon,
-  RouteIcon,
   UsersIcon,
 } from "@/components/icons";
 import { createClient } from "@/lib/supabase/client";
@@ -21,9 +21,11 @@ import { countryFromPathname, countryUrlPrefix } from "@/lib/story/countries";
  * header's primary destinations -- same hrefs, same `nav.*` message keys --
  * with the visitor's own entry point as the last tab: "Sign in" when signed
  * out, "My Stories" when signed in. Signed in, the third tab is the
- * contributor's own Journey map (/my-stories/journey) instead of
- * Contributors (2026-10-30: used far more; Contributors stays in the
- * header menu); signed out it stays Contributors -- a visitor has no journey.
+ * contributor's own story Folders (/my-stories/map) instead of Contributors
+ * (Contributors stays in the header menu); signed out it stays Contributors.
+ * It used to be the Journey map; since 2026-11-15 each folder opens its own
+ * trip's journey instead (/my-stories/journey/<main story id>), so those
+ * pages light this tab too. There is no separate journey list any more.
  * "My Stories" covers the contributor area (My Stories, My
  * Photos, Account, Notifications and the story editor/preview screens).
  * About and the rest stay in the header's hamburger / avatar menu.
@@ -106,10 +108,10 @@ export function BottomTabBar({
     },
     signedIn
       ? {
-          href: JOURNEY_HREF,
-          label: t("journey"),
-          Icon: RouteIcon,
-          active: isWithin(pathname, JOURNEY_HREF),
+          href: FOLDERS_HREF,
+          label: t("folders"),
+          Icon: FolderIcon,
+          active: inFoldersTab(pathname),
         }
       : {
           href: `${prefix}/contributors`,
@@ -122,8 +124,8 @@ export function BottomTabBar({
           href: "/my-stories",
           label: t("myStories"),
           Icon: EditorialPencilIcon,
-          // The journey map has its own tab now.
-          active: inMyArea && !isWithin(pathname, JOURNEY_HREF),
+          // Folders, and each folder's journey, belong to their own tab.
+          active: inMyArea && !inFoldersTab(pathname),
         }
       : {
           href: "/sign-in",
@@ -202,7 +204,15 @@ export function BottomTabBar({
 }
 
 /** True when `pathname` is `base` or anything beneath it. */
-const JOURNEY_HREF = "/my-stories/journey";
+const FOLDERS_HREF = "/my-stories/map";
+
+/** The Folders tab: the folder list and any one trip's journey page. */
+function inFoldersTab(pathname: string | null): boolean {
+  return (
+    isWithin(pathname, FOLDERS_HREF) ||
+    !!pathname?.startsWith("/my-stories/journey/")
+  );
+}
 
 function isWithin(pathname: string | null, base: string): boolean {
   return pathname === base || !!pathname?.startsWith(`${base}/`);

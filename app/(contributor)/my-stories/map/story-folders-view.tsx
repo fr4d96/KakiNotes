@@ -15,6 +15,7 @@ import {
   ChevronIcon,
   FolderIcon,
   PlusIcon,
+  RouteIcon,
   StorySearchIcon,
 } from "@/components/icons";
 import type { StoryFolderEntry } from "@/lib/story/story-folders";
@@ -526,23 +527,40 @@ function FolderRow({
   const t = useTranslations("storyFolders");
   return (
     <li className="rounded-lg border border-border-subtle bg-surface">
-      <button
-        type="button"
-        aria-expanded={expanded}
-        onClick={onToggle}
-        className="flex min-h-14 w-full items-center gap-3 px-3 text-left"
-      >
-        <FolderIcon className="h-5 w-5 shrink-0 text-accent" />
-        <span className="min-w-0 flex-1 truncate font-medium">
-          {folder.title}
-        </span>
-        <span className="shrink-0 text-xs text-muted-foreground">
-          {t("folders.subStoryCount", { count: subStories.length })}
-        </span>
-        <ChevronIcon
-          className={`h-4 w-4 shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`}
-        />
-      </button>
+      <div className="flex items-center">
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={onToggle}
+          className="flex min-h-14 min-w-0 flex-1 items-center gap-3 pl-3 text-left"
+        >
+          <FolderIcon className="h-5 w-5 shrink-0 text-accent" />
+          <span className="min-w-0 flex-1 truncate font-medium">
+            {folder.title}
+          </span>
+          <span className="shrink-0 text-xs text-muted-foreground">
+            {t("folders.subStoryCount", { count: subStories.length })}
+          </span>
+          <ChevronIcon
+            className={`h-4 w-4 shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`}
+          />
+        </button>
+        {/* The trip's journey: this folder's main story and its sub stories
+          on a map (/my-stories/journey/<main story id>). Only a published
+          main story has one -- that page lists published stories only. */}
+        {folder.lifecycleStatus === "published" ? (
+          <Link
+            href={`/my-stories/journey/${folder.id}`}
+            aria-label={t("folders.openJourney", { title: folder.title ?? "" })}
+            title={t("folders.openJourneyShort")}
+            className="press mx-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-accent hover:bg-accent/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            <RouteIcon className="h-5 w-5" />
+          </Link>
+        ) : (
+          <span className="w-2 shrink-0" aria-hidden="true" />
+        )}
+      </div>
       {expanded ? (
         <div className="border-t border-border-subtle p-2">
           {/* The main story itself, so it is as reachable as its sub

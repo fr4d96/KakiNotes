@@ -200,21 +200,31 @@ describe("BottomTabBar", () => {
     ).toBeInTheDocument();
   });
 
-  it("swaps Contributors for the contributor's Journey map when signed in", () => {
+  it("swaps Contributors for the contributor's Folders when signed in", () => {
     sessionMock.current = { user: { id: "u1" } };
-    usePathnameMock.mockReturnValue("/my-stories/journey");
+    usePathnameMock.mockReturnValue("/my-stories/map");
     render(<BottomTabBar signedInHint />);
     const links = Array.from(getBar().querySelectorAll("a"));
     expect(links.map((a) => a.textContent)).toEqual([
       "Home",
       "Stories",
-      "Journey",
+      "Folders",
       "My Stories",
     ]);
-    const journey = links[2];
-    expect(journey).toHaveAttribute("href", "/my-stories/journey");
-    // Journey is its own tab now, so My Stories is not lit there.
-    expect(journey).toHaveAttribute("aria-current", "page");
+    const folders = links[2];
+    expect(folders).toHaveAttribute("href", "/my-stories/map");
+    // Folders is its own tab, so My Stories is not lit there.
+    expect(folders).toHaveAttribute("aria-current", "page");
+    expect(links[3]).not.toHaveAttribute("aria-current");
+  });
+
+  // A trip's journey opens from its folder's journey icon: still Folders.
+  it("keeps Folders lit on a trip's journey", () => {
+    sessionMock.current = { user: { id: "u1" } };
+    usePathnameMock.mockReturnValue("/my-stories/journey/abc-123");
+    render(<BottomTabBar signedInHint />);
+    const links = Array.from(getBar().querySelectorAll("a"));
+    expect(links[2]).toHaveAttribute("aria-current", "page");
     expect(links[3]).not.toHaveAttribute("aria-current");
   });
 
@@ -224,7 +234,7 @@ describe("BottomTabBar", () => {
         "home",
         "stories",
         "contributors",
-        "journey",
+        "folders",
         "signIn",
         "myStories",
         "tabBar",

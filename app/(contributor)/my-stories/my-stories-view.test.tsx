@@ -141,7 +141,6 @@ describe("MyStoriesView", () => {
       render(<MyStoriesView stories={[makeStory()]} />);
       const links = [
         ["Open story folders", "/my-stories/map"],
-        ["Open journey map", "/my-stories/journey"],
         ["My Photos", "/my-photos"],
         ["Import", "/stories/new/import"],
       ] as const;

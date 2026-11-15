@@ -29,7 +29,6 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
   "/forgot-password": "auth.forgotPassword.title",
   "/my-stories": "myStories.title",
   "/my-stories/map": "storyFolders.title",
-  "/my-stories/journey": "myJourney.title",
   "/my-photos": "myPhotos.title",
   "/notifications": "notifications.title",
   "/affirmations": "affirmations.title",
@@ -46,7 +45,6 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
  * from md up, beside the page's own heading (components/back-link.tsx).
  */
 const PAGE_BACK: Record<string, { href: string; labelKey: string }> = {
-  "/my-stories/map": { href: "/my-stories", labelKey: "myStories.title" },
   "/my-photos": { href: "/my-stories", labelKey: "myStories.title" },
   "/stories/new": { href: "/my-stories", labelKey: "myStories.title" },
   "/stories/new/import": { href: "/stories/new", labelKey: "nav.newStory" },
@@ -103,7 +101,9 @@ export function pageBack(pathname: string | null): PageBack | null {
   const back =
     PAGE_BACK[path] ??
     (JOURNEY_STORY.test(path)
-      ? { href: "/my-stories/journey", labelKey: "myJourney.title" }
+      ? // Only ever opened from its folder's journey icon, so back is the
+        // folders.
+        { href: "/my-stories/map", labelKey: "storyFolders.title" }
       : storyBack(path));
   return back ? { ...back, href: `${prefix}${back.href}` } : null;
 }

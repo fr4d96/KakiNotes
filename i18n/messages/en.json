@@ -26,7 +26,8 @@
       "costs": "Loading cost figures",
       "contributors": "Loading contributors",
       "story": "Loading story",
-      "stories": "Loading stories"
+      "stories": "Loading stories",
+      "folders": "Loading your folders"
     },
     "themeToggle": {
       "switchToLight": "Switch to light mode",
@@ -61,6 +62,7 @@
     "contributor": "Contributor",
     "stories": "Stories",
     "contributors": "Contributors",
+    "folders": "Folders",
     "journey": "Journey",
     "about": "About",
     "signIn": "Sign in",
@@ -1266,6 +1268,8 @@
       "mainStory": "Main story",
       "subStories": "Sub stories",
       "openStory": "Open story",
+      "openJourney": "See the journey of “{title}”",
+      "openJourneyShort": "See this trip’s journey",
       "removeFromFolder": "Remove from folder",
       "removeDialog": {
         "title": "Remove from folder?",

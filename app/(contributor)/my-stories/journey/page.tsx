@@ -1,23 +1,11 @@
-import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
-import { getMyJourney } from "@/lib/story/journey-queries";
-import { JourneyListView } from "./journey-list";
-
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("myJourney");
-  return { title: t("metaTitle") };
-}
+import { redirect } from "next/navigation";
 
 /**
- * Contributor-only (gated by app/(contributor)/layout.tsx, same as every
- * other route in this group). Loads the caller's own stories and their
- * current pin once per visit via get_my_journey() -- owner-scoped RPC, never
- * trusts anything from the client -- and lists their published journeys
- * (journey-list.tsx); each opens its own page, ./[storyId], where pins are
- * edited. A pin is public immediately, no review (the same documented
- * exception as story folders, docs/content-governance.md).
+ * There is no journey list any more (2026-11-15): Story folders is the main
+ * view, and a trip's journey opens only from its folder's journey icon
+ * (./[storyId]). This address used to be the Journey tab, so it forwards to
+ * the folders instead of 404ing for old links and bookmarks.
  */
-export default async function MyJourneyPage() {
-  const stories = await getMyJourney();
-  return <JourneyListView stories={stories} />;
+export default function MyJourneyPage() {
+  redirect("/my-stories/map");
 }

@@ -67,11 +67,29 @@ beforeEach(() => {
 });
 
 describe("StoryFoldersView", () => {
-  it("goes back to My Stories with an arrow, not a text link", () => {
+  // Folders is a bottom tab now, so it has no back arrow of its own.
+  it("has no back arrow, being a tab", () => {
     renderView([kakiman, opotiki]);
     expect(
-      screen.getByRole("link", { name: "Back to My Stories" }),
-    ).toHaveAttribute("href", "/my-stories");
+      screen.queryByRole("link", { name: /^Back/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("gives each folder a journey button that opens that trip's journey", () => {
+    renderView([kakiman, opotiki]);
+    expect(
+      screen.getByRole("link", { name: "See the journey of “Kakiman”" }),
+    ).toHaveAttribute("href", `/my-stories/journey/${kakiman.id}`);
+  });
+
+  // A main story unpublished after filing has no journey page (that page
+  // lists published stories only), so it gets no button that would 404.
+  it("leaves out the journey button for a folder whose main story is not published", () => {
+    const unpublishedMain = { ...kakiman, lifecycleStatus: "unpublished" };
+    renderView([unpublishedMain, opotiki]);
+    expect(
+      screen.queryByRole("link", { name: /See the journey/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders an empty state when the contributor has no stories", () => {

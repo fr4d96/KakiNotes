@@ -26,7 +26,8 @@
       "costs": "正在加载花费数据",
       "contributors": "正在加载投稿人",
       "story": "正在加载故事",
-      "stories": "正在加载故事列表"
+      "stories": "正在加载故事列表",
+      "folders": "正在加载你的文件夹"
     },
     "themeToggle": {
       "switchToLight": "切换到浅色模式",
@@ -61,6 +62,7 @@
     "contributor": "投稿人导航",
     "stories": "故事",
     "contributors": "投稿人",
+    "folders": "文件夹",
     "journey": "旅程",
     "about": "关于",
     "signIn": "登录",
@@ -1266,6 +1268,8 @@
       "mainStory": "主故事",
       "subStories": "子故事",
       "openStory": "打开故事",
+      "openJourney": "查看“{title}”的旅程",
+      "openJourneyShort": "查看这段旅程",
       "removeFromFolder": "从文件夹移除",
       "removeDialog": {
         "title": "要从文件夹移除吗？",

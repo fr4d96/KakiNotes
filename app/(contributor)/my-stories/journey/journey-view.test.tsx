@@ -96,11 +96,12 @@ describe("JourneyStoryView", () => {
     expect(within(subList).getByText("Arrowtown autumn")).toBeInTheDocument();
   });
 
-  it("goes back to the Journey map list", () => {
+  // A trip's journey opens only from its folder's journey icon.
+  it("goes back to the story folders", () => {
     renderView(main);
     expect(
-      screen.getByRole("link", { name: "Back to Journey map" }),
-    ).toHaveAttribute("href", "/my-stories/journey");
+      screen.getByRole("link", { name: "Back to Story folders" }),
+    ).toHaveAttribute("href", "/my-stories/map");
   });
 
   it("offers Move pin and Remove pin on a pinned story, Pin on map on an unpinned one", () => {
