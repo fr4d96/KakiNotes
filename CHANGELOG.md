@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.6.1](https://github.com/fr4d96/KakiNotes/compare/v3.6.0...v3.6.1) (2026-11-15)
+
+
+### Lighter photos on story cards
+
+#### For readers
+
+- **Story cards load much less data.** The photos on story cards (home page, Stories tab and contributor profiles) are now small versions sized for the card, about a tenth of the full photo. Your phone picks the size that suits its screen, so cards appear faster and use less mobile data.
+- Opening a story still shows its photos at full quality.
+
+### Performance Improvements
+
+* **media:** serve small 4:3 WebP card versions of Drive photos ([5c3744b](https://github.com/fr4d96/KakiNotes/commit/5c3744b86d5abce86cf0da809b8d042e71e8b75a))
+
 ## [3.6.0](https://github.com/fr4d96/KakiNotes/compare/v3.5.0...v3.6.0) (2026-11-15)
 
 
