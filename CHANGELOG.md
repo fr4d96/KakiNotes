@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.0](https://github.com/fr4d96/KakiNotes/compare/v3.7.0...v3.8.0) (2026-11-15)
+
+
+### Features
+
+* **stories:** open story pages on the title ([a29fe4a](https://github.com/fr4d96/KakiNotes/commit/a29fe4ab82511e1fef1b51afb90c07cce1294e59))
+
 ## [3.7.0](https://github.com/fr4d96/KakiNotes/compare/v3.6.1...v3.7.0) (2026-11-15)
 
 
