@@ -28,6 +28,7 @@ import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
+  listCardPhotoUrlsCached,
   listPublicRegions,
   listPublishedStoriesCached,
 } from "@/lib/story/public-queries";
@@ -88,6 +89,19 @@ export default async function HomePage() {
   ]);
   const locale = rawLocale as Locale;
   const hasStories = stories.length > 0;
+
+  // Each "Latest stories" card swipes through its published photos. One
+  // cached read per card, all at once; a card whose read fails just falls
+  // back to its cover.
+  const shelfStories = stories.slice(0, MAX_SHELF);
+  const shelfPhotos: Record<string, string[]> = Object.fromEntries(
+    await Promise.all(
+      shelfStories.map(async (story) => [
+        story.slug,
+        await listCardPhotoUrlsCached(story.story_id).catch(() => []),
+      ]),
+    ),
+  );
 
   // The field's points: one per published story, carrying only the fields
   // that story actually has (a missing one is omitted, never a dash), in
@@ -227,7 +241,11 @@ export default async function HomePage() {
                 {t("seeAll")} <ArrowRightIcon className="h-4 w-4" />
               </Link>
             </div>
-            <StoryShelf stories={stories.slice(0, MAX_SHELF)} locale={locale} />
+            <StoryShelf
+              stories={shelfStories}
+              photos={shelfPhotos}
+              locale={locale}
+            />
           </section>
 
           {/* ---- Browse by place: one tap into a filtered Stories tab. ---- */}

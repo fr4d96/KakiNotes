@@ -1,12 +1,14 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
+  listCardPhotoUrlsCached,
   listPublicRegions,
   listPublishedStoriesCached,
 } from "@/lib/story/public-queries";
 
 vi.mock("@/lib/story/public-queries", () => ({
   listPublishedStoriesCached: vi.fn(async () => []),
+  listCardPhotoUrlsCached: vi.fn(async () => []),
   listPublicRegions: vi.fn(async () => []),
   listPublicDestinations: vi.fn(async () => []),
 }));
@@ -198,5 +200,35 @@ describe("HomePage", () => {
     expect(
       screen.getByRole("link", { name: /Share your story/ }),
     ).toHaveAttribute("href", "/sign-up");
+  });
+
+  // Cards swipe through the story's published photos right on the home
+  // page; the photo strip links to the story but stays out of the tab order,
+  // so the title link remains each card's one stop.
+  it("gives each latest-story card its published photos to swipe through", async () => {
+    mockStories(fixtureStory, otherStory);
+    vi.mocked(listCardPhotoUrlsCached).mockImplementation(async (storyId) =>
+      storyId === fixtureStory.story_id
+        ? ["https://cdn.test/a.jpg", "https://cdn.test/b.jpg"]
+        : [],
+    );
+
+    const { container } = render(await HomePage());
+
+    const latest = sectionByHeading("Latest stories");
+    const photoLinks = [
+      ...latest.querySelectorAll<HTMLAnchorElement>('a[tabindex="-1"]'),
+    ];
+    const firstCard = photoLinks.filter(
+      (a) => a.getAttribute("href") === "/stories/story-one",
+    );
+    expect(firstCard).toHaveLength(2);
+    expect(
+      firstCard.map((a) => a.querySelector("img")?.getAttribute("src")),
+    ).toEqual(["https://cdn.test/a.jpg", "https://cdn.test/b.jpg"]);
+    for (const link of firstCard) {
+      expect(link).toHaveAttribute("aria-hidden", "true");
+    }
+    expect(container).toBeTruthy();
   });
 });

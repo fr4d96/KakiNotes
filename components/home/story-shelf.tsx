@@ -4,34 +4,41 @@ import { getCardCoverUrl } from "@/lib/story/image-url";
 import { firstRegionLabel } from "@/lib/story/card-fields";
 import type { StoryCardData } from "@/components/story/story-card";
 import { StoryCoverFallback } from "@/components/story/story-cover-fallback";
-import { ResolvingImage } from "@/components/ui/resolving-image";
+import { CardPhotos } from "@/components/home/card-photos";
 import type { Locale } from "@/i18n/locales";
 
 /**
- * The home page's "Latest stories" row: one horizontal, scroll-snapped line
- * of compact cards, the way a phone app shelves content. It replaced the
- * draggable card stack, whose gesture needed a written instruction ("Drag a
- * card aside...") to be discoverable -- a swipe row needs none, because the
- * cut-off card at the edge is the affordance.
+ * The home page's "Latest stories": a vertical list of cards (a grid from
+ * sm up), each with its photos swipeable right there, the way a listing app
+ * shows places. It used to be one sideways-scrolling row, but a row that
+ * swipes sideways and photos that swipe sideways inside it fight over the
+ * same gesture -- so the list scrolls down and only the photos go sideways.
  *
  * Each card is a stretched title link (the StoryCard pattern): the whole
- * card is one tap target, and there is no nested link inside it. Server
- * Component; no client state.
+ * card is one tap target. The photo strip sits above that overlay so it can
+ * be swiped; its photos link to the same story. See CardPhotos.
  */
 export function StoryShelf({
   stories,
+  photos,
   locale,
 }: {
   stories: StoryCardData[];
+  /** Published photo URLs per story slug, cover first. */
+  photos: Record<string, string[]>;
   locale: Locale;
 }) {
   const t = useTranslations("common");
-  const tImages = useTranslations("editor.images");
 
   return (
-    <ul className="nf-scroll-x -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pt-1 pb-3 sm:-mx-6 sm:scroll-px-6 sm:gap-4 sm:px-6 lg:-mx-8 lg:scroll-px-8 lg:px-8">
+    <ul className="grid gap-5 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
       {stories.map((story, index) => {
         const coverUrl = getCardCoverUrl(story);
+        const storyPhotos = photos[story.slug]?.length
+          ? photos[story.slug]
+          : coverUrl
+            ? [coverUrl]
+            : [];
         const record = [
           firstRegionLabel(story.regions, locale),
           story.trip_year ? String(story.trip_year) : null,
@@ -40,23 +47,17 @@ export function StoryShelf({
           .join(" · ");
 
         return (
-          <li
-            key={story.slug}
-            className="w-[76%] max-w-[300px] shrink-0 snap-start sm:w-[280px]"
-          >
+          <li key={story.slug}>
             <article className="press press-hover-only group relative flex h-full flex-col overflow-hidden rounded-[20px] border border-border-subtle bg-surface shadow-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-lg">
               <div className="relative aspect-[4/3] w-full overflow-hidden bg-surface-muted">
-                {coverUrl ? (
-                  <ResolvingImage
-                    src={coverUrl}
-                    alt=""
-                    loading={index < 2 ? "eager" : "lazy"}
-                    loadingLabel={tImages("loading")}
-                    wrapperClassName="relative block h-full w-full"
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                {storyPhotos.length > 0 ? (
+                  <CardPhotos
+                    urls={storyPhotos}
+                    href={`/stories/${story.slug}`}
+                    eager={index < 2}
                   />
                 ) : (
-                  <StoryCoverFallback sizes="300px" />
+                  <StoryCoverFallback sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" />
                 )}
               </div>
               <div className="flex flex-1 flex-col gap-1.5 p-4">

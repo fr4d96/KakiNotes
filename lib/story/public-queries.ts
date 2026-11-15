@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
+import { getImageUrl } from "@/lib/story/image-url";
 import type { CostBand } from "@/lib/validation/discovery";
 
 // Every function here is deliberately cookie-free (lib/supabase/public.ts)
@@ -185,6 +186,46 @@ export function coverOf<T extends { is_cover: boolean }>(
 ): T | null {
   return media.find((item) => item.is_cover) ?? media[0] ?? null;
 }
+
+/** Most photos a home-page card will swipe through; the rest live on the story. */
+export const CARD_PHOTO_LIMIT = 10;
+
+/**
+ * The swipeable photos on a home-page story card: the cover first, then the
+ * rest in story order, as public URLs. Built ONLY from
+ * get_published_story_media(), so it can never surface a draft, pending or
+ * unapproved photo (Engineering Rules 10, 12-14) -- the same reader the
+ * story page's own gallery uses, and the same URL resolver (Drive-backed
+ * photos go through the /media proxy, never a Drive link).
+ */
+export async function listCardPhotoUrls(storyId: string): Promise<string[]> {
+  const media = await getPublishedStoryMedia(storyId);
+  const cover = coverOf(media);
+  const ordered = cover
+    ? [cover, ...media.filter((item) => item !== cover)]
+    : media;
+  return ordered
+    .slice(0, CARD_PHOTO_LIMIT)
+    .map((item) =>
+      getImageUrl({
+        id: item.media_id,
+        storage_backend: item.storage_backend ?? "supabase",
+        public_url: item.public_url,
+      }),
+    )
+    .filter((url): url is string => Boolean(url));
+}
+
+/**
+ * Cached under PUBLIC_STORIES_TAG, so it is cleared by the same
+ * invalidateStoryListingsPublicCache() call that clears the card list itself
+ * on publish, edit approval and takedown.
+ */
+export const listCardPhotoUrlsCached = unstable_cache(
+  listCardPhotoUrls,
+  ["public:card_photo_urls"],
+  { tags: [PUBLIC_STORIES_TAG], revalidate: PUBLIC_REVALIDATE_SECONDS },
+);
 
 /**
  * Keyset-paginated. p_limit is clamped server-side regardless of what's
