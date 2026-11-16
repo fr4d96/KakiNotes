@@ -11514,3 +11514,12 @@ latest-stories header: on the NZ home, small is a two-per-row grid of `StoryCard
 big is the existing `StoryShelf` swipe row; on the China home it switches its card grid between
 the two sizes. Verified: `npm run verify` (2,044 tests); in the iPhone frame the NZ home opens on
 small cards with no choice saved.
+
+**Follow-up after 3.10.0 — Story folders per country.** `/my-stories/map` now shows only the
+stories of the country chosen in the top bar (the `kakinotes-country` cookie, New Zealand when
+none), like My Stories. No database change: the page reads each story's country from
+`list_my_stories()`'s `country_slug` (owner-scoped, added in 20261116100000) and keeps only those
+entries of `get_my_story_folders()`, so no folder or picker offers another country's story.
+`set_story_parent()` still decides who may file what (Rule 2); it does not itself refuse a
+cross-country filing, which the UI no longer offers. Verified: `npm run verify`; in the running
+app with the owner's account, China shows the empty state and New Zealand shows both folders.
