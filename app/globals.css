@@ -771,11 +771,13 @@ svg g[role="button"]:focus-visible {
 /* The hovered point stacks above its neighbours so its label is never
    crossed by another point's dot. */
 .hero-point:hover,
-.hero-point:focus-visible {
+.hero-point:focus-visible,
+.hero-point[data-touring] {
   z-index: 1;
 }
 .hero-point:hover .hero-point-dot,
-.hero-point:focus-visible .hero-point-dot {
+.hero-point:focus-visible .hero-point-dot,
+.hero-point[data-touring] .hero-point-dot {
   transform: scale(1.5);
   box-shadow:
     0 0 0 5px rgba(53, 208, 196, 0.22),
@@ -786,7 +788,11 @@ svg g[role="button"]:focus-visible {
   top: 50%;
   left: calc(50% + 14px);
   width: max-content;
-  max-width: min(18rem, 60vw);
+  /* Never wider than the room left between the dot and the plate's edge on
+     the side it opens to (--x is the point's position, 100cqw the plate --
+     the list is a size container), so a label near the middle of a narrow
+     phone plate wraps instead of running off either edge. */
+  max-width: min(18rem, calc((1 - var(--x, 0)) * 100cqw - 28px));
   padding: 0.5rem 0.7rem;
   border-radius: 10px;
   /* A solid caption ground, not a backdrop blur (the lattice under it is
@@ -801,18 +807,66 @@ svg g[role="button"]:focus-visible {
     opacity 0.22s ease,
     transform 0.28s cubic-bezier(0.16, 0.84, 0.28, 1);
 }
-/* Points in the right third open their label to the left so it never runs
+/* Points right of centre open their label to the left so it never runs
    off the plate. */
 [data-side="end"] .hero-point-label {
   left: auto;
   right: calc(50% + 14px);
+  max-width: min(18rem, calc(var(--x, 1) * 100cqw - 28px));
   text-align: right;
   transform: translateY(-50%) translateX(4px);
 }
 .hero-point:hover .hero-point-label,
-.hero-point:focus-visible .hero-point-label {
+.hero-point:focus-visible .hero-point-label,
+.hero-point[data-touring] .hero-point-label {
   opacity: 1;
   transform: translateY(-50%) translateX(0);
+}
+
+/* The reading light's stop (components/home/hero-field.tsx `ambient`): the
+   point the touring lens rests on reads exactly as a hovered one -- dot
+   swollen, record showing -- and lets go a beat slower than it arrived,
+   so the record fades as the light moves on rather than blinking out. */
+.hero-point[data-touring] .hero-point-label {
+  transition:
+    opacity 0.45s ease,
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Breathing points: on an ambient field each story point's glow swells and
+   settles on its own slow beat (staggered by --breathe-delay), so the
+   field shimmers like a night sky instead of sitting still. Opacity and
+   transform on a pseudo-element only -- compositor work, no repaint of
+   the dot. Held still by the pause button, gone under reduced motion. */
+[data-ambient] .hero-point-dot::before {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(53, 208, 196, 0.5),
+    rgba(53, 208, 196, 0) 70%
+  );
+  opacity: 0.15;
+  transform: scale(0.7);
+  animation: hero-point-breathe 4.6s ease-in-out infinite;
+  animation-delay: var(--breathe-delay, 0s);
+  pointer-events: none;
+}
+[data-paused] .hero-point-dot::before {
+  animation-play-state: paused;
+}
+@keyframes hero-point-breathe {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.35);
+  }
 }
 @media (min-width: 640px) {
   .hero-point {
@@ -834,8 +888,12 @@ svg g[role="button"]:focus-visible {
     animation: none;
   }
   .hero-point-dot,
-  .hero-point-label {
+  .hero-point-label,
+  .hero-point[data-touring] .hero-point-label {
     transition: none;
+  }
+  [data-ambient] .hero-point-dot::before {
+    animation: none;
   }
 }
 

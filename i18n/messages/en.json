@@ -379,7 +379,9 @@
     "shareBody": "Your honest account could help someone take their first step.",
     "shareCta": "Share your story",
     "field": {
-      "listLabel": "Published stories in this archive"
+      "listLabel": "Published stories in this archive",
+      "pause": "Pause the moving stories",
+      "play": "Play the moving stories"
     },
     "quiz": {
       "yourMatch": "Your match",

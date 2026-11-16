@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import {
   HeroField,
   layoutPoints,
   pointPosition,
+  tourOrder,
   type HeroRecord,
 } from "@/components/home/hero-field";
 
@@ -97,11 +98,47 @@ describe("HeroField", () => {
 
     records.forEach((record) => {
       const { left } = positions.get(record.slug)!;
-      const expectedSide = left > 0.66 ? "end" : "start";
+      const expectedSide = left > 0.5 ? "end" : "start";
       const link = screen.getByRole("link", {
         name: `${record.title} — ${record.record}`,
       });
       expect(link.closest("li")).toHaveAttribute("data-side", expectedSide);
+    });
+  });
+
+  // The reading light (ambient): tours the stories, nearest first, and can
+  // be paused (WCAG 2.2.2: it moves for more than five seconds).
+  describe("ambient", () => {
+    it("tours every story once, starting from the newest", () => {
+      const records = makeRecords(12);
+      const order = tourOrder(records, layoutPoints(records), 3);
+      expect(order[0]).toBe(records[0].slug);
+      expect([...order].sort()).toEqual(records.map((r) => r.slug).sort());
+    });
+
+    it("offers a pause button that becomes play, and holds the points still", () => {
+      render(
+        <HeroField
+          records={makeRecords(3)}
+          listLabel="Featured stories"
+          ambient={{ pauseLabel: "Pause", playLabel: "Play" }}
+        />,
+      );
+      const list = screen.getByRole("list", { name: "Featured stories" });
+      expect(list).toHaveAttribute("data-ambient");
+      fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+      expect(list).toHaveAttribute("data-paused");
+    });
+
+    it("has no pause button and no breathing without ambient", () => {
+      render(
+        <HeroField records={makeRecords(3)} listLabel="Featured stories" />,
+      );
+      expect(screen.queryByRole("button")).toBeNull();
+      expect(
+        screen.getByRole("list", { name: "Featured stories" }),
+      ).not.toHaveAttribute("data-ambient");
     });
   });
 });

@@ -11523,3 +11523,19 @@ entries of `get_my_story_folders()`, so no folder or picker offers another count
 `set_story_parent()` still decides who may file what (Rule 2); it does not itself refuse a
 cross-country filing, which the UI no longer offers. Verified: `npm run verify`; in the running
 app with the owner's account, China shows the empty state and New Zealand shows both folders.
+
+**Follow-up after 3.10.1 — a living home hero.** Owner: the hero "lacks liveliness". Cause: the night
+field only moved under a mouse pointer, so on a phone it was a still, faint grid. `HeroField` gains
+an `ambient` prop (used by the NZ home hero only; the share band stays input-only): the lens
+becomes a reading light that tours the story points (`tourOrder()`: newest first, then always the
+nearest unvisited), gliding on a critically damped spring, resting 2.6s on each with its record
+showing (`[data-touring]`, styled like hover), and every point's glow breathes on a staggered beat
+(`[data-ambient] .hero-point-dot::before`). A pointer, touch or keyboard focus takes the lens over;
+the tour resumes 1.5s (mouse) / 3.2s (touch) after. A pause/play button (`PauseIcon` /
+`PlayIcon`, `home.field.pause/play`) stops all of it (WCAG 2.2.2). Nothing runs under reduced
+motion, off screen or while the page is hidden; frame-rate independent for 120Hz phones. Labels
+now open toward the wider side (`left > 0.5`) and cap their width to the room on that side
+(`100cqw` on the list as a size container); the field's right edge moved 0.94 → 0.86 to clear
+the pause button. Verified: `npm run verify` (2,049 tests); in the iPhone frame the tour lights
+successive stories, all 24 labels sit inside the plate (≥18px), no point under the pause button.
+Desktop not visually checked (the dev server's device frame wraps `/`).

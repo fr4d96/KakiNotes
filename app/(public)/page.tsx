@@ -184,7 +184,14 @@ export default async function HomePage() {
       {/* ---- Hero plate: who this is for, and a way straight in. ---- */}
       <section className="px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
         <div className="nf-dark-band relative isolate mx-auto flex h-[54svh] max-h-[620px] min-h-[430px] w-full max-w-[1440px] overflow-hidden rounded-[20px] bg-[#020617] text-white shadow-2xl sm:rounded-[28px]">
-          <HeroField records={heroRecords} listLabel={t("field.listLabel")} />
+          <HeroField
+            records={heroRecords}
+            listLabel={t("field.listLabel")}
+            ambient={{
+              pauseLabel: t("field.pause"),
+              playLabel: t("field.play"),
+            }}
+          />
           <div className="relative flex w-full flex-col justify-between px-5 pt-5 pb-6 sm:px-10 sm:pt-8 sm:pb-9 lg:px-14">
             {/* The country is chosen on first visit (CountryPicker) and
                 switched from the flag in the top bar (CountrySwitcher). */}

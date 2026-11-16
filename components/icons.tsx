@@ -459,3 +459,21 @@ export function CardsSmallIcon(props: IconProps) {
     </svg>
   );
 }
+
+/** Pause -- stops the home hero's ambient motion. */
+export function PauseIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M8.5 5.5v13M15.5 5.5v13" strokeWidth={2.2} />
+    </svg>
+  );
+}
+
+/** Play -- restarts the home hero's ambient motion. */
+export function PlayIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M8 5.8v12.4a.6.6 0 0 0 .9.5l9.6-6.2a.6.6 0 0 0 0-1l-9.6-6.2a.6.6 0 0 0-.9.5Z" />
+    </svg>
+  );
+}

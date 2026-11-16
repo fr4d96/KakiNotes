@@ -379,7 +379,9 @@
     "shareBody": "你真实的经历，也许能帮别人迈出第一步。",
     "shareCta": "分享你的故事",
     "field": {
-      "listLabel": "本档案中已发布的故事"
+      "listLabel": "本档案中已发布的故事",
+      "pause": "暂停故事动画",
+      "play": "播放故事动画"
     },
     "quiz": {
       "yourMatch": "你的匹配结果",
