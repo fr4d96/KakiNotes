@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.10.1](https://github.com/fr4d96/KakiNotes/compare/v3.10.0...v3.10.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* **folders:** show only the chosen country's stories in Story folders ([d59d0ee](https://github.com/fr4d96/KakiNotes/commit/d59d0ee62c629530a081485af92c3ec46540a369))
+
 ## [3.10.0](https://github.com/fr4d96/KakiNotes/compare/v3.9.0...v3.10.0) (2026-11-16)
 
 
