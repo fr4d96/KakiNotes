@@ -52,3 +52,61 @@ export function countryMessageSegment(
 ): "newZealand" | "china" {
   return country === "china" ? "china" : "newZealand";
 }
+
+/**
+ * Each country's flag, as an emoji (owner decision 2026-11-16: native and
+ * crisp on iPhone/Mac; Windows shows the two letters instead). A symbol for
+ * the country, not display copy -- the name always comes from
+ * countryContent.<segment>.name beside it.
+ */
+export const COUNTRY_FLAGS: Record<CountrySlug, string> = {
+  "new-zealand": "🇳🇿",
+  china: "🇨🇳",
+};
+
+/**
+ * The reader's chosen country, remembered on this device (owner decision
+ * 2026-11-16: per device, like the language cookie, not on the account).
+ * Not httpOnly: the tab bar and header read it in the browser to know which
+ * country's Home/Stories to link to on pages that aren't in either country
+ * (My Stories, the editor, Account). It only picks a starting point and
+ * links -- never access or what a query may return.
+ */
+export const COUNTRY_COOKIE = "kakinotes-country";
+export const COUNTRY_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
+/** A cookie value -> a country, or null when missing or not one we have. */
+export function countryFromCookieValue(
+  value: string | null | undefined,
+): CountrySlug | null {
+  return value && isCountrySlug(value) ? value : null;
+}
+
+/** The public pages that belong to a country (NZ unprefixed, China /cn). */
+const COUNTRY_PAGE_ROOTS = ["/stories", "/contributors", "/costs", "/about"];
+
+/**
+ * Which country the header and tab bar should show. A country's own public
+ * page says so by its URL; anywhere else (My Stories, the editor, Account,
+ * sign-in) uses the remembered choice, falling back to New Zealand. The
+ * author's own screens under /stories (new, <id>/edit, <id>/preview) are
+ * not reader pages, so they follow the remembered choice too.
+ */
+export function countryForPath(
+  pathname: string | null,
+  remembered: CountrySlug | null,
+): CountrySlug {
+  if (pathname === "/cn" || pathname?.startsWith("/cn/")) return "china";
+  const path = pathname ?? "";
+  const isAuthorScreen =
+    path === "/stories/new" ||
+    path.startsWith("/stories/new/") ||
+    /^\/stories\/[^/]+\/(edit|preview)(\/|$)/.test(path);
+  const isCountryPage =
+    path === "/" ||
+    (!isAuthorScreen &&
+      COUNTRY_PAGE_ROOTS.some(
+        (root) => path === root || path.startsWith(`${root}/`),
+      ));
+  return isCountryPage ? "new-zealand" : (remembered ?? DEFAULT_COUNTRY_SLUG);
+}

@@ -347,6 +347,15 @@ export function ChevronIcon(props: IconProps) {
 }
 
 /** Notifications — the header bell. */
+/** Three lines -- "open the menu". */
+export function MenuIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M4.5 7h15M4.5 12h15M4.5 17h15" />
+    </svg>
+  );
+}
+
 /** A light bulb -- "ideas", e.g. the story editor's writing prompts. */
 export function LightBulbIcon(props: IconProps) {
   return (

@@ -13,9 +13,34 @@ vi.mock("@/lib/story/public-queries", () => ({
   listPublicDestinations: vi.fn(async () => []),
 }));
 
+// The country remembered on this device (POST /country). Most tests are a
+// reader who already chose New Zealand; the picker and China tests change it.
+const countryCookie = vi.hoisted(() => ({
+  value: "new-zealand" as string | undefined,
+}));
+vi.mock("next/headers", () => ({
+  cookies: async () => ({
+    get: (name: string) =>
+      name === "kakinotes-country" && countryCookie.value
+        ? { name, value: countryCookie.value }
+        : undefined,
+  }),
+}));
+const redirect = vi.hoisted(() =>
+  vi.fn((to: string) => {
+    throw new Error(`NEXT_REDIRECT ${to}`);
+  }),
+);
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/navigation")>()),
+  redirect,
+}));
+
 import HomePage from "./page";
 
 beforeEach(() => {
+  countryCookie.value = "new-zealand";
+  redirect.mockClear();
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: false,
     media: query,
@@ -230,5 +255,46 @@ describe("HomePage", () => {
       expect(link).toHaveAttribute("aria-hidden", "true");
     }
     expect(container).toBeTruthy();
+  });
+
+  // First visit on this device: the country picker opens over the home page
+  // (which still renders underneath, for crawlers).
+  it("asks for a country on the first visit, over the real home page", async () => {
+    countryCookie.value = undefined;
+    render(await HomePage());
+
+    const picker = screen.getByRole("dialog", {
+      name: "Where are you heading?",
+    });
+    const nz = within(picker).getByRole("button", { name: /New Zealand/ });
+    const china = within(picker).getByRole("button", { name: /China/ });
+    expect(nz).toHaveAttribute("value", "new-zealand");
+    expect(china).toHaveAttribute("value", "china");
+    expect(nz.closest("form")).toHaveAttribute("action", "/country");
+    expect(nz.textContent).toContain("🇳🇿");
+    expect(china.textContent).toContain("🇨🇳");
+    // The home page is still there underneath.
+    expect(
+      screen.getByRole("heading", { level: 1, name: /Real stories/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows no picker once New Zealand has been chosen", async () => {
+    render(await HomePage());
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("opens China's home for a reader who chose China", async () => {
+    countryCookie.value = "china";
+    await expect(HomePage()).rejects.toThrow("NEXT_REDIRECT /cn");
+    expect(redirect).toHaveBeenCalledWith("/cn");
+  });
+
+  it("treats an unknown remembered country as no choice yet", async () => {
+    countryCookie.value = "atlantis";
+    render(await HomePage());
+    expect(
+      screen.getByRole("dialog", { name: "Where are you heading?" }),
+    ).toBeInTheDocument();
   });
 });

@@ -27,6 +27,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import {
   listCardPhotoUrlsCached,
   listPublicRegions,
@@ -45,7 +47,8 @@ import {
   ChevronIcon,
   StorySearchIcon,
 } from "@/components/icons";
-import { CountryToggle } from "@/components/country-toggle";
+import { CountryPicker } from "@/components/country-picker";
+import { COUNTRY_COOKIE, countryFromCookieValue } from "@/lib/story/countries";
 
 // No `export const revalidate` any more (it was 60). The root layout reads
 // the language cookie, which makes this route render per request, so the
@@ -78,6 +81,15 @@ function SectionHeading({ id, children }: { id: string; children: ReactNode }) {
 }
 
 export default async function HomePage() {
+  // The reader's country, remembered on this device by POST /country. China
+  // opens China's home; no choice yet shows the first-visit picker over
+  // this page (still rendered underneath, for crawlers).
+  const remembered = countryFromCookieValue(
+    (await cookies()).get(COUNTRY_COOKIE)?.value,
+  );
+  if (remembered === "china") redirect("/cn");
+  const needsCountryPicker = remembered === null;
+
   const [stories, regions, t, rawLocale] = await Promise.all([
     listPublishedStoriesCached({
       limit: 24,
@@ -157,16 +169,15 @@ export default async function HomePage() {
 
   return (
     <div className="bg-background pb-4 text-foreground">
+      {needsCountryPicker ? <CountryPicker /> : null}
       {/* ---- Hero plate: who this is for, and a way straight in. ---- */}
       <section className="px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
         <div className="nf-dark-band relative isolate mx-auto flex h-[54svh] max-h-[620px] min-h-[430px] w-full max-w-[1440px] overflow-hidden rounded-[20px] bg-[#020617] text-white shadow-2xl sm:rounded-[28px]">
           <HeroField records={heroRecords} listLabel={t("field.listLabel")} />
           <div className="relative flex w-full flex-col justify-between px-5 pt-5 pb-6 sm:px-10 sm:pt-8 sm:pb-9 lg:px-14">
-            {/* NZ | China section switch (product decision 3): the first
-                control a reader meets, plain links so it works without JS. */}
-            <div className="nf-hero-pull">
-              <CountryToggle current="new-zealand" />
-            </div>
+            {/* The country is chosen on first visit (CountryPicker) and
+                switched from the flag in the top bar (CountrySwitcher). */}
+            <div />
             <div className="max-w-3xl">
               <h1 className="nf-hero-pull font-sans text-[clamp(2.4rem,9vw,5.25rem)] leading-[0.95] font-extrabold tracking-[-.035em] text-balance text-white">
                 {/* One rich message, not two keys joined in JSX: the

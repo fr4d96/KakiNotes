@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { HeaderBrand } from "@/components/header-brand";
 import { MobileNavToggle } from "@/components/mobile-nav-toggle";
+import { CountrySwitcher } from "@/components/country-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { AuthModal } from "@/components/auth/auth-modal";
@@ -15,7 +15,8 @@ import { UserAvatarMenu } from "@/components/auth/user-avatar-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { createClient } from "@/lib/supabase/client";
 import type { AppRole } from "@/lib/auth/staff-guard";
-import { countryFromPathname, countryUrlPrefix } from "@/lib/story/countries";
+import { countryUrlPrefix } from "@/lib/story/countries";
+import { useCurrentCountry } from "@/lib/story/use-current-country";
 
 // Every item links to a real browsing page, never to a section on the home
 // page -- the old "Destinations" entry was a /#match anchor that did nothing
@@ -85,7 +86,9 @@ type AuthModalKind = "sign-in" | "sign-up" | null;
  */
 export function SiteHeader() {
   const t = useTranslations("nav");
-  const countryPrefix = countryUrlPrefix(countryFromPathname(usePathname()));
+  // The page's country, or the remembered one on pages outside both
+  // countries (sign-in, onboarding), so the nav links stay in it.
+  const countryPrefix = countryUrlPrefix(useCurrentCountry());
   const [authModal, setAuthModal] = useState<AuthModalKind>(null);
   const [signedIn, setSignedIn] = useState(false);
   const [avatarEmoji, setAvatarEmoji] = useState<string | null>(null);
@@ -172,8 +175,10 @@ export function SiteHeader() {
     <header
       className={`sticky top-0 z-40 pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] transition-colors ${headerToneClasses}`}
     >
-      <div className="mx-auto flex min-h-[76px] max-w-[1440px] items-center gap-5 px-4 sm:px-6">
+      <div className="mx-auto flex min-h-[76px] max-w-[1440px] items-center gap-3 px-4 sm:gap-5 sm:px-6">
         <HeaderBrand homeHref={countryPrefix || "/"} priority />
+        {/* Beside the logo on every page: the current country's flag. */}
+        <CountrySwitcher />
 
         <nav
           aria-label={t("primary")}
@@ -225,10 +230,17 @@ export function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-2 md:hidden">
           {!signedIn && (
-            <>
-              <ThemeToggle />
-              <LocaleToggle />
-            </>
+            // Signed out on a phone: Sign in is the one thing out front; the
+            // theme and language switches live in the menu (2026-11-16).
+            <button
+              type="button"
+              onClick={() => setAuthModal("sign-in")}
+              // The one solid button in the bar: the action a visitor
+              // came for, with the flag and ☰ left plain beside it.
+              className="press min-h-10 rounded-full bg-accent px-4 text-sm font-bold text-accent-foreground"
+            >
+              {t("signIn")}
+            </button>
           )}
           {signedIn ? (
             // Replaces the hamburger entirely on mobile once signed in --
@@ -246,12 +258,17 @@ export function SiteHeader() {
             <MobileNavToggle
               navItems={[
                 ...mobileNavItems,
-                { label: t("signIn"), onClick: () => setAuthModal("sign-in") },
                 {
                   label: t("shareYourStory"),
                   onClick: () => setAuthModal("sign-up"),
                 },
               ]}
+              settings={
+                <>
+                  <ThemeToggle variant="sheetRow" />
+                  <LocaleToggle variant="sheetRow" />
+                </>
+              }
             />
           )}
         </div>

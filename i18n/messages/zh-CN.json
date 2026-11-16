@@ -51,6 +51,15 @@
     "countryToggle": {
       "label": "选择国家板块"
     },
+    "countryPicker": {
+      "title": "你要去哪里？",
+      "subtitle": "选择一个国家，阅读那里的故事。",
+      "switchLater": "之后随时可以点顶部的国旗切换。"
+    },
+    "countrySwitcher": {
+      "button": "国家：{country}。切换国家",
+      "sheetTitle": "选择国家"
+    },
     "back": "返回",
     "backTo": "返回{page}",
     "backToTop": "回到顶部",

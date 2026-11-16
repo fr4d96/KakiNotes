@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { listPublishedStories } from "@/lib/story/public-queries";
 import { StoryCard } from "@/components/story/story-card";
-import { CountryToggle } from "@/components/country-toggle";
 import { PersonalExperienceLabel } from "@/components/story/personal-experience-label";
 import { ArrowRightIcon } from "@/components/icons";
 
@@ -14,7 +13,7 @@ import { ArrowRightIcon } from "@/components/icons";
  * NZ-specific prose and visual direction baked into their own design
  * contract) -- a straightforward, real, mobile-first page instead, built
  * from the same generic building blocks the rest of the app already uses
- * (StoryCard, CountryToggle, PersonalExperienceLabel). It still has to do
+ * (StoryCard, PersonalExperienceLabel). It still has to do
  * everything a landing page must: say what this section is, prove there's a
  * real catalogue, and get a reader into it.
  *
@@ -43,9 +42,7 @@ export default async function ChinaHomePage() {
   return (
     <div className="bg-background text-foreground">
       <section className="mx-auto max-w-[1440px] px-4 pt-10 pb-6 sm:px-6 sm:pt-14 lg:px-8">
-        <CountryToggle current="china" />
-
-        <h1 className="mt-6 text-[clamp(2.25rem,6vw,4.5rem)] leading-[1.02] font-extrabold tracking-[-.03em] text-balance">
+        <h1 className="text-[clamp(2.25rem,6vw,4.5rem)] leading-[1.02] font-extrabold tracking-[-.03em] text-balance">
           {tCountry("china.tagline")}
         </h1>
         <p className="mt-4 max-w-[60ch] text-base text-foreground/70 sm:text-lg">

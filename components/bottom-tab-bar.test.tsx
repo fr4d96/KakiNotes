@@ -228,6 +228,29 @@ describe("BottomTabBar", () => {
     expect(links[3]).not.toHaveAttribute("aria-current");
   });
 
+  // In My Stories (a page in neither country) Home and Stories follow the
+  // country remembered on this device; a country's own page always wins.
+  it("keeps Home and Stories in the remembered country outside both countries", () => {
+    document.cookie = "kakinotes-country=china; path=/";
+    try {
+      sessionMock.current = { user: { id: "u1" } };
+      usePathnameMock.mockReturnValue("/my-stories");
+      const { unmount } = render(<BottomTabBar signedInHint />);
+      let links = Array.from(getBar().querySelectorAll("a"));
+      expect(links[0]).toHaveAttribute("href", "/cn");
+      expect(links[1]).toHaveAttribute("href", "/cn/stories");
+      unmount();
+
+      usePathnameMock.mockReturnValue("/stories");
+      render(<BottomTabBar signedInHint />);
+      links = Array.from(getBar().querySelectorAll("a"));
+      expect(links[0]).toHaveAttribute("href", "/");
+      expect(links[1]).toHaveAttribute("href", "/stories");
+    } finally {
+      document.cookie = "kakinotes-country=; path=/; max-age=0";
+    }
+  });
+
   it("has every message key it uses in both English and Chinese", () => {
     for (const messages of [en, zhCN]) {
       for (const key of [

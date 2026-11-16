@@ -1,10 +1,10 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { controlToneClasses } from "@/components/ui-tone";
+import { MenuIcon } from "@/components/icons";
 
 // Either a real navigable link, or an action item (e.g. "open the sign-in
 // modal") -- distinguished by which of href/onClick is present, never both.
@@ -33,15 +33,21 @@ const rowClass =
 export function MobileNavToggle({
   navItems,
   inverted = false,
+  settings,
 }: {
   navItems: NavItem[];
   inverted?: boolean;
+  /**
+   * Rows under the links, after a divider: the theme and language switches
+   * (their "sheetRow" variants), which signed out have no other home on a
+   * phone. They don't close the sheet, so the change is seen in place.
+   */
+  settings?: ReactNode;
 }) {
   const t = useTranslations("common");
   const tNav = useTranslations("nav");
   const [open, setOpen] = useState(false);
   const menuId = useId();
-  const toggleToneClasses = controlToneClasses(inverted);
 
   return (
     <div className="md:hidden">
@@ -49,10 +55,18 @@ export function MobileNavToggle({
         type="button"
         aria-expanded={open}
         aria-haspopup="dialog"
+        // An icon, not the word: a round button the same size as the theme
+        // and language buttons beside it. "Menu" stays its accessible name.
+        aria-label={t("menu")}
+        title={t("menu")}
         onClick={() => setOpen((value) => !value)}
-        className={`press min-h-11 rounded-full border px-4 py-1.5 text-sm transition-colors ${toggleToneClasses}`}
+        // A plain icon, no outline (iOS bar-button style), so it sits
+        // quietly beside the Sign in button; it highlights only on press.
+        className={`press flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-surface-muted ${
+          inverted ? "text-white" : "text-foreground"
+        }`}
       >
-        {t("menu")}
+        <MenuIcon className="h-5 w-5" />
       </button>
 
       <BottomSheet open={open} onClose={() => setOpen(false)} title={t("menu")}>
@@ -92,6 +106,11 @@ export function MobileNavToggle({
             })}
           </ul>
         </nav>
+        {settings ? (
+          <div className="mt-2 flex flex-col gap-0.5 border-t border-border-subtle pt-2">
+            {settings}
+          </div>
+        ) : null}
       </BottomSheet>
     </div>
   );

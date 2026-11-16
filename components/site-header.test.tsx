@@ -172,7 +172,8 @@ describe("SiteHeader", () => {
     // the ones on the real /sign-in page. See auth-modal.tsx's comment.
     expect(screen.queryByText("sign-in-form")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    // The desktop and phone headers each have one (CSS shows one at a time).
+    fireEvent.click(screen.getAllByRole("button", { name: "Sign in" })[0]);
 
     expect(
       screen.getByRole("heading", { name: "Sign in" }),
@@ -244,7 +245,7 @@ describe("SiteHeader", () => {
 
   it("closes the modal via its close button", () => {
     render(<SiteHeader />);
-    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Sign in" })[0]);
     expect(screen.getByText("sign-in-form")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
@@ -259,6 +260,10 @@ describe("SiteHeader", () => {
       render(<SiteHeader />);
       const trigger = screen.getByRole("button", { name: "Menu" });
       expect(trigger).toHaveAttribute("aria-expanded", "false");
+      // A round icon button: "Menu" is its accessible name, never shown as
+      // a word on the button.
+      expect(trigger.textContent).toBe("");
+      expect(trigger.querySelector("svg")).not.toBeNull();
 
       fireEvent.click(trigger);
 
@@ -268,9 +273,32 @@ describe("SiteHeader", () => {
       // Rows are >=48px (min-h-12) touch targets.
       const about = within(sheet).getByRole("link", { name: "About" });
       expect(about.className).toContain("min-h-12");
+      // Sign in is out front now, not in the sheet; the theme and language
+      // switches moved in, as 48px rows (no menuitem role in a dialog).
       expect(
-        within(sheet).getByRole("button", { name: "Sign in" }),
-      ).toBeInTheDocument();
+        within(sheet).queryByRole("button", { name: "Sign in" }),
+      ).toBeNull();
+      const theme = within(sheet).getByRole("button", {
+        name: /Switch to (dark|light) mode/,
+      });
+      const language = within(sheet).getByRole("button", {
+        name: "Switch to Chinese",
+      });
+      for (const row of [theme, language]) {
+        expect(row.className).toContain("min-h-12");
+        expect(row).not.toHaveAttribute("role");
+      }
+    });
+
+    it("shows Sign in out front, and the theme and language only in the menu", () => {
+      pretendPhone();
+      render(<SiteHeader />);
+      // Two Sign in buttons exist (desktop + phone); the phone one sits
+      // beside the menu button, outside any sheet.
+      const phoneSignIn = screen.getAllByRole("button", { name: "Sign in" })[1];
+      expect(phoneSignIn.closest('[role="dialog"], dialog')).toBeNull();
+      fireEvent.click(phoneSignIn);
+      expect(screen.getByText("sign-in-form")).toBeInTheDocument();
     });
 
     it("closes the menu sheet from its close button and after choosing an action", () => {
@@ -285,15 +313,15 @@ describe("SiteHeader", () => {
         "false",
       );
 
-      // Choosing "Sign in" hands over to the auth modal.
+      // Choosing "Share your story" hands over to the sign-up modal.
       fireEvent.click(screen.getByRole("button", { name: "Menu" }));
       fireEvent.click(
         within(screen.getByRole("dialog", { name: "Menu" })).getByRole(
           "button",
-          { name: "Sign in" },
+          { name: "Share your story" },
         ),
       );
-      expect(screen.getByText("sign-in-form")).toBeInTheDocument();
+      expect(screen.getByText("sign-up-form")).toBeInTheDocument();
     });
 
     it("opens the avatar menu as a bottom sheet with 48px rows", async () => {

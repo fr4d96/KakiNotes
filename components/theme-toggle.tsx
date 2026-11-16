@@ -39,6 +39,10 @@ function setTheme(next: Theme) {
   listeners.forEach((listener) => listener());
 }
 
+/** The signed-out phone menu's row: same size and feel as its link rows. */
+export const SHEET_ROW_CLASS =
+  "press flex min-h-12 w-full items-center justify-between gap-3 rounded-xl px-3 text-left text-base font-medium hover:bg-surface-muted active:bg-surface-muted disabled:opacity-60";
+
 export function ThemeToggle({
   inverted = false,
   variant = "icon",
@@ -48,9 +52,12 @@ export function ThemeToggle({
    * "icon" is the round header button (signed-out visitors, who have no
    * profile menu to hold it). "menuItem" is a full-width row for the
    * profile dropdown (components/auth/user-avatar-menu.tsx), where the
-   * toggle lives once someone is signed in.
+   * toggle lives once someone is signed in. "sheetRow" is the same row for
+   * the signed-out phone menu sheet (components/mobile-nav-toggle.tsx): a
+   * plain button in a dialog's list, so no menuitem role, and the sheet's
+   * own 48px row size.
    */
-  variant?: "icon" | "menuItem";
+  variant?: "icon" | "menuItem" | "sheetRow";
 }) {
   const t = useTranslations("common.themeToggle");
   const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
@@ -58,13 +65,17 @@ export function ThemeToggle({
   const label = isDark ? t("switchToLight") : t("switchToDark");
   const toneClasses = controlToneClasses(inverted);
 
-  if (variant === "menuItem") {
+  if (variant === "menuItem" || variant === "sheetRow") {
     return (
       <button
         type="button"
-        role="menuitem"
+        role={variant === "menuItem" ? "menuitem" : undefined}
         onClick={() => setTheme(isDark ? "light" : "dark")}
-        className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-surface-muted"
+        className={
+          variant === "sheetRow"
+            ? SHEET_ROW_CLASS
+            : "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-surface-muted"
+        }
       >
         <span>{label}</span>
         <span aria-hidden="true">{isDark ? "☀" : "☾"}</span>

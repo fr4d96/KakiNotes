@@ -3122,8 +3122,19 @@ A cross-country slug resolves to no rows, identically to an unknown one.
 static header/footer layout. The stories index and story detail pages are shared, country-
 parameterized components (`app/(public)/_shared/`) rather than per-country copies; the landing page
 is not shared (NZ's is a bespoke art-directed page; China's is a simpler, generic one built from the
-same card/toggle/label components). `components/country-toggle.tsx` is the NZ | China switch,
-plain server-renderable links, no client JS required.
+same card/label components).
+
+**Choosing a country (2026-11-16).** The reader's country is remembered on the device in the
+`kakinotes-country` cookie (1 year, not httpOnly; a preference only, never used for access or
+queries), written by `POST /country` (`app/country/route.ts`), which validates the slug and 303s to
+that country's home. Both the first-visit picker and the switcher are plain forms posting there.
+`/` reads the cookie: China redirects to `/cn`; no choice shows `components/country-picker.tsx`, a
+full-screen modal over the real NZ home (still in the HTML for crawlers). The top bar's
+`components/country-switcher.tsx` (in `SiteHeader` and `ContributorNav`) shows the current
+country's emoji flag (`COUNTRY_FLAGS` in `lib/story/countries.ts`) and opens a sheet of countries.
+"Current" is `countryForPath()`: a country's own page by its URL, otherwise (My Stories, the editor,
+Account, sign-in) the remembered one; `lib/story/use-current-country.ts` reads it for the header,
+tab bar and switcher. The old home-page NZ | China pill (`components/country-toggle.tsx`) is removed.
 
 **Framing, not just data.** New Zealand stays Working Holiday Visa framed throughout, exactly as
 before. China is framed as general first-person travel stories — a product decision

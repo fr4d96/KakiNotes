@@ -6,6 +6,8 @@ import {
   countryMessageSegment,
   countryUrlPrefix,
   isCountrySlug,
+  countryForPath,
+  countryFromCookieValue,
 } from "./countries";
 
 describe("lib/story/countries", () => {
@@ -44,5 +46,40 @@ describe("lib/story/countries", () => {
     expect(countryFromPathname("/stories")).toBe("new-zealand");
     expect(countryFromPathname("/cnx")).toBe("new-zealand");
     expect(countryFromPathname(null)).toBe("new-zealand");
+  });
+});
+
+describe("countryFromCookieValue", () => {
+  it("accepts only countries we have", () => {
+    expect(countryFromCookieValue("china")).toBe("china");
+    expect(countryFromCookieValue("new-zealand")).toBe("new-zealand");
+    expect(countryFromCookieValue("atlantis")).toBeNull();
+    expect(countryFromCookieValue(undefined)).toBeNull();
+  });
+});
+
+describe("countryForPath", () => {
+  it("follows a country's own pages, whatever was remembered", () => {
+    expect(countryForPath("/cn", "new-zealand")).toBe("china");
+    expect(countryForPath("/cn/stories/x", null)).toBe("china");
+    expect(countryForPath("/", "china")).toBe("new-zealand");
+    expect(countryForPath("/stories", "china")).toBe("new-zealand");
+    expect(countryForPath("/stories/a-story", "china")).toBe("new-zealand");
+    expect(countryForPath("/contributors/kai", "china")).toBe("new-zealand");
+  });
+
+  it("uses the remembered country on pages outside both countries", () => {
+    for (const path of [
+      "/my-stories",
+      "/my-stories/map",
+      "/account",
+      "/sign-in",
+      "/stories/new",
+      "/stories/abc/edit",
+      "/stories/abc/preview",
+    ]) {
+      expect(countryForPath(path, "china")).toBe("china");
+      expect(countryForPath(path, null)).toBe("new-zealand");
+    }
   });
 });

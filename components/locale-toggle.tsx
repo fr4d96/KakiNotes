@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { controlToneClasses } from "@/components/ui-tone";
 import { isLocale, otherLocale } from "@/i18n/locales";
 import { setLocaleAction } from "@/lib/i18n/set-locale-action";
+import { SHEET_ROW_CLASS } from "@/components/theme-toggle";
 
 /**
  * The language switch, rendered beside ThemeToggle in every header
@@ -32,8 +33,9 @@ export function LocaleToggle({
 }: {
   inverted?: boolean;
   /** See ThemeToggle's `variant`: "icon" in the header when signed out,
-   * "menuItem" inside the profile dropdown when signed in. */
-  variant?: "icon" | "menuItem";
+   * "menuItem" inside the profile dropdown when signed in, "sheetRow" in the
+   * signed-out phone menu sheet. */
+  variant?: "icon" | "menuItem" | "sheetRow";
 }) {
   const t = useTranslations("common.localeToggle");
   const current = useLocale();
@@ -52,15 +54,19 @@ export function LocaleToggle({
     });
   }
 
-  if (variant === "menuItem") {
+  if (variant === "menuItem" || variant === "sheetRow") {
     return (
       <button
         type="button"
-        role="menuitem"
+        role={variant === "menuItem" ? "menuitem" : undefined}
         onClick={handleClick}
         disabled={isPending}
         aria-busy={isPending || undefined}
-        className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-surface-muted disabled:opacity-60"
+        className={
+          variant === "sheetRow"
+            ? SHEET_ROW_CLASS
+            : "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-surface-muted disabled:opacity-60"
+        }
       >
         <span>{label}</span>
         <span aria-hidden="true" lang={next}>

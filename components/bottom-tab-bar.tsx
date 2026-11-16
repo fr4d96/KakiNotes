@@ -14,7 +14,8 @@ import {
 } from "@/components/icons";
 import { createClient } from "@/lib/supabase/client";
 import { ScrollToTopButton } from "@/components/scroll-to-top-button";
-import { countryFromPathname, countryUrlPrefix } from "@/lib/story/countries";
+import { countryUrlPrefix } from "@/lib/story/countries";
+import { useCurrentCountry } from "@/lib/story/use-current-country";
 
 /**
  * App-style bottom tab bar for phones (below `md`), rendered by the (public),
@@ -65,7 +66,9 @@ export function BottomTabBar({
 } = {}) {
   const t = useTranslations("nav");
   const pathname = usePathname();
-  const prefix = countryUrlPrefix(countryFromPathname(pathname));
+  // The page's country, or -- in My Stories, the editor, Account -- the one
+  // remembered on this device, so Home and Stories stay in it.
+  const prefix = countryUrlPrefix(useCurrentCountry());
   const [signedIn, setSignedIn] = useState(signedInHint);
   const typing = useTextEntryFocus();
 

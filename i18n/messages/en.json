@@ -51,6 +51,15 @@
     "countryToggle": {
       "label": "Choose a country section"
     },
+    "countryPicker": {
+      "title": "Where are you heading?",
+      "subtitle": "Pick a country to read stories from.",
+      "switchLater": "You can switch any time from the flag at the top."
+    },
+    "countrySwitcher": {
+      "button": "Country: {country}. Change country",
+      "sheetTitle": "Choose a country"
+    },
     "back": "Back",
     "backTo": "Back to {page}",
     "backToTop": "Back to top",
