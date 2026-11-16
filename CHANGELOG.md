@@ -3,6 +3,16 @@
 ## [3.11.0](https://github.com/fr4d96/KakiNotes/compare/v3.10.1...v3.11.0) (2026-11-16)
 
 
+### A home page that comes alive
+
+#### For readers
+
+- **The night sky at the top of the home page now moves on its own.** A soft light drifts from story to story, lighting each one up and showing its title and place for a moment — "Tongariro alpine crossing · Waikato" — before gliding on to the next. Before, it only reacted to a mouse, so on a phone it just sat still.
+- **The stories twinkle.** Each story's cyan dot gently glows brighter and dimmer on its own rhythm, like stars.
+- **Touch it to take over.** Drag your finger (or move your mouse) across it and the light follows you; let go and it carries on touring a few seconds later.
+- **You can stop it.** A small pause button in the top-right corner of the hero stops all the movement; tap it again to start. If your phone is set to reduce motion, none of this moves at all.
+- **Story names fit on small phones.** A story's name no longer runs off the edge of the hero on a narrow screen.
+
 ### Features
 
 * **home:** a living hero -- a reading light that tours the stories ([e85e778](https://github.com/fr4d96/KakiNotes/commit/e85e77857bd73b6a93a72736100958000c1a5a7f))
