@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.10.0](https://github.com/fr4d96/KakiNotes/compare/v3.9.0...v3.10.0) (2026-11-16)
+
+
+### Features
+
+* **country:** keep each country's contributors and wording separate ([c572677](https://github.com/fr4d96/KakiNotes/commit/c5726775435661bf0f6fd0ffa662e0c91e456f30))
+* **my-stories:** per country, swipe every photo, no phone folders icon ([beb9753](https://github.com/fr4d96/KakiNotes/commit/beb9753d21565ae003fdb475dbaed30720d35965))
+* **stories:** big or small story cards, small by default ([079f4b7](https://github.com/fr4d96/KakiNotes/commit/079f4b7e98c6f1406e87f7a8a7101c00f065cb51))
+
 ## [3.9.0](https://github.com/fr4d96/KakiNotes/compare/v3.8.0...v3.9.0) (2026-11-16)
 
 
