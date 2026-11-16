@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.9.0](https://github.com/fr4d96/KakiNotes/compare/v3.8.0...v3.9.0) (2026-11-16)
+
+
+### Features
+
+* **country:** pick a country on first visit, switch it from a flag ([50f06bd](https://github.com/fr4d96/KakiNotes/commit/50f06bde03bbc654f6490362fe98e744aa3451b7))
+
 ## [3.8.0](https://github.com/fr4d96/KakiNotes/compare/v3.7.0...v3.8.0) (2026-11-15)
 
 
