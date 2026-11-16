@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.11.0](https://github.com/fr4d96/KakiNotes/compare/v3.10.1...v3.11.0) (2026-11-16)
+
+
+### Features
+
+* **home:** a living hero -- a reading light that tours the stories ([e85e778](https://github.com/fr4d96/KakiNotes/commit/e85e77857bd73b6a93a72736100958000c1a5a7f))
+
 ## [3.10.1](https://github.com/fr4d96/KakiNotes/compare/v3.10.0...v3.10.1) (2026-11-16)
 
 
