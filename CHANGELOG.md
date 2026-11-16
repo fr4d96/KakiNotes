@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.10.1](https://github.com/fr4d96/KakiNotes/compare/v3.10.0...v3.10.1) (2026-11-16)
+
+
+### Story folders follow your country
+
+#### For contributors
+
+- **Story folders now shows only the country you've chosen.** With China picked at the top, Story folders lists only your China stories; switch the flag to New Zealand to see and organise your New Zealand folders. When you add sub stories to a folder, you're only offered stories from the same country, so a China story can't end up in a New Zealand folder by accident.
+
+### Bug Fixes
+
+* **folders:** show only the chosen country's stories in Story folders ([d59d0ee](https://github.com/fr4d96/KakiNotes/commit/d59d0ee62c629530a081485af92c3ec46540a369))
+
 ## [3.10.0](https://github.com/fr4d96/KakiNotes/compare/v3.9.0...v3.10.0) (2026-11-16)
 
 
