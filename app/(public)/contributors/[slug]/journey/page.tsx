@@ -21,7 +21,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const [contributor, t] = await Promise.all([
-    getPublicContributorDeduped(slug),
+    getPublicContributorDeduped(slug, "new-zealand"),
     getTranslations("contributors"),
   ]);
   if (!contributor) return {};
@@ -48,7 +48,7 @@ export default async function ContributorJourneyPage({
 }) {
   const { slug } = await params;
   const [contributor, t, locale] = await Promise.all([
-    getPublicContributorDeduped(slug),
+    getPublicContributorDeduped(slug, "new-zealand"),
     getTranslations("contributors"),
     getLocale(),
   ]);

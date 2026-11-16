@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15";
+    PostgrestVersion: "14.18";
   };
   public: {
     Tables: {
@@ -1793,110 +1793,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      trip_places: {
-        Row: {
-          created_at: string;
-          day_date: string | null;
-          display_name: string | null;
-          id: string;
-          image_credit: string | null;
-          image_height: number | null;
-          image_license: string | null;
-          image_source_url: string | null;
-          image_url: string | null;
-          image_width: number | null;
-          latitude: number | null;
-          longitude: number | null;
-          name: string;
-          note: string | null;
-          osm_place_id: number | null;
-          sort_order: number;
-          trip_id: string;
-          updated_at: string;
-          wikidata_id: string | null;
-        };
-        Insert: {
-          created_at?: string;
-          day_date?: string | null;
-          display_name?: string | null;
-          id?: string;
-          image_credit?: string | null;
-          image_height?: number | null;
-          image_license?: string | null;
-          image_source_url?: string | null;
-          image_url?: string | null;
-          image_width?: number | null;
-          latitude?: number | null;
-          longitude?: number | null;
-          name: string;
-          note?: string | null;
-          osm_place_id?: number | null;
-          sort_order: number;
-          trip_id: string;
-          updated_at?: string;
-          wikidata_id?: string | null;
-        };
-        Update: {
-          created_at?: string;
-          day_date?: string | null;
-          display_name?: string | null;
-          id?: string;
-          image_credit?: string | null;
-          image_height?: number | null;
-          image_license?: string | null;
-          image_source_url?: string | null;
-          image_url?: string | null;
-          image_width?: number | null;
-          latitude?: number | null;
-          longitude?: number | null;
-          name?: string;
-          note?: string | null;
-          osm_place_id?: number | null;
-          sort_order?: number;
-          trip_id?: string;
-          updated_at?: string;
-          wikidata_id?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "trip_places_trip_id_fkey";
-            columns: ["trip_id"];
-            isOneToOne: false;
-            referencedRelation: "trips";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      trips: {
-        Row: {
-          created_at: string;
-          end_date: string | null;
-          id: string;
-          owner_id: string;
-          start_date: string | null;
-          title: string;
-          updated_at: string;
-        };
-        Insert: {
-          created_at?: string;
-          end_date?: string | null;
-          id?: string;
-          owner_id: string;
-          start_date?: string | null;
-          title: string;
-          updated_at?: string;
-        };
-        Update: {
-          created_at?: string;
-          end_date?: string | null;
-          id?: string;
-          owner_id?: string;
-          start_date?: string | null;
-          title?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
       user_roles: {
         Row: {
           created_at: string;
@@ -2189,7 +2085,7 @@ export type Database = {
         }[];
       };
       contributor_public_facts: {
-        Args: { p_contributor_id: string };
+        Args: { p_contributor_id: string; p_country_id?: string };
         Returns: {
           published_story_count: number;
           regions: Json;
@@ -2538,7 +2434,7 @@ export type Database = {
         }[];
       };
       get_public_contributor: {
-        Args: { p_slug: string };
+        Args: { p_country_slug?: string; p_slug: string };
         Returns: {
           avatar_emoji: string;
           bio: string;
@@ -2936,6 +2832,7 @@ export type Database = {
         Args: never;
         Returns: {
           archived_at: string;
+          country_slug: string;
           cover_alt_text: string;
           cover_media_id: string;
           created_at: string;
@@ -2944,6 +2841,7 @@ export type Database = {
           excerpt: string;
           id: string;
           lifecycle_status: Database["public"]["Enums"]["story_lifecycle_status"];
+          media_ids: string[];
           published_at: string;
           published_revision_id: string;
           regions: Json;
@@ -2978,6 +2876,7 @@ export type Database = {
       };
       list_public_contributors: {
         Args: {
+          p_country_slug?: string;
           p_cursor_display_name?: string;
           p_cursor_id?: string;
           p_limit?: number;

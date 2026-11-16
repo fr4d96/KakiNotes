@@ -46,7 +46,9 @@ async function allPublishedStorySlugs(
   return slugs;
 }
 
-async function allPublicContributorSlugs(): Promise<string[]> {
+async function allPublicContributorSlugs(
+  country: CountrySlug,
+): Promise<string[]> {
   const slugs: string[] = [];
   let cursorDisplayName: string | undefined;
   let cursorId: string | undefined;
@@ -56,6 +58,7 @@ async function allPublicContributorSlugs(): Promise<string[]> {
       cursorDisplayName,
       cursorId,
       limit: PAGE_SIZE,
+      countrySlug: country,
     });
     if (rows.length === 0) break;
     for (const row of rows) {
@@ -81,15 +84,15 @@ const staticRoutes = [
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [storiesByCountry, contributorSlugs] = await Promise.all([
-    Promise.all(
-      COUNTRY_SLUGS.map(async (country) => ({
-        prefix: countryUrlPrefix(country),
-        stories: await allPublishedStorySlugs(country),
-      })),
-    ),
-    allPublicContributorSlugs(),
-  ]);
+  // Per country: a contributor is listed under a country only when they
+  // have a published story there (Rule 10/12).
+  const byCountry = await Promise.all(
+    COUNTRY_SLUGS.map(async (country) => ({
+      prefix: countryUrlPrefix(country),
+      stories: await allPublishedStorySlugs(country),
+      contributors: await allPublicContributorSlugs(country),
+    })),
+  );
 
   return [
     ...COUNTRY_SLUGS.flatMap((country) =>
@@ -100,14 +103,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...staticRoutes.map((path) => ({
       url: `${siteUrl}${path}`,
     })),
-    ...storiesByCountry.flatMap(({ prefix, stories }) =>
+    ...byCountry.flatMap(({ prefix, stories }) =>
       stories.map((s) => ({
         url: `${siteUrl}${prefix}/stories/${s.slug}`,
         lastModified: s.publishedAt,
       })),
     ),
-    ...contributorSlugs.map((slug) => ({
-      url: `${siteUrl}/contributors/${slug}`,
-    })),
+    ...byCountry.flatMap(({ prefix, contributors }) =>
+      contributors.map((slug) => ({
+        url: `${siteUrl}${prefix}/contributors/${slug}`,
+      })),
+    ),
   ];
 }

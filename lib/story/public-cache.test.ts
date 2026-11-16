@@ -111,6 +111,8 @@ describe("invalidateContributorPublicCache", () => {
     expect(paths()).toEqual([
       "/contributors/mei-ling",
       "/contributors",
+      "/cn/contributors/mei-ling",
+      "/cn/contributors",
       "/sitemap.xml",
     ]);
   });

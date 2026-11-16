@@ -17,12 +17,9 @@ import { getTranslations } from "next-intl/server";
  */
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [t, tCountry] = await Promise.all([
-    getTranslations("costs"),
-    getTranslations("countryContent"),
-  ]);
+  const tCountry = await getTranslations("countryContent");
   return {
-    title: t("title"),
+    title: tCountry("china.costsTitle"),
     description: tCountry("china.costsFraming"),
   };
 }
@@ -53,7 +50,7 @@ export default async function ChinaCostsPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 pt-4 pb-10 sm:px-6 sm:pt-10">
       <h1 className="text-3xl font-semibold tracking-tight max-md:sr-only">
-        {t("title")}
+        {tCountry("china.costsTitle")}
       </h1>
 
       <p className="mt-4 text-foreground/80">

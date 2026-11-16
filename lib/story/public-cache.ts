@@ -146,6 +146,8 @@ export function invalidateStoryPublicCache(slug: string) {
 export function invalidateContributorPublicCache(contributorSlug: string) {
   revalidatePath(`/contributors/${contributorSlug}`);
   revalidatePath("/contributors");
+  revalidatePath(`/cn/contributors/${contributorSlug}`);
+  revalidatePath("/cn/contributors");
   revalidatePath("/sitemap.xml");
   revalidateTag(PUBLIC_CONTRIBUTORS_TAG, { expire: 0 });
   // A contributor leaving public view can take their photos with them.

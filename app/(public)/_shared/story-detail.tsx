@@ -201,7 +201,7 @@ export async function StoryDetail({
     // "See this on ... journey" link. The journey map is New Zealand only,
     // so other countries' story pages never ask for it.
     story.contributor_slug
-      ? getPublicContributorDeduped(story.contributor_slug)
+      ? getPublicContributorDeduped(story.contributor_slug, country)
       : Promise.resolve(null),
   ]);
 
@@ -371,6 +371,7 @@ export async function StoryDetail({
         <AttributionChip
           name={story.attribution_value ?? tCommon("anonymous")}
           contributorSlug={story.contributor_slug}
+          contributorBasePath={`${countryUrlPrefix(country)}/contributors`}
           avatarEmoji={story.contributor_avatar_emoji}
           tripYear={tripLabel ? undefined : story.trip_year}
           destination={regions[0] ?? null}

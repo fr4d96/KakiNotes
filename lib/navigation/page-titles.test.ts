@@ -57,6 +57,7 @@ describe("pageTitleKey", () => {
       "/account",
       "/stories/new",
       "/stories/new/import",
+      "/cn/costs",
     ];
     for (const path of paths) {
       const key = pageTitleKey(path)!;
@@ -129,5 +130,11 @@ describe("a journey's own page", () => {
 
   it("leaves the Journey map tab itself without a back arrow", () => {
     expect(pageBack("/my-stories/journey")).toBeNull();
+  });
+
+  it("gives China's Costs page its own title, never the working-holiday one", () => {
+    expect(pageTitleKey("/cn/costs")).toBe("countryContent.china.costsTitle");
+    expect(pageTitleKey("/costs")).toBe("costs.title");
+    expect(pageTitleKey("/cn/stories")).toBe("stories.title");
   });
 });

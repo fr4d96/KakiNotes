@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-11-16 (first-visit country picker, a flag switcher in the top bar, and the chosen country remembered on the device; the signed-out phone header shows Sign in and a ☰ menu holding the theme and language switches — see the last entry in this file); earlier, 2026-11-15 (a story page opens on its title: 16px top gap on phones, "Main story:" breadcrumb, and the not-advice label moved to the end of the story — see the last entry in this file); earlier the same day (the installed app bounces at the top and bottom of every page again, like a native iOS app — see the last entry in this file); earlier the same day (story cards load small 4:3 WebP versions of Drive photos made on the fly by the /media proxy — see the last entry in this file); earlier the same day (published Drive photos are cached by Vercel's CDN for 7 days instead of 5 minutes, and purged the moment anything stops being public — see the last entry in this file); earlier, 2026-11-13 (a contributor's PDF import now stores its page images in their Google Drive, not Supabase; the editorial PDF import is unchanged — see the last entry in this file); earlier the same day (mandatory Google Drive: every ordinary contributor must connect Google Drive before using the app, and the database refuses their photos in Supabase storage; migration applied to the live project, app code not yet deployed — see the last entry in this file); earlier the same day (Supabase project moved to `yzaonhjieupxyrmbienf` after the old one was paused over quota — see the last entry in this file); earlier, 2026-10-31 (affirmation notes: private notes from share links, on `feat/affirmation-notes`; migration written but NOT yet applied — see the last entry in this file); earlier the same day (home page redesign: a short, app-style home with search, a swipeable latest-stories row, place tiles and the quiz behind one row, on `main`, uncommitted — see the entry at the end of this file); earlier, 2026-10-30 (pull to refresh now reloads the page, home page covers on phones, search as you type and keyword search, on `fix/pull-to-refresh-reload` — see the entry at the end of this file); earlier the same day (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+Last updated: 2026-11-16 (countries kept apart: China's contributor pages show only China stories, and no China page says "Working Holiday"; migration applied to the live project — see the last entry in this file); earlier the same day (first-visit country picker, a flag switcher in the top bar, and the chosen country remembered on the device; the signed-out phone header shows Sign in and a ☰ menu holding the theme and language switches — see the last entry in this file); earlier, 2026-11-15 (a story page opens on its title: 16px top gap on phones, "Main story:" breadcrumb, and the not-advice label moved to the end of the story — see the last entry in this file); earlier the same day (the installed app bounces at the top and bottom of every page again, like a native iOS app — see the last entry in this file); earlier the same day (story cards load small 4:3 WebP versions of Drive photos made on the fly by the /media proxy — see the last entry in this file); earlier the same day (published Drive photos are cached by Vercel's CDN for 7 days instead of 5 minutes, and purged the moment anything stops being public — see the last entry in this file); earlier, 2026-11-13 (a contributor's PDF import now stores its page images in their Google Drive, not Supabase; the editorial PDF import is unchanged — see the last entry in this file); earlier the same day (mandatory Google Drive: every ordinary contributor must connect Google Drive before using the app, and the database refuses their photos in Supabase storage; migration applied to the live project, app code not yet deployed — see the last entry in this file); earlier the same day (Supabase project moved to `yzaonhjieupxyrmbienf` after the old one was paused over quota — see the last entry in this file); earlier, 2026-10-31 (affirmation notes: private notes from share links, on `feat/affirmation-notes`; migration written but NOT yet applied — see the last entry in this file); earlier the same day (home page redesign: a short, app-style home with search, a swipeable latest-stories row, place tiles and the quiz behind one row, on `main`, uncommitted — see the entry at the end of this file); earlier, 2026-10-30 (pull to refresh now reloads the page, home page covers on phones, search as you type and keyword search, on `fix/pull-to-refresh-reload` — see the entry at the end of this file); earlier the same day (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
 one-level folder shape — a story is either a main story, a sub story filed under exactly one main
 story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
 "Move to…" select; migration applied to the dev project — see the entry at the end of this
@@ -11429,3 +11429,88 @@ by switching country.
 
 **Verified:** `npm run verify`; tests for the route, `countryForPath`, the picker (first visit, China
 redirect, unknown cookie), the switcher and the tab bar following the remembered country.
+
+## 2026-11-16 — Countries kept apart: contributors per country, no "Working Holiday" on China pages
+
+Owner request: choosing China must not show New Zealand stories; "working holiday" is a New Zealand
+term only.
+
+**What leaked.** Story lists and story pages were already country-scoped. The contributor pages
+were not: `/cn/contributors` and `/cn/contributors/[slug]` re-exported the NZ pages, so China's
+directory listed every contributor with their NZ story count, and a China profile showed their NZ
+stories (the stories RPC defaults to `new-zealand` when no country is passed), NZ regions, years and
+tags, all linking into NZ URLs. China pages also said "Working Holiday" in the Contributors intro and
+meta, the Costs title (page and phone header), China's own site description, and the fallback meta
+description.
+
+- Migration `20261116090000_country_scoped_contributors.sql` (**applied to the live project
+  `yzaonhjieupxyrmbienf` on 2026-11-16 with the owner's OK**): `contributor_public_facts(uuid, uuid)`,
+  `list_public_contributors(..., p_country_slug)`, `get_public_contributor(p_slug, p_country_slug)`.
+  Null country = old behaviour, so the deployed code kept working until this ships.
+- `app/(public)/_shared/contributors-index.tsx` / `contributor-profile.tsx` (moved from the NZ
+  route files, now take `country`); NZ and `/cn` routes are thin wrappers. Journey tab NZ only.
+- `getPublicContributor(slug, countrySlug)`, `listPublicContributors({ countrySlug })`; story-detail
+  byline (`AttributionChip.contributorBasePath`), sitemap (per country), and cache purge (`/cn/contributors…`)
+  follow the country.
+- Copy: `countryContent.*.contributorsIntro` / `contributorsMetaDescription`,
+  `countryContent.china.costsTitle` (en, zh-CN); `contributors.intro` / `metaDescription` removed;
+  China's site description no longer mentions Working Holiday Visas; new `app/(public)/cn/layout.tsx`
+  gives `/cn` pages China's default description.
+- `types/database.ts` regenerated from the live project. It also dropped stale `trips` /
+  `trip_places` types that exist in no migration, no code and not in the live database.
+
+**Verified:** `npm run verify` (2,029+ tests); new tests for the directory and profile per country,
+the China Costs header title, and cache purge paths. Checked in the running app against the live
+data at phone size: `/cn/contributors` is empty (no China stories yet), `/cn/contributors/kakitest`
+404s, `/contributors` still shows KakiKu with 4 stories, and no `/cn` page text or meta description
+mentions working holiday, WHV or Aotearoa.
+
+**Follow-up the same day — My Stories per country.** My Stories listed every story whatever country
+was chosen, because `list_my_stories()` returned no country. Migration
+`20261116100000_list_my_stories_country.sql` (**applied to the live project 2026-11-16 with the
+owner's OK**) appends a `country_slug` column (additive; callers that ignore it are unaffected).
+`app/(contributor)/my-stories/page.tsx` reads the `kakinotes-country` cookie (New Zealand when
+none or unknown) and passes `MyStoriesView` only that country's stories. When the contributor has
+stories elsewhere but none here, the empty state reads "You haven't written a story about {country}
+yet." (`myStories.emptyInCountry`, en/zh-CN) and its "Start your first one" link carries
+`?country=`. The cookie is a preference only -- which stories are the caller's is still decided by
+the RPC (Rule 2). Story folders (`/my-stories/map`) and the journey picker are not filtered by
+country yet. Verified: `npm run verify` (2,035 tests, new page and view tests); in the running app
+with the owner's account, China shows the new empty state and New Zealand shows all 14 stories.
+
+**Follow-up the same day — swipe every photo on a My Stories card.** Drafts and published cards
+with more than one photo now swipe through all of them, in both grid and list views, with dots,
+the same strip as the public cards (`components/story/card-photos.tsx`, which now accepts a `null`
+URL drawn as the loading sheen, an `onBrowse` callback, and `loadAll`; its slots are keyed by
+position). The phone toolbar also drops the folders icon (Folders is in the bottom tab bar; it
+stays from md up, where there is no tab bar). Migration
+`20261116110000_list_my_stories_media_ids.sql` (**applied to the live project 2026-11-16 with the
+owner's OK**) appends `media_ids uuid[]` to `list_my_stories()`: ids only, cover first, in the
+cover's ordering. `app/(contributor)/my-stories/my-story-photos.tsx` mints a signed URL for the
+cover up front and for the rest on the first swipe, through the existing batched
+`getPreviewUrl()` (authorize + mint per id, Rules 13/14); a photo that can't be minted (still
+processing) is dropped. A single-photo card is unchanged. Verified: `npm run verify` (2,039 tests);
+in the running app, 4 of the owner's 14 NZ stories got strips, and a swipe on "Trying Something
+New" fetched and showed its second photo.
+
+**Follow-up the same day — big or small cards on the Stories tab.** Owner decision: let the reader
+choose. A big | small switch (`components/story/card-size-switch.tsx`, sliding pill like My
+Stories' grid | list, new `CardsBigIcon` / `CardsSmallIcon`) sits above the list on `/stories` and
+`/cn/stories` (shared `StoriesIndex`). Big is today's card and the default. Small
+(`StoryCard size="small"`) is two per row on a phone (3 from sm, 4 from lg): a square, still
+swipeable photo, the title, and one place · year line, with no tags, excerpt or author. The choice
+is a per-device cookie (`kakinotes-card-size`, `lib/story/card-size.ts`), read by the server so
+the first paint is already the right size; the switch saves it and calls `router.refresh()`. A
+display preference only. No database change. Verified: `npm run verify` (2,043 tests); in the
+iPhone frame the NZ Stories tab drops from about 10,400px to 3,364px with small cards (about 12
+phone screens to about 4), the choice survives a reload, and switching back works.
+
+**Follow-up the same day — small cards by default, and on both home pages.** Owner decision:
+`DEFAULT_CARD_SIZE` is now `"small"` (`lib/story/card-size.ts`); a reader who picks big keeps big
+(same `kakinotes-card-size` cookie). The big | small switch sits in the panel's button row on the
+Stories tab (`FilterBar`'s new `trailing` slot: beside Filters on a phone, beside Apply / Clear
+from md up), so it no longer takes a row of its own. Both home pages get the switch in their
+latest-stories header: on the NZ home, small is a two-per-row grid of `StoryCard size="small"` and
+big is the existing `StoryShelf` swipe row; on the China home it switches its card grid between
+the two sizes. Verified: `npm run verify` (2,044 tests); in the iPhone frame the NZ home opens on
+small cards with no choice saved.

@@ -1,4 +1,8 @@
-import { countryFromPathname, countryUrlPrefix } from "@/lib/story/countries";
+import {
+  countryFromPathname,
+  countryUrlPrefix,
+  type CountrySlug,
+} from "@/lib/story/countries";
 
 /**
  * Which pages show their own title in the top bar on phones (iOS
@@ -38,6 +42,18 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
 };
 
 /**
+ * Where a country's page heading differs from the shared one. "What a
+ * working holiday cost" is New Zealand's -- a working holiday is a New
+ * Zealand term -- so China's Costs page has its own title, and the bar must
+ * say the same as that page's <h1>.
+ */
+const COUNTRY_PAGE_TITLE_KEYS: Partial<
+  Record<CountrySlug, Record<string, string>>
+> = {
+  china: { "/costs": "countryContent.china.costsTitle" },
+};
+
+/**
  * Sub-pages: where their top-left back arrow goes, and the message key that
  * names that place (for the arrow's accessible name, "Back to My Stories").
  * Replaces the "Back to …" text links these pages used to carry. On phones
@@ -67,7 +83,9 @@ export function pageTitleKey(pathname: string | null): string | null {
   // its own heading (the journey's name) stays visible -- it is content,
   // not a repeat of the bar.
   if (JOURNEY_STORY.test(path)) return "myJourney.title";
-  return PAGE_TITLE_KEYS[path] ?? null;
+  const countryKey =
+    COUNTRY_PAGE_TITLE_KEYS[countryFromPathname(pathname)]?.[path];
+  return countryKey ?? PAGE_TITLE_KEYS[path] ?? null;
 }
 
 export type PageBack = {

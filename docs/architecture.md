@@ -3144,6 +3144,23 @@ intro, costs framing, about text, the "personal experience, not advice" label, t
 failure message) is read from a per-country `countryContent` i18n namespace or passed as a resolved
 prop — never a hard-coded country name inside a shared component.
 
+"Working Holiday" is a New Zealand term only and never appears on a China page — including the
+Contributors intro/meta (`countryContent.<segment>.contributorsIntro` /
+`contributorsMetaDescription`), China's Costs title (`countryContent.china.costsTitle`, also used by
+the phone header via `COUNTRY_PAGE_TITLE_KEYS` in `lib/navigation/page-titles.ts`), and the default
+meta description (`app/(public)/cn/layout.tsx` sets China's, so a `/cn` page without its own never
+inherits the root NZ one).
+
+**Contributors are per country too (2026-11-16).** `/contributors` and `/cn/contributors` (directory
+and `[slug]` profile) render `app/(public)/_shared/contributors-index.tsx` /
+`contributor-profile.tsx` with a `country`. `list_public_contributors()` and
+`get_public_contributor()` take `p_country_slug`, and `contributor_public_facts()` takes
+`p_country_id`, so a country's directory lists only contributors with a published story there, and
+the story count, regions, years, tags and story list come from that country's stories alone; a
+contributor with none there 404s. Null = every country (kept for backward compatibility only; every
+app call site passes one). The journey map stays New Zealand only. The sitemap lists contributor
+profiles per country; the story-page byline links into the story's own country.
+
 ## Installable web app (PWA) — 2026-10-30
 
 Kakinotes can be added to an iPhone (or Android) home screen and launches full-screen, without an

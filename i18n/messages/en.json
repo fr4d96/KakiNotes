@@ -230,6 +230,11 @@
     "loadError": "We couldn't load stories right now. Please try again in a moment.",
     "noMatches": "No stories match those filters yet. Try broadening your search.",
     "loadMore": "Load more stories",
+    "cardSize": {
+      "label": "Card size",
+      "big": "Big cards",
+      "small": "Small cards"
+    },
     "filters": {
       "search": "Search",
       "searchPlaceholder": "Find a story like yours",
@@ -308,9 +313,7 @@
   },
   "contributors": {
     "metaTitle": "Contributors",
-    "metaDescription": "Contributors who've published a real Working Holiday Visa story on Kakinotes.",
     "title": "Contributors",
-    "intro": "People who've shared their own Working Holiday experience — showing only the fields each contributor has chosen to make public.",
     "loadError": "We couldn't load contributors right now. Please try again in a moment.",
     "empty": "No public contributor profiles yet.",
     "loadMore": "Load more contributors",
@@ -626,6 +629,7 @@
     "import": "Import",
     "newStory": "New Story",
     "emptyBefore": "You haven't started a story yet.",
+    "emptyInCountry": "You haven't written a story about {country} yet.",
     "emptyStartLink": "Start your first one",
     "emptyOr": "or",
     "emptyImportLink": "import a PDF",
@@ -1419,19 +1423,24 @@
       "costsFraming": "What people actually spent on their Working Holiday Visa in New Zealand, built from the budgets contributors chose to share.",
       "aboutText": "Kakinotes collects and verifies real, detailed stories from Working Holiday Visa travellers in New Zealand, so the next traveller can read what the experience actually involved.",
       "personalExperienceLabel": "One person's experience, not advice.",
-      "placeExample": "Queenstown"
+      "placeExample": "Queenstown",
+      "contributorsIntro": "People who've shared their own Working Holiday experience — showing only the fields each contributor has chosen to make public.",
+      "contributorsMetaDescription": "Contributors who've published a real Working Holiday Visa story on Kakinotes."
     },
     "china": {
       "name": "China",
       "tagline": "First-person travel stories from China.",
-      "siteDescription": "Kakinotes' China section is a public archive of detailed, written first-person travel stories from China — general travel accounts, not Working Holiday Visa stories.",
+      "siteDescription": "Kakinotes' China section is a public archive of detailed, written first-person travel stories from China.",
       "storiesIntro": "Browse every published China travel story, searchable by region and trip year.",
       "storiesMetaDescription": "Published first-person travel stories from China, searchable by region and trip year.",
       "costsFraming": "What people actually spent travelling in China, built from the budgets contributors chose to share.",
       "aboutText": "Kakinotes' China section collects and verifies real, detailed first-person travel stories from China, so the next traveller can read what the trip actually involved.",
       "personalExperienceLabel": "One person's experience, not advice.",
       "madeFor": "Made for travellers exploring China",
-      "placeExample": "Guangzhou"
+      "placeExample": "Guangzhou",
+      "contributorsIntro": "People who've shared their own travel stories from China — showing only the fields each contributor has chosen to make public.",
+      "contributorsMetaDescription": "Contributors who've published a first-person travel story from China on Kakinotes.",
+      "costsTitle": "What a trip to China cost"
     }
   },
   "affirmations": {

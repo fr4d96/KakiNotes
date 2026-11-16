@@ -230,6 +230,11 @@
     "loadError": "暂时无法加载故事，请稍后再试。",
     "noMatches": "还没有符合这些条件的故事，试试放宽筛选条件。",
     "loadMore": "加载更多故事",
+    "cardSize": {
+      "label": "卡片大小",
+      "big": "大卡片",
+      "small": "小卡片"
+    },
     "filters": {
       "search": "搜索",
       "searchPlaceholder": "找一篇和你相似的故事",
@@ -308,9 +313,7 @@
   },
   "contributors": {
     "metaTitle": "投稿人",
-    "metaDescription": "在 Kakinotes 发表过真实打工度假签证（WHV）故事的投稿人。",
     "title": "投稿人",
-    "intro": "分享了自己打工度假经历的人 — 这里只显示每位投稿人自己选择公开的信息。",
     "loadError": "暂时无法加载投稿人，请稍后再试。",
     "empty": "目前还没有公开的投稿人主页。",
     "loadMore": "加载更多投稿人",
@@ -626,6 +629,7 @@
     "import": "导入",
     "newStory": "新故事",
     "emptyBefore": "你还没有开始写故事。",
+    "emptyInCountry": "你还没有写过关于{country}的故事。",
     "emptyStartLink": "开始写第一篇",
     "emptyOr": "或",
     "emptyImportLink": "导入 PDF",
@@ -1419,19 +1423,24 @@
       "costsFraming": "人们在新西兰打工度假签证期间的真实花费，基于贡献者自愿分享的预算整理而成。",
       "aboutText": "Kakinotes 收集并核实来自新西兰打工度假旅人的真实详细故事，让下一位旅人能读到这段经历的真实样貌。",
       "personalExperienceLabel": "个人经历分享，非专业建议。",
-      "placeExample": "皇后镇"
+      "placeExample": "皇后镇",
+      "contributorsIntro": "分享了自己打工度假经历的人 — 这里只显示每位投稿人自己选择公开的信息。",
+      "contributorsMetaDescription": "在 Kakinotes 发表过真实打工度假签证（WHV）故事的投稿人。"
     },
     "china": {
       "name": "中国",
       "tagline": "来自中国的第一人称旅行故事。",
-      "siteDescription": "Kakinotes 的中国板块是一个公开档案库，收录来自中国的详细第一人称旅行故事 —— 是一般旅行记录，而非打工度假签证故事。",
+      "siteDescription": "Kakinotes 的中国板块是一个公开档案库，收录来自中国的详细第一人称旅行故事。",
       "storiesIntro": "浏览所有已发布的中国旅行故事，可按地区和旅行年份搜索。",
       "storiesMetaDescription": "来自中国的已发布第一人称旅行故事，可按地区和旅行年份搜索。",
       "costsFraming": "人们在中国旅行的真实花费，基于贡献者自愿分享的预算整理而成。",
       "aboutText": "Kakinotes 的中国板块收集并核实来自中国的真实详细第一人称旅行故事，让下一位旅人能读到这趟旅程的真实样貌。",
       "personalExperienceLabel": "个人经历分享，非专业建议。",
       "madeFor": "为在中国旅行的人而建",
-      "placeExample": "广州"
+      "placeExample": "广州",
+      "contributorsIntro": "分享了自己中国旅行故事的人 — 这里只显示每位投稿人自己选择公开的信息。",
+      "contributorsMetaDescription": "在 Kakinotes 发表过中国第一人称旅行故事的投稿人。",
+      "costsTitle": "去中国旅行花了多少"
     }
   },
   "affirmations": {

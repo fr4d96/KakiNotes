@@ -15,19 +15,22 @@ import { MapPinIcon, TripYearIcon } from "@/components/icons";
 export function AttributionChip({
   name,
   contributorSlug,
+  contributorBasePath = "/contributors",
   avatarEmoji = null,
   tripYear,
   destination,
 }: {
   name: string;
   contributorSlug?: string | null;
+  /** The country's contributor pages ("/contributors" NZ, "/cn/contributors" China). */
+  contributorBasePath?: string;
   avatarEmoji?: string | null;
   tripYear?: number | null;
   destination?: string | null;
 }) {
   const nameNode = contributorSlug ? (
     <Link
-      href={`/contributors/${contributorSlug}`}
+      href={`${contributorBasePath}/${contributorSlug}`}
       className="font-medium hover:underline"
     >
       {name}

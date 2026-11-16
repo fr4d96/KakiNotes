@@ -61,12 +61,17 @@ vi.mock("@/lib/story/journey-queries", () => ({
   getPublishedContributorJourney: vi.fn(async () => []),
 }));
 
-import ContributorPage from "./page";
+import {
+  getPublicContributorDeduped,
+  listContributorPublishedStories,
+} from "@/lib/story/public-queries";
+import { getPublishedContributorJourney } from "@/lib/story/journey-queries";
+import { ContributorProfile } from "./contributor-profile";
 
 describe("Contributor profile page", () => {
   it("lets each story card swipe through that story's published photos", async () => {
     const { container } = render(
-      await ContributorPage({ params: Promise.resolve({ slug: "aiman-r" }) }),
+      await ContributorProfile({ country: "new-zealand", slug: "aiman-r" }),
     );
 
     expect(
@@ -85,5 +90,42 @@ describe("Contributor profile page", () => {
     for (const a of photoLinks) {
       expect(a).toHaveAttribute("href", "/stories/story-one");
     }
+  });
+
+  // Each country is its own catalogue (Rule 10/12): a China profile asks
+  // for the contributor and their stories in China only, links its cards
+  // into /cn, and never asks for the New Zealand-only journey map.
+  it("scopes a China profile to China", async () => {
+    vi.mocked(getPublicContributorDeduped).mockClear();
+    vi.mocked(listContributorPublishedStories).mockClear();
+    vi.mocked(getPublishedContributorJourney).mockClear();
+
+    render(await ContributorProfile({ country: "china", slug: "aiman-r" }));
+
+    expect(getPublicContributorDeduped).toHaveBeenCalledWith(
+      "aiman-r",
+      "china",
+    );
+    expect(listContributorPublishedStories).toHaveBeenCalledWith(
+      "c-1",
+      expect.objectContaining({ countrySlug: "china" }),
+    );
+    expect(getPublishedContributorJourney).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("link", {
+        name: "Six months picking fruit in Central Otago",
+      }),
+    ).toHaveAttribute("href", "/cn/stories/story-one");
+  });
+
+  it("asks for New Zealand on the New Zealand profile", async () => {
+    vi.mocked(getPublicContributorDeduped).mockClear();
+    render(
+      await ContributorProfile({ country: "new-zealand", slug: "aiman-r" }),
+    );
+    expect(getPublicContributorDeduped).toHaveBeenCalledWith(
+      "aiman-r",
+      "new-zealand",
+    );
   });
 });

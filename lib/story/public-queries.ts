@@ -308,6 +308,13 @@ export type PublicContributorsFilter = {
   cursorDisplayName?: string;
   cursorId?: string;
   limit?: number;
+  /**
+   * Scopes the directory to one country (Rule 10/12, 20261116): only
+   * contributors with a published story there, and their story count,
+   * regions, years and tags from that country's stories alone. Every call
+   * site passes it; omitted => every country.
+   */
+  countrySlug?: string;
 };
 
 /** Public contributor directory: public, named, at-least-one-published-story only. */
@@ -319,15 +326,22 @@ export async function listPublicContributors(
     p_cursor_display_name: filter.cursorDisplayName,
     p_cursor_id: filter.cursorId,
     p_limit: filter.limit,
+    p_country_slug: filter.countrySlug,
   });
   if (error) throw error;
   return data ?? [];
 }
 
-export async function getPublicContributor(slug: string) {
+/**
+ * `countrySlug` scopes the profile to one country: a contributor with no
+ * published story there returns null (the profile 404s), and the facts
+ * (story count, regions, years, tags) count only that country's stories.
+ */
+export async function getPublicContributor(slug: string, countrySlug?: string) {
   const supabase = createPublicClient();
   const { data, error } = await supabase.rpc("get_public_contributor", {
     p_slug: slug,
+    ...(countrySlug ? { p_country_slug: countrySlug } : {}),
   });
   if (error) throw error;
   return data?.[0] ?? null;
