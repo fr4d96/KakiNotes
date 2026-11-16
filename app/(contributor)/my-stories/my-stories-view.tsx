@@ -1,11 +1,17 @@
 "use client";
 
 import { useMemo, useState, useSyncExternalStore } from "react";
+import {
+  DEFAULT_COUNTRY_SLUG,
+  countryMessageSegment,
+  type CountrySlug,
+} from "@/lib/story/countries";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { StatusBadge } from "./status-badge";
 import { StoryCoverThumbnail } from "./story-cover-thumbnail";
+import { MyStoryPhotos } from "./my-story-photos";
 import {
   deleteDraftStoryAction,
   requestStoryTakedownAction,
@@ -671,16 +677,27 @@ function StoryGrid({
                 as one (the has() scale above, same dip as .press); the cover
                 link is a duplicate of it and the action row sits above the
                 overlay (relative z-10). */}
-            <Link
+            {/* More than one photo: a swipeable strip (MyStoryPhotos), whose
+                photos are themselves links to the story -- so the frame is a
+                plain div then, never a link wrapping links. One photo or
+                none: the frame is the link, as before. */}
+            <CoverFrame
               href={href}
-              tabIndex={-1}
-              aria-hidden="true"
+              swipeable={story.mediaIds.length > 1}
               className="relative block aspect-square overflow-hidden rounded-md border border-border-subtle"
             >
-              <StoryCoverThumbnail
-                mediaId={story.coverMediaId}
-                altText={story.coverAltText}
-              />
+              {story.mediaIds.length > 1 ? (
+                <MyStoryPhotos
+                  mediaIds={story.mediaIds}
+                  href={href}
+                  sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                />
+              ) : (
+                <StoryCoverThumbnail
+                  mediaId={story.coverMediaId}
+                  altText={story.coverAltText}
+                />
+              )}
               {/* An OPAQUE pill exactly the badge's own size. Two things were
                   wrong before: `p-0.5` drew a 2px ring of plain surface
                   around the tinted badge, reading as a grey halo, and
@@ -695,10 +712,10 @@ function StoryGrid({
                   block wrapper adds ~4px of line-box leading around it and
                   the rounded wrapper ends up a taller pill than the badge --
                   a faint halo again, in a different disguise. */}
-              <div className="absolute right-2 top-2 flex rounded-full bg-background shadow-sm">
+              <div className="pointer-events-none absolute right-2 top-2 z-20 flex rounded-full bg-background shadow-sm">
                 <StatusBadge status={story.lifecycle_status} />
               </div>
-            </Link>
+            </CoverFrame>
             <div className="mt-2">
               <Link
                 href={href}
@@ -830,21 +847,29 @@ function StoryList({
                 {String(index + 1).padStart(2, "0")}
               </span>
 
-              <Link
+              {/* Phone: the cover is a full-height panel down the row's left
+                  edge (items-stretch above), cropped to fill, instead of a
+                  64x48 stamp in the corner of a ~110px row. From sm up the
+                  row centres and the cover is a fixed 7rem x 5rem frame.
+                  With more than one photo it swipes, as in the grid. */}
+              <CoverFrame
                 href={href}
-                tabIndex={-1}
-                aria-hidden="true"
-                // Phone: the cover is a full-height panel down the row's left
-                // edge (items-stretch above), cropped to fill, instead of a
-                // 64x48 stamp in the corner of a ~110px row. From sm up the
-                // row centres and the cover is a fixed 7rem x 5rem frame.
-                className="block h-full min-h-24 w-24 overflow-hidden rounded-lg border border-border-subtle bg-surface-muted sm:h-20 sm:min-h-0 sm:w-28"
+                swipeable={story.mediaIds.length > 1}
+                className="relative block h-full min-h-24 w-24 overflow-hidden rounded-lg border border-border-subtle bg-surface-muted sm:h-20 sm:min-h-0 sm:w-28"
               >
-                <StoryCoverThumbnail
-                  mediaId={story.coverMediaId}
-                  altText={null}
-                />
-              </Link>
+                {story.mediaIds.length > 1 ? (
+                  <MyStoryPhotos
+                    mediaIds={story.mediaIds}
+                    href={href}
+                    sizes="112px"
+                  />
+                ) : (
+                  <StoryCoverThumbnail
+                    mediaId={story.coverMediaId}
+                    altText={null}
+                  />
+                )}
+              </CoverFrame>
 
               <div className="sm:contents">
                 <div className="min-w-0">
@@ -939,14 +964,50 @@ function StoryList({
   );
 }
 
+/**
+ * A card's photo frame. A single cover is itself a link to the story (kept
+ * out of the tab order: the title link is the card's one stop). A swipeable
+ * strip is a plain box instead, because each photo in it is already a link
+ * -- a link may not contain links.
+ */
+function CoverFrame({
+  href,
+  swipeable,
+  className,
+  children,
+}: {
+  href: string;
+  swipeable: boolean;
+  className: string;
+  children: React.ReactNode;
+}) {
+  if (swipeable) return <div className={className}>{children}</div>;
+  return (
+    <Link href={href} tabIndex={-1} aria-hidden="true" className={className}>
+      {children}
+    </Link>
+  );
+}
+
 export function MyStoriesView({
   stories,
   takedownRequests = [],
+  country = DEFAULT_COUNTRY_SLUG,
+  hasStoriesElsewhere = false,
 }: {
   stories: MyStoryWithCover[];
   takedownRequests?: TakedownRequestRow[];
+  /** The country chosen in the top bar; `stories` are already only its own. */
+  country?: CountrySlug;
+  /** The contributor has stories, just none in `country`. */
+  hasStoriesElsewhere?: boolean;
 }) {
   const t = useTranslations("myStories");
+  const tCountry = useTranslations("countryContent");
+  const newStoryHref =
+    country === DEFAULT_COUNTRY_SLUG
+      ? "/stories/new"
+      : `/stories/new?country=${country}`;
   const rawViewLocale = useLocale();
   const locale = isLocale(rawViewLocale) ? rawViewLocale : "en";
   // Keyed once here rather than scanned per row: the list pages twelve at a
@@ -1108,9 +1169,12 @@ export function MyStoriesView({
           >
             <PlusIcon className="h-5 w-5" />
           </Link>
+          {/* Phones reach Folders from the bottom tab bar, so the toolbar
+              shows it from md up only, where there is no tab bar and this
+              is the one way in. */}
           <Link
             href="/my-stories/map"
-            className={TOOL_CLASS}
+            className={`${TOOL_CLASS} max-md:hidden`}
             title={t("storyMapLink")}
           >
             <FolderIcon className="h-5 w-5" />
@@ -1207,9 +1271,13 @@ export function MyStoriesView({
 
       {stories.length === 0 ? (
         <p className="mt-8 text-foreground/65">
-          {t("emptyBefore")}{" "}
+          {hasStoriesElsewhere
+            ? t("emptyInCountry", {
+                country: tCountry(`${countryMessageSegment(country)}.name`),
+              })
+            : t("emptyBefore")}{" "}
           <Link
-            href="/stories/new"
+            href={newStoryHref}
             className="text-accent underline underline-offset-2"
           >
             {t("emptyStartLink")}

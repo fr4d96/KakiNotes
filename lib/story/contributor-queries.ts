@@ -29,6 +29,11 @@ export type MyStoryWithCover = Awaited<
   coverMediaId: string | null;
   coverAltText: string | null;
   /**
+   * Every image on the card's revision, cover first (list_my_stories()'s
+   * media_ids, 20261116) -- ids only; each is shown through a signed URL.
+   */
+  mediaIds: string[];
+  /**
    * The status of the story's in-flight revision ("draft" or "submitted"),
    * or null when nothing is in flight. The story's own lifecycle_status is
    * not enough on a PUBLISHED story: an edit to a published story leaves
@@ -64,6 +69,8 @@ export async function listMyStoriesWithCovers(): Promise<MyStoryWithCover[]> {
     ...story,
     coverMediaId: story.cover_media_id ?? null,
     coverAltText: story.cover_alt_text ?? null,
+    mediaIds:
+      story.media_ids ?? (story.cover_media_id ? [story.cover_media_id] : []),
     draftRevisionStatus: story.draft_revision_status ?? null,
   }));
 }

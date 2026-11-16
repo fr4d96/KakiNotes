@@ -26,15 +26,31 @@ const DOT_WINDOW = 5;
  * The frame sits above the card's stretched title link (z-10). Without that,
  * the link's full-card overlay would catch every touch and the photos could
  * never be swiped.
+ *
+ * My Stories uses it too, with private photos: there each URL is a
+ * short-lived signed link minted on demand, so an entry may be `null` (not
+ * minted yet -- drawn as the loading sheen, and still counted in the dots)
+ * and `onBrowse` fires the first time the reader swipes or steps, which is
+ * when My Stories mints the rest.
  */
 export function CardPhotos({
   urls,
   href,
+  onBrowse,
+  loadAll = false,
   eager = false,
   sizes = "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw",
 }: {
-  urls: string[];
+  urls: (string | null)[];
   href: string;
+  /** Called once, the first time the reader swipes or steps through. */
+  onBrowse?: () => void;
+  /**
+   * Load every photo as soon as its URL is known, not when it nears the
+   * view. For short-lived signed URLs, which could expire before a lazy
+   * image asks for them.
+   */
+  loadAll?: boolean;
   /**
    * How wide the card is drawn at each breakpoint, so the browser picks the
    * 640, 828 or 1080px card version (lib/story/card-photo-size.ts) instead of
@@ -49,6 +65,16 @@ export function CardPhotos({
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const total = urls.length;
+  const onBrowseRef = useRef(onBrowse);
+  const browsedRef = useRef(false);
+  useEffect(() => {
+    onBrowseRef.current = onBrowse;
+  });
+  function browse() {
+    if (browsedRef.current) return;
+    browsedRef.current = true;
+    onBrowseRef.current?.();
+  }
 
   // Which photo is in view, read off the scroll position. State for the dots
   // only, not a scroll-linked animation.
@@ -57,6 +83,7 @@ export function CardPhotos({
     if (!scroller || total < 2) return;
     let frame = 0;
     const onScroll = () => {
+      browse();
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const width = scroller.clientWidth;
@@ -75,6 +102,7 @@ export function CardPhotos({
   }, [total]);
 
   function goTo(index: number) {
+    browse();
     const scroller = scrollerRef.current;
     if (!scroller) return;
     const reduce = window.matchMedia?.(
@@ -99,28 +127,37 @@ export function CardPhotos({
           page's own vertical scroll (see PhotoCarousel). */}
       <div
         ref={scrollerRef}
+        // A finger landing on the strip is the earliest sign of a swipe, so
+        // the next photos' URLs are on their way before it starts moving.
+        onPointerDown={total > 1 ? browse : undefined}
         className="nf-scroll-x flex h-full w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain"
       >
         {urls.map((url, index) => (
           <Link
-            key={`${url}-${index}`}
+            // By position, not URL: on My Stories a slot's URL arrives
+            // later (null -> signed URL), and a URL key would rebuild it.
+            key={index}
             href={href}
             tabIndex={-1}
             aria-hidden="true"
             draggable={false}
             className="block h-full w-full shrink-0 snap-center snap-always"
           >
-            <ResolvingImage
-              src={cardPhotoSrc(url, 1080)}
-              srcSet={cardPhotoSrcSet(url)}
-              sizes={sizes}
-              alt=""
-              loading={index === 0 && eager ? "eager" : "lazy"}
-              loadingLabel={tImages("loading")}
-              draggable={false}
-              wrapperClassName="relative block h-full w-full overflow-hidden"
-              className="h-full w-full object-cover"
-            />
+            {url ? (
+              <ResolvingImage
+                src={cardPhotoSrc(url, 1080)}
+                srcSet={cardPhotoSrcSet(url)}
+                sizes={sizes}
+                alt=""
+                loading={loadAll || (index === 0 && eager) ? "eager" : "lazy"}
+                loadingLabel={tImages("loading")}
+                draggable={false}
+                wrapperClassName="relative block h-full w-full overflow-hidden"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="nf-skeleton block h-full w-full rounded-none" />
+            )}
           </Link>
         ))}
       </div>
@@ -153,14 +190,14 @@ export function CardPhotos({
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 bottom-2.5 flex h-2 items-center justify-center gap-1"
           >
-            {urls.slice(windowStart, windowEnd).map((url, i) => {
+            {urls.slice(windowStart, windowEnd).map((_, i) => {
               const index = windowStart + i;
               const atEdge =
                 (index === windowStart && windowStart > 0) ||
                 (index === windowEnd - 1 && windowEnd < total);
               return (
                 <span
-                  key={`${url}-${index}`}
+                  key={index}
                   data-active={index === active || undefined}
                   className={`block rounded-full shadow-[0_0_2px_rgba(0,0,0,0.5)] transition-all duration-200 ease-out motion-reduce:transition-none ${
                     atEdge ? "h-1 w-1" : "h-1.5 w-1.5"

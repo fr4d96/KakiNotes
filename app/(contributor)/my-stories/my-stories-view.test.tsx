@@ -11,6 +11,10 @@ import type { MyStoryWithCover } from "@/lib/story/contributor-queries";
 // and only the component's own rendering is under test here.
 vi.mock("@/app/(contributor)/stories/[id]/media-actions", () => ({
   mintPreviewUrlAction: vi.fn(async () => ({ url: "blob:signed-preview" })),
+  // The batched minting MyStoryPhotos uses (via lib/story/preview-url-client).
+  mintPreviewUrlsAction: vi.fn(async (ids: string[]) =>
+    Object.fromEntries(ids.map((id) => [id, { url: `blob:signed-${id}` }])),
+  ),
 }));
 
 // deleteDraftStoryAction ultimately imports lib/story/mutations.ts, which is
@@ -65,6 +69,7 @@ function makeStory(overrides: StoryOverrides = {}) {
     draftRevisionStatus: "draft",
     coverMediaId: "33333333-3333-4333-8333-333333333333",
     coverAltText: "An orchard at dawn",
+    mediaIds: ["33333333-3333-4333-8333-333333333333"],
     // Matches delete_draft_story()'s own "exactly one revision, ever" rule
     // (supabase/migrations/20260926110804_list_my_stories_revision_count.sql)
     // -- 1 is the ordinary, never-submitted-before draft every existing test
@@ -101,12 +106,15 @@ beforeEach(() => {
 });
 
 describe("MyStoriesView", () => {
-  it("links to story folders", () => {
+  it("links to story folders from md up, leaving phones to the bottom tab bar", () => {
     render(<MyStoriesView stories={[makeStory()]} />);
 
-    expect(
-      screen.getByRole("link", { name: "Open story folders" }),
-    ).toHaveAttribute("href", "/my-stories/map");
+    const folders = screen.getByRole("link", { name: "Open story folders" });
+    expect(folders).toHaveAttribute("href", "/my-stories/map");
+    // Phones have a Folders tab in the bottom bar (components/bottom-tab-bar.tsx),
+    // so the toolbar icon is hidden there; from md up there is no tab bar and
+    // this link is the one way in.
+    expect(folders.className).toContain("max-md:hidden");
   });
 
   describe("phone layout", () => {
@@ -1041,5 +1049,67 @@ describe("MyStoriesView", () => {
     // Drafts holds two rows and Published one, so a per-section ordinal means
     // "01" appears in more than one place -- a continuous run would not.
     expect(screen.getAllByText("01").length).toBeGreaterThan(1);
+  });
+
+  // My Stories shows one country at a time (the one chosen in the top bar);
+  // the page hands the view only that country's stories.
+  describe("per country", () => {
+    it("says there is no story about the chosen country, and starts one there", () => {
+      render(
+        <MyStoriesView stories={[]} country="china" hasStoriesElsewhere />,
+      );
+      expect(
+        screen.getByText(/haven't written a story about China yet/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText(/haven't started a story yet/i),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "Start your first one" }),
+      ).toHaveAttribute("href", "/stories/new?country=china");
+    });
+
+    it("keeps the first-story message when there are no stories anywhere", () => {
+      render(<MyStoriesView stories={[]} />);
+      expect(
+        screen.getByText(/haven't started a story yet/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "Start your first one" }),
+      ).toHaveAttribute("href", "/stories/new");
+    });
+  });
+
+  describe("photos", () => {
+    const ids = [
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    ];
+
+    it("lets a card with several photos swipe through all of them", async () => {
+      const { container } = render(
+        <MyStoriesView
+          stories={[makeStory({ mediaIds: ids, coverMediaId: ids[0] })]}
+        />,
+      );
+      // One strip slot per photo, each linking to the story like the card.
+      const slots = container.querySelectorAll<HTMLAnchorElement>(
+        '.snap-x > a[tabindex="-1"]',
+      );
+      expect(slots).toHaveLength(3);
+      // The cover's signed URL arrives; the rest wait for a swipe.
+      await waitFor(() =>
+        expect(slots[0].querySelector("img")?.getAttribute("src")).toBe(
+          `blob:signed-${ids[0]}`,
+        ),
+      );
+      expect(slots[1].querySelector("img")).toBeNull();
+    });
+
+    it("keeps a single cover as a plain link, with no strip", () => {
+      const { container } = render(<MyStoriesView stories={[makeStory()]} />);
+      expect(container.querySelector(".snap-x")).toBeNull();
+    });
   });
 });
