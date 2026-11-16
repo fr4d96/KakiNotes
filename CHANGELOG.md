@@ -1,5 +1,28 @@
 # Changelog
 
+## [3.10.0](https://github.com/fr4d96/KakiNotes/compare/v3.9.0...v3.10.0) (2026-11-16)
+
+
+### Each country on its own, small story cards, and every photo in My Stories
+
+#### For readers
+
+- **Big or small story cards — small by default.** The Stories tab and the home page now show stories as small cards, two to a row on a phone: a photo you can swipe, the title, and the place and year. You see about three times as many stories before you have to scroll. Prefer the bigger cards with the opening lines and the writer's name? Tap the big-card button beside Filters on the Stories tab, or beside "See all" on the home page. Kakinotes remembers your choice on this device.
+- **China and New Zealand are kept fully apart.** When you're in China, the Contributors page only lists people who have written about China, and a profile only shows their China stories, places and trip years. New Zealand stories no longer appear there.
+- **No more "Working Holiday" on China pages.** A working holiday is a New Zealand thing, so China's pages now talk about travel instead — for example, the costs page is now "What a trip to China cost".
+
+#### For contributors
+
+- **My Stories follows your country.** With China chosen, My Stories shows only your China stories; switch the flag to New Zealand to see your New Zealand ones. If you haven't written about a country yet, it says so and offers to start one there.
+- **Swipe through all your photos.** In My Stories, any draft or published story with more than one photo now lets you swipe through every photo right on its card, with dots — not just the cover. Your unpublished photos stay private: they only ever load for you.
+- **A tidier toolbar on phones.** The folders button has gone from the My Stories toolbar on phones, because Folders now lives in the bottom tab bar. On a computer it's still there.
+
+### Features
+
+* **country:** keep each country's contributors and wording separate ([c572677](https://github.com/fr4d96/KakiNotes/commit/c5726775435661bf0f6fd0ffa662e0c91e456f30))
+* **my-stories:** per country, swipe every photo, no phone folders icon ([beb9753](https://github.com/fr4d96/KakiNotes/commit/beb9753d21565ae003fdb475dbaed30720d35965))
+* **stories:** big or small story cards, small by default ([079f4b7](https://github.com/fr4d96/KakiNotes/commit/079f4b7e98c6f1406e87f7a8a7101c00f065cb51))
+
 ## [3.9.0](https://github.com/fr4d96/KakiNotes/compare/v3.8.0...v3.9.0) (2026-11-16)
 
 
