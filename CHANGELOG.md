@@ -3,6 +3,20 @@
 ## [3.9.0](https://github.com/fr4d96/KakiNotes/compare/v3.8.0...v3.9.0) (2026-11-16)
 
 
+### Choose your country, and a tidier top bar
+
+#### For everyone
+
+- **Pick a country when you first open Kakinotes.** A "Where are you heading?" screen shows 🇳🇿 New Zealand and 🇨🇳 China. Choose one and you land on that country's home page. Links people share with you still open straight to the story.
+- **Kakinotes remembers your country on this device.** Next time you open it, you go straight to your country, and the Home and Stories tabs stay in it everywhere — including My Stories and the story editor.
+- **Switch countries from the flag at the top.** The flag next to "Kakinotes" opens a list of countries; tap one to switch. This replaces the "New Zealand | China" switch that used to sit on the home page.
+
+#### On phones, signed out
+
+- **Sign in is right there in the top bar**, as one clear button.
+- **The ☰ menu** now holds About, Share your story, and the light/dark mode and language switches, which used to sit as separate buttons in the bar.
+- The top bar is less crowded: the flag and menu are plain icons instead of outlined buttons.
+
 ### Features
 
 * **country:** pick a country on first visit, switch it from a flag ([50f06bd](https://github.com/fr4d96/KakiNotes/commit/50f06bde03bbc654f6490362fe98e744aa3451b7))
