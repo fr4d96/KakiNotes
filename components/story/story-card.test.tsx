@@ -132,4 +132,18 @@ describe("StoryCard", () => {
     }
     expect(container.querySelectorAll("[data-active]")).toHaveLength(1);
   });
+
+  // The Stories tab's compact card: photo, title, one place · year line.
+  it("draws a small card with just the title and place, no excerpt or author", () => {
+    const { container } = render(<StoryCard story={baseStory} size="small" />);
+    expect(screen.getByRole("link", { name: baseStory.title })).toHaveAttribute(
+      "href",
+      `/stories/${baseStory.slug}`,
+    );
+    if (baseStory.excerpt) {
+      expect(screen.queryByText(baseStory.excerpt)).not.toBeInTheDocument();
+    }
+    expect(container.querySelector(".aspect-square")).not.toBeNull();
+    expect(container.querySelector(".aspect-\\[4\\/3\\]")).toBeNull();
+  });
 });

@@ -1,3 +1,4 @@
+import type { CardSize } from "@/lib/story/card-size";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { getCardCoverUrl } from "@/lib/story/image-url";
@@ -47,6 +48,7 @@ export function StoryCard({
   story,
   basePath = "/stories",
   photos,
+  size = "big",
 }: {
   story: StoryCardData;
   /**
@@ -65,6 +67,13 @@ export function StoryCard({
    * slug, Rule 10/12).
    */
   basePath?: string;
+  /**
+   * "big" (default): the full card -- tags, title, excerpt, author.
+   * "small": the Stories tab's compact two-per-row card -- square photo,
+   * title, and one place · year line -- for scanning many stories at once
+   * (lib/story/card-size.ts).
+   */
+  size?: CardSize;
 }) {
   const t = useTranslations("common");
   const tImages = useTranslations("editor.images");
@@ -77,12 +86,24 @@ export function StoryCard({
   const coverUrl = getCardCoverUrl(story);
   const regionLabel = firstRegionLabel(story.regions, locale);
   const badges = stringList(story.tags).slice(0, 3);
+  const small = size === "small";
+  const photoSizes = small
+    ? "(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+    : undefined;
 
   return (
     <article className="press press-hover-only group relative flex flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-lg">
-      <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-border-subtle bg-surface-muted">
+      <div
+        className={`relative w-full overflow-hidden border-b border-border-subtle bg-surface-muted ${
+          small ? "aspect-square" : "aspect-[4/3]"
+        }`}
+      >
         {photos && photos.length > 0 ? (
-          <CardPhotos urls={photos} href={`${basePath}/${story.slug}`} />
+          <CardPhotos
+            urls={photos}
+            href={`${basePath}/${story.slug}`}
+            sizes={photoSizes}
+          />
         ) : coverUrl ? (
           <ResolvingImage
             src={coverUrl}
@@ -96,40 +117,62 @@ export function StoryCard({
           <StoryCoverFallback sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" />
         )}
       </div>
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <div className="flex flex-wrap gap-1.5">
-          {badges.map((badge, index) => (
-            <span
-              key={`${badge}-${index}`}
-              className="rounded-full bg-tag-background px-2 py-0.5 text-xs text-tag-foreground"
+      {small ? (
+        <div className="flex flex-1 flex-col gap-1 p-2.5">
+          <h3 className="line-clamp-2 text-sm leading-snug font-semibold tracking-tight text-foreground">
+            <Link
+              href={`${basePath}/${story.slug}`}
+              className="hover:underline"
             >
-              {badge}
-            </span>
-          ))}
+              <span className="absolute inset-0" aria-hidden="true" />
+              {story.title}
+            </Link>
+          </h3>
+          {regionLabel || story.trip_year ? (
+            <p className="mt-auto truncate text-xs text-foreground/60">
+              {[regionLabel, story.trip_year].filter(Boolean).join(" · ")}
+            </p>
+          ) : null}
         </div>
-        <h3 className="text-lg font-semibold tracking-tight text-foreground">
-          <Link href={`${basePath}/${story.slug}`} className="hover:underline">
-            <span className="absolute inset-0" aria-hidden="true" />
-            {story.title}
-          </Link>
-        </h3>
-        {story.excerpt ? (
-          <p className="line-clamp-3 text-sm text-foreground/70">
-            {story.excerpt}
-          </p>
-        ) : null}
-        <div className="mt-auto flex items-center justify-between gap-2 pt-2 text-sm text-foreground/70">
-          <AttributionChip
-            /* The word, not the data: attribution_value is null exactly
+      ) : (
+        <div className="flex flex-1 flex-col gap-3 p-4">
+          <div className="flex flex-wrap gap-1.5">
+            {badges.map((badge, index) => (
+              <span
+                key={`${badge}-${index}`}
+                className="rounded-full bg-tag-background px-2 py-0.5 text-xs text-tag-foreground"
+              >
+                {badge}
+              </span>
+            ))}
+          </div>
+          <h3 className="text-lg font-semibold tracking-tight text-foreground">
+            <Link
+              href={`${basePath}/${story.slug}`}
+              className="hover:underline"
+            >
+              <span className="absolute inset-0" aria-hidden="true" />
+              {story.title}
+            </Link>
+          </h3>
+          {story.excerpt ? (
+            <p className="line-clamp-3 text-sm text-foreground/70">
+              {story.excerpt}
+            </p>
+          ) : null}
+          <div className="mt-auto flex items-center justify-between gap-2 pt-2 text-sm text-foreground/70">
+            <AttributionChip
+              /* The word, not the data: attribution_value is null exactly
                when the story is published anonymously, so this is our label
                for "no name", never something a contributor wrote. */
-            name={story.attribution_value ?? t("anonymous")}
-            avatarEmoji={story.contributor_avatar_emoji}
-            tripYear={story.trip_year}
-            destination={regionLabel}
-          />
+              name={story.attribution_value ?? t("anonymous")}
+              avatarEmoji={story.contributor_avatar_emoji}
+              tripYear={story.trip_year}
+              destination={regionLabel}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </article>
   );
 }

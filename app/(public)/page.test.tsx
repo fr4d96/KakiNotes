@@ -18,12 +18,19 @@ vi.mock("@/lib/story/public-queries", () => ({
 const countryCookie = vi.hoisted(() => ({
   value: "new-zealand" as string | undefined,
 }));
+// The shelf tests below are about the "big" swipe row; small cards (the
+// default) have their own test at the end.
+const cardSizeCookie = vi.hoisted(() => ({
+  value: "big" as string | undefined,
+}));
 vi.mock("next/headers", () => ({
   cookies: async () => ({
     get: (name: string) =>
       name === "kakinotes-country" && countryCookie.value
         ? { name, value: countryCookie.value }
-        : undefined,
+        : name === "kakinotes-card-size" && cardSizeCookie.value
+          ? { name, value: cardSizeCookie.value }
+          : undefined,
   }),
 }));
 const redirect = vi.hoisted(() =>
@@ -34,12 +41,15 @@ const redirect = vi.hoisted(() =>
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   redirect,
+  // The big | small card switch refreshes through the router.
+  useRouter: () => ({ refresh: vi.fn() }),
 }));
 
 import HomePage from "./page";
 
 beforeEach(() => {
   countryCookie.value = "new-zealand";
+  cardSizeCookie.value = "big";
   redirect.mockClear();
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: false,
@@ -296,5 +306,16 @@ describe("HomePage", () => {
     expect(
       screen.getByRole("dialog", { name: "Where are you heading?" }),
     ).toBeInTheDocument();
+  });
+
+  it("shows latest stories as small cards, two per row, unless the reader chose big", async () => {
+    cardSizeCookie.value = undefined;
+    mockStories(fixtureStory, otherStory);
+    const { container } = render(await HomePage());
+    expect(screen.getByRole("button", { name: "Small cards" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(container.querySelector(".grid-cols-2 article")).not.toBeNull();
   });
 });

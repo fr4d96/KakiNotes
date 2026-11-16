@@ -65,12 +65,19 @@ export function FilterBar({
   tags,
   travelStyles,
   current,
+  trailing,
 }: {
   regions: Option[];
   destinations: DestinationOption[];
   tags: Option[];
   travelStyles: string[];
   current: StorySearchFilters;
+  /**
+   * Sits at the right end of the panel's button row (beside Filters on a
+   * phone, beside Apply / Clear from md up) -- the Stories tab puts its
+   * big | small card switch here so it doesn't need a row of its own.
+   */
+  trailing?: React.ReactNode;
 }) {
   const t = useTranslations("stories.filters");
   const [selectedRegion, setSelectedRegion] = useState(current.region ?? "");
@@ -260,16 +267,39 @@ export function FilterBar({
         `display: block !important` override on them. Below md this button
         opens the bottom sheet; from md up the fields are simply inline.
       */}
-      <button
-        type="button"
-        aria-haspopup="dialog"
-        aria-expanded={filtersOpen}
-        onClick={() => setFiltersOpen(true)}
-        className="press inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border-subtle px-4 text-sm font-medium transition-colors active:bg-surface-muted md:hidden"
-      >
-        <FilterIcon className="h-4 w-4" />
-        {t("showFilters")}
-      </button>
+      {!isPhone && <div className="hidden md:block">{fields}</div>}
+
+      {/* One row: Filters (phone) or Apply / Clear (md up) on the left, the
+          caller's `trailing` control on the right. */}
+      <div className="flex items-center gap-3 md:mt-4">
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={filtersOpen}
+          onClick={() => setFiltersOpen(true)}
+          className="press inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border-subtle px-4 text-sm font-medium transition-colors active:bg-surface-muted md:hidden"
+        >
+          <FilterIcon className="h-4 w-4" />
+          {t("showFilters")}
+        </button>
+        {!isPhone && (
+          <div className="hidden gap-3 md:flex">
+            <button
+              type="submit"
+              className="inline-flex min-h-11 items-center rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:opacity-90"
+            >
+              {t("apply")}
+            </button>
+            <Link
+              href="/stories"
+              className="inline-flex min-h-11 items-center rounded-md border border-border-subtle px-4 py-2 text-sm font-medium hover:bg-surface"
+            >
+              {t("clear")}
+            </Link>
+          </div>
+        )}
+        {trailing ? <div className="ml-auto">{trailing}</div> : null}
+      </div>
 
       {isPhone ? (
         <BottomSheet
@@ -297,26 +327,7 @@ export function FilterBar({
         >
           <div className="px-2 pt-1 pb-2">{fields}</div>
         </BottomSheet>
-      ) : (
-        <>
-          <div className="hidden md:block">{fields}</div>
-
-          <div className="mt-4 hidden gap-3 md:flex">
-            <button
-              type="submit"
-              className="inline-flex min-h-11 items-center rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:opacity-90"
-            >
-              {t("apply")}
-            </button>
-            <Link
-              href="/stories"
-              className="inline-flex min-h-11 items-center rounded-md border border-border-subtle px-4 py-2 text-sm font-medium hover:bg-surface"
-            >
-              {t("clear")}
-            </Link>
-          </div>
-        </>
-      )}
+      ) : null}
     </form>
   );
 }

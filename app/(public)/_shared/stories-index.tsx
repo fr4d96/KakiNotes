@@ -1,3 +1,9 @@
+import { cookies } from "next/headers";
+import { CardSizeSwitch } from "@/components/story/card-size-switch";
+import {
+  CARD_SIZE_COOKIE,
+  cardSizeFromCookieValue,
+} from "@/lib/story/card-size";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
@@ -39,6 +45,10 @@ export async function StoriesIndex({
 }) {
   const rawParams = await searchParams;
   const filters = parseStorySearchParams(rawParams);
+  // Big or small cards, as this reader last chose (a per-device cookie).
+  const cardSize = cardSizeFromCookieValue(
+    (await cookies()).get(CARD_SIZE_COOKIE)?.value,
+  );
   const [t, tCountry, locale] = await Promise.all([
     getTranslations("stories"),
     getTranslations("countryContent"),
@@ -135,6 +145,9 @@ export async function StoriesIndex({
           tags={tags}
           travelStyles={travelStyles}
           current={filters}
+          trailing={
+            stories.length > 0 ? <CardSizeSwitch size={cardSize} /> : null
+          }
         />
       </div>
 
@@ -148,13 +161,20 @@ export async function StoriesIndex({
             {t("noMatches")}
           </p>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            className={
+              cardSize === "small"
+                ? "grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4"
+                : "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            }
+          >
             {stories.map((story, index) => (
               <StoryCard
                 key={story.story_id}
                 story={story}
                 basePath={basePath}
                 photos={cardPhotos[index]}
+                size={cardSize}
               />
             ))}
           </div>

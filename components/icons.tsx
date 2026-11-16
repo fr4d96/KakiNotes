@@ -437,3 +437,25 @@ export function RouteIcon(props: IconProps) {
     </svg>
   );
 }
+
+/** Big cards: two full-width cards stacked -- the Stories tab's card-size switch. */
+export function CardsBigIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <rect x="4" y="3.5" width="16" height="7.5" rx="1.5" />
+      <rect x="4" y="13" width="16" height="7.5" rx="1.5" />
+    </svg>
+  );
+}
+
+/** Small cards: a 2x2 grid -- the Stories tab's card-size switch. */
+export function CardsSmallIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <rect x="4" y="4" width="7" height="7" rx="1.5" />
+      <rect x="13" y="4" width="7" height="7" rx="1.5" />
+      <rect x="4" y="13" width="7" height="7" rx="1.5" />
+      <rect x="13" y="13" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}

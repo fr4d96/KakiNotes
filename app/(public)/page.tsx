@@ -23,6 +23,12 @@
  * since this is a multi-route Next.js app rather than a single static
  * artifact -- grep this file, not the built output.)
  */
+import { CardSizeSwitch } from "@/components/story/card-size-switch";
+import { StoryCard } from "@/components/story/story-card";
+import {
+  CARD_SIZE_COOKIE,
+  cardSizeFromCookieValue,
+} from "@/lib/story/card-size";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
@@ -88,6 +94,11 @@ export default async function HomePage() {
     (await cookies()).get(COUNTRY_COOKIE)?.value,
   );
   if (remembered === "china") redirect("/cn");
+  // Big or small cards for "Latest stories" -- the same per-device choice
+  // as the Stories tab (lib/story/card-size.ts; small unless chosen).
+  const cardSize = cardSizeFromCookieValue(
+    (await cookies()).get(CARD_SIZE_COOKIE)?.value,
+  );
   const needsCountryPicker = remembered === null;
 
   const [stories, regions, t, rawLocale] = await Promise.all([
@@ -241,22 +252,40 @@ export default async function HomePage() {
             aria-labelledby="latest-heading"
             className="mx-auto max-w-[1440px] px-4 pt-10 sm:px-6 sm:pt-14 lg:px-8"
           >
-            <div className="mb-4 flex items-baseline justify-between gap-4">
+            <div className="mb-4 flex items-center justify-between gap-3">
               <SectionHeading id="latest-heading">
                 {t("latestHeading")}
               </SectionHeading>
-              <Link
-                href="/stories"
-                className="inline-flex min-h-[44px] shrink-0 items-center gap-1 text-sm font-bold text-accent hover:underline"
-              >
-                {t("seeAll")} <ArrowRightIcon className="h-4 w-4" />
-              </Link>
+              <div className="flex shrink-0 items-center gap-2">
+                <CardSizeSwitch size={cardSize} />
+                <Link
+                  href="/stories"
+                  className="inline-flex min-h-[44px] shrink-0 items-center gap-1 text-sm font-bold text-accent hover:underline"
+                >
+                  {t("seeAll")} <ArrowRightIcon className="h-4 w-4" />
+                </Link>
+              </div>
             </div>
-            <StoryShelf
-              stories={shelfStories}
-              photos={shelfPhotos}
-              locale={locale}
-            />
+            {/* Small: a two-per-row grid, the Stories tab's compact card.
+                Big: the wide swipe row. */}
+            {cardSize === "small" ? (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+                {shelfStories.map((story) => (
+                  <StoryCard
+                    key={story.story_id}
+                    story={story}
+                    photos={shelfPhotos[story.slug]}
+                    size="small"
+                  />
+                ))}
+              </div>
+            ) : (
+              <StoryShelf
+                stories={shelfStories}
+                photos={shelfPhotos}
+                locale={locale}
+              />
+            )}
           </section>
 
           {/* ---- Browse by place: one tap into a filtered Stories tab. ---- */}

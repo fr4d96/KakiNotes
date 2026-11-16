@@ -1,4 +1,10 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { CardSizeSwitch } from "@/components/story/card-size-switch";
+import {
+  CARD_SIZE_COOKIE,
+  cardSizeFromCookieValue,
+} from "@/lib/story/card-size";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { listPublishedStories } from "@/lib/story/public-queries";
@@ -32,6 +38,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ChinaHomePage() {
+  // Big or small cards, the same per-device choice as the Stories tab.
+  const cardSize = cardSizeFromCookieValue(
+    (await cookies()).get(CARD_SIZE_COOKIE)?.value,
+  );
   const [stories, t, tCountry] = await Promise.all([
     listPublishedStories({ countrySlug: "china", limit: 12 }).catch(() => []),
     getTranslations("home"),
@@ -72,18 +82,28 @@ export default async function ChinaHomePage() {
       {hasStories ? (
         <section className="border-t border-border-subtle bg-surface py-12 sm:py-16">
           <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
-            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              {t("recordHeading")}
-            </h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                {t("recordHeading")}
+              </h2>
+              <CardSizeSwitch size={cardSize} />
+            </div>
             <p className="mt-2 max-w-2xl text-foreground/70">
               {tCountry("china.storiesIntro")}
             </p>
-            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div
+              className={`mt-8 grid ${
+                cardSize === "small"
+                  ? "grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4"
+                  : "grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+              }`}
+            >
               {stories.map((story) => (
                 <StoryCard
                   key={story.story_id}
                   story={story}
                   basePath="/cn/stories"
+                  size={cardSize}
                 />
               ))}
             </div>
