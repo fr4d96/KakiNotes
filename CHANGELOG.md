@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.12.0](https://github.com/fr4d96/KakiNotes/compare/v3.11.0...v3.12.0) (2026-11-17)
+
+
+### Features
+
+* **design:** photo-first redesign, personal accent colours, Settings ([24fa7c3](https://github.com/fr4d96/KakiNotes/commit/24fa7c334a91ad11ceba556ea1d2e45d306f3867))
+
 ## [3.11.0](https://github.com/fr4d96/KakiNotes/compare/v3.10.1...v3.11.0) (2026-11-16)
 
 
