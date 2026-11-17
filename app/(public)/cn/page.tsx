@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShareStoryLink } from "@/components/auth/share-story-link";
 import { cookies } from "next/headers";
 import { CardSizeSwitch } from "@/components/story/card-size-switch";
 import {
@@ -14,8 +15,8 @@ import { ArrowRightIcon } from "@/components/icons";
 
 /**
  * China's landing page. Deliberately NOT a reuse of the NZ home page's
- * "Night Field" art direction (app/(public)/page.tsx's hero-field/
- * destination-quiz components carry a lot of WHV- and
+ * hero (app/(public)/page.tsx's photo wall and destination-quiz components
+ * carry a lot of WHV- and
  * NZ-specific prose and visual direction baked into their own design
  * contract) -- a straightforward, real, mobile-first page instead, built
  * from the same generic building blocks the rest of the app already uses
@@ -70,12 +71,13 @@ export default async function ChinaHomePage() {
           >
             {t("heroCta")} <ArrowRightIcon className="h-4 w-4" />
           </Link>
-          <Link
-            href="/sign-up"
+          {/* Sign-up for visitors, a new China story once signed in. */}
+          <ShareStoryLink
+            newStoryHref="/stories/new?country=china"
             className="inline-flex items-center gap-2 rounded-full border border-border-subtle px-5 py-2.5 text-sm font-semibold hover:bg-surface-muted"
           >
             {t("shareCta")}
-          </Link>
+          </ShareStoryLink>
         </div>
       </section>
 

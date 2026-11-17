@@ -143,7 +143,7 @@ describe("StoryCard", () => {
     if (baseStory.excerpt) {
       expect(screen.queryByText(baseStory.excerpt)).not.toBeInTheDocument();
     }
-    expect(container.querySelector(".aspect-square")).not.toBeNull();
+    expect(container.querySelector(".aspect-\\[4\\/5\\]")).not.toBeNull();
     expect(container.querySelector(".aspect-\\[4\\/3\\]")).toBeNull();
   });
 });

@@ -5,8 +5,6 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { signOutAction } from "@/app/(auth)/actions";
 import { ContributorIcon } from "@/components/icons";
-import { LocaleToggle } from "@/components/locale-toggle";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { useIsPhone } from "@/components/ui/use-is-phone";
 import { controlToneClasses } from "@/components/ui-tone";
@@ -27,18 +25,24 @@ const authoringItems = [
   { href: "/stories/new", key: "newStory" },
 ] as const;
 
-const accountItem = { href: "/account", key: "account" } as const;
+// Account and Settings close the menu as one group: who you are, and how
+// the app looks and reads on this device (theme, accent, language -- which
+// used to be two switch rows here and now live on /settings, 2026-11-17).
+const accountItems = [
+  { href: "/account", key: "account" },
+  { href: "/settings", key: "settings" },
+] as const;
 
 /**
- * Which of the always-on items a role gets. Staff roles get Account only;
- * an ordinary contributor (and anyone whose role we don't know) also gets
- * the authoring links. Like staffMenuItemsForRole this is PRESENTATION
+ * Which authoring links a role gets: none for staff roles (who still get
+ * Account and Settings); an ordinary contributor (and anyone whose role we
+ * don't know) gets them all. Like staffMenuItemsForRole this is PRESENTATION
  * ONLY -- /my-stories and /stories/new remain reachable and permitted for
  * staff accounts, they are simply not advertised in their menu.
  */
-function personalMenuItems(role: AppRole | null) {
+function authoringMenuItems(role: AppRole | null) {
   const isStaff = role === "admin" || role === "editor" || role === "moderator";
-  return isStaff ? [accountItem] : [...authoringItems, accountItem];
+  return isStaff ? [] : authoringItems;
 }
 
 /**
@@ -47,9 +51,11 @@ function personalMenuItems(role: AppRole | null) {
  * renders this instead of its own ad hoc sign-out/account links, so the
  * same actions are reachable the same way regardless of which screen is
  * showing. Opens a dropdown with, in order: the caller's staff surfaces (if
- * any), then My Stories / New Story for contributors, then Account and Sign
- * out. Staff roles skip the two authoring links -- a moderator, editor or
- * admin sees only their own role's surfaces plus Account and Sign out. The
+ * any), then My Stories / My Photos / Affirmation notes / New Story for
+ * contributors, then Account and Settings, then Sign out -- each group set
+ * off by a hairline. Staff roles skip the authoring links -- a moderator,
+ * editor or admin sees only their own role's surfaces plus Account,
+ * Settings and Sign out. The
  * avatar itself is the emoji chosen on /account
  * (lib/avatar.ts's pre-loaded set), falling back to a generic person icon
  * for accounts that haven't picked one yet.
@@ -86,7 +92,7 @@ export function UserAvatarMenu({
 }) {
   const t = useTranslations("nav");
   const staffItems = staffMenuItemsForRole(role ?? null);
-  const menuItems = personalMenuItems(role ?? null);
+  const writeItems = authoringMenuItems(role ?? null);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -174,7 +180,23 @@ export function UserAvatarMenu({
           <div className={dividerClass} />
         </>
       )}
-      {menuItems.map((item) => (
+      {writeItems.length > 0 && (
+        <>
+          {writeItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className={rowClass}
+            >
+              {t(item.key)}
+            </Link>
+          ))}
+          <div className={dividerClass} />
+        </>
+      )}
+      {accountItems.map((item) => (
         <Link
           key={item.href}
           href={item.href}
@@ -185,23 +207,6 @@ export function UserAvatarMenu({
           {t(item.key)}
         </Link>
       ))}
-      {/* Theme and language live here rather than as two more round
-          buttons in the header: they are settings, not destinations,
-          and the header was getting crowded on a phone. Signed-out
-          visitors have no menu, so the header keeps the icon form for
-          them (site-header.tsx). The toggles draw their own rows; the
-          wrapper lifts them to the sheet's 48px on phones. */}
-      <div className={dividerClass} />
-      <div
-        className={
-          isPhone
-            ? "[&>button]:min-h-12 [&>button]:rounded-xl [&>button]:text-base [&>button]:active:bg-surface-muted"
-            : undefined
-        }
-      >
-        <ThemeToggle variant="menuItem" />
-        <LocaleToggle variant="menuItem" />
-      </div>
       <div className={dividerClass} />
       <form action={signOutAction}>
         <button type="submit" role="menuitem" className={rowClass}>

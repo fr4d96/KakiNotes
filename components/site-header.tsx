@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { SettingsIcon } from "@/components/icons";
+import { controlToneClasses } from "@/components/ui-tone";
 import { useTranslations } from "next-intl";
 import { HeaderBrand } from "@/components/header-brand";
 import { MobileNavToggle } from "@/components/mobile-nav-toggle";
 import { CountrySwitcher } from "@/components/country-switcher";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { LocaleToggle } from "@/components/locale-toggle";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { SignInForm } from "@/components/auth/sign-in-form";
 import { SignUpForm } from "@/components/auth/sign-up-form";
@@ -204,11 +204,18 @@ export function SiteHeader() {
               </>
             ) : (
               <>
-                {/* Signed out there is no profile menu to hold these, so
-                    they stay as header icons; signed in they move into
-                    UserAvatarMenu. */}
-                <ThemeToggle />
-                <LocaleToggle />
+                {/* Theme, accent and language live on /settings
+                    (2026-11-17); signed out there is no profile menu to
+                    reach it from, so it is one icon here. Signed in it is
+                    a row in UserAvatarMenu. */}
+                <Link
+                  href="/settings"
+                  aria-label={t("settings")}
+                  title={t("settings")}
+                  className={`flex h-11 w-11 items-center justify-center rounded-full border transition-transform md:h-9 md:w-9 hover:-translate-y-0.5 ${controlToneClasses(false)}`}
+                >
+                  <SettingsIcon className="h-4 w-4" />
+                </Link>
                 <button
                   type="button"
                   onClick={() => setAuthModal("sign-in")}
@@ -263,12 +270,7 @@ export function SiteHeader() {
                   onClick: () => setAuthModal("sign-up"),
                 },
               ]}
-              settings={
-                <>
-                  <ThemeToggle variant="sheetRow" />
-                  <LocaleToggle variant="sheetRow" />
-                </>
-              }
+              secondaryItems={[{ href: "/settings", label: t("settings") }]}
             />
           )}
         </div>

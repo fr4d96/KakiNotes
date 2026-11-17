@@ -273,21 +273,17 @@ describe("SiteHeader", () => {
       // Rows are >=48px (min-h-12) touch targets.
       const about = within(sheet).getByRole("link", { name: "About" });
       expect(about.className).toContain("min-h-12");
-      // Sign in is out front now, not in the sheet; the theme and language
-      // switches moved in, as 48px rows (no menuitem role in a dialog).
+      // Sign in is out front, not in the sheet. Theme, accent and language
+      // live on /settings (2026-11-17): one 48px Settings row, no switches.
       expect(
         within(sheet).queryByRole("button", { name: "Sign in" }),
       ).toBeNull();
-      const theme = within(sheet).getByRole("button", {
-        name: /Switch to (dark|light) mode/,
-      });
-      const language = within(sheet).getByRole("button", {
-        name: "Switch to Chinese",
-      });
-      for (const row of [theme, language]) {
-        expect(row.className).toContain("min-h-12");
-        expect(row).not.toHaveAttribute("role");
-      }
+      const settings = within(sheet).getByRole("link", { name: "Settings" });
+      expect(settings).toHaveAttribute("href", "/settings");
+      expect(settings.className).toContain("min-h-12");
+      expect(
+        within(sheet).queryByRole("button", { name: /Switch to/ }),
+      ).toBeNull();
     });
 
     it("shows Sign in out front, and the theme and language only in the menu", () => {

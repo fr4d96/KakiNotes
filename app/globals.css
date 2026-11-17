@@ -15,62 +15,41 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /*
- * NIGHT FIELD -- the app-wide palette.
+ * PHOTO-FIRST -- the app-wide palette (2026-11-17 redesign; see DESIGN.md
+ * and PRODUCT.md's "Look" commitment). Replaces "Night Field" (near-black
+ * slate ground, cyan accent), which is retired: do not bring it back.
  *
- * Near-black cinematic ground on Tailwind's blue-tinted slate hue (slate-950
- * page, slate-900 recesses -- the same ground as sindresorhus.com, adopted
- * 2026-09-16), cool off-white ink, and one saturated cyan
- * accent held for state and emphasis. This began as a scoped exception on
- * the landing page (`.night-field`) and was promoted here to cover every
- * route; the warm paper/forest/terracotta "Field Journal" palette it
- * replaced is gone. See DESIGN.md.
+ * Owner brief: photos lead, in the calm app language of Instagram /
+ * Pinterest; comfortable for long reading in BOTH themes -- light "not too
+ * white and bright", dark "easier on the eyes"; warm and human, not themed.
  *
- * Both themes speak the same language: dark is the signature rendition,
- * light is its counterpart -- the same archive seen in daylight rather than
- * a darkened room. That means the SAME hue family, not a different one: the
- * light neutrals are slate-tinted like dark's (ground #eef2f7, a cool
- * off-white a touch below slate-100; ink #0b1222, which is dark's own
- * --surface; recess #e3e8ef ~ slate-200; borders and shadows cast in the
- * same slate ink at low alpha). Raised surfaces are plain #ffffff because
- * the tinted ground, not the card, is what keeps the page from glaring.
+ * Light: a soft warm-gray ground #f2f0ec (never stark white), cards a step
+ * lighter #fbfaf8, recess #e7e4df, warm near-black ink #24201c, muted ink
+ * #675f57 (5.5:1 on the ground). Dark: a soft warm charcoal #1c1a18 (never
+ * pure black), surfaces #262320 / #302d29, off-white ink #ece7e0 (not pure
+ * white, to cut glare), muted #aaa297. Both renditions share one warm hue
+ * family; shadows in light are cast in the same warm ink at low alpha.
  *
- * An earlier light rendition (2026-09, retired 2026-09-20) used WARM
- * neutrals -- beige #f1ede8 ground, brown-black #1b1612 ink, tan #e8e2db
- * recesses -- against this cool palette. It failed for two reasons that
- * matter here: the always-dark bands (.nf-dark-band: the landing hero and
- * the contribute band stay slate-950 in both themes) looked pasted in from
- * another site, and beige-on-tan-on-beige had no crispness, so the whole
- * page read as muddy next to dark. Do not reintroduce warm neutrals; the
- * only warm hues in the app are the expense-donut identities.
+ * One accent, Kingfisher blue -- named for the kōtare, New Zealand's sacred
+ * kingfisher (owner choice 2026-11-17, after a raspberry and a standard
+ * link-blue pass were both turned down). A cyan-leaning blue that keeps its
+ * colour in BOTH themes, unlike the old link blue, which went pastel in
+ * dark. #0068a3 light (5.26:1 as text on the ground, 4.72:1 on the recess,
+ * 5.98:1 under white text as a fill) / #3fb6f2 dark (7.59:1 on the ground
+ * and under the dark ink as a fill, 5.99:1 on the recess). Tags: #00527f /
+ * #8fd3f7 on their 10% / 15% washes (6.36:1 / 8.21:1).
  *
- * WHERE DEPTH COMES FROM -- the two renditions do not agree here, and an
- * earlier version of this file wrongly assumed they did.
+ * Personal accents (2026-11-17): a reader can pick any colour in Settings >
+ * Personalize. lib/theme/accent.ts derives a readable set per theme from it
+ * (same targets as Kingfisher), stores it on the device, and the pre-paint
+ * script sets the --user-* properties below on <html>. Each token falls back
+ * to Kingfisher when none is set, so the default needs no stored value. It marks actions, the headline's accent
+ * word, focus and active states -- nothing decorative.
  *
- * Dark expresses elevation with FILLS. #020617 -> #0b1222 is only 1.07:1 by
- * WCAG, but it is a 3.2x jump in relative luminance (0.21% -> 0.67%), and
- * dark-adapted vision reads ratios at low luminance easily, so a raised card
- * separates from the ground on fill alone.
- *
- * Light cannot do that. Mirroring dark's 1.07:1 gave 89.9% -> 96.6%, a 1.07x
- * luminance jump -- perceptually nothing. Every card, panel, and modal in the
- * light rendition was therefore invisible as a distinct surface, and the
- * whole page read as one flat beige field. The fix is not more contrast
- * between the fills (there is no headroom left below white); it is to let
- * light carry elevation in SHADOW instead, via the --elevation-* tokens
- * below, with the fills only widening slightly to ~1.16:1 to support them.
- *
- * The corollary: --surface-muted is a genuine RECESS in light (darker than
- * the ground -- inputs, image placeholders, insets), and must not be used to
- * group or raise anything. A darker panel does not read as "raised" in
- * daylight; it reads as dirty.
- *
- * The accent is the one token that cannot simply invert -- cyan #35d0c4
- * reads at ~10:1 on the near-black ground but only ~1.9:1 on a near-white
- * one, so light mode uses a deepened rendition of the same hue (#006f68,
- * hue 187 preserved), which clears 4.5:1 as text on the page ground (5.4:1),
- * on raised surfaces (6.05:1), AND on --surface-muted (its tightest pairing,
- * 4.9:1), as well as under white text as a fill (6.05:1). Muted ink #56617a
- * clears 5.0:1 on every one of those grounds too.
+ * Depth: light carries elevation in the --elevation-* shadows (fills alone
+ * barely separate); dark carries it in the surface fills, with near-
+ * invisible shadows. --surface-muted is a recess (inputs, placeholders),
+ * never a grouping panel.
  *
  * Theme selection: `data-theme="light"|"dark"` on <html>, set by a blocking
  * inline script in app/layout.tsx before paint (reads localStorage, falls
@@ -84,24 +63,24 @@
  */
 :root {
   color-scheme: light;
-  --background: #eef2f7;
-  --foreground: #0b1222;
-  --surface: #ffffff;
-  --surface-muted: #e3e8ef;
-  --border-subtle: rgba(11, 18, 34, 0.14);
-  --accent: #006f68;
+  --background: #f2f0ec;
+  --foreground: #24201c;
+  --surface: #fbfaf8;
+  --surface-muted: #e7e4df;
+  --border-subtle: rgba(36, 32, 28, 0.13);
+  --accent: var(--user-accent-light, #0068a3);
   --accent-foreground: #ffffff;
-  --tag-background: rgba(0, 111, 104, 0.1);
-  --tag-foreground: #005d57;
-  --fern: #006f68;
-  --header-solid: #eef2f7;
+  --tag-background: var(--user-tag-bg-light, rgba(0, 104, 163, 0.1));
+  --tag-foreground: var(--user-tag-fg-light, #00527f);
+  --fern: var(--user-accent-light, #0068a3);
+  --header-solid: #f2f0ec;
   /* shadcn/ui + Plate registry component tokens -- deliberately mapped onto
      the palette above rather than shadcn's default gray/blue scale, so
      components pulled from the Plate registry (components/story/editor/*,
      components/ui/*) match this site's look instead of the generic shadcn
      demo look. */
   --muted: var(--surface-muted);
-  --muted-foreground: #56617a;
+  --muted-foreground: #675f57;
   --popover: var(--surface);
   --popover-foreground: var(--foreground);
   --border: var(--border-subtle);
@@ -111,7 +90,7 @@
   --primary-foreground: var(--accent-foreground);
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--foreground);
-  --destructive: #c0392b;
+  --destructive: #b42318;
   --destructive-foreground: #ffffff;
   --brand: var(--accent);
   /* Chart ramp -- staff analytics only (/moderation, /readiness). One
@@ -119,7 +98,8 @@
      carries the MOST contrast against its own ground: darkest in light,
      brightest in dark. Validated (single hue, monotone lightness, adjacent
      step gaps, near-surface end >= 2:1) against this rendition's --surface
-     (#ffffff light / #0b1222 dark). Not a second accent: it is one hue,
+     (as first validated on the retired Night Field surfaces; staff-only, so
+     unchanged by the 2026-11-17 redesign). Not a second accent: it is one hue,
      and it never appears on a public route. */
   --chart-1: #63bcb2;
   --chart-2: #17968b;
@@ -147,8 +127,8 @@
   --expense-6: #a83250;
   /* Elevation. Light mode cannot express depth with fills -- see the note at
      the top of this file -- so it carries the whole hierarchy in these
-     shadows: slate ink (#0b1222, the same hue as every other neutral here,
-     so a shadow never looks like a grey smudge from a different palette),
+     shadows: the warm ink (#24201c, the same hue as every other neutral
+     here, so a shadow never looks like a grey smudge from another palette),
      low alpha, three layers each: a 1px ring (the EDGE -- on a
      near-white ground a white card has no fill contrast to speak of, and
      without the ring the featured deck's stacked cards read as loose
@@ -158,20 +138,20 @@
      the @theme inline block, so every `shadow-*` utility in the app is
      theme-aware without touching its call site. */
   --elevation-1:
-    0 0 0 1px rgba(11, 18, 34, 0.06), 0 1px 2px rgba(11, 18, 34, 0.06);
+    0 0 0 1px rgba(36, 32, 28, 0.06), 0 1px 2px rgba(36, 32, 28, 0.06);
   --elevation-2:
-    0 0 0 1px rgba(11, 18, 34, 0.06), 0 1px 2px rgba(11, 18, 34, 0.06),
-    0 4px 12px rgba(11, 18, 34, 0.08);
+    0 0 0 1px rgba(36, 32, 28, 0.06), 0 1px 2px rgba(36, 32, 28, 0.06),
+    0 4px 12px rgba(36, 32, 28, 0.08);
   --elevation-3:
-    0 0 0 1px rgba(11, 18, 34, 0.06), 0 2px 4px rgba(11, 18, 34, 0.06),
-    0 12px 28px rgba(11, 18, 34, 0.1);
+    0 0 0 1px rgba(36, 32, 28, 0.06), 0 2px 4px rgba(36, 32, 28, 0.06),
+    0 12px 28px rgba(36, 32, 28, 0.1);
   --elevation-4:
-    0 0 0 1px rgba(11, 18, 34, 0.06), 0 4px 8px rgba(11, 18, 34, 0.06),
-    0 24px 48px rgba(11, 18, 34, 0.14);
+    0 0 0 1px rgba(36, 32, 28, 0.06), 0 4px 8px rgba(36, 32, 28, 0.06),
+    0 24px 48px rgba(36, 32, 28, 0.14);
   --elevation-5:
-    0 0 0 1px rgba(11, 18, 34, 0.06), 0 8px 16px rgba(11, 18, 34, 0.08),
-    0 40px 80px rgba(11, 18, 34, 0.18);
-  --radius: 0.5rem;
+    0 0 0 1px rgba(36, 32, 28, 0.06), 0 8px 16px rgba(36, 32, 28, 0.08),
+    0 40px 80px rgba(36, 32, 28, 0.18);
+  --radius: 0.75rem;
 }
 
 @theme inline {
@@ -231,7 +211,14 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   /*
-   * App-wide default typeface: Avenir Next, a macOS/iOS-only system font
+   * App-wide default typeface (2026-11-17): Figtree, self-hosted by
+   * next/font as --font-figtree (app/layout.tsx), first in the stack below.
+   * Everything after it is the fallback, kept from the earlier stack, whose
+   * notes follow. NOTE: the story editor's MARKDOWN_EDITOR_FONT_FAMILY
+   * (components/story/editor/markdown-live-decorations.ts) still names the
+   * old stack explicitly -- a stage-2 redesign item.
+   *
+   * Previously the default was Avenir Next, a macOS/iOS-only system font
    * (also used by Apple's own apps, e.g. Bear.app). Not bundled -- Avenir
    * Next is Apple/Linotype-licensed, not freely redistributable -- so this
    * relies on the font being present on the reader's own system, with the
@@ -256,28 +243,28 @@
    * reader already has" approach as Avenir Next above.
    */
   --font-sans:
-    "Avenir Next", "Avenir", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Helvetica, Arial, "PingFang SC", "Hiragino Sans GB",
-    "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    var(--font-figtree), "Avenir Next", "Avenir", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --background: #020617;
-    --foreground: #f4f6f5;
-    --surface: #0b1222;
-    --surface-muted: #0f172a;
-    --border-subtle: rgba(226, 232, 240, 0.14);
-    --accent: #35d0c4;
-    --accent-foreground: #020617;
-    --tag-background: rgba(53, 208, 196, 0.14);
-    --tag-foreground: #8fe6da;
-    --fern: #35d0c4;
-    --header-solid: #020617;
+    --background: #1c1a18;
+    --foreground: #ece7e0;
+    --surface: #262320;
+    --surface-muted: #302d29;
+    --border-subtle: rgba(236, 231, 224, 0.13);
+    --accent: var(--user-accent-dark, #3fb6f2);
+    --accent-foreground: #1c1a18;
+    --tag-background: var(--user-tag-bg-dark, rgba(63, 182, 242, 0.15));
+    --tag-foreground: var(--user-tag-fg-dark, #8fd3f7);
+    --fern: var(--user-accent-dark, #3fb6f2);
+    --header-solid: #1c1a18;
     --muted: var(--surface-muted);
-    --muted-foreground: #98a6a5;
+    --muted-foreground: #aaa297;
     --popover: var(--surface);
     --popover-foreground: var(--foreground);
     --border: var(--border-subtle);
@@ -287,8 +274,8 @@
     --primary-foreground: var(--accent-foreground);
     --secondary: var(--surface-muted);
     --secondary-foreground: var(--foreground);
-    --destructive: #ff6b6b;
-    --destructive-foreground: #020617;
+    --destructive: #ff7d6e;
+    --destructive-foreground: #1c1a18;
     --brand: var(--accent);
     --chart-1: #24685f;
     --chart-2: #2f9086;
@@ -315,8 +302,8 @@
     --expense-5: #4a90dd;
     --expense-6: #d55f7d;
     /* Dark's counterpart. Depth here already comes from the surface fills
-     (#020617 -> #0b1222 is a 3.2x luminance jump, which dark-adapted vision
-     reads clearly), so these stay near-invisible -- they exist only to keep a
+     (#1c1a18 -> #262320 -> #302d29 step up clearly for dark-adapted
+     vision), so these stay near-invisible -- they exist only to keep a
      raised surface from fusing with the ground at its edge, and to give the
      modals/popovers that share these utilities the same geometry in both
      renditions. Neutral black is correct here; there is no warm ground to
@@ -334,19 +321,19 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --background: #eef2f7;
-  --foreground: #0b1222;
-  --surface: #ffffff;
-  --surface-muted: #e3e8ef;
-  --border-subtle: rgba(11, 18, 34, 0.14);
-  --accent: #006f68;
+  --background: #f2f0ec;
+  --foreground: #24201c;
+  --surface: #fbfaf8;
+  --surface-muted: #e7e4df;
+  --border-subtle: rgba(36, 32, 28, 0.13);
+  --accent: var(--user-accent-light, #0068a3);
   --accent-foreground: #ffffff;
-  --tag-background: rgba(0, 111, 104, 0.1);
-  --tag-foreground: #005d57;
-  --fern: #006f68;
-  --header-solid: #eef2f7;
+  --tag-background: var(--user-tag-bg-light, rgba(0, 104, 163, 0.1));
+  --tag-foreground: var(--user-tag-fg-light, #00527f);
+  --fern: var(--user-accent-light, #0068a3);
+  --header-solid: #f2f0ec;
   --muted: var(--surface-muted);
-  --muted-foreground: #56617a;
+  --muted-foreground: #675f57;
   --popover: var(--surface);
   --popover-foreground: var(--foreground);
   --border: var(--border-subtle);
@@ -356,7 +343,7 @@
   --primary-foreground: var(--accent-foreground);
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--foreground);
-  --destructive: #c0392b;
+  --destructive: #b42318;
   --destructive-foreground: #ffffff;
   --brand: var(--accent);
   --chart-1: #63bcb2;
@@ -385,8 +372,8 @@
   --expense-6: #a83250;
   /* Elevation. Light mode cannot express depth with fills -- see the note at
      the top of this file -- so it carries the whole hierarchy in these
-     shadows: slate ink (#0b1222, the same hue as every other neutral here,
-     so a shadow never looks like a grey smudge from a different palette),
+     shadows: the warm ink (#24201c, the same hue as every other neutral
+     here, so a shadow never looks like a grey smudge from another palette),
      low alpha, three layers each: a 1px ring (the EDGE -- on a
      near-white ground a white card has no fill contrast to speak of, and
      without the ring the featured deck's stacked cards read as loose
@@ -396,36 +383,36 @@
      the @theme inline block, so every `shadow-*` utility in the app is
      theme-aware without touching its call site. */
   --elevation-1:
-    0 0 0 1px rgba(11, 18, 34, 0.06), 0 1px 2px rgba(11, 18, 34, 0.06);
+    0 0 0 1px rgba(36, 32, 28, 0.06), 0 1px 2px rgba(36, 32, 28, 0.06);
   --elevation-2:
-    0 0 0 1px rgba(11, 18, 34, 0.06), 0 1px 2px rgba(11, 18, 34, 0.06),
-    0 4px 12px rgba(11, 18, 34, 0.08);
+    0 0 0 1px rgba(36, 32, 28, 0.06), 0 1px 2px rgba(36, 32, 28, 0.06),
+    0 4px 12px rgba(36, 32, 28, 0.08);
   --elevation-3:
-    0 0 0 1px rgba(11, 18, 34, 0.06), 0 2px 4px rgba(11, 18, 34, 0.06),
-    0 12px 28px rgba(11, 18, 34, 0.1);
+    0 0 0 1px rgba(36, 32, 28, 0.06), 0 2px 4px rgba(36, 32, 28, 0.06),
+    0 12px 28px rgba(36, 32, 28, 0.1);
   --elevation-4:
-    0 0 0 1px rgba(11, 18, 34, 0.06), 0 4px 8px rgba(11, 18, 34, 0.06),
-    0 24px 48px rgba(11, 18, 34, 0.14);
+    0 0 0 1px rgba(36, 32, 28, 0.06), 0 4px 8px rgba(36, 32, 28, 0.06),
+    0 24px 48px rgba(36, 32, 28, 0.14);
   --elevation-5:
-    0 0 0 1px rgba(11, 18, 34, 0.06), 0 8px 16px rgba(11, 18, 34, 0.08),
-    0 40px 80px rgba(11, 18, 34, 0.18);
+    0 0 0 1px rgba(36, 32, 28, 0.06), 0 8px 16px rgba(36, 32, 28, 0.08),
+    0 40px 80px rgba(36, 32, 28, 0.18);
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --background: #020617;
-  --foreground: #f4f6f5;
-  --surface: #0b1222;
-  --surface-muted: #0f172a;
-  --border-subtle: rgba(226, 232, 240, 0.14);
-  --accent: #35d0c4;
-  --accent-foreground: #020617;
-  --tag-background: rgba(53, 208, 196, 0.14);
-  --tag-foreground: #8fe6da;
-  --fern: #35d0c4;
-  --header-solid: #020617;
+  --background: #1c1a18;
+  --foreground: #ece7e0;
+  --surface: #262320;
+  --surface-muted: #302d29;
+  --border-subtle: rgba(236, 231, 224, 0.13);
+  --accent: var(--user-accent-dark, #3fb6f2);
+  --accent-foreground: #1c1a18;
+  --tag-background: var(--user-tag-bg-dark, rgba(63, 182, 242, 0.15));
+  --tag-foreground: var(--user-tag-fg-dark, #8fd3f7);
+  --fern: var(--user-accent-dark, #3fb6f2);
+  --header-solid: #1c1a18;
   --muted: var(--surface-muted);
-  --muted-foreground: #98a6a5;
+  --muted-foreground: #aaa297;
   --popover: var(--surface);
   --popover-foreground: var(--foreground);
   --border: var(--border-subtle);
@@ -435,8 +422,8 @@
   --primary-foreground: var(--accent-foreground);
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--foreground);
-  --destructive: #ff6b6b;
-  --destructive-foreground: #020617;
+  --destructive: #ff7d6e;
+  --destructive-foreground: #1c1a18;
   --brand: var(--accent);
   --chart-1: #24685f;
   --chart-2: #2f9086;
@@ -463,8 +450,8 @@
   --expense-5: #4a90dd;
   --expense-6: #d55f7d;
   /* Dark's counterpart. Depth here already comes from the surface fills
-     (#020617 -> #0b1222 is a 3.2x luminance jump, which dark-adapted vision
-     reads clearly), so these stay near-invisible -- they exist only to keep a
+     (#1c1a18 -> #262320 -> #302d29 step up clearly for dark-adapted
+     vision), so these stay near-invisible -- they exist only to keep a
      raised surface from fusing with the ground at its edge, and to give the
      modals/popovers that share these utilities the same geometry in both
      renditions. Neutral black is correct here; there is no warm ground to
@@ -561,7 +548,7 @@ svg g[role="button"]:focus-visible {
    that use a photographic background instead of a flat color). Class-
    scoped, not element selectors, so nothing outside where these classes
    are actually applied is affected. */
-/* The large display step. Shares Night Field's lettering with .night-heading
+/* The large display step. Shares the app's display lettering with .night-heading
    (heavy sans, tight tracking) and differs only in scale -- the Georgia serif
    this used to set belonged to the retired Field Journal palette. */
 .journiq-heading {
@@ -701,199 +688,6 @@ svg g[role="button"]:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .journiq-lightbox-control {
     transition: none;
-  }
-}
-
-/*
- * The closing contribute band. It used to be a hotlinked Unsplash ridgeline
- * under a scrim -- the last stock photograph on the page once the hero's
- * slideshow went. It is now the same night field the page opens on
- * (components/home/hero-field.tsx, with no story points), so the page
- * closes where it began: on the field a new story would be added to. The
- * ground colour is all this rule sets; the field paints the rest.
- */
-.journiq-share {
-  background: #020617;
-}
-
-/*
- * Hero night field (components/home/hero-field.tsx). The canvas paints the
- * lattice; these rules cover the scrim under the headline and the story
- * points -- real links laid over the canvas. Text over the plate is always
- * white regardless of theme: the plate is an always-dark band.
- */
-.hero-field-scrim {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(0deg, rgba(2, 6, 23, 0.92), transparent 58%);
-}
-/* The share band's text sits at the left, not the bottom. */
-.hero-field-scrim--band {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(90deg, rgba(2, 6, 23, 0.9), transparent 64%);
-}
-
-/* A story point: a lit dot with its record beside it. The dot is the hit
-   target (invisible padding: 32px on a phone, where the band is short and
-   the points sit close, 44px from `sm` up), the label only shows on
-   hover / focus so 24 points read as a constellation, not a wall of text. */
-.hero-point {
-  --hero-point-size: 32px;
-  position: relative;
-  display: block;
-  width: var(--hero-point-size);
-  height: var(--hero-point-size);
-  margin: calc(var(--hero-point-size) / -2) 0 0
-    calc(var(--hero-point-size) / -2);
-  border-radius: 9999px;
-  outline-offset: -6px;
-  animation: hero-point-in 0.9s cubic-bezier(0.16, 0.84, 0.28, 1) backwards;
-}
-.hero-point-dot {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 6px;
-  height: 6px;
-  margin: -3px 0 0 -3px;
-  border-radius: 9999px;
-  background: var(--accent);
-  box-shadow:
-    0 0 0 3px rgba(53, 208, 196, 0.16),
-    0 0 14px 2px rgba(53, 208, 196, 0.45);
-  transition:
-    transform 0.28s cubic-bezier(0.16, 0.84, 0.28, 1),
-    box-shadow 0.28s ease;
-}
-/* The hovered point stacks above its neighbours so its label is never
-   crossed by another point's dot. */
-.hero-point:hover,
-.hero-point:focus-visible,
-.hero-point[data-touring] {
-  z-index: 1;
-}
-.hero-point:hover .hero-point-dot,
-.hero-point:focus-visible .hero-point-dot,
-.hero-point[data-touring] .hero-point-dot {
-  transform: scale(1.5);
-  box-shadow:
-    0 0 0 5px rgba(53, 208, 196, 0.22),
-    0 0 22px 4px rgba(53, 208, 196, 0.6);
-}
-.hero-point-label {
-  position: absolute;
-  top: 50%;
-  left: calc(50% + 14px);
-  width: max-content;
-  /* Never wider than the room left between the dot and the plate's edge on
-     the side it opens to (--x is the point's position, 100cqw the plate --
-     the list is a size container), so a label near the middle of a narrow
-     phone plate wraps instead of running off either edge. */
-  max-width: min(18rem, calc((1 - var(--x, 0)) * 100cqw - 28px));
-  padding: 0.5rem 0.7rem;
-  border-radius: 10px;
-  /* A solid caption ground, not a backdrop blur (the lattice under it is
-     moving content; see The Blur Budget Rule). */
-  background: rgba(2, 6, 23, 0.86);
-  border: 1px solid var(--border-subtle);
-  transform: translateY(-50%) translateX(-4px);
-  opacity: 0;
-  pointer-events: none;
-  text-align: left;
-  transition:
-    opacity 0.22s ease,
-    transform 0.28s cubic-bezier(0.16, 0.84, 0.28, 1);
-}
-/* Points right of centre open their label to the left so it never runs
-   off the plate. */
-[data-side="end"] .hero-point-label {
-  left: auto;
-  right: calc(50% + 14px);
-  max-width: min(18rem, calc(var(--x, 1) * 100cqw - 28px));
-  text-align: right;
-  transform: translateY(-50%) translateX(4px);
-}
-.hero-point:hover .hero-point-label,
-.hero-point:focus-visible .hero-point-label,
-.hero-point[data-touring] .hero-point-label {
-  opacity: 1;
-  transform: translateY(-50%) translateX(0);
-}
-
-/* The reading light's stop (components/home/hero-field.tsx `ambient`): the
-   point the touring lens rests on reads exactly as a hovered one -- dot
-   swollen, record showing -- and lets go a beat slower than it arrived,
-   so the record fades as the light moves on rather than blinking out. */
-.hero-point[data-touring] .hero-point-label {
-  transition:
-    opacity 0.45s ease,
-    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Breathing points: on an ambient field each story point's glow swells and
-   settles on its own slow beat (staggered by --breathe-delay), so the
-   field shimmers like a night sky instead of sitting still. Opacity and
-   transform on a pseudo-element only -- compositor work, no repaint of
-   the dot. Held still by the pause button, gone under reduced motion. */
-[data-ambient] .hero-point-dot::before {
-  content: "";
-  position: absolute;
-  inset: -7px;
-  border-radius: 9999px;
-  background: radial-gradient(
-    circle,
-    rgba(53, 208, 196, 0.5),
-    rgba(53, 208, 196, 0) 70%
-  );
-  opacity: 0.15;
-  transform: scale(0.7);
-  animation: hero-point-breathe 4.6s ease-in-out infinite;
-  animation-delay: var(--breathe-delay, 0s);
-  pointer-events: none;
-}
-[data-paused] .hero-point-dot::before {
-  animation-play-state: paused;
-}
-@keyframes hero-point-breathe {
-  0%,
-  100% {
-    opacity: 0.15;
-    transform: scale(0.7);
-  }
-  50% {
-    opacity: 0.85;
-    transform: scale(1.35);
-  }
-}
-@media (min-width: 640px) {
-  .hero-point {
-    --hero-point-size: 44px;
-  }
-}
-@keyframes hero-point-in {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hero-point {
-    animation: none;
-  }
-  .hero-point-dot,
-  .hero-point-label,
-  .hero-point[data-touring] .hero-point-label {
-    transition: none;
-  }
-  [data-ambient] .hero-point-dot::before {
-    animation: none;
   }
 }
 
@@ -1070,7 +864,8 @@ svg g[role="button"]:focus-visible {
 }
 
 /* ============================================================
- * NIGHT FIELD components.
+ * Shared components (named for the retired Night Field world; the classes
+ * stay, and read only theme tokens, so they follow the photo-first palette).
  *
  * The palette these were written against now lives in the root token blocks
  * at the top of this file and covers every route, so the `.night-field`
@@ -1084,30 +879,6 @@ svg g[role="button"]:focus-visible {
   line-height: 1.03;
   font-size: clamp(2rem, 4.4vw, 3.6rem);
   text-wrap: balance;
-}
-/*
- * Always-dark bands.
- *
- * A few surfaces are permanently dark in BOTH themes because they are the
- * night field on its own near-black ground: the landing hero plate and the
- * .journiq-share contribute band. The page's tokens still flip underneath
- * them, so in light mode every token-driven colour inside was resolving to
- * its light rendition against near-black -- the accent word "Aotearoa"
- * came out as the deep teal (#006f68 ≈ 2.4:1) instead of the signature cyan.
- *
- * Pinning the handful of tokens that actually appear inside these bands to
- * their dark rendition makes the band behave exactly as it does in dark
- * mode, which is the whole point of an always-dark band. Deliberately does
- * NOT pin --surface/--surface-muted: no card or panel is nested in either
- * band today, and leaving them alone keeps the blast radius to colours
- * these sections really use.
- */
-.nf-dark-band {
-  --foreground: #f4f6f5;
-  --accent: #35d0c4;
-  --accent-foreground: #020617;
-  --muted-foreground: #98a6a5;
-  --border-subtle: rgba(226, 232, 240, 0.14);
 }
 
 /*
@@ -1171,7 +942,7 @@ svg g[role="button"]:focus-visible {
   opacity: 1;
 }
 
-/* ---------- Night Field motion: the focus pull ----------
+/* ---------- Motion: the focus pull (headline entrance) ----------
  * One authored idea, varied -- content resolves from soft to sharp the way
  * a lens pulls focus, matching the world's documentary-photography premise.
  * Everything is scroll-driven CSS (animation-timeline), never JS, so:
@@ -1873,5 +1644,69 @@ html[data-splash="skip"] .app-splash {
     /* No pinch or double-tap zoom of the whole page in the installed app;
        with components/no-pinch-zoom.tsx. Safari tabs keep both. */
     touch-action: pan-x pan-y;
+  }
+}
+
+/* ---------- Home photo wall (components/home/photo-wall.tsx) ----------
+ * The 2026-11-17 hero: columns of real story photos drifting slowly in
+ * alternating directions. One transform per column (compositor only), each
+ * column two copies of its tiles long so a -50% slide loops without a seam.
+ * The wall fades out at its top and bottom edges instead of ending on a
+ * hard line. Hover holds it still so a photo stays put under the pointer;
+ * the pause button and reduced motion stop it outright.
+ */
+.photo-wall-mask {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 12%,
+    #000 88%,
+    transparent
+  );
+}
+.photo-wall-column {
+  animation: wall-drift-up var(--wall-duration, 60s) linear infinite;
+  animation-delay: var(--wall-delay, 0s);
+  will-change: transform;
+}
+.photo-wall-column[data-direction="down"] {
+  animation-name: wall-drift-down;
+}
+.photo-wall:hover .photo-wall-column,
+.photo-wall[data-paused] .photo-wall-column {
+  animation-play-state: paused;
+}
+@keyframes wall-drift-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+@keyframes wall-drift-down {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+/* First paint: each tile rises in on a short stagger, the one authored
+   entrance on the page. Opacity/transform only; content is visible by
+   default if the animation never runs. */
+.photo-wall-tile {
+  animation: wall-tile-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+@keyframes wall-tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .photo-wall-column,
+  .photo-wall-tile {
+    animation: none;
   }
 }

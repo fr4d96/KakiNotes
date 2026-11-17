@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
   listCardPhotoUrlsCached,
@@ -43,6 +43,24 @@ vi.mock("next/navigation", async (importOriginal) => ({
   redirect,
   // The big | small card switch refreshes through the router.
   useRouter: () => ({ refresh: vi.fn() }),
+}));
+
+// The browser Supabase client, as useSignedIn() sees it: no session unless
+// a test says otherwise (public pages read the session client-side only).
+const browserSession = vi.hoisted(() => ({ signedIn: false }));
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
+    auth: {
+      getSession: async () => ({
+        data: {
+          session: browserSession.signedIn ? { user: { id: "u-1" } } : null,
+        },
+      }),
+      onAuthStateChange: () => ({
+        data: { subscription: { unsubscribe: () => {} } },
+      }),
+    },
+  }),
 }));
 
 import HomePage from "./page";
@@ -235,6 +253,22 @@ describe("HomePage", () => {
     expect(
       screen.getByRole("link", { name: /Share your story/ }),
     ).toHaveAttribute("href", "/sign-up");
+  });
+
+  // A sign-up pitch is for visitors: once the browser confirms a session,
+  // the contribute panel goes (owner request 2026-11-17).
+  it("drops the contribute panel for a signed-in contributor", async () => {
+    browserSession.signedIn = true;
+    try {
+      render(await HomePage());
+      await waitFor(() =>
+        expect(
+          screen.queryByRole("link", { name: /Share your story/ }),
+        ).toBeNull(),
+      );
+    } finally {
+      browserSession.signedIn = false;
+    }
   });
 
   // Cards swipe through the story's published photos right on the home

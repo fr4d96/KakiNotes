@@ -3289,3 +3289,14 @@ iPhone 17 portrait values (top 62px, bottom 34px, sides 0) — re-run whenever a
 That exercises the app's own safe-area padding the way the installed app does. "Insets: reserved"
 (`&insets=reserved`) instead keeps the app between a 62pt status bar and a 34pt home strip. WebKit
 specifics (real inset values per orientation, Safari's own swipe-back) still need a real iPhone.
+
+## Settings and personal accent (2026-11-17)
+
+`/settings` (`app/(public)/settings/`) is a public route: appearance, accent colour and language
+are device preferences, not account data, so it works signed out and nothing is written to the
+database. Theme and accent live in localStorage (`journiq-theme`, `kakinotes-accent`; helpers in
+`lib/theme/preferences.ts`), and `lib/theme-init-script.ts` applies both before first paint,
+validating the stored accent strictly and ignoring anything malformed. `lib/theme/accent.ts` derives
+the palette (hue kept, lightness moved to fixed contrast targets) and `app/globals.css` reads it
+through `--user-accent-light` / `--user-accent-dark`, falling back to Kingfisher. Language still goes
+through the existing locale server action. Display only; no authorization depends on it.

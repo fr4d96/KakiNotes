@@ -11539,3 +11539,58 @@ now open toward the wider side (`left > 0.5`) and cap their width to the room on
 the pause button. Verified: `npm run verify` (2,049 tests); in the iPhone frame the tour lights
 successive stories, all 24 labels sit inside the plate (≥18px), no point under the pause button.
 Desktop not visually checked (the dev server's device frame wraps `/`).
+
+## 2026-11-17 — App-wide redesign, stage 1: photo-first (Instagram / Pinterest-like)
+
+Owner: the dots hero still lacked life and the whole look was not liked — "redesign everything, no
+dots". Scope chosen: the entire app look, colours free, real story photos in the hero. Two themed
+directions (disposable-camera prints, fruit-crate labels) were turned down; the owner then asked
+for calm, comfortable-in-both-themes, warm, and named Instagram / Pinterest as the reference
+(recorded in PRODUCT.md "Look").
+
+- New palette in all four token blocks of `app/globals.css` — light warm gray #f2f0ec (not stark
+  white), dark warm charcoal #1c1a18 (not black), one blue accent #1f5fbf / #7aa7f5 (owner choice the same day, replacing a first raspberry pass; 5.35:1 / 7.17:1 on the grounds); warm-ink
+  shadows; `--radius` 0.75rem. Figtree via next/font (`--font-figtree`, no npm dependency). Theme
+  colours, manifest and all 24 PWA splash images regenerated.
+- Home: hero is `components/home/photo-wall.tsx` — a drifting wall of story covers (CSS transform
+  per column, hover-hold, pause button for WCAG 2.2.2, none under reduced motion; aria-hidden, as
+  the same stories are listed below). "Browse by place" under the hero is `components/home/place-tiles.tsx`: small rounded
+  photo tiles with the name underneath (round, ringed circles were tried and turned down by the
+  owner the same day: that shape reads as an Instagram story, and a place is not one). Share band is a soft accent panel.
+- Story cards are boxless pins (rounded photo, words below); affects home, Stories tab, profiles.
+- Removed: `components/home/hero-field.tsx` (+ test), its CSS, `.nf-dark-band`, `.journiq-share`.
+- `DESIGN.md` and `.impeccable/design.json` rewritten from the build ("Warm Pinboard").
+- Finish review (impeccable reviewer): 6 of 8 material fixes resolved (pin meta contrast, wall
+  captions, footer disclaimer clear of the scroll button, neutral place ring, stale CSS notes;
+  "empty pin" was capture lag). Owner decision: the hero wall keeps every story's cover (no curation flag). Open, waiting on the
+  owner: (4) whether the swipe dots on story cards should go too.
+- Stage 2 (not done): story pages, My Stories, editor (still sets its own Avenir font stack),
+  filter bar buttons, the big-card StoryShelf (still boxed), staff tools.
+
+Verified: `npm run verify` (2,045 tests); phone light + dark and desktop checked in the preview.
+
+**Follow-up the same day — Kingfisher blue; no sign-up pitch for contributors; place tiles.** The
+owner turned down the first blue (#1f5fbf / #7aa7f5, a generic link blue that went pastel in dark).
+The accent is now Kingfisher, named for the kōtare: #0068a3 light / #3fb6f2 dark (5.26:1 and
+7.59:1 on the grounds; tags #00527f / #8fd3f7), chosen from a side-by-side of three candidates
+(Kingfisher, Glacier, Cobalt). "Browse by place" is rounded photo tiles, not Instagram-style
+circles (`components/home/place-tiles.tsx`; `place-circles.tsx` removed). The home page's
+"Share your story" panel is wrapped in `components/auth/signed-out-only.tsx`, so it disappears
+once the browser confirms a session (`lib/hooks/use-signed-in.ts`, client-side only — public HTML
+stays the same for everyone); the China home's "Share your story" button
+(`components/auth/share-story-link.tsx`) keeps its place but goes to a new China story instead of
+sign-up for a signed-in contributor. Display only; nothing here decides access.
+
+**Follow-up the same day — Settings screen and personal accent colour.** A new public `/settings`
+route (`app/(public)/settings/`) holds Personalize: Appearance (Light, Dark, Match device), accent
+colour (seven presets — Kingfisher, Cobalt, Grape, Rose, Pōhutukawa, Ember, Fern — plus Custom via
+the native colour picker, with a live preview in both themes) and Language (English / 简体中文).
+`lib/theme/accent.ts` keeps the chosen hue and moves only OKLCH lightness to fixed contrast targets
+(light 5.3:1, dark 7.6:1, tags 6.4 / 8.2), so any colour stays at or above 4.5:1. The choice is
+stored per device in localStorage (`kakinotes-accent`, via `lib/theme/preferences.ts`) and applied
+before first paint by `lib/theme-init-script.ts` with strict validation of the stored value;
+`globals.css` tokens read `var(--user-accent-light|dark)` with Kingfisher as the default. The
+theme and language rows are gone from the account menu and the visitor ☰ menu (replaced by one
+Settings row), and the desktop header's theme/language icons became a single settings icon;
+`theme-toggle.tsx` and `locale-toggle.tsx` were removed. Display preferences only; nothing here
+decides access.

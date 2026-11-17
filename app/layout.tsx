@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono } from "next/font/google";
+import { Figtree, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ToastProvider } from "@/components/ui/toast";
@@ -14,10 +14,18 @@ import { NoPinchZoom } from "@/components/no-pinch-zoom";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import "./globals.css";
 
-// The app's default (sans) typeface is Avenir Next, declared globally via
-// the --font-sans CSS variable in app/globals.css -- see that file for the
-// full fallback stack and rationale. Geist_Mono is kept here only for
-// monospace/code text (--font-mono), which stays untouched by that change.
+// The app's typeface is Figtree (2026-11-17 redesign): a warm, rounded,
+// very legible sans for long reading on a phone. next/font self-hosts it at
+// build time -- no npm dependency, no request to Google from the reader.
+// It feeds --font-sans in app/globals.css, whose fallback stack (and its
+// Chinese faces) stays behind it. Geist_Mono stays for code and the few
+// tabular figures that want a mono.
+const figtree = Figtree({
+  variable: "--font-figtree",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
@@ -61,8 +69,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export const viewport: Viewport = {
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#eef2f7" },
-    { media: "(prefers-color-scheme: dark)", color: "#020617" },
+    { media: "(prefers-color-scheme: light)", color: "#f2f0ec" },
+    { media: "(prefers-color-scheme: dark)", color: "#1c1a18" },
   ],
 };
 
@@ -93,7 +101,7 @@ export default async function RootLayout({
     // voice from it, so it must flip with the toggle (Engineering Rule 19).
     <html
       lang={locale}
-      className={`${geistMono.variable} h-full antialiased`}
+      className={`${figtree.variable} ${geistMono.variable} h-full antialiased`}
       // The blocking inline script below sets data-theme before hydration,
       // deliberately differing from the server-rendered markup (which has
       // no data-theme attribute) -- suppressHydrationWarning tells React

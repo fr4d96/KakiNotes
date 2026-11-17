@@ -87,7 +87,8 @@
     "myPhotos": "My Photos",
     "home": "Home",
     "tabBar": "Quick navigation",
-    "affirmations": "Affirmation notes"
+    "affirmations": "Affirmation notes",
+    "settings": "Settings"
   },
   "footer": {
     "tagline": "A storytelling community for honest working-holiday experiences across Aotearoa New Zealand.",
@@ -1521,5 +1522,35 @@
       "fullQuality": "You also keep a full-quality copy of each photo in that folder, just for you."
     },
     "whyRequired": "Every contributor needs this, because Kakinotes doesn’t store story photos itself. You can check or change the connection later in Account → Google Drive."
+  },
+  "settings": {
+    "metaTitle": "Settings",
+    "title": "Settings",
+    "personalize": "Personalize",
+    "theme": "Appearance",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "Match device",
+    "accent": "Accent colour",
+    "accentHelp": "Used for buttons, links and highlights. Any colour works: it is tuned for light and dark so text on it stays easy to read.",
+    "custom": "Custom",
+    "customPick": "Pick any colour",
+    "previewLight": "Light",
+    "previewDark": "Dark",
+    "previewWord": "Aotearoa",
+    "previewButton": "Search",
+    "previewTag": "Queenstown",
+    "reset": "Back to Kingfisher",
+    "language": "Language",
+    "deviceNote": "Saved on this device.",
+    "presets": {
+      "kingfisher": "Kingfisher",
+      "cobalt": "Cobalt",
+      "grape": "Grape",
+      "rose": "Rose",
+      "pohutukawa": "Pōhutukawa",
+      "ember": "Ember",
+      "fern": "Fern"
+    }
   }
 }

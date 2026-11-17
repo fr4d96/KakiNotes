@@ -1,7 +1,7 @@
 {
   "$comment": "iPhone portrait screens for apple-touch-startup-image. width/height are CSS points, ratio the device pixel ratio. Read by scripts/generate-splash-screens.mjs (makes public/splash/*.png) and lib/pwa/splash-screens.ts (the <link> media queries). Add a row, rerun the script.",
   "iconSize": 120,
-  "background": { "light": "#eef2f7", "dark": "#020617" },
+  "background": { "light": "#f2f0ec", "dark": "#1c1a18" },
   "devices": [
     { "name": "iPhone 16/17 Pro Max", "width": 440, "height": 956, "ratio": 3 },
     { "name": "iPhone Air", "width": 420, "height": 912, "ratio": 3 },

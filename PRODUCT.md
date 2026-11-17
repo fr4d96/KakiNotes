@@ -89,6 +89,11 @@ also claim to be a booking site, social network, or advice platform.
   purchase-style CTAs, no traveller-headcount or social-proof stat badges, no comment threads/like
   buttons/follow buttons/avatar-stack social proof, no budgeting calculators/checklists/interactive
   maps, no framing that implies personalised visa/legal/financial advice.
+- **Look (owner preference, 2026-11-17):** photo-first and calm, in the app language of
+  Instagram / Pinterest — real story photos lead, rounded photos, pills, no boxes around story cards.
+  Not themed or gimmicky (no costume worlds: dots/night field, film prints, crate labels were all
+  turned down). Comfortable for long reading in BOTH themes: light is a soft warm gray, never stark
+  white; dark is a soft warm charcoal, never pure black. Warm and human, with one Kingfisher-blue accent (#0068a3 / #3fb6f2; owner choice — not pink, not a generic link blue).
 - Every public story must carry a visible "personal experience, not advice" label near the top —
   a hard product requirement, not a footnote.
 - Existing incumbent palette (`app/globals.css`): forest green + warm paper/sand neutrals with a

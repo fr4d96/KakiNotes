@@ -1,628 +1,507 @@
 ---
 name: Kakinotes
-description: A cinematic dark archive of real, first-person Working Holiday Visa stories
+description: Real Working Holiday stories, photo-first, on calm warm grounds in both themes
 colors:
-  # "Night Field" -- the app-wide palette. Values below are the dark
-  # rendition (the signature one). The light counterpart is listed under
-  # light-* and lives in :root / [data-theme="light"] in app/globals.css.
-  background: "#020617"
-  foreground: "#f4f6f5"
-  surface: "#0b1222"
-  surface-muted: "#0f172a"
-  border-subtle: "rgba(226, 232, 240, 0.14)"
-  accent: "#35d0c4"
-  accent-foreground: "#020617"
-  forest: "#0d1a20"
-  fern: "#35d0c4"
-  tag-background: "rgba(53, 208, 196, 0.14)"
-  tag-foreground: "#8fe6da"
-  muted-foreground: "#98a6a5"
-  destructive: "#ff6b6b"
-  light-background: "#eef2f7"
-  light-foreground: "#0b1222"
-  light-surface: "#ffffff"
-  light-surface-muted: "#e3e8ef"
-  light-border-subtle: "rgba(11, 18, 34, 0.14)"
-  light-accent: "#006f68"
-  light-accent-foreground: "#ffffff"
-  light-tag-background: "rgba(0, 111, 104, 0.1)"
-  light-tag-foreground: "#005d57"
-  light-forest: "#0b1222"
-  light-muted-foreground: "#56617a"
-  light-destructive: "#c0392b"
-  # Shadow ink. Light uses the same slate-tinted ink as the page ink, at low
-  # alpha, never neutral black: a black shadow on the cool ground reads as a
-  # flat gray smudge. Dark uses neutral black -- there is no tinted ground to
-  # cast against there, and shadow does almost no work in dark anyway. See
-  # Elevation & Depth.
-  shadow-ink-light: "rgba(11, 18, 34, 0.06-0.18)"
-  shadow-ink-dark: "rgba(0, 0, 0, 0.3-0.55)"
+  # "Photo-first" (2026-11-17), the app-wide palette. Keys without a prefix
+  # are the light rendition; dark-* keys are the dark rendition. Both live in
+  # app/globals.css (:root + [data-theme="light"], and the
+  # prefers-color-scheme dark block + [data-theme="dark"]).
+  accent: "#0068a3"
+  accent-foreground: "#ffffff"
+  tag-background: "rgba(0, 104, 163, 0.1)"
+  tag-foreground: "#00527f"
+  background: "#f2f0ec"
+  surface: "#fbfaf8"
+  surface-muted: "#e7e4df"
+  foreground: "#24201c"
+  muted-foreground: "#675f57"
+  border-subtle: "rgba(36, 32, 28, 0.13)"
+  destructive: "#b42318"
+  dark-accent: "#3fb6f2"
+  dark-accent-foreground: "#1c1a18"
+  dark-tag-background: "rgba(63, 182, 242, 0.15)"
+  dark-tag-foreground: "#8fd3f7"
+  dark-background: "#1c1a18"
+  dark-surface: "#262320"
+  dark-surface-muted: "#302d29"
+  dark-foreground: "#ece7e0"
+  dark-muted-foreground: "#aaa297"
+  dark-border-subtle: "rgba(236, 231, 224, 0.13)"
+  dark-destructive: "#ff7d6e"
+  # Personal accent presets (Settings), the source hex each preset is derived from.
+  accent-preset-kingfisher: "#0068a3"
+  accent-preset-cobalt: "#2747d8"
+  accent-preset-grape: "#7b3fbf"
+  accent-preset-rose: "#c2375b"
+  accent-preset-pohutukawa: "#c8102e"
+  accent-preset-ember: "#d9622b"
+  accent-preset-fern: "#2f7d3b"
+  # Staff analytics only (/moderation, /readiness). Never on a public route.
+  chart-1: "#63bcb2"
+  chart-2: "#17968b"
+  chart-3: "#00706a"
+  chart-4: "#004b46"
+  dark-chart-1: "#24685f"
+  dark-chart-2: "#2f9086"
+  dark-chart-3: "#3cbdb0"
+  dark-chart-4: "#7fe9df"
+  # The story editor's expense donut only. Fixed order, six max.
+  expense-1: "#009489"
+  expense-2: "#b4761a"
+  expense-3: "#8043a0"
+  expense-4: "#4a8020"
+  expense-5: "#1f6fd0"
+  expense-6: "#a83250"
+  dark-expense-1: "#2aa89b"
+  dark-expense-2: "#b8842a"
+  dark-expense-3: "#a06ec2"
+  dark-expense-4: "#689a35"
+  dark-expense-5: "#4a90dd"
+  dark-expense-6: "#d55f7d"
 typography:
   display:
-    fontFamily: "'Avenir Next', 'Avenir', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "clamp(2.35rem, 5vw, 4.7rem)"
+    fontFamily: "Figtree, 'Avenir Next', Avenir, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif"
+    fontSize: "clamp(2.3rem, 8.5vw, 4.25rem)"
     fontWeight: 800
-    lineHeight: 0.98
-    letterSpacing: "-0.035em"
+    lineHeight: 1.02
+    letterSpacing: "-0.03em"
+  headline:
+    fontFamily: "Figtree, 'Avenir Next', Avenir, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif"
+    fontSize: "1.5rem"
+    fontWeight: 800
+    lineHeight: 1.25
+    letterSpacing: "-0.025em"
+  title:
+    fontFamily: "Figtree, 'Avenir Next', Avenir, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif"
+    fontSize: "1.125rem"
+    fontWeight: 600
+    letterSpacing: "-0.025em"
+  title-small:
+    fontFamily: "Figtree, 'Avenir Next', Avenir, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: 600
+    lineHeight: 1.375
+    letterSpacing: "-0.025em"
   body:
-    fontFamily: "'Avenir Next', 'Avenir', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+    fontFamily: "Figtree, 'Avenir Next', Avenir, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif"
+    fontSize: "1rem"
+    fontWeight: 400
+    lineHeight: 1.5
   label:
-    fontFamily: "'Avenir Next', 'Avenir', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+    fontFamily: "Figtree, 'Avenir Next', Avenir, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif"
+    fontSize: "0.875rem"
     fontWeight: 700
+  caption:
+    fontFamily: "Figtree, 'Avenir Next', Avenir, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif"
+    fontSize: "0.75rem"
+    fontWeight: 600
+  mono:
+    fontFamily: "'Geist Mono', ui-monospace, monospace"
+    fontSize: "0.75rem"
 rounded:
-  pill: "999px"
-  lg: "0.5rem"
-  xl: "0.75rem"
-  card: "28px"
-  card-compact: "20px"
+  sm: "8px"
+  md: "10px"
+  lg: "12px"
+  xl: "16px"
+  photo: "16px"
+  panel: "20px"
+  panel-lg: "24px"
+  pill: "9999px"
 spacing:
-  card-padding: "16px"
-  button-padding: "11px 18px"
+  gutter: "16px"
+  gutter-sm: "24px"
+  gutter-lg: "32px"
+  container: "1440px"
+  pin-grid-gap: "12px"
+  wall-gap: "10px"
 components:
   button-primary:
     backgroundColor: "{colors.accent}"
     textColor: "{colors.accent-foreground}"
+    typography: "{typography.label}"
     rounded: "{rounded.pill}"
-    padding: "{spacing.button-padding}"
-  button-secondary:
+    padding: "0 20px"
+    height: "46px"
+  button-outline:
     backgroundColor: "transparent"
     textColor: "{colors.foreground}"
+    typography: "{typography.label}"
     rounded: "{rounded.pill}"
-    padding: "{spacing.button-padding}"
-  chip:
+    padding: "0 20px"
+    height: "48px"
+  search-pill:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.foreground}"
+    typography: "{typography.body}"
+    rounded: "{rounded.pill}"
+    padding: "6px 6px 6px 16px"
+  tag:
     backgroundColor: "{colors.tag-background}"
     textColor: "{colors.tag-foreground}"
     rounded: "{rounded.pill}"
     padding: "2px 8px"
-  card-story:
+  story-pin-photo:
+    backgroundColor: "{colors.surface-muted}"
+    rounded: "{rounded.photo}"
+  segmented-switch:
+    backgroundColor: "transparent"
+    textColor: "{colors.foreground}"
+    rounded: "{rounded.pill}"
+    padding: "2px"
+  segmented-switch-thumb:
+    backgroundColor: "{colors.surface-muted}"
+    rounded: "{rounded.pill}"
+  place-tile:
+    backgroundColor: "{colors.surface-muted}"
+    rounded: "{rounded.photo}"
+    width: "132px"
+  photo-wall-tile:
+    backgroundColor: "{colors.surface-muted}"
+    rounded: "{rounded.photo}"
+  icon-button-overlay:
     backgroundColor: "{colors.surface}"
-    rounded: "{rounded.xl}"
-    padding: "{spacing.card-padding}"
+    textColor: "{colors.foreground}"
+    rounded: "{rounded.pill}"
+    size: "36px"
+  input:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.foreground}"
+    rounded: "{rounded.md}"
+    padding: "8px 12px"
+    height: "44px"
 ---
 
 # Design System: Kakinotes
 
 ## Overview
 
-**Creative North Star: "Night Field"**
+**Creative North Star: "The Warm Pinboard"**
 
-Kakinotes reads as a documentary archive shown in a darkened room, not a travel-agency storefront.
-A near-black ground lets photography carry the light; one saturated cyan is the only voice raised
-above the neutrals, and it is spent on state and emphasis rather than decoration. Structure is
-carried by hairline rules and mono numerals — the vocabulary of a catalogue or a record, not a
-marketing page. The system is cinematic and credible: confident without being flashy, personal
-without being social-media-coded. It explicitly rejects travel-agency gloss (star ratings,
-"Explore Now" CTAs, traveller-count badges, avatar-stack social proof) and social-feed energy
-(comment threads, like buttons) — see PRODUCT.md's Brand Commitments for the full anti-pattern
-list, which this system enforces visually.
+Kakinotes looks like the photo apps its readers already live in: the stories' own photos lead, set
+as soft rounded tiles on a calm, warm ground, with the words sitting quietly underneath. It is the
+category's standard app language (the owner's pinned reference is Instagram / Pinterest), chosen
+deliberately, so nothing about the frame competes with the places and people in the pictures. Real
+photos from real accounts are the only imagery; there is no illustration, no texture, no themed
+costume.
 
-This palette began as a scoped exception on the landing page and was promoted to cover every
-route. The warm paper / forest / terracotta "Field Journal" system it replaced is gone; no route
-still uses it.
+Comfort for long reading in both themes is the material premise. Light is a soft warm gray, never
+stark white; dark is a soft warm charcoal, never pure black, with off-white ink to cut glare. Both
+renditions share one warm hue family and one blue accent that only ever marks something the
+reader can act on. Density is app-like: section heads at card scale rather than poster scale, story
+pins two to four across, controls as pills, and one living element on the home screen (a slowly
+drifting wall of story photos) rather than many small announcements.
+
+The previous "Night Field" world (near-black slate ground, cyan accent, the dotted night-sky hero,
+always-dark photographic bands) is retired and its hero has been deleted. Do not bring any of it
+back, and do not swap in another costume world; film prints and crate labels were turned down for
+the same reason.
+
+This is stage 1 of an app-wide redesign. The home screen, the story pins, the place tiles, the
+footer and the filter bar have had the dedicated pass. Story pages, My Stories, the editor and the
+staff tools inherit the tokens below automatically but have not been redesigned yet; where this
+file says nothing specific about them, it is because no rule has been decided, not because the old
+one still holds.
 
 **Key Characteristics:**
 
-- Near-black ground with cool off-white ink, and one cyan accent used sparingly
-- Heavy sans throughout — no serif anywhere; Geist Mono carries every numeral and column label
-- Depth comes from surface fills in dark and from soft warm shadow in light; lift on interaction in both
-- Full-pill buttons and chips; the primary button is ghost-outline first, filling on hover
-- Motion is one authored idea (a lens focus pull) expressed in CSS scroll timelines, never JS
-  observers, and always collapses under `prefers-reduced-motion`
+- Story photos lead; every photo is rounded on its own and nothing boxes it in.
+- Warm-gray ground in light, warm charcoal in dark; one warm hue family across both.
+- One blue accent, used only for actions, focus, active states and the headline's accent word.
+- Figtree throughout; hierarchy by weight and tracking, not by a second face.
+- Pills for controls, rounded-2xl for photos (story pins and place tiles alike).
+- Shadows carry depth in light; surface fills carry it in dark.
+- One slow, pausable drift on the home hero; otherwise motion is feedback, not decoration.
 
 ## Colors
 
-A near-black ground and a cool off-white ink in the signature dark rendition; a **cool**,
-slate-tinted off-white ground and slate ink in its light counterpart — the same archive seen in
-daylight rather than in a darkened room, not a different world. Both renditions share one hue
-family; the only warm hues anywhere in the app are the expense-donut identities. Exactly one
-saturated accent in both. Values below are written `dark / light`.
-
-An earlier light rendition (2026-09, retired 2026-09-20) used warm neutrals — beige ground, warm
-ink, tan recesses — against this cool dark palette. It clashed with the always-dark bands
-(`.nf-dark-band`, the always-dark hero and contribute band) and read muddy, so it was retired in
-favour of the same slate hue family dark already uses. The accent stays cool teal in both
-renditions, unaffected by this change.
+One warm neutral family in two renditions plus a single blue accent; everything else is
+staff-only data colour.
 
 ### Primary
 
-- **Signal Cyan** (`#35d0c4` dark / **`#006f68` light**): the one accent. CTA fills and outlines,
-  the active headline word, active filter chips, the live slide index, focus rings (`--ring`),
-  progress fills. This is the one token that cannot simply invert: `#35d0c4` reads at ~10:1 on the
-  near-black ground but only ~1.9:1 on a near-white one, so light mode uses a deepened rendition of
-  the same hue (187°), which clears 5.5:1 on the page ground, 6.05:1 on raised (white) surfaces,
-  and 4.9:1 on `--surface-muted` (its tightest pairing), as well as under white text as a fill
-  (`--accent-foreground` is `#020617` dark / `#ffffff` light).
+- **Kingfisher** (#0068a3 light / #3fb6f2 dark): the one accent. Primary buttons (filled, white text
+  in light at 5.98:1; dark-ink text in dark at 7.59:1), text links such as "See all" (5.26:1 on the
+  light ground, 7.59:1 on the dark one), the hero headline's accented words, the focus ring, the
+  tab bar's active pill, and check icons in the trust row. Named for the kōtare, New Zealand's sacred kingfisher: a cyan-leaning blue that keeps its
+  colour in both themes (OKLCH chroma 0.123 light / 0.135 dark), where the generic link blue it
+  replaced went pastel in dark. (Owner choice 2026-11-17, after raspberry and a standard link blue
+  were both turned down.)
+  The accent is personalisable per device in Settings: seven presets (kingfisher #0068a3,
+  cobalt #2747d8, grape #7b3fbf, rose #c2375b, pohutukawa #c8102e, ember #d9622b, fern #2f7d3b)
+  plus any custom colour. `lib/theme/accent.ts` keeps the hue and moves only lightness to fixed
+  contrast targets, so every choice stays at or above 4.5:1. Kingfisher remains the default.
+- **Kingfisher Wash** (tag-background, 10% / 15% accent) with **Kingfisher Ink** (#00527f / #8fd3f7):
+  tag pills on story pins and the soft accent-tinted contribute panel on the home screen.
 
 ### Neutral
 
-- **Void** (`#020617` dark / `#eef2f7` light): page ground. Near-black rather than pure black; the
-  light counterpart is a cool, slate-tinted off-white (one step below Tailwind's slate-100, the
-  same hue family as dark), never stark `#fff`: a pure-white ground under near-black ink glares
-  and reads clinical.
-- **Ink** (`#f4f6f5` dark / `#0b1222` light): body text. Light's ink is literally dark's own
-  `--surface` value. 17.2:1 on its own ground.
-- **Surface** (`#0b1222` dark / `#ffffff` light): raised surfaces — cards, panels, popovers. Light
-  is now plain white; the tinted ground, not the card, is what keeps the page from glaring.
-- **Surface Muted** (`#0f172a` dark / `#e3e8ef` light): image placeholders, muted fills, inset
-  wells.
-- **Muted Ink** (`#98a6a5` dark / `#56617a` light): secondary and supporting copy. Light's muted
-  ink clears 5.7:1 on the ground, 6.2:1 on white, and 5.05:1 on `--surface-muted` — never dim body
-  text with an opacity below ~60% instead.
-- **Fog** (`rgba(226, 232, 240, 0.14)` dark / `rgba(11, 18, 34, 0.14)` light): the only border
-  colour in the system — the ink at low opacity, never a gray.
-- **Destructive** (`#ff6b6b` dark / `#c0392b` light): errors and destructive actions only.
-- **Shadow ink** (`rgba(0, 0, 0, 0.3-0.55)` dark / `rgba(11, 18, 34, 0.06-0.18)` light): light
-  shadows are the theme's own slate ink at low alpha, never neutral black — a black shadow on the
-  cool ground reads as a flat gray smudge. Same geometry and alpha as before, only the hue now
-  matches the slate-tinted ink instead of the retired warm one; dark keeps neutral black, since
-  there is no tinted ground there to smudge against.
+- **Warm Ground** (#f2f0ec / #1c1a18): the page itself, the solid header and tab bar
+  (`--header-solid` is the ground).
+- **Card Lift** (#fbfaf8 / #262320): a step lighter than the ground. Surfaces that sit on the page:
+  the search pill, the footer, form fields, the quiz row, popovers, overlay icon buttons.
+- **Recess** (#e7e4df / #302d29): the colour under a photo before it loads, input recesses, the
+  thumb of a segmented switch. A recess, never a grouping panel.
+- **Warm Ink** (#24201c / #ece7e0): all body and heading text (14.2:1 light, 14.1:1 dark).
+- **Muted Ink** (#675f57 / #aaa297): secondary lines (hero sub, place · year on small pins, footer
+  links). 5.5:1 on the light ground, 6.9:1 on the dark one.
+- **Hairline** (border-subtle, warm ink at 13%): every border: the footer rule, the segmented
+  switch outline, outline pills, inputs, the hairlines between sections.
+- **Error Red** (#b42318 / #ff7d6e): `text-destructive` for errors only.
 
-### Staff chart ramp
+### Staff and editor data colours
 
-- **Chart ramp** (`--chart-1` … `--chart-4`): one sequential teal ramp used only by the staff
-  analytics surfaces (`/moderation`, and available to `/readiness`). Steps are chosen per
-  rendition so "more severe" always carries the **most** contrast against its own ground —
-  `#63bcb2 → #17968b → #00706a → #004b46` in light (darkest = most severe), `#24685f → #2f9086 →
-#3cbdb0 → #7fe9df` in dark (brightest = most severe). Both sets are validated for a single hue
-  (spread ≤ 4°), monotone lightness, adjacent-step gaps ≥ 0.06 L, and a near-surface end clearing
-  2:1 against that rendition's `--surface`. Because it is one hue it is not a second accent; it
-  never appears on a public route.
+- **Chart ramp** (`--chart-1` to `--chart-4`): one sequential teal ramp for staff analytics only,
+  stepped per rendition so the most severe step carries the most contrast against its own ground
+  (darkest in light, brightest in dark). Unchanged by this redesign; its near-surface end still
+  clears 2:1 on the new surfaces (2.2:1 light, 2.4:1 dark). Never on a public route.
+- **Expense categories** (`--expense-1` to `--expense-6`): the only categorical palette, for the
+  story editor's expense donut. Identities, not magnitudes; assigned in fixed order, six maximum,
+  the seventh and beyond fold into "Smaller categories". Every step still clears 3:1 against the
+  new surfaces. The donut must keep its direct labels, legend and 2px gaps between slices.
 
 ### Named Rules
 
-**The One Accent Rule.** Signal Cyan is the only colour used for calls-to-action and emphasis.
-Semantic status colours (approve-green, reject-red) are permitted in the staff moderation tools,
-where they carry meaning rather than brand, and nowhere else.
+**The One Blue Rule.** The accent marks actions, focus, active states and the headline's
+accent words, and nothing decorative. No second brand colour. Semantic status colours in the staff
+moderation tools and the two staff/editor data palettes above are the only exceptions, because they
+carry meaning rather than brand.
 
-**The Two Renditions Rule.** Every colour decision is made for both themes at once, and neither is
-an inversion of the other. Before adding a literal colour, check it against both grounds; if it
-only works on one, it needs a token with two values, not a `dark:` override.
+**The Warm Ground Rule.** Neither rendition ever uses stark white or pure black as a ground. Any new
+neutral is a member of the same warm family (hue around 70-85 in OKLCH, very low chroma); a cool
+gray or slate next to these reads as a leftover.
 
-**The Always-Dark Band Rule.** A couple of surfaces are permanently dark in BOTH themes because
-they are the night field on its own near-black ground: the landing hero plate and the
-`.journiq-share` contribute band (the same field, without story points). The footer used to be a third (`--forest`, the "Deep Ink Band"); it is not any more — see
-The One Dark Band Rule below.
-Tokens still flip underneath them, so anything token-driven inside one resolves to the _light_
-rendition against a near-black photo — which is how the hero's CTA once rendered as near-black ink
-on a near-black photo (1.1:1, effectively invisible) and the accent word came out as the deep teal
-instead of the signature cyan. Mark such a section `.nf-dark-band` (`app/globals.css`), which pins
-`--foreground`/`--accent`/`--accent-foreground`/`--muted-foreground`/`--border-subtle` to their dark
-values so the band behaves exactly as it does in dark mode. A component that can appear both inside
-and outside such a band — `.night-button-primary` is the live example — takes `color: inherit`
-rather than any token, so it is correct in both without a call-site flag.
+**The Two Renditions Rule.** Every colour is decided for both themes at once, as a token with two
+values in the four token blocks of `app/globals.css`, never as a one-off `dark:` override.
+
+**The One Switch Rule.** `data-theme="light"|"dark"` on `<html>` is the only theming signal. A
+blocking script in `app/layout.tsx` sets it before paint, the theme toggle flips it, and the
+`@custom-variant dark` declaration binds Tailwind's `dark:` to the same attribute. Never remove that
+declaration or add a second signal.
 
 ## Typography
 
-**Display & Body Font:** Avenir Next (with an -apple-system/Segoe UI/Roboto fallback stack for
-non-Apple platforms, since Avenir Next is not freely redistributable and isn't bundled). One
-family carries the whole interface; display is separated from body by weight and tracking, not by
-a second face.
-**Mono:** Geist Mono (`--font-geist-mono`, via `next/font/google`) — a structural voice, not just
-a code face: every numeral, column label, entry count, and index field is set in it.
+**Display Font:** Figtree (self-hosted via `next/font`, with the Avenir Next / system stack and the
+PingFang SC / Microsoft YaHei / Noto Sans SC Chinese faces behind it)
+**Body Font:** Figtree (same stack)
+**Label/Mono Font:** Geist Mono, for code and the few tabular figures that want it (the photo
+counter pill, a story's date line on the home shelf)
 
-**Character:** Heavy, tightly-tracked sans against generous neutrals, with mono used the way a
-catalogue uses it — for the parts that are a record rather than prose.
+**Character:** A warm, rounded, very legible sans for long reading on a phone. One family carries
+the whole interface; headings separate themselves by weight (800) and tight negative tracking,
+labels by bold weight.
 
 ### Hierarchy
 
-- **Display** (`clamp(2.35rem, 5vw, 4.7rem)`, weight 800, line-height 0.98, tracking -0.035em):
-  the `.journiq-heading` utility — hero and page headlines.
-- **Section** (`clamp(2rem, 4.4vw, 3.6rem)`, weight 800, line-height 1.03, tracking -0.03em): the
-  `.night-heading` utility — section headings. Same lettering as Display, one step down.
-- **Body** (default weight): all running copy and UI text.
-- **Label** (weight 700–900): nav links, button labels, chip text — bold-to-black weight is the
-  signal that something is interactive or structural, not just decorative.
-- **Record** (Geist Mono, `text-xs`, tracking 0.18em on axis labels): numerals, index fields,
-  column headers, entry counts.
+- **Display** (800, clamp(2.3rem, 8.5vw, 4.25rem), line-height 1.02, -0.03em): the home hero
+  headline only. One phrase inside it takes the accent.
+- **Headline** (800, 1.5rem rising to 1.875rem from `sm`, leading-tight, -0.025em): every section
+  head on the home screen, one size for all of them.
+- **Title** (600, 1.125rem, -0.025em): a big story pin's title.
+- **Title Small** (600, 0.875rem, line-height 1.375): a small story pin's title, clamped to two
+  lines.
+- **Body** (400, 1rem, 1.5): running copy and inputs. 16px is also the touch floor for any field,
+  so iOS never zooms. The hero sub-line steps to 1.125rem from `sm` and caps at 40ch.
+- **Label** (700, 0.875rem): button text, nav links, "See all", trust points (1rem there).
+- **Caption** (600, 0.75rem): wall captions, place · year lines,
+  tab-bar labels (700).
 
 ### Named Rules
 
-**The No-Serif Rule.** There is no serif in this system. The Georgia display face belonged to the
-retired Field Journal palette; reintroducing one anywhere reads as a leftover, not an editorial
-flourish.
+**The One Family Rule.** Figtree everywhere, including headings. There is no serif and no second
+display face; hierarchy comes from weight and tracking.
 
-**The Display-Clamp Rule.** `.journiq-heading` and `.night-heading` both carry a font-size clamp
-and are defined after Tailwind's utilities, so they **win** over a `text-xl`-style override at
-equal specificity. Use them for page and section headings only; a card- or entry-scale heading
-takes the lettering explicitly (`font-extrabold`, `tracking-[-.02em]`) without the class.
-
-**The Mono-Means-Record Rule.** Geist Mono marks data the reader can verify — a position, a year,
-a place, a count. Never use it to make prose look technical.
+**The Card-Scale Heading Rule.** Section heads stay at Headline size, never display size: this is an
+app screen, not a poster. Display is reserved for one headline per screen.
 
 ## Layout
 
-Container caps at `max-w-[1440px]` with `px-4 sm:px-6 lg:px-8`; section rhythm is
-`py-16 sm:py-24 lg:py-28`. Mobile-first: grids, filter bars, and the header nav all collapse to a
-single column / `MobileNavToggle` below the `md` breakpoint, with the header's primary nav and auth
-controls hidden entirely on mobile in favour of a toggle. The sticky header holds a fixed
-`min-h-[76px]` regardless of transparent/solid state, so toggling never causes layout shift — pages
-that tuck content behind a transparent hero header supply their own `-mt-[76px]` rather than the
-header changing size.
+A centred container capped at 1440px with 16px gutters on phones, 24px from `sm`, 32px from `lg`.
+Mobile first: the home hero stacks words, then the photo wall on a phone, and from `lg` becomes a
+5:6 two-column split (words left, wall right, vertically centred). Section rhythm is top padding
+only, roughly 32-48px on phones and 48-64px from `sm`, so sections read as one scroll rather than
+separate slabs.
 
-The landing hero is `h-[92svh]` clamped `min-h-[560px] max-h-[900px]` — `svh` rather than `vh` so a
-collapsing mobile URL bar does not resize it mid-scroll, clamped so it stays cinematic on a short
-phone without becoming a canyon on a tall desktop.
+Story pins sit in a grid of two on phones, three from `sm`, four from `lg`, with 12px gaps (16px
+from `sm`). Big pins on the home screen use the wider shelf row. The photo wall is three columns
+on phones, four from `sm`, five from `xl`, with 10px gaps (12px from `sm`), at a fixed height (400,
+460, 600px).
 
-**The Two Shapes Rule.** A row that needs to become columns uses one grid, not two layouts: the
-mobile shape is `[numeral | stacked content]`, and from `md` up an inner wrapper switches to
-`display: contents` so its children drop into the parent grid as real columns
-(`[numeral | thumb | title | meta | arrow]`). Never duplicate the markup per breakpoint.
+The sticky header keeps a fixed 76px bar plus the safe-area inset; anchor jumps land below it. On
+phones a bottom tab bar carries navigation; the footer appears on the home pages only.
+
+**The Edge-Bleed Rule.** A sideways row on a phone runs to the screen edges (negative margin, inner
+padding) so the cut-off item at the edge is the swipe affordance; it wraps or sits in the container
+from `sm` up. The place tiles do this. No "swipe" hint text.
 
 ## Elevation & Depth
 
-**The two renditions do not express depth the same way, and they must not be asked to.**
+A hybrid that differs by rendition on purpose. In light, fills alone barely separate a card from
+the ground, so depth lives in a warm shadow ramp cast in the page's own ink at low alpha, each step
+a 1px edge ring, a tight contact shadow and a wide ambient one. In dark, depth lives in the surface
+fills (ground, then a lighter surface, then a lighter recess) and the shadows are near-invisible
+neutral black that only keeps an edge from fusing with the ground.
 
-Dark expresses elevation with **fills**. `#020617` → `#0b1222` is only 1.07:1 by WCAG, but it is a
-3.2× jump in relative luminance (0.21% → 0.67%), and dark-adapted vision reads ratios at low
-luminance easily. A raised card separates from the ground on fill alone, and shadow does almost no
-work.
+### Shadow Vocabulary
 
-Light cannot do that. Mirroring dark's 1.07:1 gave 89.9% → 96.6% — a 1.07× luminance jump, which
-is perceptually nothing. Under the earlier flat-at-rest rule every card, panel, and modal in light
-mode was invisible as a distinct surface and the page read as one flat beige field. There is no
-headroom to fix that with fills (light surfaces are already near white), so **light carries
-elevation in shadow**, with the fills widened only slightly (to ~1.16:1) to support it.
-
-### The elevation scale
-
-Five tokens, defined per theme in `app/globals.css` and aliased onto Tailwind's shadow scale via
-`@theme inline`, so every `shadow-*` utility in the app is theme-aware without touching its call
-site:
-
-| Token           | Tailwind                   | Use                                              |
-| --------------- | -------------------------- | ------------------------------------------------ |
-| `--elevation-1` | `shadow-xs` / `shadow-2xs` | hairline contact; rarely needed                  |
-| `--elevation-2` | `shadow-sm`                | **resting** cards, panels, the sticky header     |
-| `--elevation-3` | `shadow-md`                | small hover response                             |
-| `--elevation-4` | `shadow-lg` / `shadow-xl`  | card hover, primary-button hover                 |
-| `--elevation-5` | `shadow-2xl`               | the story-card stack, the destination-quiz panel |
-
-Light renders each as three layers — a 1px ring at 0.06 (the edge: a white card on a near-white
-ground has no fill contrast, and without the ring white cards read as loose
-strips rather than surfaces), a tight contact shadow, and a wide ambient one — in the theme's own
-**slate ink** (`rgba(11, 18, 34, …)` at 0.06–0.18), never neutral black, which reads as a flat
-grey smudge on the cool ground. Dark renders the same geometry in neutral black at low alpha,
-near-invisible by design: it exists only to stop a raised surface fusing with the ground at its
-edge.
-
-`@theme inline` (not plain `@theme`) is required — it emits `var(--elevation-N)` into the utility
-instead of snapshotting the value at build time, so the shadow re-resolves when `data-theme` flips.
+- **Edge** (`--elevation-1`, Tailwind `shadow-xs`): hairline lift.
+- **Resting** (`--elevation-2`, `shadow-sm`): a story pin's photo at rest, the quiz row, overlay
+  icon buttons, the header.
+- **Raised** (`--elevation-3`, `shadow-md`): the hero search pill; a pin's photo on hover.
+- **Lifted** (`--elevation-4`, `shadow-lg`/`shadow-xl`): hover lift on legacy pill buttons and the
+  home shelf cards.
+- **Floating** (`--elevation-5`, `shadow-2xl`): modals and sheets.
 
 ### Named Rules
 
-**The Recess Rule.** `--surface-muted` is a genuine **recess** — darker than the ground in light,
-lighter in dark. It is for inputs, image placeholders, insets, chips, and progress tracks. It must
-never be used to _group_ or _raise_ anything. A darker panel does not read as "raised" in daylight;
-it reads as dirty. (The `/stories` filter bar was exactly this mistake: a muted slab wrapping
-lighter inputs — elevation upside-down.)
+**The One Ramp Rule.** Tailwind's whole `shadow-*` scale is rebound to the themed elevation tokens,
+so every shadow is correct in both renditions. Never write an arbitrary `shadow-[...]` value; it can
+only be tuned for one ground. The tiny dark halo under photo dots is the one sanctioned exception,
+because it sits on a photo, not on the ground.
 
-**The One-Ramp Rule.** Reach for `shadow-sm`/`shadow-lg`/`shadow-2xl`, never a hardcoded
-`shadow-[…]` arbitrary value. A literal shadow can only be tuned for one rendition, and will be
-wrong in the other — which is how `0 28px 78px rgba(27,22,18,0.55)` on the story-card stack and
-`0 22px 70px rgba(0,0,0,.4)` on the quiz panel both became grey smudges in light mode.
-
-**The Ink-Tinted Shadow Rule.** If a shadow ever must be written literally, tint it with the
-palette's own foreground ink in light (now slate, `rgba(11, 18, 34, …)`). Never neutral black.
-
-**The One Dark Band Rule.** The light rendition gets exactly ONE full-width dark band: the
-`.journiq-share` contribute CTA. Everything else that used to be dark is either an inset plate (the
-hero) or flips with the theme (the footer, the header).
-
-The landing page used to open on a full-bleed near-black hero and close on the share band running
-straight into an always-dark footer — roughly 1400px of unbroken dark, with warm off-white body
-content sandwiched between them. It read as slabs from a different design pasted onto paper. It
-also hid a real bug: light `--forest` was `#17110d`, a warm brown-black left over from the retired
-Field Journal palette, butting directly against `.journiq-share`'s cool `rgba(2, 4, 6, …)` — two
-different blacks touching with a visible hue seam that existed only in light mode.
-
-Scarcity is what makes the remaining band mean something: with one dark band on the page, the
-contribute CTA is the emphatic beat it was always meant to be.
-
-**The Mounted Plate Rule.** Photography on the light ground goes in a rounded, shadowed container
-inside the page gutter (`rounded-[20px]` mobile / `rounded-[28px]` up, `shadow-2xl`), not
-edge-to-edge. A dark photo bled to the viewport edge reads as a slab; the same photo mounted reads
-as a photograph ON a page — which is also what an archive actually does with a plate. The hero
-follows this; new photographic sections should too.
+**The Recess Rule.** The recess colour is for things set into the page (a photo's loading ground, an
+input, a switch thumb), never for grouping content into a panel.
 
 ## Shapes
 
-Pill (`border-radius: 999px`) is the signature shape for anything interactive at button/chip scale
-— primary/secondary buttons, filter chips, tag badges, icon-only controls (theme toggle, avatar
-menu, carousel prev/next), and the destination-quiz progress bar. Cards use a softer `rounded-xl`
-(12px, story cards) 20px on the home screen's shelf cards and
-plates (28px plates from `sm`), and 16px on place tiles. Inputs use the smaller `--radius` scale (`rounded-md`, 6px)
-inherited from the shadcn/ui token mapping. Borders are always `--border-subtle`, never a harder
-gray/black line.
+Soft and consistent. The base radius is 12px (`--radius` 0.75rem), with an 8 / 10 / 12 / 16px
+scale derived from it. Every story photo, wall tile and pin photo is rounded at 16px (rounded-2xl)
+and clips its image; a hover zoom happens inside that clip. Controls at button or chip scale are
+full pills: buttons, the search field, tag pills, segmented switches, overlay icon buttons, the
+wall's caption chips and the photo counter. Places are rounded photo tiles. Larger panels on the home screen
+take 20px (the quiz row) or 24px (the contribute panel). Form fields take the smaller 10px step.
+Borders, where present, are always the warm hairline.
+
+**The Rounded Photo Rule.** A story photo carries its own rounded corners and is never placed inside
+a bordered or filled box to get them.
+
+**The Pill Control Rule.** A new interactive control at button or chip scale is a pill. (The filter
+bar's desktop Apply / Reset buttons and form fields still use the 10px step; they predate this pass
+and are not a pattern to copy for buttons.)
 
 ## Components
 
 ### Buttons
 
-- **Shape:** full pill (`border-radius: 999px`), `min-height: 46px`, `padding: 11px 18px`.
-- **Primary:** `background: var(--accent)`, `color: var(--accent-foreground)`, `font-weight: 900`
-  (black). Used via the `.journiq-button` utility class combined with `bg-accent
-text-accent-foreground`.
-- **Secondary / Ghost:** transparent or outlined — `border border-border-subtle` (or
-  `border-white/60` on the transparent hero header), `font-weight: 700–900`, no fill.
-- **Hover / Focus:** `translateY(-2px)` lift plus `box-shadow: 0 10px 24px rgba(0,0,0,0.13)` on
-  hover (from `.journiq-button:hover`); focus-visible everywhere uses a 3px solid accent outline
-  with 3px offset (`:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }`).
+Calm and confident: solid blue or a hairline outline, nothing in between.
+
+- **Shape:** full pill, 42-48px tall (44px minimum tap area everywhere).
+- **Primary:** accent fill, accent-foreground text, bold label, 20px side padding.
+- **Hover / Focus:** a slight opacity drop on hover; the app's one focus ring (3px solid accent,
+  3px offset) on keyboard focus.
+- **Press:** anything tappable carries the `press` utility: scale 0.97 with a small opacity dip,
+  120ms in, 200ms out. Big scroll-through surfaces (story pins) add `press-hover-only` so a scroll
+  that starts on them does not dip.
+- **Outline:** transparent with a hairline border, foreground text; the secondary action beside a
+  primary (filter sheet Reset, the phone "Filters" button).
 
 ### Chips / Tags
 
-- **Style:** pill shape, `bg-tag-background` / `text-tag-foreground`, `text-xs`, `px-2 py-0.5`.
-  Used for work-type and topic badges on story cards (max 3 shown).
-- **Attribution chip:** a circular initial-letter avatar (`h-8 w-8 rounded-full bg-surface-muted`)
-  plus name and trip metadata (destination pin icon, trip-year icon) — the reusable identity unit
-  across story cards and story detail pages.
+- **Style:** pill, blue wash background, blue ink, 0.75rem text, 2px by 8px padding. At
+  most three on a big story pin.
+- **State:** tags are labels, not filters; they do not toggle.
 
-### Photo Carousel
+### Story Pin (signature component)
 
-- A story's gallery, and any run of two or more photos the author placed back to back in the
-  text, is one swipeable frame (`components/story/photo-carousel.tsx`), the way Instagram shows a
-  post: full-bleed on phones, native scroll-snap swipe, a `2/5` counter pill top right, and dots
-  underneath (accent = current; at most five shown, the row sliding with smaller edge dots).
-- One shape per carousel: the first photo's ratio clamped to 4:5–1.91:1, the rest cropped to it,
-  so the frame never jumps. Tapping a photo opens the lightbox. Previous/next buttons appear on
-  hover/focus from `md` up; the scroller is keyboard-focusable.
-- A lone in-text photo is never put in a carousel — it keeps the width its author set.
-- **Photo viewer (lightbox):** modelled on the iPhone Photos app. Opening zooms the tapped photo
-  out of its place on the page to full screen while the black ground fades up; closing zooms it
-  back into place (or settles it away with a small scale-and-fade when that place is off screen).
-  All photos sit on one native scroll-snap track, so a swipe follows the finger; dragging a photo
-  down pulls it after the finger and closes past 110px. Web Animations on transform/opacity only,
-  none under reduced motion. Ends are ends (no wrap-around), as in Photos.
+Boxless, the way Pinterest shows a pin: the photo is the card.
 
-### Cards / Containers
+- **Photo:** rounded 16px, clipped, recess ground underneath while loading, resting shadow that
+  deepens on hover. Big pins are 4:3; small pins are 4:5. With several published photos the frame
+  swipes sideways with native scroll snap and white dots along the bottom (a window of five, edge
+  dots smaller), plus white round previous / next buttons on hover from `md` up.
+- **Words:** sit directly on the page ground, 4px inset. Big: up to three tags, title, a three-line
+  excerpt, the attribution line. Small: a two-line title and one muted place · year line.
+- **Target:** one stretched title link makes the whole pin a single tap and a single keyboard stop;
+  the photos are out of the tab order.
+- **Size switch:** a two-segment pill (big | small) with a sliding recess thumb, saved per device.
 
-- **Corner Style:** `rounded-xl` (12px) for the standard story card; 20px for home shelf cards;
-  16px for place tiles.
-- **Background:** `--surface` (white/dark-surface); `--surface-muted` for image placeholders.
-- **Shadow Strategy:** flat at rest; see Elevation & Depth.
-- **Border:** `border border-border-subtle` on the standard story card only — the story-card-stack
-  relies on its shadow instead of a border.
-- **Internal Padding:** `p-4` (16px) content padding under the cover image.
+**The Boxless Pin Rule.** A story card has no border and no background box. The photo carries the
+shape; the words share the page.
 
 ### Inputs / Fields
 
-- **Style:** `rounded-md` (6px, the `--radius` step), `border border-border-subtle`, surface fill,
-  `--foreground` text. Labels sit above the field in body weight.
-- **Focus:** the global `:focus-visible` treatment — a 3px solid accent outline at 3px offset.
-- **Error:** `text-destructive` for messages and field errors. Never a raw `text-red-*`: the
-  themed token is the only error colour that clears contrast on both grounds.
-- **Note:** the auth forms previously used a hardcoded `bg-black text-white` /
-  `dark:bg-white dark:text-black` inversion. That idiom was removed app-wide (35 occurrences
-  across 16 files) in favour of `bg-accent` / `text-accent-foreground`; it should not come back.
+- **Search pill (hero):** surface fill, raised shadow, leading search icon, borderless input, an
+  embedded primary pill button. Focus shows a soft accent ring on the whole pill.
+- **Fields (filter bar, forms):** 44px minimum height, 10px radius, hairline border, surface fill,
+  label above in medium weight.
+- **Error:** `text-destructive` only, never a raw red.
 
 ### Navigation
 
-- **Style:** sticky header, ALWAYS solid (`.journiq-header-solid`, `var(--header-solid)`, plus
-  `shadow-sm` from the elevation ramp). There is no transparent-over-hero state: the home hero is
-  now an inset plate that begins below the header, so there is no photo to sit over, and a
-  transparent header would draw white nav text onto the light page ground. Because
-  `--header-solid` and `text-foreground` both resolve per theme, no route needs a special case. Nav links use `.journiq-nav-link`'s underline-on-hover treatment (accent-coloured
-  underline that grows in from the left on hover).
-- **Footer (home only):** `SiteFooter` renders on the home pages (`/`, `/cn`) and nowhere else.
-  Every other screen ends with its own content; the header and the phone tab bar carry
-  navigation. The legal pages stay reachable from the home footer and by direct URL.
-- **Phone title (The Named-Bar Rule):** below `md`, a label page names itself in the header —
-  logo mark, then the page title in the wordmark's own type (`text-xl font-black tracking-tight`,
-  truncating) — and drops its big in-page `<h1>` to screen-reader-only. Content pages (home, a
-  story, a profile, the editor) keep the wordmark and their title. Never draw the same title twice
-  on one phone screen.
-- **Mobile:** primary nav and auth controls collapse behind `MobileNavToggle`; a signed-in user
-  instead sees `UserAvatarMenu`, which folds the primary nav links into its own dropdown
-  (`extraItems`) rather than keeping a separate hamburger.
+- **Header:** sticky, always solid on the ground colour with a bottom hairline and resting shadow.
+  Desktop nav links get an accent underline that grows from the left on hover and stays under the
+  current page.
+- **Tab bar (phones):** solid ground, top hairline; a small accent pill slides between tabs, the new
+  tab's icon pops once (1 to 1.12 to 1). It slides away on task screens and while a field has focus.
+- **Footer:** home pages only, on the surface colour with a top hairline; slim on phones (the
+  not-advice disclaimer, one row of legal links, the copyright line), four columns from `md`.
 
-### Auth Modal (signature component)
+### Photo Wall (home hero, signature component)
 
-- Native `<dialog>`-based modal (`.journiq-modal`) with a standards-track `@starting-style` /
-  `transition-behavior: allow-discrete` entrance-and-exit animation (opacity + `translateY(12px)
-scale(0.96)` → resting state), backdrop fades independently. Fully collapses to no transition
-  under `prefers-reduced-motion`.
+- Columns of real published story covers in 16px rounded tiles of varied heights (3:4, 1:1, 4:5,
+  2:3), fading out at the top and bottom edges. A tap opens that story.
+- **Motion:** each column drifts in alternating directions with one CSS transform (52-70s loops,
+  unequal so they never sync, started part-way through). Hovering holds it still; a round pause
+  button (surface at 90%, resting shadow) stops it for good, as WCAG 2.2.2 requires for anything
+  moving longer than five seconds; under reduced motion it never starts and the button is not
+  drawn. On first paint the tiles rise in on one short stagger.
+- From `sm` a tile shows its town in a small dark caption pill.
+- The wall is aria-hidden and out of the tab order; every story on it is also listed below.
+
+### Place Tiles
+
+- A row of small rounded photos (4:3, 16px corners, 132px wide on a phone) of the regions the
+  latest stories come from, the region name underneath at 0.875rem / 600; one tap opens the
+  Stories tab filtered to it. The same boxless shape as a story pin, one size down.
+- Swipes sideways on a phone, bleeding to the screen edges; a 3-column grid from `sm`, 6 from `lg`.
+
+**The Place-Is-Not-A-Story Rule.** A place is shown as a small rounded photo tile with its name underneath, never as a round, ringed photo in a row: that shape is Instagram's "story" row, and a place is not a story (owner decision 2026-11-17).
+
+### Loading
+
+- Placeholders are shaped skeletons that mirror the component they stand in for, tinted with 7% of
+  the ink and crossed by a slow accent-tinted sheen; each route fallback is held invisible for
+  140ms so a fast navigation never flashes one. A route never shows a spinner.
+
+### Motion, app-wide
+
+- Route changes slide in from the right going deeper, from the left going back, and crossfade
+  between tabs (320ms); the header and tab bar stay put. Under reduced motion every slide becomes a
+  120ms fade.
+
+**The Pausable Motion Rule.** Anything that moves on its own for more than five seconds holds still
+on hover, ships a visible pause control, and does not start at all under reduced motion. Animate
+transform and opacity only.
 
 ## Do's and Don'ts
 
 ### Do:
 
-- **Do** reserve Signal Cyan for CTAs, focus states, active filter chips, and the active-nav
-  underline — see The One Accent Rule.
-- **Do** decide every colour for both themes at once, and give it a token with two values rather
-  than a `dark:` override — see The Two Renditions Rule.
-- **Do** give resting surfaces `shadow-sm` from the shared ramp, and step up on hover — see the
-  One-Ramp Rule. Dark renders it as near-nothing; light needs it to read as a surface at all.
-- **Do** keep `--surface-muted` for genuine recesses only, never for grouping panels — see The
-  Recess Rule.
-- **Do** use full-pill shape for any new interactive control at button/chip scale.
-- **Do** set numerals, counts, and record fields in Geist Mono — see The Mono-Means-Record Rule.
-- **Do** gate all new motion behind `prefers-reduced-motion: reduce` **and**
-  `@supports (animation-timeline: view())`, matching every existing animation in
-  `app/globals.css` — see The CSS-Timeline Rule.
+- **Do** let real story photos lead every browsing surface; rounded at 16px, clipped, on the ground.
+- **Do** keep the blue accent for actions, focus, active states and the headline's accent
+  words only (The One Blue Rule).
+- **Do** decide every new colour for both renditions as a two-value token (The Two Renditions Rule).
+- **Do** make new controls at button or chip scale full pills with at least a 44px tap area.
+- **Do** use the `shadow-*` scale (rebound to the elevation tokens) for depth in light and surface
+  steps for depth in dark.
+- **Do** add the `press` utility to anything tappable, and `press-hover-only` on large
+  scroll-through surfaces.
+- **Do** give anything that moves for more than five seconds a pause control, a hover hold and a
+  reduced-motion off state (The Pausable Motion Rule).
+- **Do** keep section heads at Headline size; one Display headline per screen at most.
 
 ### Don't:
 
-- **Don't** add star ratings, review scores, "Book Now"/"Explore Now" CTAs, traveller-count
-  badges, or avatar-stack social proof — confirmed anti-patterns in PRODUCT.md's Brand Commitments.
-- **Don't** introduce a second accent colour competing with Signal Cyan. Semantic status colours
-  are permitted only in the staff moderation tools, where they carry meaning rather than brand.
-- **Don't** reintroduce a serif anywhere — see The No-Serif Rule.
-- **Don't** style a control with a hardcoded `bg-black … dark:bg-white` inversion. That idiom was
-  removed app-wide; primary actions take `bg-accent` / `text-accent-foreground`.
-- **Don't** reach for a raw `text-red-*` for errors; use `text-destructive`, the only error colour
-  that clears contrast on both grounds.
-- **Don't** write a hardcoded `shadow-[…]` arbitrary value. It can only be tuned for one
-  rendition and will be wrong in the other — see The One-Ramp Rule.
-- **Don't** verify a light-mode change by checking contrast ratios alone. Equal ratios do not mean
-  equal perceptual separation across the two grounds — see Elevation & Depth.
-- **Don't** reintroduce a scroll reveal that defaults to `opacity: 0` — content must be readable
-  with no JS and in browsers without scroll timelines.
-- **Don't** use emoji or Unicode glyphs as an icon system; icons are drawn SVG from
-  `components/icons.tsx`.
-- **Don't** render a placeholder dash for a field a story does not carry.
-
-## Theming mechanics
-
-`data-theme="light"|"dark"` on `<html>` is the single source of truth. A blocking inline script in
-`app/layout.tsx` sets it before first paint (reads `localStorage`, falls back to `matchMedia`), and
-`components/theme-toggle.tsx` flips it at runtime.
-
-**The One Switch Rule.** That same attribute drives Tailwind's `dark:` variant, via
-`@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *))` at the top of
-`app/globals.css`. Without it Tailwind v4 keys `dark:` to the OS `prefers-color-scheme` while the
-tokens key to `data-theme`, and the two silently disagree whenever a visitor's explicit choice
-differs from their OS setting — which is exactly the bug it was added to fix. Never remove that
-declaration, and never introduce a second theming signal alongside it.
-
-The bare `:root` block plus the `prefers-color-scheme` block are only the pre-hydration/no-JS
-fallback; an explicit `[data-theme]` attribute always wins, because attribute selectors outrank the
-plain `:root` pseudo-class regardless of source order.
-
-## The home screen
-
-**Superseded 2026-10-31:** the "archive index" home (structure seed `494761b9`) ran ~7.5 phone
-screens and showed one batch of stories three ways. The home page is now an **app-style home
-screen** for the iOS PWA: hero plate with search → "Latest stories" swipe row → "Browse by place"
-photo tiles → three one-line trust points → quiz behind one `<details>` row → one contribute band.
-Full browsing and filtering belong to the Stories tab; the home page only points into it.
-
-**The One-Line Rule.** On the home screen every section is a heading plus at most one short line.
-A section that needs written instructions to be operated ("drag a card aside…") is redesigned, not
-captioned.
-
-**The Real Fields Rule.** Every record field a card or tile shows is one the story actually holds.
-A field a story lacks is omitted, never a placeholder dash and never estimated. Place tiles list
-only regions present in the fetched batch, and carry no counts, because the batch is not the whole
-catalogue.
-
-**The Separate Axes Rule.** Place (regions), Work (work types), and Topic (tags) are distinct
-filter axes wherever filters appear (the Stories tab, My Stories). Never merge tags into the Work
-axis: it files "South Island" as a kind of job.
-
-## Motion — the focus pull
-
-One authored idea, varied: content resolves from soft to sharp the way a lens pulls focus, matching
-the world's documentary-photography premise. `.nf-pull` (rise + fade, for any block), `.nf-pull.nf-focus`
-(adds the blur — section heads only), and `.nf-lift` (rise only, shorter throw, for repeated rows —
-twelve elements blurring at once reads as a broken page, not a focus pull). `.nf-hero-pull` runs the
-full blur grammar once on load, on a clock, never on scroll.
-
-**The Blur Budget Rule.** `filter: blur()` is the one property in this grammar the compositor cannot
-animate for free: every frame it is in range, the element's whole subtree is drawn to an offscreen
-texture and blurred at device resolution, and `animation-fill-mode` keeps every not-yet-revealed
-wrapper sitting at its `from` blur as a live filter surface. Blurring the wrapper around five photo
-cards was the landing page's scroll jank. So the blur is only ever applied to small, text-only
-elements (`.nf-focus` on a section head), never to a wrapper holding cards, photos, forms, or a sticky
-box — those get plain `.nf-pull`.
-
-**The Fill-Mode Rule.** Reveal animations fill `backwards`, never `both`/`forwards`. A filled animation
-holds its _interpolated_ end value after it finishes — `blur(0px)` and `translateY(0)`, even when the
-keyframe says `none` — and a zero blur is still a filter surface, while any non-`none` transform on a
-wrapper becomes the containing block for its `position: fixed` descendants (the reading-progress
-hairline scrolled away with the page for exactly that reason). `backwards` keeps the invisible `from`
-state until the animation starts, which is all a reveal needs; afterwards the element's own style
-returns.
-
-**The CSS-Timeline Rule.** Scroll-linked motion uses CSS `animation-timeline` (`view()` / `scroll()`),
-never a JS IntersectionObserver or scroll listener. The whole block is gated behind
-`@supports (animation-timeline: view())` **and** `prefers-reduced-motion: no-preference`, so content
-is fully visible by default — with no JS, in browsers without scroll timelines (Firefox today), and
-for reduced-motion visitors. The previous `Reveal` component defaulted to `opacity: 0` and was
-deleted; never reintroduce a reveal whose resting state is invisible.
-
-A `.nf-progress` reading hairline under the sticky header is driven by `animation-timeline:
-scroll(root block)` — same rule, no listener.
-
-What the rule does _not_ forbid is input-driven motion or a threshold-crossing pause. The hero's
-night field (`components/home/hero-field.tsx`) is a canvas lattice that only moves when the reader
-moves it — a pointer, a touch, or focus landing on a story point bends and brightens the dots
-nearby, and the loop stops on its own the moment the lens settles. Nothing in it autoplays, so
-there is no pause control and no 2.2.2 obligation. It observes its own box with one
-`IntersectionObserver` and skips frames while scrolled out of view; that fires once per crossing,
-not per frame, and is the same kind of pause as the existing `visibilitychange` handler. The lattice
-is white at rest and turns cyan only under the lens — the accent marking a state, per The One
-Accent Rule — and every lit point is a published story, so the first viewport is made of the record
-rather than of stock photography.
-
-### Touch & navigation motion
-
-The installed iPhone app (home-screen PWA, `viewportFit: "cover"`) should feel native, so touch and
-route changes have their own small grammar. All of it is transform/opacity only, gated behind
-`prefers-reduced-motion`, and nothing is invisible at rest.
-
-- **The press rule.** Anything tappable dips under the finger: add the `press` class
-  (`app/globals.css`) — `scale(0.97)` plus a slight opacity dip, 120ms in, 200ms out. The button
-  classes (`.journiq-button`, `.night-button-*`) share the same pressed state. It needs a box that
-  can transform (not `display: inline`). Under reduced motion only the opacity dip remains.
-  `components/touch-active.tsx` registers one passive no-op `touchstart` listener so iOS applies
-  `:active` to non-link elements at all. `touch-action: manipulation` on controls removes the
-  double-tap-zoom delay; pinch-zoom on the page stays.
-- **Tab-bar indicator.** In `components/bottom-tab-bar.tsx` a small accent pill slides between tabs
-  (`translateX` by tab index, 250ms, `cubic-bezier(0.2, 0.75, 0.25, 1)`); the newly active icon pops
-  once (1 → 1.12 → 1). The bar slides down on task screens and while a field has focus. Tapping the
-  tab you are already on scrolls to the top. Reduced motion: no slide, no pop, instant hide.
-- **Route transitions.** `components/page-transition.tsx` keys a React `<ViewTransition>` by
-  pathname; the CSS lives in `app/globals.css` (`.vt-*`). Going deeper (a longer URL: list → story,
-  My Stories → editor) the new page slides in from the right; going back it slides in from the left;
-  a tab-bar switch (the `tab` transition type) is a crossfade; same depth is a short rise + fade.
-  Links that pass `nav-forward` / `nav-back` also shift the old page a little the other way.
-  320ms, the same ease as the pill. Header and tab bar are lifted into their own un-animated groups
-  _only while a transition runs_ (`:root:active-view-transition`), above the sliding page, so they
-  stay put; a permanent `view-transition-name` would make them stacking contexts and containing
-  blocks for `position: fixed` descendants at rest. Under reduced motion every slide becomes a 120ms
-  fade. Browsers without view transitions just swap pages.
-- **Fill-mode exception.** The Fill-Mode Rule above is for DOM reveals. The `::view-transition-*`
-  animations use `both` because the browser tears those pseudo-elements down when the transition
-  ends; nothing is held.
-
-## Loading — the focus pull, held
-
-Loading states are the same idea at rest: a placeholder is a soft, out-of-focus stand-in for the
-block about to arrive, and an accent-tinted sheen crosses it the way a lens hunts for focus.
-**Never a spinner on a route.** A spinner says "wait"; a shaped skeleton says "here is what is
-coming", which is the honest message when the layout is already known and only the data is missing.
-(`components/ui/spinner.tsx` stays — it is for a single image still being processed, where the
-shape genuinely is unknown. A story photo whose frame is already known — a My Stories cover, a preview or published gallery photo, an inline story photo — gets the sheen instead, via `components/ui/resolving-image.tsx`: held until its bytes arrive, then the photo resolves in from a slight blur. It is visible by default and only switches to the sheen once mounted and genuinely still loading, so a server-rendered photo is never stranded invisible.)
-
-**The Nested Fallback Rule.** A `loading.tsx` belongs INSIDE its route group, never at the root
-segment. A Suspense fallback replaces everything below its own boundary, so a root-level one swaps
-out the group's layout too and the header, nav and footer vanish on every navigation. Root
-`app/loading.tsx` is a last resort for cross-group navigation only, and draws a `min-h-[76px]`
-placeholder bar because in that case there really is no header on screen.
-
-**The Delay Rule.** Every fallback is held invisible behind a 140ms delay (`.nf-loading`). A
-prefetched route lands in well under 100ms, and a skeleton that flashes for 60ms and is yanked away
-is worse than no skeleton. The hidden phase comes from the `from` keyframe via
-`animation-fill-mode: both`, never a base `opacity: 0` — so if animations never run the resting
-state is visible, per the rule above against reveals that are invisible at rest.
-
-**Skeletons mirror the component they stand in for**, down to the frame, aspect ratio and padding
-(`StoryCardSkeleton` against `StoryCard`). A skeleton whose shape does not match is a second layout,
-and the swap becomes a jump. If the real component's frame changes, change its skeleton with it.
-
-`.nf-route-progress` is an indeterminate hairline at the top of each fallback. It sits in normal
-flow, **not** `position: fixed`. (`PageTransition` used to animate `transform` on a wrapper, which
-made it a containing block for fixed descendants; it is now a `<ViewTransition>` and the wrapper is
-unstyled at rest, so that trap is gone, but keeping the bar in flow costs nothing and stays safe.)
-
-## Signature components
-
-- **Primary button** (`.night-button-primary`): pill, `1px solid var(--accent)` outline at rest,
-  fills solid cyan with `--accent-foreground` text on hover — ghost-first, not filled-first.
-- **Secondary action** (`.night-button-ghost`): plain underlined text link, not a second button
-  shape.
-- **Index entry** (`.nf-entry`, My Stories): hairline top rule, no card border and no card
-  background — the section reads as one continuous record rather than stacked tiles. Hover (pointer devices only)
-  tints the row with `color-mix(in srgb, var(--accent) 7%, transparent)` and insets it 0.75rem;
-  `:focus-within` gets the same tint so keyboard traversal reads identically.
-- **Filter axis row**: edge-to-edge horizontal scroll on phones (`.nf-scroll-x`, scrollbar hidden —
-  the cut-off chip is the affordance), wrapping normally from `sm` up.
-- **Shelf card** (`StoryShelf`): compact story card in a horizontal scroll-snap row, 76% of the
-  phone width so the next card's edge shows (the edge is the swipe affordance, no hint text).
-  Stretched title link, so the whole card is one tap target.
-- **Place tile** (`PlaceTiles`): always-dark photo tile (newest cover from that region, or the
-  `#0b1222` ground) with a bottom scrim and a white label, so it clears contrast in both themes.
-- **No kicker/eyebrow labels.** The `Eyebrow` component was deleted. Headings carry their own
-  weight.
-- **No glyph or emoji icons.** `DestinationQuiz`'s answer labels previously opened with emoji
-  standing in for an icon system; those were removed rather than replaced, since the labels are
-  self-describing. Icons are drawn SVG from `components/icons.tsx`.
+- **Don't** bring back any part of Night Field: the near-black slate ground, the cyan accent, the
+  dotted hero, or always-dark bands that ignore the theme.
+- **Don't** use stark white or pure black as a ground, or a cool gray beside the warm neutrals
+  (The Warm Ground Rule).
+- **Don't** put a border or a filled box around a story card (The Boxless Pin Rule).
+- **Don't** show places as round, ringed photos in a row (The Place-Is-Not-A-Story Rule).
+- **Don't** add a second accent, a serif, or a second display face.
+- **Don't** write an arbitrary `shadow-[...]` value on the page ground (The One Ramp Rule).
+- **Don't** use the recess colour as a grouping panel (The Recess Rule).
+- **Don't** add star ratings, review scores, "Book Now"/"Explore Now" CTAs, traveller-count badges
+  or avatar-stack social proof (PRODUCT.md anti-patterns).
+- **Don't** use emoji or Unicode glyphs as icons; icons are drawn SVG from `components/icons.tsx`.
+- **Don't** invent new rules for story pages, My Stories or the editor from this file; they have not
+  had their redesign pass yet.

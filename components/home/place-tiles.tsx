@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ResolvingImage } from "@/components/ui/resolving-image";
-import { ArrowRightIcon } from "@/components/icons";
 
 export type PlaceTile = {
   /** Region id -- the value /stories' `region` filter expects. */
@@ -13,44 +12,42 @@ export type PlaceTile = {
 
 /**
  * "Browse by place": one tap from the home page into the Stories tab already
- * filtered to a region. The tiles carry no story counts on purpose -- the
- * home page only fetches the latest batch, so a count read off it would be a
- * claim about the whole catalogue that the data does not support.
+ * filtered to a region. Each place is a small rounded photo with its name
+ * underneath -- the same boxless shape as a story pin, one size down.
+ * Deliberately NOT round, ringed photos (tried 2026-11-17 and turned down by
+ * the owner): that shape is Instagram's "story" row, and a place is not a
+ * story.
  *
- * Tiles are always dark (a photo, or the Night Field ground when there is no
- * photo) so the white label clears contrast in both themes.
+ * A sideways-swiping row on a phone (it bleeds to the screen edges), a grid
+ * from sm up. No story counts, on purpose: the home page only fetches the
+ * latest batch, so a count read off it would be a claim about the whole
+ * catalogue that the data does not support.
  */
 export function PlaceTiles({ places }: { places: PlaceTile[] }) {
   const tImages = useTranslations("editor.images");
   return (
-    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
+    <ul className="nf-scroll-x -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-6">
       {places.map((place) => (
-        <li key={place.id}>
+        <li key={place.id} className="w-[132px] shrink-0 snap-start sm:w-auto">
           <Link
             href={`/stories?region=${place.id}`}
-            className="press press-hover-only group relative isolate flex aspect-[5/4] items-end justify-between gap-2 overflow-hidden rounded-[16px] bg-[#0b1222] p-3.5 text-white shadow-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+            className="press press-hover-only group block rounded-2xl focus-visible:outline-offset-4"
           >
-            {place.coverUrl ? (
-              <ResolvingImage
-                src={place.coverUrl}
-                alt=""
-                loading="lazy"
-                loadingLabel={tImages("loading")}
-                wrapperClassName="absolute inset-0 -z-20 block overflow-hidden"
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.05]"
-              />
-            ) : null}
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 -z-10 bg-linear-to-t from-black/80 via-black/30 to-black/5"
-            />
-            <span className="text-base leading-tight font-extrabold tracking-[-.015em] text-balance">
+            <span className="block aspect-[4/3] overflow-hidden rounded-2xl bg-surface-muted shadow-sm transition-shadow group-hover:shadow-md">
+              {place.coverUrl ? (
+                <ResolvingImage
+                  src={place.coverUrl}
+                  alt=""
+                  loading="lazy"
+                  loadingLabel={tImages("loading")}
+                  wrapperClassName="relative block h-full w-full overflow-hidden"
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+                />
+              ) : null}
+            </span>
+            <span className="mt-2 block truncate px-1 text-sm font-semibold text-foreground">
               {place.name}
             </span>
-            <ArrowRightIcon
-              aria-hidden="true"
-              className="h-4 w-4 shrink-0 opacity-80 transition-transform group-hover:translate-x-0.5"
-            />
           </Link>
         </li>
       ))}

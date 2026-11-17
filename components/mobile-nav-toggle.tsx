@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
+import { useId, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
@@ -33,21 +33,56 @@ const rowClass =
 export function MobileNavToggle({
   navItems,
   inverted = false,
-  settings,
+  secondaryItems = [],
 }: {
   navItems: NavItem[];
   inverted?: boolean;
   /**
-   * Rows under the links, after a divider: the theme and language switches
-   * (their "sheetRow" variants), which signed out have no other home on a
-   * phone. They don't close the sheet, so the change is seen in place.
+   * A second group of rows under the links, after a hairline -- Settings
+   * (theme, accent, language; 2026-11-17), which used to be two switch rows
+   * here. Drawn and closed exactly like the links above.
    */
-  settings?: ReactNode;
+  secondaryItems?: NavItem[];
 }) {
   const t = useTranslations("common");
   const tNav = useTranslations("nav");
   const [open, setOpen] = useState(false);
   const menuId = useId();
+
+  // One drawing of a row list, used for the links and the second group.
+  const renderRows = (items: NavItem[]) =>
+    items.map((item) => {
+      // Captured outside the closures below so TS's narrowing of
+      // item.href/item.onClick (which doesn't reliably survive
+      // property access inside a nested arrow function) isn't
+      // needed -- these are plain locals instead.
+      const href = item.href;
+      const onItemClick = item.onClick;
+      return (
+        <li key={item.label}>
+          {href ? (
+            <Link
+              href={href}
+              onClick={() => setOpen(false)}
+              className={rowClass}
+            >
+              {item.label}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              className={rowClass}
+              onClick={() => {
+                setOpen(false);
+                onItemClick?.();
+              }}
+            >
+              {item.label}
+            </button>
+          )}
+        </li>
+      );
+    });
 
   return (
     <div className="md:hidden">
@@ -71,45 +106,12 @@ export function MobileNavToggle({
 
       <BottomSheet open={open} onClose={() => setOpen(false)} title={t("menu")}>
         <nav id={menuId} aria-label={tNav("primary")}>
-          <ul className="flex flex-col gap-0.5">
-            {navItems.map((item) => {
-              // Captured outside the closures below so TS's narrowing of
-              // item.href/item.onClick (which doesn't reliably survive
-              // property access inside a nested arrow function) isn't
-              // needed -- these are plain locals instead.
-              const href = item.href;
-              const onItemClick = item.onClick;
-              return (
-                <li key={item.label}>
-                  {href ? (
-                    <Link
-                      href={href}
-                      onClick={() => setOpen(false)}
-                      className={rowClass}
-                    >
-                      {item.label}
-                    </Link>
-                  ) : (
-                    <button
-                      type="button"
-                      className={rowClass}
-                      onClick={() => {
-                        setOpen(false);
-                        onItemClick?.();
-                      }}
-                    >
-                      {item.label}
-                    </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+          <ul className="flex flex-col gap-0.5">{renderRows(navItems)}</ul>
         </nav>
-        {settings ? (
-          <div className="mt-2 flex flex-col gap-0.5 border-t border-border-subtle pt-2">
-            {settings}
-          </div>
+        {secondaryItems.length > 0 ? (
+          <ul className="mt-2 flex flex-col gap-0.5 border-t border-border-subtle pt-2">
+            {renderRows(secondaryItems)}
+          </ul>
         ) : null}
       </BottomSheet>
     </div>

@@ -9,7 +9,7 @@ import type { MetadataRoute } from "next";
 // Colours are the light rendition's --background (app/globals.css, DESIGN.md
 // `light-background`); the dark rendition is covered by the `themeColor` media
 // queries in app/layout.tsx's viewport export.
-const BACKGROUND = "#eef2f7";
+const BACKGROUND = "#f2f0ec";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {

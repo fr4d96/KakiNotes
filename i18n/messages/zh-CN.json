@@ -87,7 +87,8 @@
     "myPhotos": "我的照片",
     "home": "首页",
     "tabBar": "快捷导航",
-    "affirmations": "鼓励便条"
+    "affirmations": "鼓励便条",
+    "settings": "设置"
   },
   "footer": {
     "tagline": "一个分享新西兰打工度假真实经历的故事社区。",
@@ -1521,5 +1522,35 @@
       "fullQuality": "每张照片的原画质副本也会保存在那个文件夹里，只有你能看到。"
     },
     "whyRequired": "每位投稿者都需要完成这一步，因为 Kakinotes 本身不再存储故事照片。之后你可以在 账户 → Google Drive 中查看或更改连接。"
+  },
+  "settings": {
+    "metaTitle": "设置",
+    "title": "设置",
+    "personalize": "个性化",
+    "theme": "外观",
+    "themeLight": "浅色",
+    "themeDark": "深色",
+    "themeSystem": "跟随设备",
+    "accent": "强调色",
+    "accentHelp": "用于按钮、链接和高亮。任何颜色都可以：会分别为浅色和深色模式微调，让上面的文字始终清晰易读。",
+    "custom": "自定义",
+    "customPick": "选择任意颜色",
+    "previewLight": "浅色",
+    "previewDark": "深色",
+    "previewWord": "Aotearoa",
+    "previewButton": "搜索",
+    "previewTag": "皇后镇",
+    "reset": "恢复为翠鸟蓝",
+    "language": "语言",
+    "deviceNote": "保存在此设备上。",
+    "presets": {
+      "kingfisher": "翠鸟蓝",
+      "cobalt": "钴蓝",
+      "grape": "葡萄紫",
+      "rose": "玫瑰红",
+      "pohutukawa": "圣诞树红",
+      "ember": "余烬橙",
+      "fern": "蕨绿"
+    }
   }
 }

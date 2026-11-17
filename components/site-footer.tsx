@@ -58,7 +58,10 @@ export function SiteFooter() {
       id="about"
       className="border-t border-border-subtle bg-surface text-foreground"
     >
-      <div className="mx-auto max-w-[1440px] px-4 py-7 sm:px-6 md:py-16">
+      {/* max-md:pr-16: on a phone the scroll-to-top button floats over
+          the footer's right edge (right-4, 48px wide), and the required
+          not-advice disclaimer must never sit under it. */}
+      <div className="mx-auto max-w-[1440px] px-4 py-7 max-md:pr-16 sm:px-6 md:py-16">
         <div className="md:grid md:grid-cols-[1.4fr_.7fr_.7fr_.7fr] md:gap-10">
           <div>
             <Link

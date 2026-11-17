@@ -43,15 +43,20 @@ describe("UserAvatarMenu", () => {
     expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
   });
 
-  it("holds the theme and language switches, so the header need not", () => {
+  // Theme, accent and language moved to /settings (2026-11-17): the menu
+  // only navigates, and Settings sits with Account.
+  it("links to Settings beside Account, with no theme or language switches", () => {
     render(<UserAvatarMenu emoji="🥝" role="user" />);
     openMenu();
-    expect(
-      screen.getByRole("menuitem", { name: /Switch to dark mode/ }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("menuitem", { name: /Switch to Chinese/ }),
-    ).toBeVisible();
+    expect(screen.getByRole("menuitem", { name: "Settings" })).toHaveAttribute(
+      "href",
+      "/settings",
+    );
+    expect(screen.queryByRole("menuitem", { name: /Switch to/ })).toBeNull();
+    const items = screen
+      .getAllByRole("menuitem")
+      .map((item) => item.textContent);
+    expect(items.indexOf("Settings")).toBe(items.indexOf("Account") + 1);
   });
 
   // A staff account reviews other people's stories rather than writing its
@@ -66,6 +71,7 @@ describe("UserAvatarMenu", () => {
       expect(screen.queryByRole("menuitem", { name: "My Stories" })).toBeNull();
       expect(screen.queryByRole("menuitem", { name: "New Story" })).toBeNull();
       expect(screen.getByRole("menuitem", { name: "Account" })).toBeVisible();
+      expect(screen.getByRole("menuitem", { name: "Settings" })).toBeVisible();
       expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
     },
   );

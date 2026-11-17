@@ -92,10 +92,12 @@ export function StoryCard({
     : undefined;
 
   return (
-    <article className="press press-hover-only group relative flex flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-lg">
+    // A pin, not a boxed card (2026-11-17 redesign): the photo is the card,
+    // rounded on its own, and the words sit underneath on the page ground.
+    <article className="press press-hover-only group relative flex flex-col">
       <div
-        className={`relative w-full overflow-hidden border-b border-border-subtle bg-surface-muted ${
-          small ? "aspect-square" : "aspect-[4/3]"
+        className={`relative w-full overflow-hidden rounded-2xl bg-surface-muted shadow-sm transition-shadow group-hover:shadow-md ${
+          small ? "aspect-[4/5]" : "aspect-[4/3]"
         }`}
       >
         {photos && photos.length > 0 ? (
@@ -118,7 +120,7 @@ export function StoryCard({
         )}
       </div>
       {small ? (
-        <div className="flex flex-1 flex-col gap-1 p-2.5">
+        <div className="flex flex-1 flex-col gap-0.5 px-1 pt-2">
           <h3 className="line-clamp-2 text-sm leading-snug font-semibold tracking-tight text-foreground">
             <Link
               href={`${basePath}/${story.slug}`}
@@ -129,13 +131,13 @@ export function StoryCard({
             </Link>
           </h3>
           {regionLabel || story.trip_year ? (
-            <p className="mt-auto truncate text-xs text-foreground/60">
+            <p className="mt-auto truncate text-xs text-muted-foreground">
               {[regionLabel, story.trip_year].filter(Boolean).join(" · ")}
             </p>
           ) : null}
         </div>
       ) : (
-        <div className="flex flex-1 flex-col gap-3 p-4">
+        <div className="flex flex-1 flex-col gap-2.5 px-1 pt-3">
           <div className="flex flex-wrap gap-1.5">
             {badges.map((badge, index) => (
               <span

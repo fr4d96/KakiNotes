@@ -1,28 +1,27 @@
 /**
- * DIRECTION CONTRACT -- "Night Field" home, app-style (2026-10-31)
+ * DIRECTION CONTRACT -- "Photo-first", Instagram/Pinterest-like (2026-11-17)
  *
- * THESIS: the home screen of an iOS-first PWA, not a long landing page. A
- *   reader should see real stories within one screen and reach any story in
- *   one or two taps. The previous "archive index" build ran ~7.5 phone
- *   screens and ~720 words and showed the same small batch of stories three
- *   ways (lit points, a drag stack, a filtered/paginated index) -- the
- *   Stories tab already owns full browsing, so the home page now only
- *   points into it.
- * KEPT: the Night Field world (near-black ground, one cyan accent, heavy
- *   sans, mono for record fields), the mounted hero PLATE with its point
- *   field (components/home/hero-field.tsx), the NZ | China switch at the top
- *   of the plate, the destination quiz, and the closing contribute band.
- * STRUCTURE: compact hero with search -> "Latest stories" swipe row ->
- *   "Browse by place" photo tiles (each opens /stories filtered) -> three
- *   one-line trust points -> the quiz, collapsed behind one row -> one
- *   contribute CTA. About three phone screens.
- * COPY: every section is a heading plus at most one short line. No section
- *   needs written instructions to be operated.
+ * THESIS: the stories' own photos lead, in the photo-first app language the
+ *   audience lives in (owner's pinned reference: Instagram / Pinterest), on
+ *   comfortable grounds in both themes. Refuses the themed costume (dots,
+ *   night field, crate labels) and the one-big-scenic-photo travel hero.
+ * OWN-WORLD: soft warm-gray ground (#f2f0ec light / #1c1a18 dark, never
+ *   stark white or pure black), cards a step lighter, one Kingfisher-blue accent
+ *   (#0068a3 / #3fb6f2), Figtree throughout, rounded-2xl photos, pill
+ *   controls, no boxes around story cards.
+ * STORY: a traveller sees real places from real accounts at once, finds one
+ *   by place or search, and taps straight into a story.
+ * FIRST VIEWPORT: headline + sub + search pill on top (phone) / left (lg);
+ *   a drifting wall of story photos below / right, pause button on the wall;
+ *   place tiles next, then latest stories as pins.
+ * FORM: the category standard by owner choice (two re-rolls, then a named
+ *   reference); direction seeds 1de9bdde, 77f00f74.
+ * FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
  *
- * (Recorded as a source comment, not an HTML comment in the rendered page,
- * since this is a multi-route Next.js app rather than a single static
- * artifact -- grep this file, not the built output.)
+ * (A source comment, not an HTML comment in the rendered page: this is a
+ * multi-route Next.js app and React does not emit comments -- grep here.)
  */
+import { SignedOutOnly } from "@/components/auth/signed-out-only";
 import { CardSizeSwitch } from "@/components/story/card-size-switch";
 import { StoryCard } from "@/components/story/story-card";
 import {
@@ -41,11 +40,12 @@ import {
   listPublishedStoriesCached,
 } from "@/lib/story/public-queries";
 import { getCardCoverUrl } from "@/lib/story/image-url";
-import { HeroField, type HeroRecord } from "@/components/home/hero-field";
+import { PhotoWall, type WallTile } from "@/components/home/photo-wall";
 import { StoryShelf } from "@/components/home/story-shelf";
 import { PlaceTiles, type PlaceTile } from "@/components/home/place-tiles";
+import { cardPhotoSrc } from "@/lib/story/card-photo-size";
 import { DestinationQuiz } from "@/components/home/destination-quiz";
-import { firstRegionLabel, stringList } from "@/lib/story/card-fields";
+import { firstRegionLabel } from "@/lib/story/card-fields";
 import type { Locale } from "@/i18n/locales";
 import {
   ArrowRightIcon,
@@ -126,20 +126,20 @@ export default async function HomePage() {
     ),
   );
 
-  // The field's points: one per published story, carrying only the fields
-  // that story actually has (a missing one is omitted, never a dash), in
-  // the reader's language.
-  const heroRecords: HeroRecord[] = stories.map((story) => ({
-    slug: story.slug,
-    title: story.title,
-    record: [
-      firstRegionLabel(story.regions, locale),
-      stringList(story.tags)[0],
-      story.trip_year ? String(story.trip_year) : null,
-    ]
-      .filter((value): value is string => Boolean(value))
-      .join(" · "),
-  }));
+  // The hero's photo wall: each story with a cover, newest first, as one
+  // tile (the /media proxy's 640px card version when it is a Drive photo).
+  const wallTiles: WallTile[] = stories.flatMap((story) => {
+    const cover = getCardCoverUrl(story);
+    if (!cover) return [];
+    return [
+      {
+        slug: story.slug,
+        title: story.title,
+        place: firstRegionLabel(story.regions, locale) ?? "",
+        url: cardPhotoSrc(cover, 640),
+      },
+    ];
+  });
 
   // Places: only regions that the published batch actually contains, most
   // frequent first, each linked by id into the Stories tab's region filter.
@@ -181,79 +181,85 @@ export default async function HomePage() {
   return (
     <div className="bg-background pb-4 text-foreground">
       {needsCountryPicker ? <CountryPicker /> : null}
-      {/* ---- Hero plate: who this is for, and a way straight in. ---- */}
-      <section className="px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
-        <div className="nf-dark-band relative isolate mx-auto flex h-[54svh] max-h-[620px] min-h-[430px] w-full max-w-[1440px] overflow-hidden rounded-[20px] bg-[#020617] text-white shadow-2xl sm:rounded-[28px]">
-          <HeroField
-            records={heroRecords}
-            listLabel={t("field.listLabel")}
-            ambient={{
-              pauseLabel: t("field.pause"),
-              playLabel: t("field.play"),
-            }}
-          />
-          <div className="relative flex w-full flex-col justify-between px-5 pt-5 pb-6 sm:px-10 sm:pt-8 sm:pb-9 lg:px-14">
-            {/* The country is chosen on first visit (CountryPicker) and
-                switched from the flag in the top bar (CountrySwitcher). */}
-            <div />
-            <div className="max-w-3xl">
-              <h1 className="nf-hero-pull font-sans text-[clamp(2.4rem,9vw,5.25rem)] leading-[0.95] font-extrabold tracking-[-.035em] text-balance text-white">
-                {/* One rich message, not two keys joined in JSX: the
-                    accented words sit at the END in English and at the
-                    START in Chinese. Only the message file can express that. */}
-                {t.rich("hero", {
-                  accent: (chunks) => (
-                    <span className="text-accent">{chunks}</span>
-                  ),
-                })}
-              </h1>
-              <p
-                className="nf-hero-pull mt-3 max-w-[40ch] text-base text-white/80 sm:mt-4 sm:text-lg"
-                style={{ animationDelay: "140ms" }}
-              >
-                {t("heroSub")}
-              </p>
-              {/* A plain GET form into the Stories tab's own `q` filter, so
-                  search works with JavaScript disabled and lands on the one
-                  page that owns filtering. text-base (16px) keeps iOS Safari
-                  from zooming the page when the field takes focus. */}
-              <form
-                action="/stories"
-                method="get"
-                role="search"
-                className="nf-hero-pull mt-5 flex max-w-xl items-center gap-2 rounded-full border border-white/20 bg-[#0b1222] p-1.5 pl-4 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/40 sm:mt-6"
-                style={{ animationDelay: "260ms" }}
-              >
-                <StorySearchIcon
-                  aria-hidden="true"
-                  className="h-5 w-5 shrink-0 text-white/70"
-                />
-                <label htmlFor="home-search" className="sr-only">
-                  {t("searchLabel")}
-                </label>
-                <input
-                  id="home-search"
-                  name="q"
-                  type="search"
-                  enterKeyHint="search"
-                  autoComplete="off"
-                  placeholder={t("searchPlaceholder")}
-                  className="min-w-0 flex-1 bg-transparent py-2 text-base text-white placeholder:text-white/60 focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  className="min-h-[42px] shrink-0 rounded-full bg-accent px-4 text-sm font-bold text-accent-foreground transition-opacity hover:opacity-90"
-                >
-                  {t("searchButton")}
-                </button>
-              </form>
-            </div>
-          </div>
+      {/* ---- Hero: who this is for, a way straight in, and a living wall
+          of the stories' own photos (PhotoWall). Phone: words, then the
+          wall. From lg: words left, wall right. ---- */}
+      <section className="mx-auto grid max-w-[1440px] gap-6 px-4 pt-6 sm:px-6 sm:pt-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-center lg:gap-12 lg:px-8 lg:pt-12">
+        <div className="max-w-xl">
+          <h1 className="text-[clamp(2.3rem,8.5vw,4.25rem)] leading-[1.02] font-extrabold tracking-[-.03em] text-balance">
+            {/* One rich message, not two keys joined in JSX: the accented
+                words sit at the END in English and at the START in
+                Chinese. Only the message file can express that. */}
+            {t.rich("hero", {
+              accent: (chunks) => <span className="text-accent">{chunks}</span>,
+            })}
+          </h1>
+          <p className="mt-3 max-w-[40ch] text-base text-muted-foreground sm:mt-4 sm:text-lg">
+            {t("heroSub")}
+          </p>
+          {/* A plain GET form into the Stories tab's own `q` filter, so
+              search works with JavaScript disabled and lands on the one
+              page that owns filtering. text-base (16px) keeps iOS Safari
+              from zooming the page when the field takes focus. */}
+          <form
+            action="/stories"
+            method="get"
+            role="search"
+            className="mt-5 flex max-w-xl items-center gap-2 rounded-full bg-surface p-1.5 pl-4 shadow-md focus-within:ring-2 focus-within:ring-accent/50 sm:mt-6"
+          >
+            <StorySearchIcon
+              aria-hidden="true"
+              className="h-5 w-5 shrink-0 text-muted-foreground"
+            />
+            <label htmlFor="home-search" className="sr-only">
+              {t("searchLabel")}
+            </label>
+            <input
+              id="home-search"
+              name="q"
+              type="search"
+              enterKeyHint="search"
+              autoComplete="off"
+              placeholder={t("searchPlaceholder")}
+              className="min-w-0 flex-1 bg-transparent py-2 text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="press min-h-[42px] shrink-0 rounded-full bg-accent px-5 text-sm font-bold text-accent-foreground transition-opacity hover:opacity-90"
+            >
+              {t("searchButton")}
+            </button>
+          </form>
         </div>
+        {wallTiles.length > 0 ? (
+          <div className="-mx-4 h-[400px] sm:mx-0 sm:h-[460px] lg:h-[600px]">
+            <PhotoWall
+              tiles={wallTiles}
+              pauseLabel={t("field.pause")}
+              playLabel={t("field.play")}
+            />
+          </div>
+        ) : null}
       </section>
 
       {hasStories ? (
         <>
+          {/* ---- Browse by place: a row of small rounded photos under the
+              hero, each opening the Stories tab filtered to that place. ---- */}
+          {places.length > 0 ? (
+            <section
+              aria-labelledby="places-heading"
+              className="mx-auto max-w-[1440px] px-4 pt-8 sm:px-6 sm:pt-12 lg:px-8"
+            >
+              <div className="mb-3">
+                <SectionHeading id="places-heading">
+                  {t("placesHeading")}
+                </SectionHeading>
+              </div>
+              <PlaceTiles places={places} />
+            </section>
+          ) : null}
+
           {/* ---- Latest stories: real content inside the first screen. ---- */}
           <section
             aria-labelledby="latest-heading"
@@ -294,21 +300,6 @@ export default async function HomePage() {
               />
             )}
           </section>
-
-          {/* ---- Browse by place: one tap into a filtered Stories tab. ---- */}
-          {places.length > 0 ? (
-            <section
-              aria-labelledby="places-heading"
-              className="mx-auto max-w-[1440px] px-4 pt-10 sm:px-6 sm:pt-14 lg:px-8"
-            >
-              <div className="mb-4">
-                <SectionHeading id="places-heading">
-                  {t("placesHeading")}
-                </SectionHeading>
-              </div>
-              <PlaceTiles places={places} />
-            </section>
-          ) : null}
         </>
       ) : null}
 
@@ -365,27 +356,32 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      {/* ---- Contribute: one CTA. The band closes on the same field the
-          page opened on, with no points: the empty field a new story would
-          be added to. `relative isolate overflow-hidden` is what HeroField's
-          -z-10 canvas needs to sit behind this section's text. ---- */}
-      <section className="px-4 pt-12 sm:px-6 sm:pt-16 lg:px-8">
-        <div
-          id="share"
-          className="nf-dark-band journiq-share relative isolate mx-auto max-w-[1440px] scroll-mt-24 overflow-hidden rounded-[20px] px-5 py-9 text-white sm:rounded-[28px] sm:px-10 sm:py-12 lg:px-14"
-        >
-          <HeroField records={[]} scrim="band" />
-          <div className="relative max-w-2xl">
-            <h2 className="text-[1.75rem] leading-[1.05] font-extrabold tracking-[-.03em] text-balance text-white sm:text-4xl">
-              {t("shareHeading")}
-            </h2>
-            <p className="mt-3 text-white/75">{t("shareBody")}</p>
-            <Link href="/sign-up" className="night-button-primary mt-6">
+      {/* ---- Contribute: one CTA, on a soft accent-tinted panel -- a
+          sign-up pitch, so visitors only: once the browser confirms a
+          session the panel is removed (SignedOutOnly; owner request
+          2026-11-17). It sits at the end of the page, so that moment is
+          never on screen. ---- */}
+      <SignedOutOnly>
+        <section className="px-4 pt-12 sm:px-6 sm:pt-16 lg:px-8">
+          <div
+            id="share"
+            className="mx-auto flex max-w-[1440px] scroll-mt-24 flex-col items-start gap-5 rounded-3xl bg-tag-background px-5 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-10"
+          >
+            <div className="max-w-2xl">
+              <h2 className="text-[1.6rem] leading-[1.08] font-extrabold tracking-[-.025em] text-balance sm:text-3xl">
+                {t("shareHeading")}
+              </h2>
+              <p className="mt-2 text-muted-foreground">{t("shareBody")}</p>
+            </div>
+            <Link
+              href="/sign-up"
+              className="press inline-flex min-h-[46px] shrink-0 items-center gap-2 rounded-full bg-accent px-5 text-sm font-bold text-accent-foreground transition-opacity hover:opacity-90"
+            >
               {t("shareCta")} <ArrowRightIcon className="h-4 w-4" />
             </Link>
           </div>
-        </div>
-      </section>
+        </section>
+      </SignedOutOnly>
     </div>
   );
 }

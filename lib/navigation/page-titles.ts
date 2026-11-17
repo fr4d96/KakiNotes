@@ -24,6 +24,7 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
   "/contributors": "contributors.title",
   "/costs": "costs.title",
   "/about": "about.title",
+  "/settings": "settings.title",
   "/privacy": "legal.privacyTitle",
   "/terms": "legal.termsTitle",
   "/community-guidelines": "legal.guidelinesTitle",

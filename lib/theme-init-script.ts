@@ -17,6 +17,28 @@ export const themeInitScript = `(() => {
     document.documentElement.dataset.theme = "light";
   }
   try {
+    // The reader's own accent (Settings > Personalize), already derived for
+    // both themes by lib/theme/accent.ts. Every value is re-checked against
+    // the same patterns as parseStoredPalette() before it reaches a style
+    // property; anything else is ignored and the default stays.
+    const raw = localStorage.getItem("kakinotes-accent");
+    if (raw) {
+      const p = JSON.parse(raw);
+      const hex = /^#[0-9a-f]{6}$/i;
+      const rgba = /^rgba\\(\\d{1,3}, \\d{1,3}, \\d{1,3}, 0?\\.\\d{1,3}\\)$/;
+      const ok = (s) => s && hex.test(s.accent) && hex.test(s.tagForeground) && rgba.test(s.tagBackground);
+      if (p && hex.test(p.source) && ok(p.light) && ok(p.dark)) {
+        const st = document.documentElement.style;
+        st.setProperty("--user-accent-light", p.light.accent);
+        st.setProperty("--user-tag-fg-light", p.light.tagForeground);
+        st.setProperty("--user-tag-bg-light", p.light.tagBackground);
+        st.setProperty("--user-accent-dark", p.dark.accent);
+        st.setProperty("--user-tag-fg-dark", p.dark.tagForeground);
+        st.setProperty("--user-tag-bg-dark", p.dark.tagBackground);
+      }
+    }
+  } catch {}
+  try {
     const nav = performance.getEntriesByType("navigation")[0];
     if (nav && nav.type === "reload") document.documentElement.dataset.splash = "skip";
   } catch {}

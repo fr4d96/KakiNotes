@@ -477,3 +477,15 @@ export function PlayIcon(props: IconProps) {
     </svg>
   );
 }
+
+/** Settings: three sliders -- theme, accent, language live behind it. */
+export function SettingsIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M4 6h9M17 6h3M4 12h2M10 12h10M4 18h10M18 18h2" />
+      <circle cx="15" cy="6" r="2" />
+      <circle cx="8" cy="12" r="2" />
+      <circle cx="16" cy="18" r="2" />
+    </svg>
+  );
+}
