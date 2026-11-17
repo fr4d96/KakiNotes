@@ -3,6 +3,20 @@
 ## [3.12.0](https://github.com/fr4d96/KakiNotes/compare/v3.11.0...v3.12.0) (2026-11-17)
 
 
+### A whole new look, and your own colours
+
+#### For everyone
+
+- **Kakinotes looks new.** Calmer and photo-first, like the apps you already use: story photos have soft rounded corners, and story cards are just the photo with the title underneath. Light mode is a soft warm gray instead of bright white, and dark mode is a warm charcoal instead of pure black, so long stories are easier on the eyes day or night. Text uses a friendlier, rounder font.
+- **The top of the home page is alive.** Instead of the dotted night sky, a wall of real photos from people's stories drifts slowly by. Tap any photo to read that story. A small pause button stops the movement, and nothing moves if your phone is set to reduce motion.
+- **Browse by place** is now a row of small photo tiles with the place name underneath.
+- **New Settings screen.** Open it from the menu (or the settings icon at the top on a computer). Choose Light, Dark or Match device, and switch between English and 简体中文. The light-mode and language switches have moved here, so the menus are tidier.
+- **Pick your own accent colour.** In Settings, choose from seven colours (Kingfisher, Cobalt, Grape, Rose, Pōhutukawa, Ember, Fern) or pick any colour you like. Kakinotes adjusts it slightly for light and dark mode so text on it always stays easy to read, and shows you a preview of both. It's remembered on your device.
+
+#### For contributors
+
+- **No more sign-up pitch once you're signed in.** The "Lived it? Share your story." panel on the home page only shows to visitors. On the China home page, "Share your story" now takes signed-in contributors straight to writing a new story.
+
 ### Features
 
 * **design:** photo-first redesign, personal accent colours, Settings ([24fa7c3](https://github.com/fr4d96/KakiNotes/commit/24fa7c334a91ad11ceba556ea1d2e45d306f3867))
