@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.13.0](https://github.com/fr4d96/KakiNotes/compare/v3.12.0...v3.13.0) (2026-11-18)
+
+
+### A glass tab bar
+
+#### On phones
+
+- **The menu bar at the bottom of the screen is now made of "glass".** It floats as a rounded bar just above the bottom of your screen, and you can see the photos and stories behind it, softly blurred, as you scroll. It works in both light and dark mode.
+- **The tab you're on is easier to spot.** A soft glass bubble now sits behind it and slides over when you switch tabs, instead of the thin coloured line.
+- **If your iPhone is set to Reduce Transparency**, or your browser can't do the blur, the bar stays solid so it's always easy to read.
+- **The "back to top" button moved up a little**, so it sits just above the new floating bar.
+
+### Features
+
+* **nav:** liquid-glass floating tab bar on phones ([af0bbeb](https://github.com/fr4d96/KakiNotes/commit/af0bbebf647f72c79e4a0b5e5d0bb773ff9b0dc5))
+
 ## [3.12.0](https://github.com/fr4d96/KakiNotes/compare/v3.11.0...v3.12.0) (2026-11-17)
 
 
