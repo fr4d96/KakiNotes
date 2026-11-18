@@ -1,5 +1,30 @@
 # Changelog
 
+## [4.1.0](https://github.com/fr4d96/KakiNotes/compare/v4.0.0...v4.1.0) (2026-11-18)
+
+
+### Your profile, one tap away, and no more flashing screens
+
+#### On phones
+
+- **A Profile tab.** The bottom menu has a fifth tab showing your own avatar. Tap it for your profile: My Photos, Affirmation notes, Account, Notifications and About, then your avatar, country, appearance and language, with Sign out at the very bottom.
+- **Start a story from anywhere.** The top-right corner now has a blue + button that opens a new story, where your avatar used to be. The bell is still beside it.
+- **Choose your country on your profile.** The flag has moved from the top bar to a Country section on your profile (or in Settings from the ☰ menu if you're not signed in). Switching keeps you on the same page.
+- **Change your avatar when you want to.** Your avatar shows at the top of your profile; tap Change to pick a new one, so the full set of emoji no longer fills the screen.
+
+#### For everyone
+
+- **No more flashing between tabs.** Moving between Home, Stories, Folders, My Stories and Profile no longer blanks the whole screen. The top bar and bottom menu stay put, and only the page in between changes.
+- **Tabs answer right away.** The tab you tap lights up straight away, even before its page has finished loading.
+
+#### On computers
+
+- Nothing moves: the avatar menu and the country flag stay in the top bar.
+
+### Features
+
+* **nav:** Profile tab, + for new stories, steady header and tab bar ([9093ce1](https://github.com/fr4d96/KakiNotes/commit/9093ce19b7ed9797deb97bd35cb0a0212ac38f02))
+
 ## [4.0.0](https://github.com/fr4d96/KakiNotes/compare/v3.14.0...v4.0.0) (2026-11-18)
 
 
