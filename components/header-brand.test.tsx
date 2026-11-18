@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { usePathnameMock } = vi.hoisted(() => ({
@@ -74,5 +74,37 @@ describe("HeaderBrand", () => {
       "href",
       "/cn",
     );
+  });
+
+  it("on a story page keeps the wordmark, then shows the story title once it scrolls away", () => {
+    usePathnameMock.mockReturnValue("/stories/wharariki-beach");
+    const page = document.createElement("main");
+    const heading = document.createElement("h1");
+    heading.textContent = "Wharariki Beach";
+    page.append(heading);
+    document.body.append(page);
+    let headingBottom = 300;
+    heading.getBoundingClientRect = () =>
+      ({ bottom: headingBottom }) as DOMRect;
+
+    const { container } = render(<HeaderBrand />);
+    // At the top: the word is back beside the logo, no bar title.
+    const home = screen.getByRole("link", { name: "Kakinotes" });
+    expect(within(home).getByText("Kakinotes")).not.toHaveClass(
+      "max-md:sr-only",
+    );
+    expect(container.querySelector(".nf-bar-title")).toBeNull();
+
+    // Scrolled until the heading is above the top: the title takes over.
+    headingBottom = -10;
+    act(() => {
+      window.dispatchEvent(new Event("scroll"));
+    });
+    return vi.waitFor(() => {
+      expect(container.querySelector(".nf-bar-title")).toHaveTextContent(
+        "Wharariki Beach",
+      );
+      page.remove();
+    });
   });
 });

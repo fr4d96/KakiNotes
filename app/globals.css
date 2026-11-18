@@ -1311,6 +1311,20 @@ svg g[role="button"]:focus-visible {
   display: none;
 }
 
+/* The story title that slides into the phone bar once the page's own
+   title scrolls away (components/header-brand.tsx). */
+@media (prefers-reduced-motion: no-preference) {
+  .nf-bar-title {
+    animation: nf-bar-title-in 200ms var(--vt-ease);
+  }
+}
+@keyframes nf-bar-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
 /* Index rows: the accent hairline wipes in from the left on hover/focus,
    so a row confirms it is a target without shifting layout. transform on a
    pseudo-element, so no reflow and nothing to lay out. */

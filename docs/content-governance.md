@@ -29,6 +29,15 @@ before any linked account (`linked_user_id IS NULL`) for the founding-catalogue 
 linking it to a real account afterward is a trusted, staff-only, audited operation
 (`public.link_contributor_to_user()`), never a self-service claim of an existing record.
 
+**The byline avatar travels with the name (owner decision 2026-11-18).** A contributor's avatar
+— one emoji from the fixed set in `lib/avatar.ts`, never a photo or free text — is public wherever
+their name is: a published story's byline and card show it unless the story's consent or the
+contributor's own attribution is `anonymous`, whether or not their profile is `public`. It is
+treated as part of the display name the contributor chose, not as a separate profile field, so it
+needs no opt-in of its own under Engineering Rule 16. The profile page, the profile link on a
+byline and the directory listing still require `public_status = 'public'`. See
+`supabase/migrations/20261118090000_byline_avatar_follows_name.sql`.
+
 **Implemented as of Prompt 5: the public contributor directory (`/contributors`).** Listing is
 narrower than `public_status = 'public'` alone — a contributor also needs a usable `public_slug`,
 `attribution_type` other than `anonymous` (choosing to be anonymous and also getting a named public

@@ -11765,3 +11765,33 @@ path and nothing else, so the redirect cannot be pointed off-site. The desktop h
 flag. The first-visit picker's hint now says "You can switch any time in Settings." Checked in the
 pane at 375px: switching to China and back stayed on `/settings`, and the Home tab followed
 (`/cn`, then `/`).
+
+**Follow-up the same day — tighter story page ending, small related cards.** On a story page
+(`app/(public)/_shared/story-detail.tsx`) the "personal experience, not advice" label and Report
+this story now sit together as one closing note (`mt-8`, 4px apart) instead of being split by a
+hairline with 40 / 48 / 64px gaps around them; the hairline now separates the story from Related
+stories. Related stories use the Stories tab's small card (`size="small"`), two to a row on a
+phone and three from `sm` up. Checked at 375px on a published story.
+
+**Follow-up the same day — a fuller phone bar on story pages.** With the flag gone from the phone
+header, a story page's bar was a lone back arrow and logo. `components/header-brand.tsx` now shows
+the "Kakinotes" word beside the logo again there, and once the page's `main h1` scrolls up under
+the header, the bar swaps the logo and word for the story's title (iOS large-title style, a 200ms
+fade-in, none under reduced motion). The title is found afresh on each scroll frame, since the
+header outlives the page and a story's h1 can stream in after the header's effect runs. It is a
+visual echo only (`aria-hidden`); the h1 stays the page's heading. Checked at 375px signed in,
+reached both directly and by tapping a story card; signed out the word still fits (182px brand
+plus about 136px for Sign in and ☰, in 343px).
+
+**Follow-up the same day — byline avatars follow the name (migration APPLIED to the live
+project).** Munny Jeng's stories showed "M" instead of her 🐑 because `list_published_stories()`
+and `get_published_story()` returned `contributor_avatar_emoji` only for a contributor with a
+`public` profile, while the name comes from each story's consent. Owner decision: show the avatar
+wherever the name shows. `supabase/migrations/20261118090000_byline_avatar_follows_name.sql`
+re-creates both functions verbatim from their latest definitions with that one CASE changed
+(avatar unless the consent or the contributor's attribution is anonymous); the profile link and
+the directory still need a public profile. Applied with `supabase db push` to
+`yzaonhjieupxyrmbienf` (dry run first: only this file pending). Backward-compatible, so the
+deployed release needs nothing. `docs/content-governance.md` records the rule. Also, the byline
+draws an emoji avatar at `text-lg` (a letter initial stays `text-xs`); at 12px the sheep was a
+faint speck. Checked on "Queenstown Spots" at 375px after the 60s public cache expired.

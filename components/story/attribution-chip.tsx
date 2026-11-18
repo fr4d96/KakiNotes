@@ -44,7 +44,8 @@ export function AttributionChip({
       <ContributorAvatar
         emoji={avatarEmoji}
         displayName={name}
-        className="h-8 w-8 text-xs"
+        // An emoji avatar reads at full size; a letter initial stays small.
+        className={`h-8 w-8 ${avatarEmoji ? "text-lg" : "text-xs"}`}
       />
       <span>
         {nameNode}

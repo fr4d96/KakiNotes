@@ -440,23 +440,28 @@ export async function StoryDetail({
           the end of the story (owner decision 2026-11-15): the top of the
           page starts with the title, and the label is read where a reader
           finishes, right above the Report option. */}
-      <div className="mt-10">
+      {/* The label and Report sit together as the story's closing note
+          (2026-11-18: they used to be split by a hairline, with 40 / 48 /
+          64px gaps around them that read as empty screen on a phone). The
+          hairline now marks where the story ends and Related begins. */}
+      <div className="mt-8 flex flex-col items-start gap-1">
         <PersonalExperienceLabel countrySlug={country} />
-      </div>
-
-      <div className="mt-6 border-t border-border-subtle pt-6">
         <ReportStoryForm storyId={story.story_id} storySlug={story.slug} />
       </div>
 
       {relatedWithoutSubStories.length > 0 ? (
-        <div className="mt-16">
+        <div className="mt-6 border-t border-border-subtle pt-8">
           <h2 className="text-xl font-semibold tracking-tight">
             {t("relatedStories")}
           </h2>
-          <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-3">
+          {/* Small cards, two to a row on a phone (the Stories tab's
+              compact size): a glance at what's next, not a second feed of
+              full-width photos (2026-11-18). */}
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
             {relatedWithoutSubStories.map((s, index) => (
               <StoryCard
                 key={s.story_id}
+                size="small"
                 story={s}
                 basePath={`${countryUrlPrefix(country)}/stories`}
                 photos={relatedPhotos[index]}
