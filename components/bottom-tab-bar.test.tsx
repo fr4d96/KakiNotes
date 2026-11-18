@@ -74,7 +74,8 @@ describe("BottomTabBar", () => {
   it("is hidden from md up and when printing, and pads for the home indicator", () => {
     render(<BottomTabBar />);
     expect(getBar()).toHaveClass("md:hidden", "print:hidden", "fixed");
-    expect(getBar().className).toContain("env(safe-area-inset-bottom)");
+    // The safe-area offset lives in --tab-bar-gap (globals.css).
+    expect(getBar()).toHaveClass("nf-tab-bar", "bottom-(--tab-bar-gap)");
   });
 
   it("marks the tab for the current route with aria-current=page", () => {

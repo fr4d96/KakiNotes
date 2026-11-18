@@ -61,7 +61,7 @@ export function ScrollToTopButton() {
           window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         window.scrollTo({ top: 0, behavior: reduce ? "instant" : "smooth" });
       }}
-      className={`press fixed right-4 bottom-[calc(3.5rem+env(safe-area-inset-bottom)+1rem)] z-30 flex h-12 w-12 items-center justify-center rounded-full border border-border-subtle bg-surface text-foreground shadow-lg transition-[opacity,transform] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none md:right-6 md:bottom-6 print:hidden ${
+      className={`press fixed right-4 bottom-[calc(var(--tab-bar-clearance)+0.75rem)] z-30 flex h-12 w-12 items-center justify-center rounded-full border border-border-subtle bg-surface text-foreground shadow-lg transition-[opacity,transform] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none md:right-6 md:bottom-6 print:hidden ${
         visible
           ? "translate-y-0 opacity-100"
           : "pointer-events-none translate-y-2 opacity-0"

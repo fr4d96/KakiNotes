@@ -1189,6 +1189,14 @@ svg g[role="button"]:focus-visible {
 /* ---------- Bottom tab bar (components/bottom-tab-bar.tsx) ----------
    Native-feel details, kept here so the component stays markup. The bar is a
    touch surface: no long-press callout, no text selection. */
+:root {
+  /* The floating bar's distance from the bottom edge: tucked into the
+     home-indicator area like an iOS tab bar, never closer than 0.75rem. */
+  --tab-bar-gap: max(0.75rem, calc(env(safe-area-inset-bottom) - 0.75rem));
+  /* Everything the bar covers: 3.5rem tabs + 0.5rem padding + the gap.
+     The spacer and the scroll-to-top button clear exactly this. */
+  --tab-bar-clearance: calc(4rem + var(--tab-bar-gap));
+}
 .nf-tab-bar {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -1196,10 +1204,56 @@ svg g[role="button"]:focus-visible {
   transition: transform 280ms var(--vt-ease);
 }
 /* Hidden on focused task screens and while a field has focus: slides down
-   past the bottom edge (its own height includes the home-indicator pad). */
+   past the bottom edge, gap and shadow included. */
 .nf-tab-bar[data-hidden="true"] {
-  transform: translateY(100%);
+  transform: translateY(calc(100% + var(--tab-bar-gap) + 1.5rem));
   pointer-events: none;
+}
+/* "Liquid glass": a translucent tint over a blurred, saturated backdrop, a
+   bright hairline where light catches the top edge, and a soft lift shadow. */
+.nf-glass {
+  background: color-mix(in oklab, var(--surface) 62%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgb(255 255 255 / 0.45);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.6),
+    inset 0 -1px 0 rgb(0 0 0 / 0.04),
+    0 10px 30px rgb(0 0 0 / 0.14),
+    0 1px 3px rgb(0 0 0 / 0.08);
+}
+[data-theme="dark"] .nf-glass {
+  background: color-mix(in oklab, var(--surface) 55%, transparent);
+  border-color: rgb(255 255 255 / 0.12);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 12px 32px rgb(0 0 0 / 0.5),
+    0 1px 3px rgb(0 0 0 / 0.3);
+}
+/* No blur support, or the reader asked for less transparency: solid bar. */
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  .nf-glass {
+    background: var(--header-solid);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .nf-glass,
+  [data-theme="dark"] .nf-glass {
+    background: var(--header-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+/* The active tab's bubble: a slightly darker glass lens behind it. */
+.nf-tab-bubble {
+  background: color-mix(in oklab, var(--foreground) 9%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+[data-theme="dark"] .nf-tab-bubble {
+  background: rgb(255 255 255 / 0.12);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
 }
 /* The accent pill slides between tabs; the component sets its translateX
    from the active index. */

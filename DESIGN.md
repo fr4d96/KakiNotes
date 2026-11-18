@@ -235,7 +235,8 @@ staff-only data colour.
 
 ### Neutral
 
-- **Warm Ground** (#f2f0ec / #1c1a18): the page itself, the solid header and tab bar
+- **Warm Ground** (#f2f0ec / #1c1a18): the page itself, the solid header, and the tab bar's fallback
+  when blur is unavailable or Reduce Transparency is on
   (`--header-solid` is the ground).
 - **Card Lift** (#fbfaf8 / #262320): a step lighter than the ground. Surfaces that sit on the page:
   the search pill, the footer, form fields, the quiz row, popovers, overlay icon buttons.
@@ -430,8 +431,10 @@ shape; the words share the page.
 - **Header:** sticky, always solid on the ground colour with a bottom hairline and resting shadow.
   Desktop nav links get an accent underline that grows from the left on hover and stays under the
   current page.
-- **Tab bar (phones):** solid ground, top hairline; a small accent pill slides between tabs, the new
-  tab's icon pops once (1 to 1.12 to 1). It slides away on task screens and while a field has focus.
+- **Tab bar (phones):** a floating "liquid glass" pill (`.nf-glass`): 12px from the sides, tucked
+  into the home-indicator area, translucent surface over a 22px blur with 180% saturation, a bright
+  top-edge hairline and a soft lift shadow. A darker glass bubble slides behind the active tab, the
+  new tab's icon pops once (1 to 1.12 to 1). It slides away on task screens and while a field has focus.
 - **Footer:** home pages only, on the surface colour with a top hairline; slim on phones (the
   not-advice disclaimer, one row of legal links, the copyright line), four columns from `md`.
 

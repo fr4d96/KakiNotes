@@ -46,8 +46,10 @@ import { useCurrentCountry } from "@/lib/story/use-current-country";
  *  - the bar slides down out of the way on focused task screens (the story
  *    editor, like iOS hides the tab bar on a pushed screen) and whenever a
  *    text field has focus, so it never floats above the iOS keyboard;
- *  - a pill in the accent colour slides between tabs and the newly active
- *    icon pops once;
+ *  - it floats as a rounded "liquid glass" pill (translucent, blurred
+ *    backdrop, see `.nf-glass` in globals.css) clear of the screen edges;
+ *  - a glass bubble slides between tabs behind the active one and the newly
+ *    active icon pops once;
  *  - tapping the tab you are already on scrolls to the top;
  *  - every tab uses the shared `.press` feedback.
  * The tab links carry the `tab` view-transition type so a tab switch
@@ -152,7 +154,7 @@ export function BottomTabBar({
       {!hidden && (
         <div
           aria-hidden="true"
-          className="h-[calc(3.5rem+env(safe-area-inset-bottom))] md:hidden print:hidden"
+          className="h-(--tab-bar-clearance) md:hidden print:hidden"
         />
       )}
       <nav
@@ -161,21 +163,21 @@ export function BottomTabBar({
         // `inert` takes the whole bar out of the tab order and the
         // accessibility tree while it is slid away.
         inert={hidden}
-        className="nf-tab-bar journiq-header-solid fixed inset-x-0 bottom-0 z-40 border-t border-border-subtle pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] text-foreground md:hidden print:hidden"
+        className="nf-tab-bar nf-glass fixed bottom-(--tab-bar-gap) left-[max(0.75rem,env(safe-area-inset-left))] right-[max(0.75rem,env(safe-area-inset-right))] z-40 rounded-full p-1 text-foreground md:hidden print:hidden"
       >
         <div className="relative">
           <span
             aria-hidden="true"
             data-testid="tab-indicator"
-            className="nf-tab-indicator pointer-events-none absolute left-0 top-0 flex h-[3px] w-1/4 justify-center"
+            className="nf-tab-indicator pointer-events-none absolute inset-y-0 left-0 w-1/4"
             style={{
               transform: `translateX(${Math.max(activeIndex, 0) * 100}%)`,
               opacity: activeIndex < 0 ? 0 : 1,
             }}
           >
-            <span className="h-full w-9 rounded-full bg-accent" />
+            <span className="nf-tab-bubble block h-full w-full rounded-full" />
           </span>
-          <ul className="grid grid-cols-4">
+          <ul className="relative grid grid-cols-4">
             {tabs.map(({ href, label, Icon, active }) => (
               <li key={href}>
                 <Link
@@ -194,7 +196,7 @@ export function BottomTabBar({
                       behavior: prefersReducedMotion() ? "instant" : "smooth",
                     });
                   }}
-                  className={`press flex min-h-14 min-w-11 flex-col items-center justify-center gap-0.5 px-1 text-xs font-bold focus-visible:outline-offset-[-3px] ${
+                  className={`press relative flex min-h-14 min-w-11 flex-col items-center justify-center gap-0.5 rounded-full px-1 text-xs font-bold focus-visible:outline-offset-[-3px] ${
                     active ? "text-accent" : "text-muted-foreground"
                   }`}
                 >
