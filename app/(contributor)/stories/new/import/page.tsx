@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { DEFAULT_COUNTRY_SLUG, isCountrySlug } from "@/lib/story/countries";
+import { cookies } from "next/headers";
+import {
+  COUNTRY_COOKIE,
+  DEFAULT_COUNTRY_SLUG,
+  newStoryCountry,
+} from "@/lib/story/countries";
 import { BackLink } from "@/components/back-link";
 import { PdfImportPicker } from "../pdf-import-picker";
 
@@ -35,7 +40,8 @@ export default async function NewStoryImportPage({
   // absent/invalid) since PdfImportPicker sends it as a plain required form
   // field, not an optional hidden one.
   const countrySlug =
-    country && isCountrySlug(country) ? country : DEFAULT_COUNTRY_SLUG;
+    newStoryCountry(country, (await cookies()).get(COUNTRY_COOKIE)?.value) ??
+    DEFAULT_COUNTRY_SLUG;
   return (
     <div className="mx-auto max-w-3xl px-4 pt-4 pb-12 sm:px-6 sm:py-16">
       <div className="flex items-center gap-3">

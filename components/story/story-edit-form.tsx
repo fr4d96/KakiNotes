@@ -57,7 +57,6 @@ import {
   setLocationsAction,
   setTagsAction,
   setExpensesAction,
-  setCountryAction,
 } from "@/app/(contributor)/stories/[id]/edit/actions";
 import { TagEditor } from "@/components/story/tag-editor";
 import {
@@ -134,16 +133,6 @@ export type StoryEditFormProps = {
    * country-aware call site in this codebase uses.
    */
   initialCountrySlug?: string;
-  /**
-   * True once a story has ever been published (lifecycle_status ===
-   * "published") -- country.country_id is a property of the STORY row, not
-   * the revision, so changing it on a published story would move already-
-   * public content between country sections with no moderation step in
-   * between (Engineering Rule 11; enforced server-side by
-   * set_story_country()). The Country select becomes read-only text here
-   * the moment this is true.
-   */
-  isPublished?: boolean;
   /** Suggestions only -- a contributor may add any label they like. */
   tags: ActiveTag[];
   /**
@@ -349,7 +338,6 @@ export function StoryEditForm({
   countryName,
   countries = [],
   initialCountrySlug,
-  isPublished = false,
   tags,
   expenseCategories,
   showContentImport,
@@ -488,17 +476,16 @@ export function StoryEditForm({
   const [contributorNote, setContributorNote] = useState(
     initialContributorNote,
   );
-  // Country lives above the location rows (product decision: country,
-  // then region). Falls back to DEFAULT_COUNTRY_SLUG when the server could
+  // The story's country (picked in the header when the story was started).
+  // Falls back to DEFAULT_COUNTRY_SLUG when the server could
   // not resolve one (a signed-out render, or a call site that predates
   // this prop) -- same "new-zealand unless told otherwise" default
   // create_self_service_draft() itself applies.
-  const [countrySlug, setCountrySlug] = useState<string>(
+  const [countrySlug] = useState<string>(
     initialCountrySlug && isCountrySlug(initialCountrySlug)
       ? initialCountrySlug
       : DEFAULT_COUNTRY_SLUG,
   );
-  const [countrySaveError, setCountrySaveError] = useState<string | null>(null);
   const selectedCountry = countries.find((c) => c.slug === countrySlug);
   // Nominatim's countrycodes / the Chinese-region-matching fallback both
   // need a real value even before `countries` has loaded (SSR passes it
@@ -1110,56 +1097,6 @@ export function StoryEditForm({
     });
   }
 
-  /**
-   * The Country select changed. Every saved location row's region belongs
-   * to the OLD country (the select above only ever offered that country's
-   * regions), so every row that has a region is cleared outright --
-   * story_revision_locations_validate_country() would reject them against
-   * the new country_id anyway (supabase/migrations/20261014085842_
-   * countries.sql). A manually-added row with no region yet is kept: it
-   * has not picked a country-specific anything, so there is nothing to
-   * clear.
-   *
-   * set_story_country() runs BEFORE the (now empty) locations are saved,
-   * on its own "country" queue slot -- the location clear is only enqueued
-   * from inside that mutation's own success branch, not merely scheduled
-   * afterwards, so the RPC's country_id update is guaranteed to have
-   * landed before anything tries to insert a location against it.
-   */
-  function changeCountry(nextSlug: string) {
-    if (nextSlug === countrySlug) return;
-    const previousSlug = countrySlug;
-    const previousLocations = locations;
-    const hadRealLocations = locations.some((l) => l.regionId);
-    const kept = locations.filter((l) => !l.regionId);
-
-    setCountrySlug(nextSlug);
-    setLocations(kept);
-    setLocationSearchNotice(
-      hadRealLocations
-        ? t("fields.countryClearedNotice", {
-            country: countryDisplayName(nextSlug),
-          })
-        : null,
-    );
-    setCountrySaveError(null);
-    setSaving(true);
-    queue.enqueue("country", async () => {
-      const result = await setCountryAction(storyId, nextSlug);
-      if (!result.ok) {
-        // Revert -- the story's actual country_id never changed.
-        setCountrySlug(previousSlug);
-        setLocations(previousLocations);
-        setCountrySaveError(result.error);
-        throw new Error(result.error);
-      }
-      versionRef.current += 1;
-      bumpVersion();
-      setLastSavedAt(Date.now());
-      if (hadRealLocations) saveLocations(kept);
-    });
-  }
-
   function handleLocationMatch(match: LocationMatch | null, label: string) {
     if (!match) {
       setLocationSearchNotice(
@@ -1708,52 +1645,11 @@ export function StoryEditForm({
           </StepSection>
 
           <StepSection id="places" activeStep={step}>
-            <div>
-              <label
-                htmlFor="edit-country"
-                className="block text-sm font-medium"
-              >
-                {t("fields.country")}
-              </label>
-              {/* Locked to read-only text once the story has ever been
-                  published -- stories.country_id is not revision-scoped,
-                  so changing it on a published story would move already-
-                  public content between country sections with no
-                  moderation step in between (Engineering Rule 11). Enforced
-                  server-side by set_story_country(); this is only the UI
-                  half. */}
-              {isPublished ? (
-                <>
-                  <p id="edit-country" className="mt-1 text-sm">
-                    {resolvedCountryName}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {t("fields.countryLocked")}
-                  </p>
-                </>
-              ) : (
-                <select
-                  id="edit-country"
-                  value={countrySlug}
-                  onChange={(e) => changeCountry(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2 dark:bg-transparent"
-                >
-                  {countries.map((c) => (
-                    <option key={c.id} value={c.slug}>
-                      {locale === "zh-CN" && c.name_zh_cn
-                        ? c.name_zh_cn
-                        : c.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {countrySaveError && (
-                <p role="alert" className="mt-1 text-sm text-destructive">
-                  {countrySaveError}
-                </p>
-              )}
-            </div>
-
+            {/* No country picker here since 2026-11-18: the header's flag
+                is where a contributor picks a country, and a new story
+                takes it from there (newStoryCountry in
+                lib/story/countries.ts). The places below are that
+                country's regions. */}
             <fieldset>
               <legend className="text-sm font-medium">
                 {t("fields.locations")}

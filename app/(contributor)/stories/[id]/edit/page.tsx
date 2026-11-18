@@ -173,7 +173,6 @@ export default async function EditStoryPage({
       destinations={destinations}
       countries={countries}
       initialCountrySlug={countrySlug ?? undefined}
-      isPublished={draft.lifecycle_status === "published"}
       tags={tags}
       expenseCategories={expenseCategories}
       isNewStory={draft.revision_number === 1}

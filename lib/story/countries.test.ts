@@ -8,6 +8,7 @@ import {
   isCountrySlug,
   countryForPath,
   countryFromCookieValue,
+  newStoryCountry,
 } from "./countries";
 
 describe("lib/story/countries", () => {
@@ -81,5 +82,19 @@ describe("countryForPath", () => {
       expect(countryForPath(path, "china")).toBe("china");
       expect(countryForPath(path, null)).toBe("new-zealand");
     }
+  });
+});
+
+describe("newStoryCountry", () => {
+  it("prefers the link's own ?country=", () => {
+    expect(newStoryCountry("china", "new-zealand")).toBe("china");
+  });
+  it("falls back to the country picked in the header", () => {
+    expect(newStoryCountry(undefined, "china")).toBe("china");
+    expect(newStoryCountry("atlantis", "china")).toBe("china");
+  });
+  it("leaves it to the server default when neither names a real country", () => {
+    expect(newStoryCountry(undefined, undefined)).toBeUndefined();
+    expect(newStoryCountry("atlantis", "nope")).toBeUndefined();
   });
 });

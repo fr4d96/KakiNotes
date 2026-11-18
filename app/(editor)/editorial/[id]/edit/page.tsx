@@ -135,7 +135,6 @@ export default async function EditorialEditPage({
         destinations={destinations}
         countries={countries}
         initialCountrySlug={countrySlug ?? undefined}
-        isPublished={draft.lifecycle_status === "published"}
         tags={tags}
         expenseCategories={expenseCategories}
         showContentImport

@@ -133,7 +133,12 @@ afterEach(() => {
   setTestLocale("en");
 });
 
-describe("StoryEditForm — Country select (Places step)", () => {
+describe("StoryEditForm — the story's country (Places step)", () => {
+  it("has no country picker: the header's flag sets a story's country", () => {
+    render(<StoryEditForm {...baseProps()} />);
+    expect(screen.queryByLabelText("Country")).not.toBeInTheDocument();
+  });
+
   it("defaults to the story's current country and only lists that country's regions, for a curated (search-matched) row", () => {
     render(
       <StoryEditForm
@@ -149,8 +154,6 @@ describe("StoryEditForm — Country select (Places step)", () => {
         ]}
       />,
     );
-    const countrySelect = screen.getByLabelText("Country");
-    expect(countrySelect).toHaveValue("new-zealand");
     const regionSelect = screen.getByLabelText("Region");
     expect(
       within(regionSelect).queryByRole("option", { name: "Otago" }),
@@ -184,82 +187,17 @@ describe("StoryEditForm — Country select (Places step)", () => {
       within(regionSelect).queryByRole("option", { name: "Otago" }),
     ).toBeNull();
   });
-
-  it("clears existing location rows and shows a notice when the country changes", async () => {
-    const user = userEvent.setup();
-    render(
-      <StoryEditForm
-        {...baseProps()}
-        initialLocations={[
-          {
-            regionId: "r-otago",
-            customRegionLabel: null,
-            destinationId: null,
-            customDestinationLabel: "Queenstown",
-            sortOrder: 0,
-          },
-        ]}
-      />,
-    );
-    expect(screen.getByDisplayValue("Queenstown")).toBeInTheDocument();
-
-    await user.selectOptions(screen.getByLabelText("Country"), "china");
-
-    expect(screen.queryByDisplayValue("Queenstown")).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/Locations for the previous country were cleared/i),
-    ).toBeInTheDocument();
-    await waitFor(() =>
-      expect(setLocationsAction).not.toHaveBeenCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.arrayContaining([
-          expect.objectContaining({ regionId: "r-otago" }),
-        ]),
-      ),
-    );
-  });
-
-  it("reverts the country and restores the notice-free state if the save fails", async () => {
-    setCountryAction.mockResolvedValueOnce({
-      ok: false,
-      error: "Country can't be changed after a story is published",
-    });
-    const user = userEvent.setup();
-    render(<StoryEditForm {...baseProps()} />);
-    await user.selectOptions(screen.getByLabelText("Country"), "china");
-
-    await waitFor(() =>
-      expect(
-        screen.getAllByText(
-          "Country can't be changed after a story is published",
-        ).length,
-      ).toBeGreaterThan(0),
-    );
-    expect(screen.getByLabelText("Country")).toHaveValue("new-zealand");
-  });
-});
-
-describe("StoryEditForm — published stories lock the country", () => {
-  it("shows the country as read-only text with a hint instead of a select", () => {
-    render(<StoryEditForm {...baseProps()} isPublished />);
-    expect(screen.queryByLabelText("Country")).not.toBeInTheDocument();
-    expect(screen.getByText("New Zealand")).toBeInTheDocument();
-    expect(
-      screen.getByText("Country can't be changed after a story is published."),
-    ).toBeInTheDocument();
-  });
 });
 
 describe("StoryEditForm — place search placeholder/search scope per country", () => {
-  it("uses the selected country's place example in the search placeholder", async () => {
-    render(<StoryEditForm {...baseProps()} />);
+  it("uses the story's country's place example in the search placeholder", () => {
+    const { unmount } = render(<StoryEditForm {...baseProps()} />);
     expect(
       screen.getByPlaceholderText("Type a full place name, e.g. Queenstown"),
     ).toBeInTheDocument();
+    unmount();
 
-    const user = userEvent.setup();
-    await user.selectOptions(screen.getByLabelText("Country"), "china");
+    render(<StoryEditForm {...baseProps()} initialCountrySlug="china" />);
     expect(
       screen.getByPlaceholderText("Type a full place name, e.g. Guangzhou"),
     ).toBeInTheDocument();

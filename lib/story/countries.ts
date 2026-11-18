@@ -73,6 +73,21 @@ export const COUNTRY_FLAGS: Record<CountrySlug, string> = {
  * links -- never access or what a query may return.
  */
 export const COUNTRY_COOKIE = "kakinotes-country";
+/**
+ * The country a new story belongs to: the link's own `?country=` when it
+ * names a real one, otherwise the country picked in the header (remembered
+ * in COUNTRY_COOKIE), otherwise undefined (the server's default). The
+ * editor has no country picker of its own since 2026-11-18 -- the header's
+ * flag is the one place a contributor chooses it.
+ */
+export function newStoryCountry(
+  param: string | undefined,
+  cookieValue: string | undefined,
+): CountrySlug | undefined {
+  if (param && isCountrySlug(param)) return param;
+  return countryFromCookieValue(cookieValue) ?? undefined;
+}
+
 export const COUNTRY_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 /** A cookie value -> a country, or null when missing or not one we have. */

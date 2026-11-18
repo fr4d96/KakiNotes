@@ -11705,3 +11705,13 @@ Tests: `lib/auth/viewer-identity.test.tsx` (remount keeps the avatar, contributo
 seed, failed lookup, sign-out), `app/(public)/settings/actions.test.ts`, new cases in
 `settings-view.test.tsx`, `(contributor)/actions.test.ts` and `page-titles.test.ts`. Not checked:
 a real signed-in session (the dev server's Supabase project is production) and a real iPhone.
+
+**Follow-up the same day — no country picker in the editor.** The Places & tags step no longer
+has a Country select (or the read-only "can't change after publishing" line): the header's flag
+is the one place a contributor picks a country. `/stories/new` and `/stories/new/import` now take
+a new story's country from `?country=` when the link names one, else from the header's
+`kakinotes-country` cookie (`newStoryCountry` in `lib/story/countries.ts`), else the server
+default (New Zealand). Before this, every "New story" link except the China home page's started
+the draft as New Zealand. An existing draft keeps the country it was created with and can no
+longer be moved from the editor; `setCountryAction` / `set_story_country()` are unchanged and
+still guard published stories server-side.
