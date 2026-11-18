@@ -3,6 +3,24 @@
 ## [3.14.0](https://github.com/fr4d96/KakiNotes/compare/v3.13.0...v3.14.0) (2026-11-18)
 
 
+### A friendlier story editor, and your avatar in Settings
+
+#### For contributors writing a story
+
+- **The formatting buttons have room to breathe.** When you write your story, the buttons for headings, bold, lists, links and tables are bigger, grouped into three soft rounded sets, and use matching icons instead of a mix of symbols. On a phone you can still swipe the row sideways, and the edge fades so you can tell there's more.
+- **Delete a photo in one tap.** Every photo in the Photos step now has a small bin button next to the zoom icon. Kakinotes asks "Delete this photo?" first, so a stray tap won't lose anything.
+- **Travel style is about how you travelled.** Instead of Free, Budget, Mid-range or Comfort (how much you spent is already in the Expenses step), you now choose Road trip, Backpacking, Settled in one town, Work for stay (WWOOF, HelpX) or A mix of styles, or type your own. Stories that already used the old choices keep them.
+
+#### For everyone signed in
+
+- **Your avatar stays put.** It no longer disappears from the top bar after you tap Home.
+- **Pick your avatar in Settings.** Choosing or changing your avatar has moved to the Settings screen, next to appearance, colour and language.
+
+#### On phones
+
+- **Page titles fit the top bar**, including when you start a new story.
+- **"Saved" messages fit the screen.** They no longer run off the left edge, and they appear just above the bottom menu instead of covering it.
+
 ### Features
 
 * story editor polish, avatar in Settings, phone header fixes ([7725044](https://github.com/fr4d96/KakiNotes/commit/77250447bfc29e7306391737eccf1a4a444f5e4e))
