@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.14.0](https://github.com/fr4d96/KakiNotes/compare/v3.13.0...v3.14.0) (2026-11-18)
+
+
+### Features
+
+* story editor polish, avatar in Settings, phone header fixes ([7725044](https://github.com/fr4d96/KakiNotes/commit/77250447bfc29e7306391737eccf1a4a444f5e4e))
+
 ## [3.13.0](https://github.com/fr4d96/KakiNotes/compare/v3.12.0...v3.13.0) (2026-11-18)
 
 
