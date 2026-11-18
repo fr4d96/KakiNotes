@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.0](https://github.com/fr4d96/KakiNotes/compare/v3.12.0...v3.13.0) (2026-11-18)
+
+
+### Features
+
+* **nav:** liquid-glass floating tab bar on phones ([af0bbeb](https://github.com/fr4d96/KakiNotes/commit/af0bbebf647f72c79e4a0b5e5d0bb773ff9b0dc5))
+
 ## [3.12.0](https://github.com/fr4d96/KakiNotes/compare/v3.11.0...v3.12.0) (2026-11-17)
 
 
