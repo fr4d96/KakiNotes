@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.0](https://github.com/fr4d96/KakiNotes/compare/v4.0.0...v4.1.0) (2026-11-18)
+
+
+### Features
+
+* **nav:** Profile tab, + for new stories, steady header and tab bar ([9093ce1](https://github.com/fr4d96/KakiNotes/commit/9093ce19b7ed9797deb97bd35cb0a0212ac38f02))
+
 ## [4.0.0](https://github.com/fr4d96/KakiNotes/compare/v3.14.0...v4.0.0) (2026-11-18)
 
 
