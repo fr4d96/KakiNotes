@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.0](https://github.com/fr4d96/KakiNotes/compare/v4.1.0...v4.2.0) (2026-11-18)
+
+
+### Features
+
+* **story:** byline avatars follow the name; tidier story pages ([10dae3c](https://github.com/fr4d96/KakiNotes/commit/10dae3cc32ee42f58d6f8d230cb2c3672cb40f58))
+
 ## [4.1.0](https://github.com/fr4d96/KakiNotes/compare/v4.0.0...v4.1.0) (2026-11-18)
 
 
