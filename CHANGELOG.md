@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.0](https://github.com/fr4d96/KakiNotes/compare/v3.14.0...v4.0.0) (2026-11-18)
+
+
+### Features
+
+* **editor:** country comes from the header, not the story editor ([4a1df2f](https://github.com/fr4d96/KakiNotes/commit/4a1df2fc38170b994c2bdd475e433a51660af78d))
+
 ## [3.14.0](https://github.com/fr4d96/KakiNotes/compare/v3.13.0...v3.14.0) (2026-11-18)
 
 
