@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo } from "react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import {
   createOwnContributorAction,
@@ -8,7 +9,6 @@ import {
   type AccountFormState,
 } from "@/app/(contributor)/actions";
 import { contributorAttributionTypes } from "@/lib/validation/profile";
-import { AvatarPicker } from "@/components/account/avatar-picker";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
 import { formatCountryName } from "@/lib/i18n/format";
 import { intlLocale, isLocale } from "@/i18n/locales";
@@ -55,11 +55,23 @@ export function ContributorForm({
         {t("intro")}
       </p>
 
-      <AvatarPicker
-        name="avatarEmoji"
-        initial={existing?.avatarEmoji ?? ""}
-        hint={t("avatarHint")}
-      />
+      {/* The avatar is chosen in Settings since 2026-11-18 (it saves on
+          tap there, like the rest of Settings). This form no longer posts
+          it, so saving here can never clear it. */}
+      <p className="text-sm text-muted-foreground">
+        {existing?.avatarEmoji ? (
+          <span aria-hidden="true" className="mr-1.5 text-lg">
+            {existing.avatarEmoji}
+          </span>
+        ) : null}
+        {t("avatarInSettings")}{" "}
+        <Link
+          href="/settings#avatar"
+          className="font-semibold text-accent underline-offset-2 hover:underline"
+        >
+          {t("avatarInSettingsLink")}
+        </Link>
+      </p>
 
       <div>
         <label

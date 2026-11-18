@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import {
   revisionInputSchema,
   travelStyles,
+  legacyTravelStyles,
   imageBlockMediaIds,
   markdownToStoryContent,
   storyContentText,
@@ -224,12 +225,6 @@ function StepSection({
   );
 }
 
-/** "midRange" -> "Mid range" -- for displaying camelCase enum values. */
-function formatCamelCaseLabel(value: string): string {
-  const spaced = value.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
-
 /**
  * Visual + a11y marker for a required field label -- title, story content,
  * locations, and tags (see the preview page's `missingRequirements` gate,
@@ -365,6 +360,7 @@ export function StoryEditForm({
   const tCountry = useTranslations("countryContent");
   const locale = useLocale() as Locale;
   const tValidation = useTranslations("validation");
+  const tStyle = useTranslations("travelStyles");
   const versionRef = useRef(initialVersion);
   const [conflict, setConflict] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -432,12 +428,21 @@ export function StoryEditForm({
   // travel_style is a loosely-typed `text` column (no DB enum/CHECK --
   // confirmed by reading supabase/migrations/20260803090200_story_revisions.sql
   // before relying on it), so a contributor's own wording is just as valid
-  // a value as the three curated presets -- "other" here is a UI-only mode,
+  // a value as the curated presets -- "other" here is a UI-only mode,
   // never itself a stored value. Detects an existing custom value on load
   // (e.g. from an earlier session) so re-opening the form doesn't silently
   // drop it into "Not specified".
+  // A story saved with one of the retired spend presets ("budget", ...)
+  // keeps it as a selectable option, labelled, instead of reopening as
+  // "Other" with the raw key in the text box. Once changed, it is gone.
+  const legacyStyle =
+    initialTravelStyle &&
+    (legacyTravelStyles as readonly string[]).includes(initialTravelStyle)
+      ? (initialTravelStyle as (typeof legacyTravelStyles)[number])
+      : null;
   const [travelStyleMode, setTravelStyleMode] = useState<"preset" | "other">(
     initialTravelStyle &&
+      !legacyStyle &&
       !(travelStyles as readonly string[]).includes(initialTravelStyle)
       ? "other"
       : "preset",
@@ -1565,9 +1570,12 @@ export function StoryEditForm({
                 <option value="">{t("fields.travelStyleUnset")}</option>
                 {travelStyles.map((style) => (
                   <option key={style} value={style}>
-                    {formatCamelCaseLabel(style)}
+                    {tStyle(style)}
                   </option>
                 ))}
+                {legacyStyle && (
+                  <option value={legacyStyle}>{tStyle(legacyStyle)}</option>
+                )}
                 <option value="other">{t("fields.travelStyleOther")}</option>
               </select>
               {travelStyleMode === "other" && (

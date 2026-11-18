@@ -10,6 +10,12 @@ import { autocompletion } from "@codemirror/autocomplete";
 
 import { htmlPasteToMarkdown } from "@/lib/story/html-paste";
 import {
+  HeadingBlockIcon,
+  LinkIcon,
+  ListBlockIcon,
+  QuoteBlockIcon,
+} from "@/components/icons";
+import {
   markdownImageCount,
   markdownWordCount,
   readingTimeMinutes,
@@ -139,10 +145,24 @@ function ToolbarButton({
       disabled={disabled}
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
-      className="flex h-8 min-w-8 items-center justify-center rounded px-1.5 text-sm font-medium hover:bg-surface-muted disabled:opacity-40"
+      className="press flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full px-2 text-[15px] text-foreground/80 transition-colors hover:bg-surface hover:text-foreground hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent active:bg-surface disabled:opacity-40"
     >
       {label}
     </button>
+  );
+}
+
+/**
+ * One family of commands (text style, blocks, inserts) on a soft recessed
+ * pill. Grouping by shape instead of hairline dividers is what keeps ten
+ * buttons readable at a glance; inside a group a button lifts to the surface
+ * colour on hover/press.
+ */
+function ToolGroup({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-surface-muted/70 p-0.5">
+      {children}
+    </div>
   );
 }
 
@@ -157,9 +177,9 @@ function MarkdownGuideLink() {
       rel="noopener noreferrer"
       title={t("syntaxGuide")}
       aria-label={t("syntaxGuide")}
-      className="flex h-8 w-8 items-center justify-center rounded-full border border-current text-xs font-semibold italic hover:bg-surface-muted"
+      className="press flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground"
     >
-      i
+      <HelpIcon className="h-5 w-5" />
     </a>
   );
 }
@@ -176,6 +196,11 @@ function MarkdownGuideLink() {
  * toolbar stuck *underneath* that and was invisible exactly when it was
  * needed. Owning a scroll region is the fix that does not depend on
  * knowing the height of everything above it.
+ *
+ * Layout (2026-11-18): three pill groups -- text style (H, B, I, S),
+ * blocks (quote and the three lists), inserts (link, table) -- with 36px
+ * round buttons and one consistent line-icon set, replacing 32px square
+ * buttons with mixed emoji glyphs and hairline dividers.
  */
 function EditorToolbar({ getView }: { getView: () => EditorView | null }) {
   const t = useTranslations("editor.toolbar");
@@ -183,74 +208,139 @@ function EditorToolbar({ getView }: { getView: () => EditorView | null }) {
     const view = getView();
     if (view) fn(view);
   };
+  const icon = "h-5 w-5";
 
   return (
-    <div className="flex shrink-0 items-center gap-1 rounded-t-md border-b border-border-subtle bg-surface px-1.5 py-1">
-      {/* Scrolls sideways rather than wrapping. At 375px the eleven buttons
-          just overflow, and wrapping cost three stacked rows of chrome above
-          the writing area on a phone -- the opposite of Engineering Rule 18.
+    <div className="flex shrink-0 items-center gap-1.5 rounded-t-md border-b border-border-subtle bg-surface py-2 pr-1.5 pl-2">
+      {/* Scrolls sideways rather than wrapping. At 375px the groups just
+          overflow, and wrapping cost stacked rows of chrome above the
+          writing area on a phone -- the opposite of Engineering Rule 18.
+          The right edge fades so the overflow reads as "more this way".
           Keyboard users are unaffected: tabbing to a button scrolls it into
           view automatically. */}
-      <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
-        <ToolbarButton
-          title={t("heading")}
-          label="H"
-          onClick={run((v) => toggleLinePrefix(v, "## "))}
-        />
-        <ToolbarButton
-          title={t("bold")}
-          label={<strong>B</strong>}
-          onClick={run((v) => wrapSelection(v, "**", "**", "bold text"))}
-        />
-        <ToolbarButton
-          title={t("italic")}
-          label={<em>i</em>}
-          onClick={run((v) => wrapSelection(v, "*", "*", "italic text"))}
-        />
-        <ToolbarButton
-          title={t("strikethrough")}
-          label={<span className="line-through">S</span>}
-          onClick={run((v) => wrapSelection(v, "~~", "~~", "struck text"))}
-        />
-        <div className="mx-1 h-5 w-px bg-surface-muted" />
-        <ToolbarButton
-          title={t("quote")}
-          label="❝"
-          onClick={run((v) => toggleLinePrefix(v, "> "))}
-        />
-        <ToolbarButton
-          title={t("bulletedList")}
-          label="•"
-          onClick={run((v) => toggleLinePrefix(v, "- "))}
-        />
-        <ToolbarButton
-          title={t("numberedList")}
-          label="1."
-          onClick={run((v) => toggleLinePrefix(v, "1. "))}
-        />
-        <ToolbarButton
-          title={t("checklist")}
-          label="☑"
-          onClick={run((v) => toggleLinePrefix(v, "- [ ] "))}
-        />
-        <div className="mx-1 h-5 w-px bg-surface-muted" />
-        <ToolbarButton
-          title={t("link")}
-          label="🔗"
-          onClick={run((v) =>
-            wrapSelection(v, "[", "](https://)", "link text"),
-          )}
-        />
-        <ToolbarButton
-          title={t("table")}
-          label="▦"
-          onClick={run((v) => insertTable(v))}
-        />
+      <div
+        role="toolbar"
+        aria-label={t("formattingLabel")}
+        className="nf-editor-toolbar flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pr-4"
+      >
+        <ToolGroup>
+          <ToolbarButton
+            title={t("heading")}
+            label={<HeadingBlockIcon className={icon} />}
+            onClick={run((v) => toggleLinePrefix(v, "## "))}
+          />
+          <ToolbarButton
+            title={t("bold")}
+            label={<span className="font-extrabold">B</span>}
+            onClick={run((v) => wrapSelection(v, "**", "**", "bold text"))}
+          />
+          <ToolbarButton
+            title={t("italic")}
+            label={<span className="font-serif text-base italic">I</span>}
+            onClick={run((v) => wrapSelection(v, "*", "*", "italic text"))}
+          />
+          <ToolbarButton
+            title={t("strikethrough")}
+            label={<span className="font-semibold line-through">S</span>}
+            onClick={run((v) => wrapSelection(v, "~~", "~~", "struck text"))}
+          />
+        </ToolGroup>
+        <ToolGroup>
+          <ToolbarButton
+            title={t("quote")}
+            label={<QuoteBlockIcon className={icon} />}
+            onClick={run((v) => toggleLinePrefix(v, "> "))}
+          />
+          <ToolbarButton
+            title={t("bulletedList")}
+            label={<ListBlockIcon className={icon} />}
+            onClick={run((v) => toggleLinePrefix(v, "- "))}
+          />
+          <ToolbarButton
+            title={t("numberedList")}
+            label={<NumberedListIcon className={icon} />}
+            onClick={run((v) => toggleLinePrefix(v, "1. "))}
+          />
+          <ToolbarButton
+            title={t("checklist")}
+            label={<ChecklistIcon className={icon} />}
+            onClick={run((v) => toggleLinePrefix(v, "- [ ] "))}
+          />
+        </ToolGroup>
+        <ToolGroup>
+          <ToolbarButton
+            title={t("link")}
+            label={<LinkIcon className={icon} />}
+            onClick={run((v) =>
+              wrapSelection(v, "[", "](https://)", "link text"),
+            )}
+          />
+          <ToolbarButton
+            title={t("table")}
+            label={<TableIcon className={icon} />}
+            onClick={run((v) => insertTable(v))}
+          />
+        </ToolGroup>
       </div>
       <div className="shrink-0">
         <MarkdownGuideLink />
       </div>
     </div>
+  );
+}
+
+// Toolbar-only glyphs, drawn on components/icons.tsx's grid (24x24, 1.6
+// stroke, round caps) so they sit with the shared Heading/Quote/List/Link
+// icons used beside them.
+type GlyphProps = { className?: string };
+const glyph = {
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.6,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
+
+function NumberedListIcon({ className }: GlyphProps) {
+  return (
+    <svg {...glyph} className={className}>
+      <path d="M10 6.5h9.5M10 12h9.5M10 17.5h9.5" />
+      <path d="M4.5 5.5 5.5 5v4" />
+      <path d="M4.25 11.25c.3-.5.8-.75 1.3-.6.6.2.75.9.3 1.4L4.25 13.75H6.1" />
+      <path d="M4.3 16.2h1.6l-.9 1.1c.7 0 1.1.4 1.1.9s-.5.9-1.1.9c-.4 0-.7-.15-.9-.4" />
+    </svg>
+  );
+}
+
+function ChecklistIcon({ className }: GlyphProps) {
+  return (
+    <svg {...glyph} className={className}>
+      <rect x="3.75" y="4.75" width="5" height="5" rx="1.2" />
+      <path d="m4.9 7.3 1 1 1.9-2" />
+      <rect x="3.75" y="14.25" width="5" height="5" rx="1.2" />
+      <path d="M12 7.25h8M12 16.75h8" />
+    </svg>
+  );
+}
+
+function TableIcon({ className }: GlyphProps) {
+  return (
+    <svg {...glyph} className={className}>
+      <rect x="3.75" y="5" width="16.5" height="14" rx="2" />
+      <path d="M3.75 9.75h16.5M3.75 14.25h16.5M12 9.75V19" />
+    </svg>
+  );
+}
+
+function HelpIcon({ className }: GlyphProps) {
+  return (
+    <svg {...glyph} className={className}>
+      <circle cx="12" cy="12" r="8.25" />
+      <path d="M9.75 9.6a2.3 2.3 0 0 1 4.45.6c0 1.55-2.2 1.9-2.2 3.3" />
+      <circle cx="12" cy="16.6" r="0.6" fill="currentColor" stroke="none" />
+    </svg>
   );
 }
 

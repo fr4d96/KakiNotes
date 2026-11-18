@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { Locale } from "@/i18n/locales";
 import { setLocaleAction } from "@/lib/i18n/set-locale-action";
+import { AvatarSetting } from "./avatar-setting";
 import {
   ACCENT_PRESETS,
   DEFAULT_ACCENT_ID,
@@ -24,7 +25,10 @@ import {
 /**
  * Settings (2026-11-17): the home for how the app looks and reads on this
  * device -- theme, accent colour, language -- moved out of the account and
- * ☰ menus, which now only navigate. Open to everyone, signed in or not:
+ * ☰ menus, which now only navigate. Since 2026-11-18 it also holds the
+ * signed-in viewer's avatar (AvatarSetting), the one account preference
+ * that is about how you appear rather than who you are; it is saved to the
+ * account, not the device, and drawn only when signed in. Open to everyone, signed in or not:
  * these are device preferences, not account data, and a visitor reading in
  * Chinese needs the language switch as much as a contributor does.
  *
@@ -107,158 +111,165 @@ export function SettingsView({ locale }: { locale: Locale }) {
         {t("title")}
       </h1>
 
-      {/* ---- Personalize ---- */}
-      <section aria-labelledby="settings-personalize" className="md:mt-8">
-        <h2
-          id="settings-personalize"
-          className="px-1 text-sm font-bold text-muted-foreground"
-        >
-          {t("personalize")}
-        </h2>
-        <div className="mt-2 space-y-7 rounded-2xl bg-surface p-4 shadow-sm sm:p-5">
-          {/* Appearance */}
-          <div>
-            <p id={themeId} className="text-base font-bold">
-              {t("theme")}
-            </p>
-            <div
-              role="radiogroup"
-              aria-labelledby={themeId}
-              className="mt-3 grid grid-cols-3 gap-1 rounded-full bg-surface-muted p-1"
-            >
-              {themeOptions.map((option) => {
-                const selected = theme === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    onClick={() => setThemePreference(option.value)}
-                    className={`press min-h-11 rounded-full px-2 text-sm font-semibold transition-colors ${
-                      selected
-                        ? "bg-surface text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+      <div className="flex flex-col gap-8 md:mt-8">
+        {/* ---- Profile (signed in only): the avatar ---- */}
+        <AvatarSetting />
 
-          {/* Accent colour */}
-          <div>
-            <p id={accentId} className="text-base font-bold">
-              {t("accent")}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("accentHelp")}
-            </p>
-
-            <div
-              role="radiogroup"
-              aria-labelledby={accentId}
-              className="mt-4 grid grid-cols-4 gap-x-2 gap-y-4"
-            >
-              {ACCENT_PRESETS.map((preset) => {
-                const selected =
-                  choice.kind === "preset" && choice.id === preset.id;
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    onClick={() => setAccentColor(preset.hex)}
-                    className="press group flex flex-col items-center gap-1.5 rounded-xl focus-visible:outline-offset-4"
-                  >
-                    <Swatch color={preset.hex} selected={selected} />
-                    <span
-                      className={`text-xs ${
+        {/* ---- Personalize ---- */}
+        <section aria-labelledby="settings-personalize">
+          <h2
+            id="settings-personalize"
+            className="px-1 text-sm font-bold text-muted-foreground"
+          >
+            {t("personalize")}
+          </h2>
+          <div className="mt-2 space-y-7 rounded-2xl bg-surface p-4 shadow-sm sm:p-5">
+            {/* Appearance */}
+            <div>
+              <p id={themeId} className="text-base font-bold">
+                {t("theme")}
+              </p>
+              <div
+                role="radiogroup"
+                aria-labelledby={themeId}
+                className="mt-3 grid grid-cols-3 gap-1 rounded-full bg-surface-muted p-1"
+              >
+                {themeOptions.map((option) => {
+                  const selected = theme === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => setThemePreference(option.value)}
+                      className={`press min-h-11 rounded-full px-2 text-sm font-semibold transition-colors ${
                         selected
-                          ? "font-bold text-foreground"
-                          : "font-medium text-muted-foreground"
+                          ? "bg-surface text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      {t(`presets.${preset.id}`)}
-                    </span>
-                  </button>
-                );
-              })}
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-              {/* Custom: the device's own colour picker. The input covers
+            {/* Accent colour */}
+            <div>
+              <p id={accentId} className="text-base font-bold">
+                {t("accent")}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t("accentHelp")}
+              </p>
+
+              <div
+                role="radiogroup"
+                aria-labelledby={accentId}
+                className="mt-4 grid grid-cols-4 gap-x-2 gap-y-4"
+              >
+                {ACCENT_PRESETS.map((preset) => {
+                  const selected =
+                    choice.kind === "preset" && choice.id === preset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => setAccentColor(preset.hex)}
+                      className="press group flex flex-col items-center gap-1.5 rounded-xl focus-visible:outline-offset-4"
+                    >
+                      <Swatch color={preset.hex} selected={selected} />
+                      <span
+                        className={`text-xs ${
+                          selected
+                            ? "font-bold text-foreground"
+                            : "font-medium text-muted-foreground"
+                        }`}
+                      >
+                        {t(`presets.${preset.id}`)}
+                      </span>
+                    </button>
+                  );
+                })}
+
+                {/* Custom: the device's own colour picker. The input covers
                   the swatch (not hidden behind a label) so a tap reaches it
                   directly on iOS. `input` previews live while the picker is
                   open; `change` keeps the colour. */}
-              <label className="press group relative flex cursor-pointer flex-col items-center gap-1.5 rounded-xl focus-within:outline-2 focus-within:outline-offset-4 focus-within:outline-ring">
-                <Swatch
-                  color={choice.kind === "custom" ? choice.hex : null}
-                  selected={choice.kind === "custom"}
+                <label className="press group relative flex cursor-pointer flex-col items-center gap-1.5 rounded-xl focus-within:outline-2 focus-within:outline-offset-4 focus-within:outline-ring">
+                  <Swatch
+                    color={choice.kind === "custom" ? choice.hex : null}
+                    selected={choice.kind === "custom"}
+                  />
+                  <span
+                    className={`text-xs ${
+                      choice.kind === "custom"
+                        ? "font-bold text-foreground"
+                        : "font-medium text-muted-foreground"
+                    }`}
+                  >
+                    {t("custom")}
+                  </span>
+                  <input
+                    type="color"
+                    role="radio"
+                    aria-checked={choice.kind === "custom"}
+                    aria-label={t("customPick")}
+                    value={chosenHex}
+                    onInput={(event) =>
+                      applyAccentPalette(
+                        deriveAccentPalette(event.currentTarget.value),
+                      )
+                    }
+                    onChange={(event) => setAccentColor(event.target.value)}
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  />
+                </label>
+              </div>
+
+              {/* Both themes at once: the picked colour, as each one draws it. */}
+              <div className="mt-5 grid grid-cols-2 gap-3" aria-hidden="true">
+                <PreviewCard
+                  label={t("previewLight")}
+                  ground={GROUNDS.light.ground}
+                  ink="#24201c"
+                  onAccent={GROUNDS.light.onAccent}
+                  set={preview.light}
+                  word={t("previewWord")}
+                  button={t("previewButton")}
+                  tag={t("previewTag")}
                 />
-                <span
-                  className={`text-xs ${
-                    choice.kind === "custom"
-                      ? "font-bold text-foreground"
-                      : "font-medium text-muted-foreground"
-                  }`}
+                <PreviewCard
+                  label={t("previewDark")}
+                  ground={GROUNDS.dark.ground}
+                  ink="#ece7e0"
+                  onAccent={GROUNDS.dark.onAccent}
+                  set={preview.dark}
+                  word={t("previewWord")}
+                  button={t("previewButton")}
+                  tag={t("previewTag")}
+                />
+              </div>
+
+              {!(
+                choice.kind === "preset" && choice.id === DEFAULT_ACCENT_ID
+              ) ? (
+                <button
+                  type="button"
+                  onClick={() => setAccentColor(null)}
+                  className="mt-4 min-h-11 text-sm font-bold text-accent hover:underline"
                 >
-                  {t("custom")}
-                </span>
-                <input
-                  type="color"
-                  role="radio"
-                  aria-checked={choice.kind === "custom"}
-                  aria-label={t("customPick")}
-                  value={chosenHex}
-                  onInput={(event) =>
-                    applyAccentPalette(
-                      deriveAccentPalette(event.currentTarget.value),
-                    )
-                  }
-                  onChange={(event) => setAccentColor(event.target.value)}
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                />
-              </label>
+                  {t("reset")}
+                </button>
+              ) : null}
             </div>
-
-            {/* Both themes at once: the picked colour, as each one draws it. */}
-            <div className="mt-5 grid grid-cols-2 gap-3" aria-hidden="true">
-              <PreviewCard
-                label={t("previewLight")}
-                ground={GROUNDS.light.ground}
-                ink="#24201c"
-                onAccent={GROUNDS.light.onAccent}
-                set={preview.light}
-                word={t("previewWord")}
-                button={t("previewButton")}
-                tag={t("previewTag")}
-              />
-              <PreviewCard
-                label={t("previewDark")}
-                ground={GROUNDS.dark.ground}
-                ink="#ece7e0"
-                onAccent={GROUNDS.dark.onAccent}
-                set={preview.dark}
-                word={t("previewWord")}
-                button={t("previewButton")}
-                tag={t("previewTag")}
-              />
-            </div>
-
-            {!(choice.kind === "preset" && choice.id === DEFAULT_ACCENT_ID) ? (
-              <button
-                type="button"
-                onClick={() => setAccentColor(null)}
-                className="mt-4 min-h-11 text-sm font-bold text-accent hover:underline"
-              >
-                {t("reset")}
-              </button>
-            ) : null}
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       {/* ---- Language ---- */}
       <section aria-labelledby="settings-language" className="mt-8">

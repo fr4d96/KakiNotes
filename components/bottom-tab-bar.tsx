@@ -12,7 +12,7 @@ import {
   JournalIcon,
   UsersIcon,
 } from "@/components/icons";
-import { createClient } from "@/lib/supabase/client";
+import { useViewerIdentity } from "@/lib/auth/viewer-identity";
 import { ScrollToTopButton } from "@/components/scroll-to-top-button";
 import { countryUrlPrefix } from "@/lib/story/countries";
 import { useCurrentCountry } from "@/lib/story/use-current-country";
@@ -32,8 +32,8 @@ import { useCurrentCountry } from "@/lib/story/use-current-country";
  * Photos, Account, Notifications and the story editor/preview screens).
  * About and the rest stay in the header's hamburger / avatar menu.
  *
- * Like SiteHeader it checks the session client-side only, via the browser
- * Supabase client, so every public page's server-rendered HTML stays
+ * Like SiteHeader it checks the session client-side only, via the shared
+ * store in lib/auth/viewer-identity.ts, so every public page's server-rendered HTML stays
  * identical for every visitor. The result only picks the last tab's label
  * and link; access is enforced by proxy.ts, the (contributor) layout and
  * RLS regardless of what is drawn here.
@@ -71,27 +71,12 @@ export function BottomTabBar({
   // The page's country, or -- in My Stories, the editor, Account -- the one
   // remembered on this device, so Home and Stories stay in it.
   const prefix = countryUrlPrefix(useCurrentCountry());
-  const [signedIn, setSignedIn] = useState(signedInHint);
+  // The tab-wide store (lib/auth/viewer-identity.ts), shared with the
+  // header; until it has an answer the layout's hint decides.
+  const viewer = useViewerIdentity();
+  const signedIn =
+    viewer.status === "unknown" ? signedInHint : viewer.status === "signed-in";
   const typing = useTextEntryFocus();
-
-  useEffect(() => {
-    const supabase = createClient();
-    let active = true;
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (active) setSignedIn(!!data.session);
-    });
-    const { data: subscription } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (active) setSignedIn(!!session);
-      },
-    );
-
-    return () => {
-      active = false;
-      subscription.subscription.unsubscribe();
-    };
-  }, []);
 
   const homeHref = prefix || "/";
   const storiesHref = `${prefix}/stories`;

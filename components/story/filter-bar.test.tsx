@@ -234,4 +234,27 @@ describe("FilterBar", () => {
       expect(replace).toHaveBeenCalledWith("/stories", { scroll: false });
     });
   });
+
+  it("labels known travel styles, old and new, and shows custom ones as typed", () => {
+    render(
+      <FilterBar
+        regions={regions}
+        destinations={destinations}
+        tags={tags}
+        travelStyles={["roadTrip", "midRange", "Van life"]}
+        current={{}}
+      />,
+    );
+    const select = screen.getByLabelText(/travel style/i);
+    const labels = within(select)
+      .getAllByRole("option")
+      .map((option) => option.textContent);
+    expect(labels).toEqual(
+      expect.arrayContaining([
+        "Road trip (campervan or car)",
+        "Mid-range",
+        "Van life",
+      ]),
+    );
+  });
 });

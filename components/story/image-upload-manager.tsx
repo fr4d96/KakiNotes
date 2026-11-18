@@ -19,7 +19,8 @@ import { useToast } from "@/components/ui/toast";
 import { Spinner } from "@/components/ui/spinner";
 import { LightboxPhoto } from "@/components/ui/photo-lightbox";
 import { ResolvingImage } from "@/components/ui/resolving-image";
-import { PlusIcon } from "@/components/icons";
+import { PlusIcon, TrashIcon } from "@/components/icons";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DndContext,
   MouseSensor,
@@ -299,6 +300,10 @@ export function ImageUploadManager({
   const uploadChainRef = useRef<Promise<void>>(Promise.resolve());
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
   const [isDragging, setIsDragging] = useState(false);
+  // The photo whose tile trash button was tapped, waiting on the confirm
+  // dialog. The tile button is one tap from anywhere in the grid, so unlike
+  // "Delete photo" inside the opened Details panel it asks first.
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   // The server's own decision (lib/story/drive-sync.ts#getStoryMediaUploadMode),
   // fetched once per revision — this component NEVER decides its own mode.
   // Defaults to "supabase" until the check resolves (and forever, if it
@@ -1016,7 +1021,7 @@ export function ImageUploadManager({
                       {/* Status reads off the tile itself, the way a media
                       library does it -- no field, no sentence, just the
                       three facts that change what you would do next. */}
-                      <div className="pointer-events-none absolute left-1 right-10 top-1 flex flex-wrap gap-1">
+                      <div className="pointer-events-none absolute left-1 right-[4.75rem] top-1 flex flex-wrap gap-1">
                         {item.isCover && (
                           <TileBadge>{t("badges.cover")}</TileBadge>
                         )}
@@ -1033,14 +1038,28 @@ export function ImageUploadManager({
                       {/* Always-on hint that a tap/click opens the photo large.
     Decorative and click-through: the photo underneath is
     already the (labelled) lightbox button. */}
-                      {thumbnails[item.mediaId] && (
-                        <span
-                          aria-hidden="true"
-                          className="pointer-events-none absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white shadow-sm"
+                      {/* Top-right corner: the zoom hint and, beside it, a
+                      one-tap delete (confirmed first). Delete is a real
+                      button; the zoom hint stays click-through. */}
+                      <div className="absolute right-1.5 top-1.5 flex items-center gap-1.5">
+                        {thumbnails[item.mediaId] && (
+                          <span
+                            aria-hidden="true"
+                            className="pointer-events-none grid h-8 w-8 place-items-center rounded-full bg-black/60 text-white shadow-sm"
+                          >
+                            <ZoomIcon />
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteId(item.mediaId)}
+                          aria-label={t("deletePhotoLabel", { name })}
+                          title={t("deletePhoto")}
+                          className="press grid h-8 w-8 place-items-center rounded-full bg-black/60 text-white shadow-sm transition-colors hover:bg-red-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         >
-                          <ZoomIcon />
-                        </span>
-                      )}
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
 
                       {!isOpen && (
                         <button
@@ -1263,6 +1282,22 @@ export function ImageUploadManager({
             </SortableContext>
           </DndContext>
         </div>
+      )}
+      {/* Mounted only while asking, so the page carries no idle <dialog>
+          beside the photo lightbox's own. */}
+      {confirmDeleteId !== null && (
+        <ConfirmDialog
+          open
+          title={t("deleteConfirmTitle")}
+          description={t("deleteConfirmBody")}
+          confirmLabel={t("deletePhoto")}
+          danger
+          onConfirm={() => {
+            if (confirmDeleteId) detach(confirmDeleteId);
+            setConfirmDeleteId(null);
+          }}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
       )}
     </div>
   );

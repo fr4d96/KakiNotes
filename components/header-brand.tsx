@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { BrandLogo } from "@/components/brand-logo";
 import { BackLink } from "@/components/back-link";
-import { pageBack, pageTitleKey } from "@/lib/navigation/page-titles";
+import { pageBack, pageBarTitleKey } from "@/lib/navigation/page-titles";
 
 /**
  * The left end of every reader/contributor header: the logo mark, then
@@ -33,11 +33,13 @@ export function HeaderBrand({
 }) {
   const t = useTranslations();
   const pathname = usePathname();
-  const key = pageTitleKey(pathname);
+  // The bar's own (sometimes shorter) label for the page -- see
+  // BAR_TITLE_KEYS in lib/navigation/page-titles.ts.
+  const key = pageBarTitleKey(pathname);
   const title = key ? t(key as never) : null;
   // A sub-page puts a back arrow first. Where the bar names the page, the
   // arrow replaces the logo on phones ([←] Story folders); on a story's
-  // pages (no bar title) the logo stays beside it ([←] Kakinotes).
+  // pages (no bar title) the logo stays beside it ([←] logo).
   const hasBack = pageBack(pathname) !== null;
 
   return (
@@ -48,7 +50,12 @@ export function HeaderBrand({
         className={`flex min-h-11 shrink-0 items-center gap-2.5 text-xl font-black tracking-tight ${hasBack && title ? "max-md:hidden" : ""}`}
       >
         <BrandLogo className="border border-current" priority={priority} />
-        <span className={title ? "max-md:sr-only" : undefined}>Kakinotes</span>
+        {/* Beside a back arrow (a story's pages) the phone bar keeps the
+            logo but not the word: [←] [logo] Kakinotes plus the flag and
+            Sign in + ☰ needed ~390px of a 370px row on an iPhone 17. */}
+        <span className={title || hasBack ? "max-md:sr-only" : undefined}>
+          Kakinotes
+        </span>
       </Link>
       {title && (
         <span

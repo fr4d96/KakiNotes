@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import en from "@/i18n/messages/en.json";
 import zhCN from "@/i18n/messages/zh-CN.json";
-import { pageBack, pageTitleKey } from "./page-titles";
+import {
+  isAuthPage,
+  pageBack,
+  pageBarTitleKey,
+  pageTitleKey,
+} from "./page-titles";
 
 function lookup(messages: unknown, key: string): unknown {
   return key
@@ -136,5 +141,84 @@ describe("a journey's own page", () => {
     expect(pageTitleKey("/cn/costs")).toBe("countryContent.china.costsTitle");
     expect(pageTitleKey("/costs")).toBe("costs.title");
     expect(pageTitleKey("/cn/stories")).toBe("stories.title");
+  });
+});
+
+describe("pageBarTitleKey", () => {
+  it("gives long titles a short bar label, for both countries", () => {
+    expect(pageBarTitleKey("/costs")).toBe("barTitles.costs");
+    expect(pageBarTitleKey("/cn/costs")).toBe("barTitles.costs");
+    expect(pageBarTitleKey("/stories/new")).toBe("barTitles.newStory");
+    expect(pageBarTitleKey("/about")).toBe("barTitles.about");
+  });
+
+  it("keeps a title that already fits", () => {
+    expect(pageBarTitleKey("/my-stories")).toBe("myStories.title");
+    expect(pageBarTitleKey("/settings")).toBe("settings.title");
+    expect(pageBarTitleKey("/stories/some-slug")).toBeNull();
+  });
+
+  // The 2026-11-18 header audit: a bar title has ~125px signed out and
+  // ~160px signed in on an iPhone 17 (20px, black weight). A character
+  // budget stands in for that width: 13 Latin characters, or 7 CJK ones
+  // (each about twice as wide).
+  it("fits every bar title in the phone top bar, in every language", () => {
+    const paths = [
+      "/stories",
+      "/contributors",
+      "/costs",
+      "/cn/costs",
+      "/about",
+      "/settings",
+      "/privacy",
+      "/terms",
+      "/community-guidelines",
+      "/copyright",
+      "/sign-in",
+      "/sign-up",
+      "/forgot-password",
+      "/my-stories",
+      "/my-stories/map",
+      "/my-stories/journey/abc",
+      "/my-photos",
+      "/notifications",
+      "/affirmations",
+      "/account",
+      "/stories/new",
+      "/stories/new/import",
+    ];
+    const tooLong: string[] = [];
+    for (const [locale, messages] of [
+      ["en", en],
+      ["zh-CN", zhCN],
+    ] as const) {
+      for (const path of paths) {
+        const key = pageBarTitleKey(path)!;
+        const value = lookup(messages, key);
+        expect(typeof value, `${locale} ${key}`).toBe("string");
+        const width = [...(value as string)].reduce(
+          (sum, ch) => sum + (/[\u3000-\u9fff\uff00-\uffef]/.test(ch) ? 2 : 1),
+          0,
+        );
+        if (width > 14) tooLong.push(`${locale} ${path}: ${value}`);
+      }
+    }
+    expect(tooLong).toEqual([]);
+  });
+});
+
+describe("isAuthPage", () => {
+  it("is true only on the sign-in screens", () => {
+    for (const path of [
+      "/sign-in",
+      "/sign-up",
+      "/forgot-password",
+      "/reset-password",
+    ]) {
+      expect(isAuthPage(path)).toBe(true);
+    }
+    for (const path of ["/", "/costs", "/settings", null]) {
+      expect(isAuthPage(path)).toBe(false);
+    }
   });
 });

@@ -3,7 +3,7 @@
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
-Last updated: 2026-11-18 (the phone tab bar is a floating liquid-glass pill — see the last entry in this file); earlier, 2026-11-16 (countries kept apart: China's contributor pages show only China stories, and no China page says "Working Holiday"; migration applied to the live project — see the last entry in this file); earlier the same day (first-visit country picker, a flag switcher in the top bar, and the chosen country remembered on the device; the signed-out phone header shows Sign in and a ☰ menu holding the theme and language switches — see the last entry in this file); earlier, 2026-11-15 (a story page opens on its title: 16px top gap on phones, "Main story:" breadcrumb, and the not-advice label moved to the end of the story — see the last entry in this file); earlier the same day (the installed app bounces at the top and bottom of every page again, like a native iOS app — see the last entry in this file); earlier the same day (story cards load small 4:3 WebP versions of Drive photos made on the fly by the /media proxy — see the last entry in this file); earlier the same day (published Drive photos are cached by Vercel's CDN for 7 days instead of 5 minutes, and purged the moment anything stops being public — see the last entry in this file); earlier, 2026-11-13 (a contributor's PDF import now stores its page images in their Google Drive, not Supabase; the editorial PDF import is unchanged — see the last entry in this file); earlier the same day (mandatory Google Drive: every ordinary contributor must connect Google Drive before using the app, and the database refuses their photos in Supabase storage; migration applied to the live project, app code not yet deployed — see the last entry in this file); earlier the same day (Supabase project moved to `yzaonhjieupxyrmbienf` after the old one was paused over quota — see the last entry in this file); earlier, 2026-10-31 (affirmation notes: private notes from share links, on `feat/affirmation-notes`; migration written but NOT yet applied — see the last entry in this file); earlier the same day (home page redesign: a short, app-style home with search, a swipeable latest-stories row, place tiles and the quiz behind one row, on `main`, uncommitted — see the entry at the end of this file); earlier, 2026-10-30 (pull to refresh now reloads the page, home page covers on phones, search as you type and keyword search, on `fix/pull-to-refresh-reload` — see the entry at the end of this file); earlier the same day (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
+Last updated: 2026-11-18 (phone header audit: short top-bar titles, Sign in no longer squeezed; the avatar no longer disappears after tapping Home; avatar picking moved to Settings; story translation designed, not built — see the last entry in this file); earlier the same day (story editor: a roomier formatting toolbar, a delete button on each photo tile, and travel style now describes how you travelled; save toasts sit above the glass tab bar — see the last entry in this file); earlier the same day (the phone tab bar is a floating liquid-glass pill); earlier, 2026-11-16 (countries kept apart: China's contributor pages show only China stories, and no China page says "Working Holiday"; migration applied to the live project — see the last entry in this file); earlier the same day (first-visit country picker, a flag switcher in the top bar, and the chosen country remembered on the device; the signed-out phone header shows Sign in and a ☰ menu holding the theme and language switches — see the last entry in this file); earlier, 2026-11-15 (a story page opens on its title: 16px top gap on phones, "Main story:" breadcrumb, and the not-advice label moved to the end of the story — see the last entry in this file); earlier the same day (the installed app bounces at the top and bottom of every page again, like a native iOS app — see the last entry in this file); earlier the same day (story cards load small 4:3 WebP versions of Drive photos made on the fly by the /media proxy — see the last entry in this file); earlier the same day (published Drive photos are cached by Vercel's CDN for 7 days instead of 5 minutes, and purged the moment anything stops being public — see the last entry in this file); earlier, 2026-11-13 (a contributor's PDF import now stores its page images in their Google Drive, not Supabase; the editorial PDF import is unchanged — see the last entry in this file); earlier the same day (mandatory Google Drive: every ordinary contributor must connect Google Drive before using the app, and the database refuses their photos in Supabase storage; migration applied to the live project, app code not yet deployed — see the last entry in this file); earlier the same day (Supabase project moved to `yzaonhjieupxyrmbienf` after the old one was paused over quota — see the last entry in this file); earlier, 2026-10-31 (affirmation notes: private notes from share links, on `feat/affirmation-notes`; migration written but NOT yet applied — see the last entry in this file); earlier the same day (home page redesign: a short, app-style home with search, a swipeable latest-stories row, place tiles and the quiz behind one row, on `main`, uncommitted — see the entry at the end of this file); earlier, 2026-10-30 (pull to refresh now reloads the page, home page covers on phones, search as you type and keyword search, on `fix/pull-to-refresh-reload` — see the entry at the end of this file); earlier the same day (launch splash, pull to refresh, no page pinch-zoom in the installed app and the one-pin journey map buttons, on `feat/ios-splash` — see the entry at the end of this file); earlier the same day (Journey map revamp: a list of published journeys and a page per journey, on `feat/journey-revamp` — see the entry at the end of this file); earlier the same day (My Photos collapsed by default, tighter phone tops and a back arrow on story pages, on `fix/mobile-polish` — see the entry at the end of this file); earlier the same day (phone touch fixes, tap feedback on buttons, and tap-first story folders on `fix/mobile-touch-fixes` — see the entry at the end of this file); earlier the same day (installable web app / PWA and a phone bottom tab bar, on `feat/pwa-mobile` — see the entry at the end of this file); earlier, 2026-10-29 (1.12.0 shipped; the old per-revision journey stops table and RPCs dropped from the hosted project after the deploy — see the entry at the end of this file); earlier the same day (contributor journey: one journey map per contributor, one pin per published NZ story, Journey tab on the public profile, managed at My Stories > Journey map; the per-revision story stops are removed from the app; see the last entry in this file); earlier the same day, 2026-10-29 (raw-original retention merged into main: the 2026-10-03 migration that was live but uncommitted is now in the repo, with the inline delete and the sweep script; backlog not yet swept; see the entry at the end of this file); earlier, 2026-10-21 (story folders: the free, undirected story-link design is replaced with a
 one-level folder shape — a story is either a main story, a sub story filed under exactly one main
 story, or neither — managed from the same page (now "Story folders") with drag-and-drop plus a
 "Move to…" select; migration applied to the dev project — see the entry at the end of this
@@ -11608,3 +11608,100 @@ the `tab-indicator` transform/opacity contract. `--tab-bar-clearance` (4rem + ga
 page spacer and the scroll-to-top button's offset, replacing two hand-copied `3.5rem + safe-area`
 values. Checked in the phone viewport in light and dark over photo cards; not checked on a real
 iPhone. Display only; nothing here decides access.
+
+**Follow-up the same day — toasts above the glass bar.** `components/ui/toast.tsx` was
+`w-full max-w-sm` pinned `right-4`, which on a 375px phone pushed its left edge 16px off-screen,
+and sat at `bottom-4`, over the new floating bar. On phones it is now pinned between the same
+side insets as the bar, and `.nf-toast-region` in `globals.css` lifts it above the bar
+(`:root:has(.nf-tab-bar[data-hidden="false"])`) only while the bar shows. From md up it stays a
+24rem stack in the bottom-right corner.
+
+## 2026-11-18 — Story editor: toolbar, photo delete, travel style
+
+- **Write step toolbar** (`components/story/editor/markdown-editor.tsx`): three pill groups (text
+  style, blocks, inserts) of 36px round buttons with one line-icon set, replacing 32px square
+  buttons, emoji glyphs (🔗 ▦ ❝ ☑) and hairline dividers. It is now a labelled `role="toolbar"`;
+  it still scrolls sideways on phones, with a faded right edge and no scrollbar
+  (`.nf-editor-toolbar`).
+- **Photos step** (`components/story/image-upload-manager.tsx`): a trash button beside the zoom
+  hint on every tile. It opens a `ConfirmDialog` ("Delete this photo?") and only then calls the
+  same `detach()` as Details → Delete photo; no new server path or permission.
+- **Trip step travel style** (`lib/validation/story.ts`): the presets now describe how the trip
+  was travelled (`roadTrip`, `backpacking`, `settledInOneTown`, `workForStay`, `mixed`), since
+  spend is the Expenses step's job. The old spend presets (`free`, `budget`, `midRange`,
+  `comfort`) stay in `legacyTravelStyles`: stories saved with them keep that value, the form shows
+  it as a labelled option, and the public filter labels both old and new through the new
+  `travelStyles` message namespace (custom wording shows as typed). `travel_style` is still free
+  text; no migration. Not checked: the signed-in editor itself (the dev server talks to the live
+  Supabase project); the toolbar and labels were checked on a temporary dev-only page, since
+  removed.
+
+## 2026-11-18 — Phone header fit, the vanishing avatar, avatar in Settings
+
+**Header fit audit.** Checked at iPhone 17 width (402px) in the device frame, in English and
+Chinese: Home, Stories, Contributors, About, Settings, Costs (New Zealand and China), Privacy,
+Terms, Community Guidelines, Copyright, Sign in, Sign up, Forgot password, Reset password, a story
+page, and `/cn` versions of Home, Stories, Costs, About and Contributors, all signed out. Signed-in
+screens (My Stories, Story folders, a journey, My Photos, Notifications, Affirmations, Account, New
+story, Import PDF) were checked by measuring their titles in the live bar with the right side
+swapped for a bell and avatar, because signing in would use the live Supabase project. Found and
+fixed:
+
+- The phone bar truncated long titles ("What a worki…", "Community Gu…", "Create your acc…",
+  "给你的故事起个名字" on New story) and squeezed the signed-out **Sign in** button onto two lines.
+  `lib/navigation/page-titles.ts` gains `BAR_TITLE_KEYS` / `pageBarTitleKey()`: short bar labels
+  (`barTitles.*`: Costs, About, Guidelines, Copyright, Sign up, Reset password, Affirmations, New
+  story, Import PDF) that `components/header-brand.tsx` shows. Each page's `<h1>` (sr-only on
+  phones) keeps its full title. A unit test keeps every bar title within a character budget in
+  both languages.
+- The phone bar's right-hand controls are `shrink-0` (SiteHeader, ContributorNav) and Sign in is
+  `whitespace-nowrap`, so the title gives way, never the buttons. On the sign-in screens
+  (`isAuthPage()`) the bar drops its own Sign in button.
+- Beside a back arrow (a story's pages) the phone bar shows the logo without the "Kakinotes" word:
+  back, logo, word, flag, Sign in and ☰ needed about 390px of a 370px row.
+- The story editor's sticky bar (title, save state, Preview, step dots) already fits ("Saved 12m
+  ago"); unchanged.
+
+**Bug: the avatar disappeared after tapping Home.** Root cause: the contributor area's header
+(`ContributorNav`, server-rendered) reads the avatar from `contributors.avatar_emoji` (falling back
+to `profiles`), which is where Account has saved it since 20260910090000. The public `SiteHeader`
+read only `profiles.avatar_emoji`, which is stale or empty for anyone who chose an avatar after
+that date. Tapping Home swaps one header for the other, so the chosen emoji turned into the blank
+person icon. It also remounted SiteHeader in its signed-out state until `getSession()` answered.
+The fix is `lib/auth/viewer-identity.ts`, one store for the whole tab (useSyncExternalStore) used
+by SiteHeader, BottomTabBar and `useSignedIn`. It reads contributors first, then profiles, like
+the server. Its state survives a header remount. `ViewerIdentitySeed` (in ContributorNav and
+StaffNav) seeds it with the identity the server already proved. A failed session lookup keeps the
+last known state; only an explicit sign-out clears it. One session lookup now runs per tab
+instead of three or four. Display only: access is still decided by proxy.ts, the layouts and RLS.
+
+**Avatar picking moved to Settings.** Settings has a new Profile → Avatar section
+(`app/(public)/settings/avatar-setting.tsx`), shown only when signed in. It saves on tap through
+`setAvatarAction`, which validates the value against the fixed set, takes the user from the
+server session, and writes `profiles.avatar_emoji` plus `contributors.avatar_emoji` when there is
+an identity. RLS owner policies independently guard both. No `user_roles` access (Rule 4). The
+header updates at once and rolls back if the save fails. Account → Contributor identity now links
+there instead of carrying the picker. `updateOwnContributorAction` no longer writes the avatar, so
+saving Account can't clear it. `createOwnContributorAction` starts a new identity with the
+account's avatar. No migration.
+
+Settings review, left in place:
+
+- Display name (Account → Profile), username (Account → Sign-in), the public identity (name,
+  attribution, public profile, slug, bio, home country) and Google Drive stay in Account. They are
+  account and identity records with their own validation (anonymous can't be public, unique slug
+  and username) and the Drive connection, not preferences.
+- Sign out stays in the avatar menu and on Account. It is an action, not a setting.
+- The country flag stays in the top bar. It moves you between country sections and is used
+  constantly; Settings would hide it.
+- The Stories tab's big/small card switch stays on that tab. It is an in-context view control.
+- There are no notification preferences to move.
+
+**Translate a story into Chinese: designed, not built.** It needs an external translation service
+and an API key; the owner chose to skip it for now (2026-11-18). See this session's report for the proposed
+design.
+
+Tests: `lib/auth/viewer-identity.test.tsx` (remount keeps the avatar, contributor-first read,
+seed, failed lookup, sign-out), `app/(public)/settings/actions.test.ts`, new cases in
+`settings-view.test.tsx`, `(contributor)/actions.test.ts` and `page-titles.test.ts`. Not checked:
+a real signed-in session (the dev server's Supabase project is production) and a real iPhone.

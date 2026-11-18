@@ -28,6 +28,9 @@ vi.mock("@/lib/story/public-queries", () => ({
 const calls: { method: string; args: unknown[] }[] = [];
 let updateResult: { error: unknown } = { error: null };
 let insertResult: { error: unknown } = { error: null };
+// What the caller's own profiles row holds (createOwnContributorAction reads
+// its avatar_emoji to start the new identity with it).
+let profileRow: { avatar_emoji: string | null } | null = null;
 
 function chain() {
   const proxy: Record<string, unknown> = {
@@ -39,9 +42,15 @@ function chain() {
       calls.push({ method: "insert", args });
       return Promise.resolve(insertResult);
     },
+    select: (...args: unknown[]) => {
+      calls.push({ method: "select", args });
+      return proxy;
+    },
     eq: (...args: unknown[]) => {
       calls.push({ method: "eq", args });
-      return Promise.resolve(updateResult);
+      return Object.assign(Promise.resolve(updateResult), {
+        maybeSingle: () => Promise.resolve({ data: profileRow }),
+      });
     },
   };
   return proxy;
@@ -73,6 +82,7 @@ beforeEach(() => {
   calls.length = 0;
   updateResult = { error: null };
   insertResult = { error: null };
+  profileRow = null;
   mockFrom.mockClear();
   mockGetCurrentUser.mockReset();
 });
@@ -148,6 +158,26 @@ describe("updateProfileAction", () => {
 });
 
 describe("createOwnContributorAction", () => {
+  // The avatar moved to Settings (2026-11-18): a new identity starts with
+  // the avatar already saved on the account, never one posted by the form.
+  it("starts the identity with the account's avatar, ignoring a posted one", async () => {
+    mockGetCurrentUser.mockResolvedValue(user);
+    profileRow = { avatar_emoji: "🐧" };
+
+    await createOwnContributorAction(
+      {},
+      formData({
+        displayName: "Casey C.",
+        attributionType: "display_name",
+        avatarEmoji: "🥝",
+      }),
+    );
+
+    const insertCall = calls.find((c) => c.method === "insert");
+    const payload = insertCall?.args[0] as Record<string, unknown>;
+    expect(payload.avatar_emoji).toBe("🐧");
+  });
+
   it("always sets linked_user_id and created_by from the session, never the form", async () => {
     mockGetCurrentUser.mockResolvedValue(user);
 
@@ -227,5 +257,21 @@ describe("updateOwnContributorAction", () => {
 
     const eqCall = calls.find((c) => c.method === "eq");
     expect(eqCall?.args).toEqual(["linked_user_id", user.id]);
+  });
+  // Saving Account must never clear the avatar chosen in Settings.
+  it("never writes the avatar, even when a stale form posts one", async () => {
+    mockGetCurrentUser.mockResolvedValue(user);
+
+    await updateOwnContributorAction(
+      {},
+      formData({
+        displayName: "Casey C.",
+        attributionType: "pseudonym",
+        avatarEmoji: "",
+      }),
+    );
+
+    const updateCall = calls.find((c) => c.method === "update");
+    expect(updateCall?.args[0]).not.toHaveProperty("avatar_emoji");
   });
 });

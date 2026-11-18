@@ -3,6 +3,7 @@ import { CountrySwitcher } from "@/components/country-switcher";
 import { UserAvatarMenu } from "@/components/auth/user-avatar-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ContributorNavLinks } from "@/components/contributor-nav-links";
+import { ViewerIdentitySeed } from "@/lib/auth/viewer-identity";
 import {
   getCurrentUserAvatarEmoji,
   getCurrentUserRole,
@@ -40,10 +41,14 @@ export async function ContributorNav() {
 
         <ContributorNavLinks className="ml-auto hidden md:flex" />
 
-        <div className="ml-auto flex items-center gap-2 md:ml-0">
+        <div className="ml-auto flex shrink-0 items-center gap-2 md:ml-0">
           <NotificationBell />
           <UserAvatarMenu emoji={avatarEmoji} role={role} />
         </div>
+        {/* Hands this proven session, avatar and role to the browser's
+            store, so the public header that mounts after a tap on Home
+            starts signed in with the same avatar (2026-11-18). */}
+        <ViewerIdentitySeed avatarEmoji={avatarEmoji} role={role} />
       </div>
     </header>
   );

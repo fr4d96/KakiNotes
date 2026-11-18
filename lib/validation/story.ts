@@ -211,11 +211,37 @@ export const draftContentSchema = z.preprocess(
 // constraints — duplicated deliberately for fast/friendly form errors; the
 // DB constraints (and the immutability trigger) are the non-bypassable
 // source of truth per Engineering Rule 3.
-// Ordered by spend, cheapest first. "free" is a real WHV pattern, not a
-// rounding-down of "budget": working for board (WWOOF/HelpX), house-sitting
-// and hitching cost essentially nothing, and a contributor who travelled
-// that way had no option here that described it.
-export const travelStyles = ["free", "budget", "midRange", "comfort"] as const;
+// How the contributor got around and lived, not how much they spent: since
+// 2026-11-18 spend is the Expenses step's job (a total and a per-month
+// figure), so the old spend scale here ("free", "budget", "midRange",
+// "comfort") only repeated it. "workForStay" keeps what "free" was added for
+// -- WWOOF/HelpX, house-sitting -- as the way of travelling it really is.
+export const travelStyles = [
+  "roadTrip",
+  "backpacking",
+  "settledInOneTown",
+  "workForStay",
+  "mixed",
+] as const;
+
+// The previous presets. No longer offered, but stories saved with them keep
+// them (the column is free text), so they still get a proper label.
+export const legacyTravelStyles = [
+  "free",
+  "budget",
+  "midRange",
+  "comfort",
+] as const;
+
+/** Values that have a translated label under `travelStyles.<value>`. */
+export type TravelStyleKey =
+  (typeof travelStyles)[number] | (typeof legacyTravelStyles)[number];
+export function isKnownTravelStyle(value: string): value is TravelStyleKey {
+  return (
+    (travelStyles as readonly string[]).includes(value) ||
+    (legacyTravelStyles as readonly string[]).includes(value)
+  );
+}
 
 // travel_style is a loosely-typed `text` column with no DB enum/CHECK
 // (confirmed by reading supabase/migrations/20260803090200_story_revisions.sql

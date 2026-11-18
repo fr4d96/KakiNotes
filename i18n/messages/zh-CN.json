@@ -67,6 +67,17 @@
       "refreshing": "正在刷新…"
     }
   },
+  "barTitles": {
+    "costs": "花费",
+    "about": "关于",
+    "guidelines": "社区准则",
+    "copyright": "版权",
+    "signUp": "注册",
+    "forgotPassword": "重置密码",
+    "affirmations": "鼓励便条",
+    "newStory": "新故事",
+    "pdfImport": "导入 PDF"
+  },
   "nav": {
     "primary": "主导航",
     "contributor": "投稿人导航",
@@ -520,7 +531,8 @@
     },
     "contributor": {
       "intro": "这是你面向读者的一面。这里的内容会出现在你的故事上，以及你发表第一篇故事后的投稿人主页上。",
-      "avatarHint": "选一个头像，或者不选，显示你名字的首字母。",
+      "avatarInSettings": "头像在“设置”里选择，会显示在你故事上的名字旁边。",
+      "avatarInSettingsLink": "选择头像",
       "nameLabel": "你的名字在故事上如何显示",
       "attributionLegend": "署名方式",
       "attribution": {
@@ -897,6 +909,9 @@
       "captionHint": "（可选，显示在照片下方）",
       "setAsCover": "设为封面",
       "deletePhoto": "删除照片",
+      "deletePhotoLabel": "从故事中删除{name}",
+      "deleteConfirmTitle": "删除这张照片？",
+      "deleteConfirmBody": "它将从这个故事中移除。",
       "done": "完成",
       "moveEarlier": "↑ 前移",
       "moveLater": "↓ 后移",
@@ -922,6 +937,7 @@
       }
     },
     "toolbar": {
+      "formattingLabel": "文字格式",
       "commandsLabel": "故事排版命令",
       "syntaxGuide": "Markdown 语法指南（在新标签页打开）",
       "heading": "小标题",
@@ -1524,6 +1540,10 @@
     "whyRequired": "每位投稿者都需要完成这一步，因为 Kakinotes 本身不再存储故事照片。之后你可以在 账户 → Google Drive 中查看或更改连接。"
   },
   "settings": {
+    "profile": "个人资料",
+    "avatar": "头像",
+    "avatarHelp": "显示在应用里和你故事上的名字旁边。",
+    "avatarFailed": "头像没能保存，请再试一次。",
     "metaTitle": "设置",
     "title": "设置",
     "personalize": "个性化",
@@ -1552,5 +1572,16 @@
       "ember": "余烬橙",
       "fern": "蕨绿"
     }
+  },
+  "travelStyles": {
+    "roadTrip": "自驾旅行（露营车或汽车）",
+    "backpacking": "背包旅行（青旅和巴士）",
+    "settledInOneTown": "在一个小镇定居",
+    "workForStay": "打工换宿（WWOOF、HelpX）",
+    "mixed": "多种方式混合",
+    "free": "免费",
+    "budget": "经济",
+    "midRange": "中等",
+    "comfort": "舒适"
   }
 }

@@ -17,7 +17,9 @@ import {
  * heading switches to "This link has expired", which is the message itself.
  *
  * Read by components/header-brand.tsx. A page listed here must give its
- * <h1> `max-md:sr-only` so the title is not drawn twice on a phone.
+ * <h1> `max-md:sr-only` so the title is not drawn twice on a phone. Where
+ * the full title is too long for the bar, BAR_TITLE_KEYS below gives the bar
+ * a shorter label for the same place.
  */
 const PAGE_TITLE_KEYS: Record<string, string> = {
   "/stories": "stories.title",
@@ -55,6 +57,48 @@ const COUNTRY_PAGE_TITLE_KEYS: Partial<
 };
 
 /**
+ * Shorter wording for the phone top bar, where a page's full heading does not
+ * fit (2026-11-18 header audit). The bar leaves a title roughly 125px signed
+ * out (Sign in + ☰ on the right) and 160px signed in (bell + avatar) on an
+ * iPhone 17, at 20px black weight. "What a working holiday cost" needed 270px
+ * and was cut to "What a worki…", so these say the same thing the way a tab
+ * would. Keyed by the full-title key, so a page and its country variant
+ * (China's Costs) share one short label.
+ *
+ * Only the BAR changes: the page's <h1> (sr-only on phones) keeps the full
+ * title for screen readers, and wider screens still show it as the heading.
+ * A title missing from this table is already short enough in every language.
+ */
+const BAR_TITLE_KEYS: Record<string, string> = {
+  "costs.title": "barTitles.costs",
+  "countryContent.china.costsTitle": "barTitles.costs",
+  "about.title": "barTitles.about",
+  "legal.guidelinesTitle": "barTitles.guidelines",
+  "legal.copyrightTitle": "barTitles.copyright",
+  "auth.signUp.title": "barTitles.signUp",
+  "auth.forgotPassword.title": "barTitles.forgotPassword",
+  "affirmations.title": "barTitles.affirmations",
+  "newStory.title": "barTitles.newStory",
+  "pdfImport.title": "barTitles.pdfImport",
+};
+
+/**
+ * The sign-in screens. On a phone the top bar drops its own Sign in button
+ * there: the page IS sign-in, and the button only took room from the title.
+ */
+const AUTH_PATHS = new Set([
+  "/sign-in",
+  "/sign-up",
+  "/forgot-password",
+  "/reset-password",
+]);
+
+export function isAuthPage(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return AUTH_PATHS.has(splitPath(pathname).path);
+}
+
+/**
  * Sub-pages: where their top-left back arrow goes, and the message key that
  * names that place (for the arrow's accessible name, "Back to My Stories").
  * Replaces the "Back to …" text links these pages used to carry. On phones
@@ -87,6 +131,15 @@ export function pageTitleKey(pathname: string | null): string | null {
   const countryKey =
     COUNTRY_PAGE_TITLE_KEYS[countryFromPathname(pathname)]?.[path];
   return countryKey ?? PAGE_TITLE_KEYS[path] ?? null;
+}
+
+/**
+ * What the phone top bar shows for a page: its short bar label where the
+ * full title would not fit (BAR_TITLE_KEYS), otherwise the page's own title.
+ */
+export function pageBarTitleKey(pathname: string | null): string | null {
+  const key = pageTitleKey(pathname);
+  return key ? (BAR_TITLE_KEYS[key] ?? key) : null;
 }
 
 export type PageBack = {

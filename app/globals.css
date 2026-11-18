@@ -1246,6 +1246,18 @@ svg g[role="button"]:focus-visible {
     backdrop-filter: none;
   }
 }
+/* Toasts (components/ui/toast.tsx) sit just above the home indicator, and
+   on phones, while the tab bar is showing, just above the floating bar so
+   they never cover it. When the bar slides away (story editor, typing) they
+   drop back down. */
+.nf-toast-region {
+  bottom: max(1rem, env(safe-area-inset-bottom));
+}
+@media (width < 48rem) {
+  :root:has(.nf-tab-bar[data-hidden="false"]) .nf-toast-region {
+    bottom: calc(var(--tab-bar-clearance) + 0.5rem);
+  }
+}
 /* The active tab's bubble: a slightly darker glass lens behind it. */
 .nf-tab-bubble {
   background: color-mix(in oklab, var(--foreground) 9%, transparent);
@@ -1281,6 +1293,22 @@ svg g[role="button"]:focus-visible {
   .nf-tab-indicator {
     transition: none;
   }
+}
+
+/* Story editor toolbar (components/story/editor/markdown-editor.tsx): it
+   scrolls sideways on phones, so the right edge fades out to show there is
+   more, and the scrollbar stays hidden (touch users swipe it). */
+.nf-editor-toolbar {
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - 1.5rem),
+    transparent
+  );
+  mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+}
+.nf-editor-toolbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Index rows: the accent hairline wipes in from the left on hover/focus,

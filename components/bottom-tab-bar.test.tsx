@@ -32,8 +32,11 @@ vi.mock("@/lib/supabase/client", () => ({
 }));
 
 import { BottomTabBar } from "./bottom-tab-bar";
+import { resetViewerIdentityForTests } from "@/lib/auth/viewer-identity";
 
 beforeEach(() => {
+  // The viewer store is tab-wide; each test starts as a fresh tab.
+  resetViewerIdentityForTests();
   usePathnameMock.mockReturnValue("/");
   sessionMock.current = null;
 });

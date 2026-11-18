@@ -64,8 +64,11 @@ vi.mock("@/lib/supabase/client", () => ({
 }));
 
 import HomePage from "./page";
+import { resetViewerIdentityForTests } from "@/lib/auth/viewer-identity";
 
 beforeEach(() => {
+  // The viewer store is tab-wide; each test starts as a fresh tab.
+  resetViewerIdentityForTests();
   countryCookie.value = "new-zealand";
   cardSizeCookie.value = "big";
   redirect.mockClear();

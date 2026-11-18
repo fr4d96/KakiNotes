@@ -1,11 +1,12 @@
 import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { MutationQueue } from "@/lib/story/mutation-queue";
 import type { RevisionMediaItem } from "@/lib/story/contributor-queries";
 import { PhotoLightboxProvider } from "@/components/ui/photo-lightbox";
+import { detachMediaAction } from "@/app/(contributor)/stories/[id]/edit/actions";
 
 // Task #5: Details sits ON the photo (shown on hover / focus / touch) and a
 // zoom icon is always in the top-right corner of a loaded photo. Opacity is
@@ -128,5 +129,52 @@ describe("ImageUploadManager — photo tile overlay", () => {
     expect(screen.getByLabelText(/^Caption/)).toBeInTheDocument();
     // The overlay button is gone while the panel is open (Done closes it).
     expect(screen.queryByRole("button", { name: /photo 1$/ })).toBeNull();
+  });
+
+  it("deletes a photo from the trash button beside zoom, only after confirming", async () => {
+    const { container } = renderPanel([mediaItem(READY, 0)]);
+    await photoLoaded(container);
+
+    const trash = screen.getByRole("button", {
+      name: "Delete photo 1 from the story",
+    });
+    expect(thumbOf(trash)).not.toBeNull();
+
+    // First tap only asks.
+    await userEvent.click(trash);
+    expect(detachMediaAction).not.toHaveBeenCalled();
+    const dialog = screen.getByRole("dialog", {
+      name: "Delete this photo?",
+      hidden: true,
+    });
+
+    // Cancel keeps it.
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: /cancel/i, hidden: true }),
+    );
+    expect(container.querySelector(".js-image-thumb")).not.toBeNull();
+
+    // Confirm removes it and detaches on the server.
+    await userEvent.click(trash);
+    await userEvent.click(
+      within(
+        screen.getByRole("dialog", {
+          name: "Delete this photo?",
+          hidden: true,
+        }),
+      ).getByRole("button", {
+        name: "Delete photo",
+        hidden: true,
+      }),
+    );
+    expect(container.querySelector(".js-image-thumb")).toBeNull();
+    await waitFor(() =>
+      expect(detachMediaAction).toHaveBeenCalledWith(
+        "revision-1",
+        1,
+        READY,
+        "story-1",
+      ),
+    );
   });
 });

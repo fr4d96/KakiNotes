@@ -1,3 +1,4 @@
+import { ViewerIdentitySeed } from "@/lib/auth/viewer-identity";
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
 import { UserAvatarMenu } from "@/components/auth/user-avatar-menu";
@@ -66,6 +67,7 @@ export function StaffNav({
         <div className="order-2 flex shrink-0 items-center gap-2 sm:order-2">
           <NotificationBell />
           <UserAvatarMenu emoji={avatarEmoji} role={role} />
+          <ViewerIdentitySeed avatarEmoji={avatarEmoji} role={role} />
         </div>
       </div>
     </header>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { isKnownTravelStyle } from "@/lib/validation/story";
 import type { StorySearchFilters } from "@/lib/validation/discovery";
 import { costBands } from "@/lib/validation/discovery";
 import { FilterIcon, StorySearchIcon } from "@/components/icons";
@@ -80,6 +81,7 @@ export function FilterBar({
   trailing?: React.ReactNode;
 }) {
   const t = useTranslations("stories.filters");
+  const tStyle = useTranslations("travelStyles");
   const [selectedRegion, setSelectedRegion] = useState(current.region ?? "");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const isPhone = useIsPhone();
@@ -179,7 +181,7 @@ export function FilterBar({
           <option value="">{t("anyStyle")}</option>
           {travelStyles.map((style) => (
             <option key={style} value={style}>
-              {style}
+              {isKnownTravelStyle(style) ? tStyle(style) : style}
             </option>
           ))}
         </select>

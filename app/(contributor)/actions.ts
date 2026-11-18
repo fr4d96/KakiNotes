@@ -201,7 +201,6 @@ export async function createOwnContributorAction(
     publicSlug: formData.get("publicSlug") ?? "",
     bio: formData.get("bio") ?? "",
     homeCountryCode: formData.get("homeCountryCode") ?? "",
-    avatarEmoji: formData.get("avatarEmoji") ?? "",
   });
 
   if (!parsed.success) {
@@ -213,6 +212,14 @@ export async function createOwnContributorAction(
   if (publicCheck) return publicCheck;
 
   const supabase = await createClient();
+  // The avatar is chosen in Settings, which saves it on the account's own
+  // profile until there is an identity to carry it -- so a new identity
+  // starts with whatever was picked there. The caller's own row (RLS).
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("avatar_emoji")
+    .eq("id", user.id)
+    .maybeSingle();
   // linked_user_id and created_by are always set from the server-known
   // session, never from the form — matches the
   // "contributors: self-service create own contributor record" RLS policy,
@@ -226,7 +233,7 @@ export async function createOwnContributorAction(
     public_slug: parsed.data.publicSlug || null,
     bio: parsed.data.bio || null,
     home_country_code: parsed.data.homeCountryCode || null,
-    avatar_emoji: parsed.data.avatarEmoji || null,
+    avatar_emoji: profile?.avatar_emoji ?? null,
   });
 
   if (error) {
@@ -267,7 +274,8 @@ export async function updateOwnContributorAction(
     publicSlug: formData.get("publicSlug") ?? "",
     bio: formData.get("bio") ?? "",
     homeCountryCode: formData.get("homeCountryCode") ?? "",
-    avatarEmoji: formData.get("avatarEmoji") ?? "",
+    // No avatar: it is set from Settings (app/(public)/settings/actions.ts)
+    // since 2026-11-18, so this form neither posts nor overwrites it.
   });
 
   if (!parsed.success) {
@@ -290,7 +298,6 @@ export async function updateOwnContributorAction(
       public_slug: parsed.data.publicSlug || null,
       bio: parsed.data.bio || null,
       home_country_code: parsed.data.homeCountryCode || null,
-      avatar_emoji: parsed.data.avatarEmoji || null,
     })
     .eq("linked_user_id", user.id);
 

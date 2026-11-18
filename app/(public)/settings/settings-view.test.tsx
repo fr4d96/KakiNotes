@@ -7,7 +7,44 @@ vi.mock("@/lib/i18n/set-locale-action", () => ({
   setLocaleAction: vi.fn(async (locale: string) => ({ ok: true, locale })),
 }));
 
+// The avatar section's Server Action (server-only under jsdom), and the
+// browser Supabase client behind the viewer store: signed out unless a test
+// says otherwise, so the avatar section stays hidden by default.
+const { setAvatarAction, sessionMock } = vi.hoisted(() => ({
+  setAvatarAction: vi.fn(async (value: string) => ({
+    ok: true as const,
+    avatarEmoji: value || null,
+  })),
+  sessionMock: { current: null as { user: { id: string } } | null },
+}));
+vi.mock("./actions", () => ({ setAvatarAction }));
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
+    auth: {
+      getSession: () =>
+        Promise.resolve({ data: { session: sessionMock.current } }),
+      onAuthStateChange: () => ({
+        data: { subscription: { unsubscribe: vi.fn() } },
+      }),
+    },
+    from: (table: string) => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: () =>
+            Promise.resolve({
+              data: table === "contributors" ? { avatar_emoji: "🥝" } : null,
+            }),
+        }),
+      }),
+    }),
+  }),
+}));
+
 import { setLocaleAction } from "@/lib/i18n/set-locale-action";
+import {
+  resetViewerIdentityForTests,
+  useViewerIdentity,
+} from "@/lib/auth/viewer-identity";
 import { SettingsView } from "./settings-view";
 
 const html = document.documentElement;
@@ -17,6 +54,9 @@ const html = document.documentElement;
 let store: Record<string, string> = {};
 
 beforeEach(() => {
+  resetViewerIdentityForTests();
+  sessionMock.current = null;
+  setAvatarAction.mockClear();
   store = {};
   vi.stubGlobal("localStorage", {
     getItem: (key: string) => store[key] ?? null,
@@ -104,5 +144,62 @@ describe("SettingsView", () => {
     fireEvent.click(screen.getByRole("radio", { name: "简体中文" }));
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
     expect(setLocaleAction).toHaveBeenCalledWith("zh-CN");
+  });
+
+  it("shows no avatar section to a signed-out reader", async () => {
+    render(<SettingsView locale="en" />);
+    await vi.waitFor(() => expect(true).toBe(true));
+    expect(screen.queryByRole("group", { name: "Avatar" })).toBeNull();
+  });
+
+  it("lets a signed-in viewer pick an avatar, saved at once and shown in the header store", async () => {
+    sessionMock.current = { user: { id: "user-1" } };
+    let headerEmoji: string | null = null;
+    function HeaderProbe() {
+      headerEmoji = useViewerIdentity().avatarEmoji;
+      return null;
+    }
+    render(
+      <>
+        <HeaderProbe />
+        <SettingsView locale="en" />
+      </>,
+    );
+
+    // Read the way the server reads it: the contributor's avatar.
+    const kiwi = await screen.findByRole("button", {
+      name: "Use 🥝 as your avatar",
+    });
+    expect(kiwi).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Use 🐧 as your avatar" }),
+    );
+    expect(headerEmoji).toBe("🐧");
+    await vi.waitFor(() => expect(setAvatarAction).toHaveBeenCalledWith("🐧"));
+    expect(
+      screen.getByRole("button", { name: "Use 🐧 as your avatar" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("puts the old avatar back and says so when the save fails", async () => {
+    sessionMock.current = { user: { id: "user-1" } };
+    setAvatarAction.mockResolvedValueOnce({
+      ok: false,
+      reason: "failed",
+    } as never);
+    render(<SettingsView locale="en" />);
+    await screen.findByRole("button", { name: "Use 🥝 as your avatar" });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Use 🐧 as your avatar" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Couldn't save your avatar",
+    );
+    expect(
+      screen.getByRole("button", { name: "Use 🥝 as your avatar" }),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 });

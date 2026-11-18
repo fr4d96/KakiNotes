@@ -76,7 +76,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed right-4 bottom-4 z-50 flex w-full max-w-sm flex-col items-end gap-2"
+        // Phones: pinned between the same side insets as the tab bar, and
+        // lifted above it while it shows (`.nf-toast-region` in
+        // globals.css). From md up: a 24rem stack in the bottom-right corner.
+        className="nf-toast-region pointer-events-none fixed right-[max(0.75rem,env(safe-area-inset-right))] left-[max(0.75rem,env(safe-area-inset-left))] z-50 flex flex-col items-end gap-2 md:right-4 md:left-auto md:w-full md:max-w-sm"
       >
         {toasts.map((toast) => {
           const Icon = VARIANT_ICONS[toast.variant];

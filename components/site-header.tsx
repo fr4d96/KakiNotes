@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { SettingsIcon } from "@/components/icons";
 import { controlToneClasses } from "@/components/ui-tone";
@@ -13,8 +14,8 @@ import { SignInForm } from "@/components/auth/sign-in-form";
 import { SignUpForm } from "@/components/auth/sign-up-form";
 import { UserAvatarMenu } from "@/components/auth/user-avatar-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
-import { createClient } from "@/lib/supabase/client";
-import type { AppRole } from "@/lib/auth/staff-guard";
+import { useViewerIdentity } from "@/lib/auth/viewer-identity";
+import { isAuthPage } from "@/lib/navigation/page-titles";
 import { countryUrlPrefix } from "@/lib/story/countries";
 import { useCurrentCountry } from "@/lib/story/use-current-country";
 
@@ -58,8 +59,8 @@ type AuthModalKind = "sign-in" | "sign-up" | null;
  * Session awareness: public pages deliberately never call getCurrentUser()
  * server-side (see (contributor)/layout.tsx's own comment) -- this header
  * is the one place that still needs to know if the visitor is signed in,
- * so it checks client-side only, via the browser Supabase client
- * (lib/supabase/client.ts). That keeps every public page's server-rendered
+ * so it checks client-side only, via the browser Supabase client, through
+ * the shared store in lib/auth/viewer-identity.ts. That keeps every public page's server-rendered
  * HTML identical for every visitor; only this already-client component
  * re-renders once the check resolves. (Public pages have rendered per
  * request since the language cookie, 2026-09-14, and cache their DATA
@@ -71,9 +72,10 @@ type AuthModalKind = "sign-in" | "sign-up" | null;
  * breakpoints) and does its own RPC reads the same client-side way, for
  * the same reason -- see that component.
  *
- * Once signed in, the same effect also reads the caller's own
- * profiles.avatar_emoji (RLS already scopes this to auth.uid() -- see
- * that table's "owner reads own profile" policy) to feed
+ * Once signed in, the avatar emoji and role come from the same tab-wide
+ * store (lib/auth/viewer-identity.ts), which reads the caller's own rows
+ * under RLS -- contributors.avatar_emoji first, profiles as the fallback,
+ * exactly like the server-rendered ContributorNav -- to feed
  * components/auth/user-avatar-menu.tsx, which replaces the whole
  * My Stories/Account/New Story/Sign out button row with a single avatar
  * that opens those same four actions in a dropdown.
@@ -90,64 +92,18 @@ export function SiteHeader() {
   // countries (sign-in, onboarding), so the nav links stay in it.
   const countryPrefix = countryUrlPrefix(useCurrentCountry());
   const [authModal, setAuthModal] = useState<AuthModalKind>(null);
-  const [signedIn, setSignedIn] = useState(false);
-  const [avatarEmoji, setAvatarEmoji] = useState<string | null>(null);
-  // Drives ONLY which staff links the dropdown draws -- never access. See
-  // lib/auth/staff-menu.ts; proxy.ts re-derives this server-side on every
-  // request, so a wrong value here changes nothing but the menu.
-  const [role, setRole] = useState<AppRole | null>(null);
-
-  useEffect(() => {
-    const supabase = createClient();
-    let active = true;
-
-    // Both reads are the caller's OWN row under RLS (profiles' "owner reads
-    // own profile" and user_roles' "read own role" -- the latter exists
-    // precisely so the app can render role-aware UI, see its migration).
-    // maybeSingle(), not single(), because an account with no role row yet
-    // is an ordinary contributor, not an error worth logging.
-    async function loadIdentity(userId: string) {
-      const [profile, roleRow] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("avatar_emoji")
-          .eq("id", userId)
-          .single(),
-        supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", userId)
-          .maybeSingle(),
-      ]);
-      if (!active) return;
-      setAvatarEmoji(profile.data?.avatar_emoji ?? null);
-      setRole((roleRow.data?.role as AppRole | undefined) ?? null);
-    }
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      setSignedIn(!!data.session);
-      if (data.session) loadIdentity(data.session.user.id);
-    });
-
-    const { data: subscription } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!active) return;
-        setSignedIn(!!session);
-        if (session) {
-          loadIdentity(session.user.id);
-        } else {
-          setAvatarEmoji(null);
-          setRole(null);
-        }
-      },
-    );
-
-    return () => {
-      active = false;
-      subscription.subscription.unsubscribe();
-    };
-  }, []);
+  // Who is looking, from the tab-wide store (lib/auth/viewer-identity.ts):
+  // survives this header remounting when a tab moves between the public and
+  // contributor layouts, and reads the avatar the same way the server does.
+  // The role drives ONLY which staff links the dropdown draws -- never
+  // access (lib/auth/staff-menu.ts; proxy.ts re-derives it server-side).
+  const viewer = useViewerIdentity();
+  const signedIn = viewer.status === "signed-in";
+  const avatarEmoji = viewer.avatarEmoji;
+  const role = viewer.role;
+  // On the sign-in screens the page itself is sign-in: the phone bar drops
+  // its own Sign in button there and gives the room to the title.
+  const onAuthPage = isAuthPage(usePathname());
 
   // shadow-sm resolves to the themed elevation ramp: a soft lift in light,
   // where the bar shares --background with the page and a hairline alone
@@ -235,8 +191,11 @@ export function SiteHeader() {
           </div>
         </nav>
 
-        <div className="ml-auto flex items-center gap-2 md:hidden">
-          {!signedIn && (
+        {/* shrink-0: when the row is tight it is the title on the left that
+            gives way (it truncates), never these controls -- "Sign in" used
+            to be squeezed onto two lines on the Costs page. */}
+        <div className="ml-auto flex shrink-0 items-center gap-2 md:hidden">
+          {!signedIn && !onAuthPage && (
             // Signed out on a phone: Sign in is the one thing out front; the
             // theme and language switches live in the menu (2026-11-16).
             <button
@@ -244,7 +203,7 @@ export function SiteHeader() {
               onClick={() => setAuthModal("sign-in")}
               // The one solid button in the bar: the action a visitor
               // came for, with the flag and ☰ left plain beside it.
-              className="press min-h-10 rounded-full bg-accent px-4 text-sm font-bold text-accent-foreground"
+              className="press min-h-10 shrink-0 rounded-full bg-accent px-4 text-sm font-bold whitespace-nowrap text-accent-foreground"
             >
               {t("signIn")}
             </button>

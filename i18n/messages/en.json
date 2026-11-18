@@ -67,6 +67,17 @@
       "refreshing": "Refreshing…"
     }
   },
+  "barTitles": {
+    "costs": "Costs",
+    "about": "About",
+    "guidelines": "Guidelines",
+    "copyright": "Copyright",
+    "signUp": "Sign up",
+    "forgotPassword": "Reset password",
+    "affirmations": "Affirmations",
+    "newStory": "New story",
+    "pdfImport": "Import PDF"
+  },
   "nav": {
     "primary": "Primary",
     "contributor": "Contributor",
@@ -520,7 +531,8 @@
     },
     "contributor": {
       "intro": "This is your public face. Everything here can appear on your stories and on your contributor page, once you have a published story.",
-      "avatarHint": "Pick an avatar, or leave unset to show the first letter of your name.",
+      "avatarInSettings": "Your avatar is chosen in Settings and shows beside your name on your stories.",
+      "avatarInSettingsLink": "Choose your avatar",
       "nameLabel": "How your name appears on stories",
       "attributionLegend": "Attribution type",
       "attribution": {
@@ -897,6 +909,9 @@
       "captionHint": "(optional, shown under the photo)",
       "setAsCover": "Set as cover",
       "deletePhoto": "Delete photo",
+      "deletePhotoLabel": "Delete {name} from the story",
+      "deleteConfirmTitle": "Delete this photo?",
+      "deleteConfirmBody": "It will be removed from this story.",
       "done": "Done",
       "moveEarlier": "↑ Earlier",
       "moveLater": "↓ Later",
@@ -922,6 +937,7 @@
       }
     },
     "toolbar": {
+      "formattingLabel": "Text formatting",
       "commandsLabel": "Story formatting commands",
       "syntaxGuide": "Markdown syntax guide (opens in a new tab)",
       "heading": "Heading",
@@ -1524,6 +1540,10 @@
     "whyRequired": "Every contributor needs this, because Kakinotes doesn’t store story photos itself. You can check or change the connection later in Account → Google Drive."
   },
   "settings": {
+    "profile": "Profile",
+    "avatar": "Avatar",
+    "avatarHelp": "Shown beside your name in the app and on your stories.",
+    "avatarFailed": "Couldn't save your avatar. Try again.",
     "metaTitle": "Settings",
     "title": "Settings",
     "personalize": "Personalize",
@@ -1552,5 +1572,16 @@
       "ember": "Ember",
       "fern": "Fern"
     }
+  },
+  "travelStyles": {
+    "roadTrip": "Road trip (campervan or car)",
+    "backpacking": "Backpacking (hostels and buses)",
+    "settledInOneTown": "Settled in one town",
+    "workForStay": "Work for stay (WWOOF, HelpX)",
+    "mixed": "A mix of styles",
+    "free": "Free",
+    "budget": "Budget",
+    "midRange": "Mid-range",
+    "comfort": "Comfort"
   }
 }
