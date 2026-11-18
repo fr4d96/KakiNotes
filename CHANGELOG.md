@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.2.0](https://github.com/fr4d96/KakiNotes/compare/v4.1.0...v4.2.0) (2026-11-18)
+
+
+### Your avatar on your stories, and tidier story pages
+
+#### For contributors
+
+- **Your avatar now shows on your stories.** If a story shows your name, it now shows the avatar you picked too, even if your contributor profile isn't public. Before, those stories showed just your first initial. Stories you publish anonymously still show neither your name nor your avatar.
+- **Avatars are easier to see.** Next to the author's name on a story, an avatar is now drawn full size instead of as a tiny speck.
+
+#### For readers on phones
+
+- **The top bar on a story is more useful.** At the top it shows the Kakinotes logo and name; once you scroll past the story's title, the bar shows the title instead, so you always know what you're reading.
+- **A neater end to each story.** The "one person's experience, not advice" note and "Report this story" now sit together, without the big empty gaps around them.
+- **Related stories are smaller.** They now use the same small cards as the Stories tab, two to a row, so you can see more of them at a glance.
+
+### Features
+
+* **story:** byline avatars follow the name; tidier story pages ([10dae3c](https://github.com/fr4d96/KakiNotes/commit/10dae3cc32ee42f58d6f8d230cb2c3672cb40f58))
+
 ## [4.1.0](https://github.com/fr4d96/KakiNotes/compare/v4.0.0...v4.1.0) (2026-11-18)
 
 
