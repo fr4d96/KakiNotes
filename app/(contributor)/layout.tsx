@@ -3,8 +3,7 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { resolveContributorAccess } from "@/lib/auth/contributor-guard";
 import { callerMustConnectDrive } from "@/lib/auth/drive-binding";
 import { CONNECT_DRIVE_PATH } from "@/lib/auth/drive-binding-guard";
-import { ContributorNav } from "@/components/contributor-nav";
-import { BottomTabBar } from "@/components/bottom-tab-bar";
+import { ContributorIdentity } from "@/components/contributor-nav";
 import { PageTransition } from "@/components/page-transition";
 
 /**
@@ -37,11 +36,12 @@ export default async function ContributorLayout({
 
   return (
     <>
-      <ContributorNav />
+      {/* The header itself is app-wide (app/layout.tsx); this only seeds
+          it with the proven session's avatar and role. */}
+      <ContributorIdentity />
       <main id="main-content" className="flex-1">
         <PageTransition>{children}</PageTransition>
       </main>
-      <BottomTabBar signedInHint />
     </>
   );
 }

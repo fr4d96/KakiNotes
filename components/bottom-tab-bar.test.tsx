@@ -32,7 +32,10 @@ vi.mock("@/lib/supabase/client", () => ({
 }));
 
 import { BottomTabBar } from "./bottom-tab-bar";
-import { resetViewerIdentityForTests } from "@/lib/auth/viewer-identity";
+import {
+  resetViewerIdentityForTests,
+  seedViewerIdentity,
+} from "@/lib/auth/viewer-identity";
 
 beforeEach(() => {
   // The viewer store is tab-wide; each test starts as a fresh tab.
@@ -69,9 +72,12 @@ describe("BottomTabBar", () => {
     usePathnameMock.mockReturnValue("/my-stories");
     render(<BottomTabBar signedInHint />);
     // Synchronous: no "Sign in" flash while getSession() is pending.
-    const last = Array.from(getBar().querySelectorAll("a")).at(-1)!;
-    expect(last).toHaveTextContent("My Stories");
-    expect(last).toHaveAttribute("href", "/my-stories");
+    const links = Array.from(getBar().querySelectorAll("a"));
+    expect(links.at(-2)).toHaveTextContent("My Stories");
+    expect(links.at(-2)).toHaveAttribute("href", "/my-stories");
+    // ...and the Profile tab after it, opening the profile screen.
+    expect(links.at(-1)).toHaveTextContent("Profile");
+    expect(links.at(-1)).toHaveAttribute("href", "/settings");
   });
 
   it("is hidden from md up and when printing, and pads for the home indicator", () => {
@@ -136,12 +142,41 @@ describe("BottomTabBar", () => {
   });
 
   it.each([
-    "/my-stories",
-    "/my-stories/anything",
+    "/settings",
     "/my-photos",
     "/account",
     "/account/security",
     "/notifications",
+    "/affirmations",
+  ])("marks Profile (not My Stories) active on %s when signed in", (path) => {
+    sessionMock.current = { user: { id: "user-1" } };
+    usePathnameMock.mockReturnValue(path);
+    render(<BottomTabBar signedInHint />);
+    expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      screen.getByRole("link", { name: "My Stories" }),
+    ).not.toHaveAttribute("aria-current");
+  });
+
+  it("shows the viewer's avatar as the Profile tab's icon", async () => {
+    seedViewerIdentity({ avatarEmoji: "🥝", role: null });
+    render(<BottomTabBar signedInHint />);
+    expect(screen.getByRole("link", { name: "Profile" })).toHaveTextContent(
+      "🥝",
+    );
+  });
+
+  it("has no Profile tab signed out", () => {
+    render(<BottomTabBar />);
+    expect(screen.queryByRole("link", { name: "Profile" })).toBeNull();
+  });
+
+  it.each([
+    "/my-stories",
+    "/my-stories/anything",
     "/stories/new",
     "/stories/3f2a/edit",
     "/stories/3f2a/preview",
@@ -214,6 +249,7 @@ describe("BottomTabBar", () => {
       "Stories",
       "Folders",
       "My Stories",
+      "Profile",
     ]);
     const folders = links[2];
     expect(folders).toHaveAttribute("href", "/my-stories/map");
@@ -423,5 +459,43 @@ describe("BottomTabBar", () => {
       expect(scrollTo).not.toHaveBeenCalled();
       vi.unstubAllGlobals();
     });
+  });
+
+  it.each([
+    "/moderation",
+    "/editorial/abc",
+    "/admin",
+    "/connect-drive",
+    "/notes/x",
+  ])(
+    "draws nothing on %s (staff, onboarding and note screens have their own chrome)",
+    (path) => {
+      usePathnameMock.mockReturnValue(path);
+      render(<BottomTabBar />);
+      expect(screen.queryByRole("navigation")).toBeNull();
+    },
+  );
+
+  it("starts signed in on a contributor route without being told", () => {
+    sessionMock.current = { user: { id: "u1" } };
+    usePathnameMock.mockReturnValue("/my-stories");
+    render(<BottomTabBar />);
+    expect(
+      screen.getByRole("link", { name: "My Stories" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sign in" })).toBeNull();
+  });
+
+  it("lights the tapped tab at once, before the new page arrives", () => {
+    usePathnameMock.mockReturnValue("/stories");
+    render(<BottomTabBar />);
+    const home = screen.getByRole("link", { name: "Home" });
+    fireEvent.click(home);
+    expect(home.className).toContain("text-accent");
+    // The real page is still Stories until the navigation lands.
+    expect(screen.getByRole("link", { name: "Stories" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 });

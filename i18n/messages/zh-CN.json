@@ -54,7 +54,7 @@
     "countryPicker": {
       "title": "你要去哪里？",
       "subtitle": "选择一个国家，阅读那里的故事。",
-      "switchLater": "之后随时可以点顶部的国旗切换。"
+      "switchLater": "之后随时可以在设置中切换。"
     },
     "countrySwitcher": {
       "button": "国家：{country}。切换国家",
@@ -99,7 +99,10 @@
     "home": "首页",
     "tabBar": "快捷导航",
     "affirmations": "鼓励便条",
-    "settings": "设置"
+    "settings": "设置",
+    "profile": "我的",
+    "profileLinks": "个人资料",
+    "notifications": "通知"
   },
   "footer": {
     "tagline": "一个分享新西兰打工度假真实经历的故事社区。",
@@ -1571,7 +1574,11 @@
       "pohutukawa": "圣诞树红",
       "ember": "余烬橙",
       "fern": "蕨绿"
-    }
+    },
+    "avatarChange": "更换",
+    "avatarDone": "完成",
+    "country": "国家",
+    "countryHelp": "决定你阅读哪个国家的故事，以及新故事属于哪里。"
   },
   "travelStyles": {
     "roadTrip": "自驾旅行（露营车或汽车）",

@@ -199,14 +199,13 @@ describe("SiteHeader", () => {
     sessionMock.current = { user: { id: "user-1" } };
     render(<SiteHeader />);
 
-    // The avatar replaces the signed-out buttons once the session resolves.
-    // Two render (the md:flex desktop cluster and the md:hidden mobile one);
-    // jsdom applies no CSS, so both are in the tree -- the desktop one is
-    // first in document order.
+    // The avatar replaces the signed-out buttons once the session resolves
+    // -- on desktop only. On a phone (the md:hidden cluster) a + for a new
+    // story takes its place; the avatar is the bottom bar's Profile tab.
     const avatars = await screen.findAllByRole("button", {
       name: "Account menu",
     });
-    expect(avatars).toHaveLength(2);
+    expect(avatars).toHaveLength(1);
     expect(
       screen.queryByRole("button", { name: "Sign in" }),
     ).not.toBeInTheDocument();
@@ -217,7 +216,8 @@ describe("SiteHeader", () => {
       screen.queryByRole("navigation", { name: "Contributor" }),
     ).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "My Stories" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "New Story" })).toBeNull();
+    const plus = screen.getByRole("link", { name: "New Story" });
+    expect(plus).toHaveAttribute("href", "/stories/new");
 
     // They are still one click away, inside the profile icon's dropdown.
     fireEvent.click(avatars[0]);
@@ -331,8 +331,9 @@ describe("SiteHeader", () => {
         name: "Account menu",
       });
 
-      // The mobile cluster is the second avatar in document order.
-      fireEvent.click(avatars[1]);
+      // Only the desktop cluster has an avatar now; on a phone-sized
+      // screen (between md and the phone check) it still opens as a sheet.
+      fireEvent.click(avatars[0]);
 
       const sheet = screen.getByRole("dialog", { name: "Account menu" });
       const myStories = within(sheet).getByRole("menuitem", {
@@ -363,5 +364,23 @@ describe("SiteHeader", () => {
     expect(
       screen.queryByRole("dialog", { name: "Account menu" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("is the contributor routes' header too: their links, painted signed in", () => {
+    usePathnameMock.mockReturnValue("/my-stories");
+    render(<SiteHeader />);
+    // Signed in from the first paint (the route's guard proved a session),
+    // so no Sign in button flashes before the browser's check answers.
+    expect(screen.queryByRole("button", { name: "Sign in" })).toBeNull();
+    const contributor = screen.getByRole("navigation", { name: "Contributor" });
+    expect(
+      within(contributor).getByRole("link", { name: "My Stories" }),
+    ).toHaveAttribute("href", "/my-stories");
+  });
+
+  it("draws nothing on a staff screen, which has its own header", () => {
+    usePathnameMock.mockReturnValue("/moderation");
+    const { container } = render(<SiteHeader />);
+    expect(container.querySelector("header")).toBeNull();
   });
 });

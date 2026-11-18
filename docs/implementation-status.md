@@ -11715,3 +11715,53 @@ default (New Zealand). Before this, every "New story" link except the China home
 the draft as New Zealand. An existing draft keeps the country it was created with and can no
 longer be moved from the editor; `setCountryAction` / `set_story_country()` are unchanged and
 still guard published stories server-side.
+
+**Follow-up the same day — Profile tab and a + in the phone header.** On phones the header's
+avatar menu is gone: signed in, the top-right shows the bell and a + that starts a new story
+(`components/new-story-button.tsx`, hidden for staff roles like the old menu's New Story), and the
+bottom bar gains a fifth tab, Profile, drawn with the viewer's avatar and opening `/settings`. The
+Profile tab now owns `/settings`, `/account`, `/notifications`, `/my-photos` and `/affirmations`
+(My Stories keeps the writing screens). `/settings` is the profile screen on phones:
+`components/profile-links.tsx` adds the old menu's rows (staff surfaces, My Photos, Affirmation
+notes, Account, Notifications, About) under the avatar, and Sign out at the very end; the avatar
+grid now unfolds behind a Change button. From md up nothing changed: the header keeps the avatar
+menu and the profile rows are hidden. Staff headers (`components/staff-nav.tsx`) are unchanged.
+Checked at 375px and 1280px on a temporary page that seeded a signed-in viewer in the browser
+(since removed); not checked signed in for real.
+
+**Follow-up the same day — the tab bar no longer disappears between tabs.** Home, Stories and
+Profile are `(public)` routes; Folders and My Stories are `(contributor)` routes. Each group's
+layout rendered its own `BottomTabBar`, and a tap that crossed groups made Next.js rebuild the
+group layout with the root `app/loading.tsx` standing in, so the whole screen, tab bar included,
+blanked for a moment. The bar now renders once in `app/layout.tsx` (the only layout every route
+shares) and stays mounted across every tab switch; the group layouts no longer render it. It
+decides from the path where it shows (`NO_TAB_BAR`: staff tools, `/connect-drive`, `/notes`,
+`/dev`, `/qa-index`) and treats contributor routes as signed in from the first paint (their
+layout's guard has already proven a session; this replaces the `signedInHint` prop the contributor
+layout passed). A tapped tab lights up at once while its page loads. Checked in the pane signed in
+at 375px: Stories → My Stories → Profile → Home kept the same tab bar element throughout (a
+MutationObserver saw it present on every DOM change). The header is now app-wide too (next entry).
+
+**Follow-up the same day — one header for every route group.** `SiteHeader` is now drawn once by
+`app/layout.tsx`, like the tab bar, so it no longer redraws when a tap crosses from a public page
+to a contributor page. The `(public)`, `(auth)`, `(onboarding)` and `(contributor)` layouts no
+longer render a header. `SiteHeader` took over what `ContributorNav` did: on contributor routes
+its desktop links are My Stories / New Story (`ContributorNavLinks`), and it paints signed in from
+the first render there. `components/contributor-nav.tsx` is now `ContributorIdentity`, which draws
+nothing and only seeds the viewer store with the proven session's avatar and role. Where the
+header and tab bar show is in `lib/navigation/app-chrome.ts` (header: everywhere but staff,
+`/notes`, `/dev`, `/qa-index`; tab bar: the same plus `/connect-drive`); staff screens keep
+`StaffNav`. The root `app/loading.tsx` no longer draws a placeholder header, since the real one
+stays on screen. Checked in the pane signed in: at 375px, Stories → My Stories → Profile → Folders
+→ Home → Stories kept the same single header and tab bar elements throughout (61 DOM changes
+observed); at 1280px the desktop links switch between the contributor and public sets.
+
+**Follow-up the same day — country picker moved to the profile page.** On phones the header no
+longer shows the flag switcher; the country is picked in Settings → Country
+(`app/(public)/settings/country-setting.tsx`), above Language, for signed-in and signed-out
+readers alike (signed out, Settings is in the ☰ menu). It posts to `/country` like the flag did,
+with `return=/settings` so the reader stays on the page; `app/country/route.ts` accepts that one
+path and nothing else, so the redirect cannot be pointed off-site. The desktop header keeps its
+flag. The first-visit picker's hint now says "You can switch any time in Settings." Checked in the
+pane at 375px: switching to China and back stayed on `/settings`, and the Home tab followed
+(`/cn`, then `/`).

@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 import type { Locale } from "@/i18n/locales";
 import { setLocaleAction } from "@/lib/i18n/set-locale-action";
 import { AvatarSetting } from "./avatar-setting";
+import { CountrySetting } from "./country-setting";
+import { ProfileLinks, ProfileSignOut } from "@/components/profile-links";
 import {
   ACCENT_PRESETS,
   DEFAULT_ACCENT_ID,
@@ -114,6 +116,9 @@ export function SettingsView({ locale }: { locale: Locale }) {
       <div className="flex flex-col gap-8 md:mt-8">
         {/* ---- Profile (signed in only): the avatar ---- */}
         <AvatarSetting />
+
+        {/* ---- Phones: the profile screen's links (was the avatar menu) ---- */}
+        <ProfileLinks />
 
         {/* ---- Personalize ---- */}
         <section aria-labelledby="settings-personalize">
@@ -271,6 +276,9 @@ export function SettingsView({ locale }: { locale: Locale }) {
         </section>
       </div>
 
+      {/* ---- Country (moved here from the phone header's flag) ---- */}
+      <CountrySetting />
+
       {/* ---- Language ---- */}
       <section aria-labelledby="settings-language" className="mt-8">
         <h2
@@ -320,6 +328,10 @@ export function SettingsView({ locale }: { locale: Locale }) {
           })}
         </div>
       </section>
+
+      <div className="mt-8">
+        <ProfileSignOut />
+      </div>
 
       <p className="mt-6 px-1 text-xs text-muted-foreground">
         {t("deviceNote")}

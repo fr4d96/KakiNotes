@@ -1,8 +1,18 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const refresh = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+vi.mock("@/app/(auth)/actions", () => ({ signOutAction: vi.fn() }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh }),
+  usePathname: () => "/settings",
+}));
 vi.mock("@/lib/i18n/set-locale-action", () => ({
   setLocaleAction: vi.fn(async (locale: string) => ({ ok: true, locale })),
 }));
@@ -166,6 +176,8 @@ describe("SettingsView", () => {
       </>,
     );
 
+    // The grid is folded away until "Change".
+    fireEvent.click(await screen.findByRole("button", { name: "Change" }));
     // Read the way the server reads it: the contributor's avatar.
     const kiwi = await screen.findByRole("button", {
       name: "Use 🥝 as your avatar",
@@ -182,6 +194,29 @@ describe("SettingsView", () => {
     ).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("lists the profile links and Sign out for a signed-in viewer", async () => {
+    sessionMock.current = { user: { id: "user-1" } };
+    render(<SettingsView locale="en" />);
+    const links = await screen.findByRole("navigation", {
+      name: "Your profile",
+    });
+    for (const [name, href] of [
+      ["My Photos", "/my-photos"],
+      ["Affirmation notes", "/affirmations"],
+      ["Account", "/account"],
+      ["Notifications", "/notifications"],
+      ["About", "/about"],
+    ]) {
+      expect(within(links).getByRole("link", { name })).toHaveAttribute(
+        "href",
+        href,
+      );
+    }
+    expect(
+      screen.getByRole("button", { name: "Sign out" }),
+    ).toBeInTheDocument();
+  });
+
   it("puts the old avatar back and says so when the save fails", async () => {
     sessionMock.current = { user: { id: "user-1" } };
     setAvatarAction.mockResolvedValueOnce({
@@ -189,6 +224,7 @@ describe("SettingsView", () => {
       reason: "failed",
     } as never);
     render(<SettingsView locale="en" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Change" }));
     await screen.findByRole("button", { name: "Use 🥝 as your avatar" });
 
     fireEvent.click(

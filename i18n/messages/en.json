@@ -54,7 +54,7 @@
     "countryPicker": {
       "title": "Where are you heading?",
       "subtitle": "Pick a country to read stories from.",
-      "switchLater": "You can switch any time from the flag at the top."
+      "switchLater": "You can switch any time in Settings."
     },
     "countrySwitcher": {
       "button": "Country: {country}. Change country",
@@ -99,7 +99,10 @@
     "home": "Home",
     "tabBar": "Quick navigation",
     "affirmations": "Affirmation notes",
-    "settings": "Settings"
+    "settings": "Settings",
+    "profile": "Profile",
+    "profileLinks": "Your profile",
+    "notifications": "Notifications"
   },
   "footer": {
     "tagline": "A storytelling community for honest working-holiday experiences across Aotearoa New Zealand.",
@@ -1571,7 +1574,11 @@
       "pohutukawa": "Pōhutukawa",
       "ember": "Ember",
       "fern": "Fern"
-    }
+    },
+    "avatarChange": "Change",
+    "avatarDone": "Done",
+    "country": "Country",
+    "countryHelp": "Whose stories you read, and where new stories you start belong."
   },
   "travelStyles": {
     "roadTrip": "Road trip (campervan or car)",

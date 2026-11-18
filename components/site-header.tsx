@@ -13,9 +13,12 @@ import { AuthModal } from "@/components/auth/auth-modal";
 import { SignInForm } from "@/components/auth/sign-in-form";
 import { SignUpForm } from "@/components/auth/sign-up-form";
 import { UserAvatarMenu } from "@/components/auth/user-avatar-menu";
+import { NewStoryButton } from "@/components/new-story-button";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { useViewerIdentity } from "@/lib/auth/viewer-identity";
 import { isAuthPage } from "@/lib/navigation/page-titles";
+import { isContributorArea, showsAppHeader } from "@/lib/navigation/app-chrome";
+import { ContributorNavLinks } from "@/components/contributor-nav-links";
 import { countryUrlPrefix } from "@/lib/story/countries";
 import { useCurrentCountry } from "@/lib/story/use-current-country";
 
@@ -98,12 +101,18 @@ export function SiteHeader() {
   // The role drives ONLY which staff links the dropdown draws -- never
   // access (lib/auth/staff-menu.ts; proxy.ts re-derives it server-side).
   const viewer = useViewerIdentity();
-  const signedIn = viewer.status === "signed-in";
+  const pathname = usePathname();
+  // A contributor route has already proven a session on the server, so it
+  // paints signed in before the browser's own check answers.
+  const inContributorArea = isContributorArea(pathname);
+  const signedIn =
+    viewer.status === "signed-in" ||
+    (viewer.status === "unknown" && inContributorArea);
   const avatarEmoji = viewer.avatarEmoji;
   const role = viewer.role;
   // On the sign-in screens the page itself is sign-in: the phone bar drops
   // its own Sign in button there and gives the room to the title.
-  const onAuthPage = isAuthPage(usePathname());
+  const onAuthPage = isAuthPage(pathname);
 
   // shadow-sm resolves to the themed elevation ramp: a soft lift in light,
   // where the bar shares --background with the page and a hairline alone
@@ -124,6 +133,8 @@ export function SiteHeader() {
       : [],
   );
 
+  if (!showsAppHeader(pathname)) return null;
+
   return (
     // The env() paddings keep the bar clear of the notch / status bar and
     // the side cut-outs now that app/layout.tsx's viewport uses
@@ -133,24 +144,35 @@ export function SiteHeader() {
     >
       <div className="mx-auto flex min-h-[76px] max-w-[1440px] items-center gap-3 px-4 sm:gap-5 sm:px-6">
         <HeaderBrand homeHref={countryPrefix || "/"} priority />
-        {/* Beside the logo on every page: the current country's flag. */}
-        <CountrySwitcher />
+        {/* Beside the logo from md up: the current country's flag. On
+            phones the country is chosen on the profile page (Settings →
+            Country) since 2026-11-18, leaving the bar to the title. */}
+        <div className="hidden md:contents">
+          <CountrySwitcher />
+        </div>
 
         <nav
           aria-label={t("primary")}
           className="ml-auto hidden items-center gap-6 text-sm font-bold md:flex"
         >
-          <div className="flex items-center gap-6">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="journiq-nav-link"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
+          {/* In the contributor's own area the desktop links are theirs
+              (My Stories, New Story), as ContributorNav's were before this
+              one header served every route group. */}
+          {inContributorArea ? (
+            <ContributorNavLinks className="flex" />
+          ) : (
+            <div className="flex items-center gap-6">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="journiq-nav-link"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             {signedIn ? (
@@ -209,16 +231,12 @@ export function SiteHeader() {
             </button>
           )}
           {signedIn ? (
-            // Replaces the hamburger entirely on mobile once signed in --
-            // its dropdown carries the primary nav links too (extraItems),
-            // so nothing from the old hamburger menu is lost.
+            // Signed in on a phone: the bell and a + for a new story. The
+            // avatar and everything its menu held (About included) live on
+            // the Profile tab's screen (components/profile-links.tsx).
             <>
               <NotificationBell />
-              <UserAvatarMenu
-                emoji={avatarEmoji}
-                extraItems={mobileNavItems}
-                role={role}
-              />
+              <NewStoryButton />
             </>
           ) : (
             <MobileNavToggle

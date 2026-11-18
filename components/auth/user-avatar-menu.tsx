@@ -40,7 +40,7 @@ const accountItems = [
  * ONLY -- /my-stories and /stories/new remain reachable and permitted for
  * staff accounts, they are simply not advertised in their menu.
  */
-function authoringMenuItems(role: AppRole | null) {
+export function authoringMenuItems(role: AppRole | null) {
   const isStaff = role === "admin" || role === "editor" || role === "moderator";
   return isStaff ? [] : authoringItems;
 }

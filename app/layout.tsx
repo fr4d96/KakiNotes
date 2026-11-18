@@ -4,6 +4,8 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ToastProvider } from "@/components/ui/toast";
 import { PhotoLightboxProvider } from "@/components/ui/photo-lightbox";
+import { BottomTabBar } from "@/components/bottom-tab-bar";
+import { SiteHeader } from "@/components/site-header";
 import { TouchActive } from "@/components/touch-active";
 import { AppSplash } from "@/components/app-splash";
 import { ClickPulse } from "@/components/click-pulse";
@@ -139,8 +141,20 @@ export default async function RootLayout({
           <ToastProvider>
             {/* One photo viewer for the whole site: any LightboxPhoto on the
                 current page opens it, and it pages through all of them. */}
+            {/* The one header, for the same reason as the tab bar below:
+                drawn here it survives taps that cross route groups. It
+                draws nothing on staff, note and dev screens
+                (lib/navigation/app-chrome.ts). */}
+            <SiteHeader />
             <PhotoLightboxProvider>{children}</PhotoLightboxProvider>
           </ToastProvider>
+          {/* The phone tab bar lives here, in the one layout every route
+              shares, so switching tabs never unmounts it -- even when the
+              tap crosses route groups (Home/Stories/Profile are public,
+              Folders/My Stories are contributor), where Next.js rebuilds
+              the group's layout and app/loading.tsx stands in for it. It
+              decides from the path where it shows (bottom-tab-bar.tsx). */}
+          <BottomTabBar />
         </NextIntlClientProvider>
       </body>
     </html>

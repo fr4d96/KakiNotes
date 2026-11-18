@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { resolveContributorAccess } from "@/lib/auth/contributor-guard";
-import { SiteHeader } from "@/components/site-header";
 import { PageTransition } from "@/components/page-transition";
 
 /**
@@ -24,7 +23,6 @@ export default async function OnboardingLayout({
 
   return (
     <>
-      <SiteHeader />
       <main id="main-content" className="flex-1">
         <PageTransition>{children}</PageTransition>
       </main>

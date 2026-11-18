@@ -1,8 +1,3 @@
-import { HeaderBrand } from "@/components/header-brand";
-import { CountrySwitcher } from "@/components/country-switcher";
-import { UserAvatarMenu } from "@/components/auth/user-avatar-menu";
-import { NotificationBell } from "@/components/notifications/notification-bell";
-import { ContributorNavLinks } from "@/components/contributor-nav-links";
 import { ViewerIdentitySeed } from "@/lib/auth/viewer-identity";
 import {
   getCurrentUserAvatarEmoji,
@@ -10,46 +5,20 @@ import {
 } from "@/lib/auth/roles";
 
 /**
- * Rendered only inside the (contributor) layout, after the real session
- * check passes — deliberately separate from the public SiteHeader (never a
- * contradictory "Sign in" link for a signed-in user), but styled to match
- * it: same solid-header treatment and logo mark (see app/globals.css
- * .journiq-header-solid), since this is the same site, just past the
- * sign-in wall. The profile icon (UserAvatarMenu) is the one place My
- * Stories/New Story/Account/Sign out live -- same menu, same order, on
- * every signed-in header in the app, not just this one. A Server Component
- * (like ModerationNav/EditorialNav/ReadinessNav) so it can read the
- * caller's own avatar directly, rather than needing every layout above it
- * to fetch and pass it down.
+ * Rendered only inside the (contributor) layout, after its guard has proven
+ * a session. Draws nothing: it hands that session's avatar and role to the
+ * browser's viewer store (lib/auth/viewer-identity.ts), so the app-wide
+ * header and tab bar show the right avatar and staff links at once.
  *
- * The app is an installable iPhone web app with `viewportFit: "cover"`
- * (app/layout.tsx), so this sticky header pads itself with
- * env(safe-area-inset-*) exactly like SiteHeader -- otherwise the logo and
- * the bell would sit under the notch / status bar.
+ * This used to be the contributor routes' own header. Since 2026-11-18 one
+ * header (SiteHeader) is drawn by app/layout.tsx for every route group, so
+ * it stays on screen when a tap crosses from a public page to a contributor
+ * page; only this server-side identity hand-off was left to do here.
  */
-export async function ContributorNav() {
+export async function ContributorIdentity() {
   const [avatarEmoji, role] = await Promise.all([
     getCurrentUserAvatarEmoji(),
     getCurrentUserRole(),
   ]);
-
-  return (
-    <header className="journiq-header-solid sticky top-0 z-40 border-b border-border-subtle pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] text-foreground">
-      <div className="mx-auto flex min-h-[76px] max-w-[1440px] items-center gap-3 px-4 sm:gap-5 sm:px-6">
-        <HeaderBrand />
-        <CountrySwitcher />
-
-        <ContributorNavLinks className="ml-auto hidden md:flex" />
-
-        <div className="ml-auto flex shrink-0 items-center gap-2 md:ml-0">
-          <NotificationBell />
-          <UserAvatarMenu emoji={avatarEmoji} role={role} />
-        </div>
-        {/* Hands this proven session, avatar and role to the browser's
-            store, so the public header that mounts after a tap on Home
-            starts signed in with the same avatar (2026-11-18). */}
-        <ViewerIdentitySeed avatarEmoji={avatarEmoji} role={role} />
-      </div>
-    </header>
-  );
+  return <ViewerIdentitySeed avatarEmoji={avatarEmoji} role={role} />;
 }

@@ -8,12 +8,15 @@ import {
 } from "@/lib/story/countries";
 
 const countrySchema = z.enum(COUNTRY_SLUGS);
+const SETTINGS_PATH = "/settings";
 
 /**
  * POST /country -- remember the reader's country on this device and open
- * that country's home page. A plain form post (the first-visit picker and
- * the header's flag switcher both use one), so it works before any
- * JavaScript has loaded.
+ * that country's home page. A plain form post (the first-visit picker, the
+ * desktop header's flag switcher and the profile page's Country list all
+ * use one), so it works before any JavaScript has loaded. The profile page
+ * sends `return=/settings` to stay where it is; that one path is the only
+ * other destination accepted, so this can never redirect off-site.
  *
  * Only a preference: the cookie picks where Kakinotes opens and which
  * country the tabs link to. It is never used to decide access or what a
@@ -28,7 +31,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(new URL("/", request.url), 303);
   }
   const home = countryUrlPrefix(parsed.data) || "/";
-  const response = NextResponse.redirect(new URL(home, request.url), 303);
+  const destination =
+    form?.get("return") === SETTINGS_PATH ? SETTINGS_PATH : home;
+  const response = NextResponse.redirect(
+    new URL(destination, request.url),
+    303,
+  );
   response.cookies.set(COUNTRY_COOKIE, parsed.data, {
     path: "/",
     sameSite: "lax",

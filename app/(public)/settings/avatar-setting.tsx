@@ -23,6 +23,10 @@ export function AvatarSetting() {
   const headingId = useId();
   const [saving, startSaving] = useTransition();
   const [failed, setFailed] = useState(false);
+  // The emoji grid is tall; the profile screen opens on who you are and
+  // your links, and the grid unfolds on "Change".
+  const [picking, setPicking] = useState(false);
+  const pickerId = useId();
 
   if (viewer.status !== "signed-in") return null;
 
@@ -54,14 +58,28 @@ export function AvatarSetting() {
           >
             {current || "·"}
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p id={headingId} className="text-base font-bold">
               {t("avatar")}
             </p>
             <p className="text-sm text-muted-foreground">{t("avatarHelp")}</p>
           </div>
+          <button
+            type="button"
+            onClick={() => setPicking((open) => !open)}
+            aria-expanded={picking}
+            aria-controls={pickerId}
+            className="press min-h-10 shrink-0 rounded-full border border-border-subtle px-4 text-sm font-bold"
+          >
+            {picking ? t("avatarDone") : t("avatarChange")}
+          </button>
         </div>
-        <div className="mt-4" aria-busy={saving || undefined}>
+        <div
+          id={pickerId}
+          hidden={!picking}
+          className="mt-4"
+          aria-busy={saving || undefined}
+        >
           <AvatarPicker
             value={current}
             onChange={choose}

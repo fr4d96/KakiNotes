@@ -16,6 +16,11 @@ import { useViewerIdentity } from "@/lib/auth/viewer-identity";
 import { ScrollToTopButton } from "@/components/scroll-to-top-button";
 import { countryUrlPrefix } from "@/lib/story/countries";
 import { useCurrentCountry } from "@/lib/story/use-current-country";
+import {
+  isContributorArea,
+  isWithin,
+  showsTabBar,
+} from "@/lib/navigation/app-chrome";
 
 /**
  * App-style bottom tab bar for phones (below `md`), rendered by the (public),
@@ -74,9 +79,21 @@ export function BottomTabBar({
   // The tab-wide store (lib/auth/viewer-identity.ts), shared with the
   // header; until it has an answer the layout's hint decides.
   const viewer = useViewerIdentity();
+  // A contributor route has already proven a session on the server (its
+  // layout's guard redirects otherwise), so it starts signed in.
+  const hint = signedInHint || isContributorArea(pathname);
   const signedIn =
-    viewer.status === "unknown" ? signedInHint : viewer.status === "signed-in";
+    viewer.status === "unknown" ? hint : viewer.status === "signed-in";
   const typing = useTextEntryFocus();
+  // The tab just tapped, lit at once (bubble and colour) while its page
+  // loads, the way a native tab bar answers the touch before the screen
+  // changes. Remembered with the path it was tapped on, so it simply stops
+  // counting once the navigation lands (or is abandoned for another path).
+  const [tapped, setTapped] = useState<{ href: string; from: string } | null>(
+    null,
+  );
+  const pendingHref = tapped && tapped.from === pathname ? tapped.href : null;
+  const avatarEmoji = viewer.avatarEmoji;
 
   const homeHref = prefix || "/";
   const storiesHref = `${prefix}/stories`;
@@ -115,8 +132,10 @@ export function BottomTabBar({
           href: "/my-stories",
           label: t("myStories"),
           Icon: EditorialPencilIcon,
-          // Folders, and each folder's journey, belong to their own tab.
-          active: inMyArea && !inFoldersTab(pathname),
+          // Folders, and each folder's journey, belong to their own tab;
+          // Account, Notifications and the rest, to Profile.
+          active:
+            inMyArea && !inFoldersTab(pathname) && !inProfileTab(pathname),
         }
       : {
           href: "/sign-in",
@@ -124,9 +143,29 @@ export function BottomTabBar({
           Icon: ContributorIcon,
           active: isWithin(pathname, "/sign-in"),
         },
+    // Signed in, a fifth tab: the viewer's own avatar, opening the profile
+    // screen (/settings: their links, avatar and device preferences). It
+    // replaced the header's avatar menu on phones (2026-11-18).
+    ...(signedIn
+      ? [
+          {
+            href: PROFILE_HREF,
+            label: t("profile"),
+            Icon: ContributorIcon,
+            emoji: avatarEmoji,
+            active: inProfileTab(pathname),
+          },
+        ]
+      : []),
   ];
 
-  const activeIndex = tabs.findIndex((tab) => tab.active);
+  if (!showsTabBar(pathname)) return null;
+
+  const litIndex = pendingHref
+    ? tabs.findIndex((tab) => tab.href === pendingHref)
+    : -1;
+  const activeIndex =
+    litIndex >= 0 ? litIndex : tabs.findIndex((tab) => tab.active);
   const hidden = isTaskScreen(pathname) || typing;
 
   return (
@@ -154,16 +193,22 @@ export function BottomTabBar({
           <span
             aria-hidden="true"
             data-testid="tab-indicator"
-            className="nf-tab-indicator pointer-events-none absolute inset-y-0 left-0 w-1/4"
+            className="nf-tab-indicator pointer-events-none absolute inset-y-0 left-0"
             style={{
+              width: `${100 / tabs.length}%`,
               transform: `translateX(${Math.max(activeIndex, 0) * 100}%)`,
               opacity: activeIndex < 0 ? 0 : 1,
             }}
           >
             <span className="nf-tab-bubble block h-full w-full rounded-full" />
           </span>
-          <ul className="relative grid grid-cols-4">
-            {tabs.map(({ href, label, Icon, active }) => (
+          <ul
+            className="relative grid"
+            style={{
+              gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`,
+            }}
+          >
+            {tabs.map(({ href, label, Icon, active, ...tab }) => (
               <li key={href}>
                 <Link
                   href={href}
@@ -173,8 +218,11 @@ export function BottomTabBar({
                     // Native tab-bar behaviour: tapping the tab you are
                     // already on (at its root) scrolls to the top instead of
                     // re-navigating to the same URL.
-                    if (!isPlainClick(event) || !isSameLocation(pathname, href))
+                    if (!isPlainClick(event)) return;
+                    if (!isSameLocation(pathname, href)) {
+                      setTapped({ href, from: pathname ?? "" });
                       return;
+                    }
                     event.preventDefault();
                     window.scrollTo({
                       top: 0,
@@ -182,10 +230,22 @@ export function BottomTabBar({
                     });
                   }}
                   className={`press relative flex min-h-14 min-w-11 flex-col items-center justify-center gap-0.5 rounded-full px-1 text-xs font-bold focus-visible:outline-offset-[-3px] ${
-                    active ? "text-accent" : "text-muted-foreground"
+                    (pendingHref ? href === pendingHref : active)
+                      ? "text-accent"
+                      : "text-muted-foreground"
                   }`}
                 >
-                  <Icon className="nf-tab-icon h-6 w-6" />
+                  {"emoji" in tab && tab.emoji ? (
+                    // The viewer's chosen avatar stands in for the icon.
+                    <span
+                      aria-hidden="true"
+                      className="nf-tab-icon grid h-6 w-6 place-items-center text-[1.15rem] leading-none"
+                    >
+                      {tab.emoji}
+                    </span>
+                  ) : (
+                    <Icon className="nf-tab-icon h-6 w-6" />
+                  )}
                   <span className="max-w-full truncate">{label}</span>
                 </Link>
               </li>
@@ -197,36 +257,29 @@ export function BottomTabBar({
   );
 }
 
-/** True when `pathname` is `base` or anything beneath it. */
 const FOLDERS_HREF = "/my-stories/map";
+
+const PROFILE_HREF = "/settings";
+
+/**
+ * The Profile tab: the profile screen itself and the account places it
+ * links to. My Stories keeps the writing screens.
+ */
+function inProfileTab(pathname: string | null): boolean {
+  return (
+    isWithin(pathname, PROFILE_HREF) ||
+    isWithin(pathname, "/account") ||
+    isWithin(pathname, "/notifications") ||
+    isWithin(pathname, "/my-photos") ||
+    isWithin(pathname, "/affirmations")
+  );
+}
 
 /** The Folders tab: the folder list and any one trip's journey page. */
 function inFoldersTab(pathname: string | null): boolean {
   return (
     isWithin(pathname, FOLDERS_HREF) ||
     !!pathname?.startsWith("/my-stories/journey/")
-  );
-}
-
-function isWithin(pathname: string | null, base: string): boolean {
-  return pathname === base || !!pathname?.startsWith(`${base}/`);
-}
-
-/**
- * The signed-in contributor's own area -- the last tab's territory. The
- * public reader routes (/stories, /stories/<slug>) are deliberately absent:
- * they keep the Stories tab.
- */
-function isContributorArea(pathname: string | null): boolean {
-  if (!pathname) return false;
-  return (
-    isWithin(pathname, "/my-stories") ||
-    isWithin(pathname, "/my-photos") ||
-    isWithin(pathname, "/account") ||
-    isWithin(pathname, "/notifications") ||
-    isWithin(pathname, "/affirmations") ||
-    isWithin(pathname, "/stories/new") ||
-    /^\/stories\/[^/]+\/(edit|preview)(\/|$)/.test(pathname)
   );
 }
 
