@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.0.0](https://github.com/fr4d96/KakiNotes/compare/v3.14.0...v4.0.0) (2026-11-18)
+
+
+### One place to choose your country
+
+#### For contributors writing a story
+
+- **No more country box in Places & tags.** The flag at the top of the screen is now the one place you choose a country, so the story editor doesn't ask again. The places you can pick are the ones in your story's country.
+- **New stories start in the right country.** Start a story from anywhere (the menu, My Stories or the home page) and it now belongs to the country shown by the flag at the top. Before, most "New story" buttons started every story as New Zealand, even when you'd picked China.
+- **Good to know:** a draft keeps the country it was started in. To write about another country, switch the flag at the top first, then start a new story.
+
+### Features
+
+* **editor:** country comes from the header, not the story editor ([4a1df2f](https://github.com/fr4d96/KakiNotes/commit/4a1df2fc38170b994c2bdd475e433a51660af78d))
+
 ## [3.14.0](https://github.com/fr4d96/KakiNotes/compare/v3.13.0...v3.14.0) (2026-11-18)
 
 
