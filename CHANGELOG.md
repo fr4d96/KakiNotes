@@ -1,5 +1,22 @@
 # Changelog
 
+## [4.2.1](https://github.com/fr4d96/KakiNotes/compare/v4.2.0...v4.2.1) (2026-11-19)
+
+
+### A faster, tidier My Stories
+
+#### For contributors
+
+- **My Stories opens much faster when you have lots of stories.** It now shows your first 12 stories straight away and loads more as you scroll down. There's also a "Show more" button if you'd rather tap.
+- **Photos load as you reach them.** A story's cover and photos only load when you scroll near them, and stories folded away under Drafts don't load their photos until you open the section. A grey placeholder holds each photo's place, so the page doesn't jump around.
+- **Jump straight to Drafts, In review or Published.** New buttons at the top of the list show how many stories you have in each, and tapping one shows just those. The story count underneath follows your choice.
+- **Cleaner story cards.** Each story is now a rounded card with a bigger cover, its title, its status, and when you last updated it. Every button you had before is still there.
+- **A smoother first load.** While the page loads you see the outline of your list instead of a blank screen.
+
+### Performance Improvements
+
+* **my-stories:** load stories in batches and redesign the list ([b6bafa9](https://github.com/fr4d96/KakiNotes/commit/b6bafa990af36c7d748cf782fd2bb3e1b37e7524))
+
 ## [4.2.0](https://github.com/fr4d96/KakiNotes/compare/v4.1.0...v4.2.0) (2026-11-18)
 
 
