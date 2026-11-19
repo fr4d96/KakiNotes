@@ -232,7 +232,7 @@ export default async function StoryPreviewPage({
     <div className="mx-auto max-w-5xl px-4 pt-4 pb-8 sm:px-6 sm:py-12">
       {/* The top row only when it has something on the left (back to
           editing / reopen) or the download has nowhere else to go: on a
-          published story the download sits in the "Edit this story" card
+          published story the download sits in the "Edit" card
           as an icon, so this row would be a whole line spent on one link. */}
       {(canEdit || canReopen || (canDownloadCopy && !canStartRevision)) && (
         <div className="flex items-center justify-between gap-4 text-sm font-bold">

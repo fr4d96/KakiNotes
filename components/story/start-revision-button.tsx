@@ -36,11 +36,7 @@ export function StartRevisionButton({
   isPublished: boolean;
   variant?: "icon" | "button";
   className?: string;
-  /**
-   * Shorter visible text for the "button" variant (My Stories cards say just
-   * "Edit"). The accessible name then becomes "Edit <title>", so a list of
-   * cards doesn't read as a column of identical "Edit" buttons.
-   */
+  /** Overrides the "button" variant's visible text (default "Edit"). */
   label?: string;
 }) {
   const router = useRouter();
@@ -72,11 +68,9 @@ export function StartRevisionButton({
         type="button"
         onClick={() => setConfirmOpen(true)}
         title={t("editTitle", { title: storyTitle })}
-        aria-label={
-          variant === "icon" || label
-            ? t("editTitle", { title: storyTitle })
-            : undefined
-        }
+        // Always "Edit <title>": the visible text is just "Edit", and a page
+        // can show more than one of these.
+        aria-label={t("editTitle", { title: storyTitle })}
         className={className}
       >
         <EditorialPencilIcon className="h-4 w-4" aria-hidden="true" />

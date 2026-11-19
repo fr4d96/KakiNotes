@@ -1055,7 +1055,7 @@
     }
   },
   "startRevision": {
-    "edit": "编辑这篇故事",
+    "edit": "编辑",
     "publishedTitle": "要修改这篇故事吗？",
     "draftTitle": "重新开始编辑？",
     "confirm": "好，去编辑",

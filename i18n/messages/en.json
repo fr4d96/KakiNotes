@@ -1055,7 +1055,7 @@
     }
   },
   "startRevision": {
-    "edit": "Edit this story",
+    "edit": "Edit",
     "publishedTitle": "Make changes to this story?",
     "draftTitle": "Start editing again?",
     "confirm": "Yes, edit it",
