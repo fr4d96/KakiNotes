@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.4.1](https://github.com/fr4d96/KakiNotes/compare/v4.4.0...v4.4.1) (2026-11-19)
+
+
+### PDF imports look the same everywhere
+
+#### For editors
+
+- **Imported PDF pages keep their text.** Some PDFs use a standard font like Helvetica or Times without including it in the file. The importer used to borrow the font from whatever machine it ran on, so on the live site's servers that text could vanish and different pages could come out looking identical. It now uses its own built-in copies of those fonts, so imported pages render the same everywhere.
+
+### Bug Fixes
+
+* **pdf-import:** render standard fonts from pdfjs, not the machine ([064b52d](https://github.com/fr4d96/KakiNotes/commit/064b52dfd72ebf39985574c9263c24585b4e4c01))
+
 ## [4.4.0](https://github.com/fr4d96/KakiNotes/compare/v4.3.0...v4.4.0) (2026-11-19)
 
 
