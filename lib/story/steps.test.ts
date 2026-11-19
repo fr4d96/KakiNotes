@@ -9,32 +9,28 @@ import {
 const complete = {
   title: "A season on the vines",
   hasContent: true,
-  locationCount: 1,
   tagCount: 1,
 };
 
 describe("missingStoryRequirements", () => {
-  it("still demands a location and a tag when the story is going public", () => {
+  it("still demands a tag when the story is going public", () => {
     // The default, and unchanged by private stories: a public story has to
     // be findable in browse and search.
     expect(
       missingStoryRequirements({
         ...complete,
-        locationCount: 0,
         tagCount: 0,
         destination: "public",
       }).map((r) => r.labelKey),
-    ).toEqual(["location", "tag"]);
+    ).toEqual(["tag"]);
   });
 
-  it("drops the location and tag requirements for a private story", () => {
-    // Locations and tags exist so a story can be FOUND publicly. Nobody
-    // will ever search for a story only its author can see, so requiring
-    // them would be friction bought for nothing.
+  it("drops the tag requirement for a private story", () => {
+    // Tags exist so a story can be FOUND publicly. Nobody will ever search
+    // for a story only its author can see.
     expect(
       missingStoryRequirements({
         ...complete,
-        locationCount: 0,
         tagCount: 0,
         destination: "private",
       }),
@@ -58,12 +54,9 @@ describe("missingStoryRequirements", () => {
   it("treats an unspecified destination as public", () => {
     // Every caller that predates private stories passes no destination and
     // must keep the list it always had.
-    expect(
-      missingStoryRequirements({ ...complete, locationCount: 0, tagCount: 0 }),
-    ).toEqual(
+    expect(missingStoryRequirements({ ...complete, tagCount: 0 })).toEqual(
       missingStoryRequirements({
         ...complete,
-        locationCount: 0,
         tagCount: 0,
         destination: "public",
       }),
@@ -95,13 +88,10 @@ describe("missingStoryRequirements", () => {
     ).toEqual([{ labelKey: "content", step: "story" }]);
   });
 
-  // Locations and tags are separate requirements even though they share a
-  // step: "finish Places & tags" does not tell a contributor which of the
-  // two they actually left empty.
-  it("distinguishes a missing location from a missing tag", () => {
-    expect(missingStoryRequirements({ ...complete, locationCount: 0 })).toEqual(
-      [{ labelKey: "location", step: "places" }],
-    );
+  // Locations are optional for every story (2026-11-19): plenty of stories
+  // are not about one place. Only the tag half of "Places & tags" gates.
+  it("never requires a location", () => {
+    expect(missingStoryRequirements(complete)).toEqual([]);
     expect(missingStoryRequirements({ ...complete, tagCount: 0 })).toEqual([
       { labelKey: "tag", step: "places" },
     ]);
@@ -111,15 +101,9 @@ describe("missingStoryRequirements", () => {
     const missing = missingStoryRequirements({
       title: "",
       hasContent: false,
-      locationCount: 0,
       tagCount: 0,
     });
-    expect(missing.map((m) => m.labelKey)).toEqual([
-      "title",
-      "content",
-      "location",
-      "tag",
-    ]);
+    expect(missing.map((m) => m.labelKey)).toEqual(["title", "content", "tag"]);
     // The preview page links its notice at missing[0].step, so the order
     // has to match the order the labels are read out in.
     expect(missing[0].step).toBe("title");
@@ -129,7 +113,6 @@ describe("missingStoryRequirements", () => {
     const missing = missingStoryRequirements({
       title: "",
       hasContent: false,
-      locationCount: 0,
       tagCount: 0,
     });
     // Set<string>, not Set<StoryStepId>: EDITING_STORY_STEPS is narrowed

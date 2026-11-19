@@ -497,14 +497,6 @@ export function StoryEditForm({
   const resolvedCountryName = countryDisplayName(countrySlug);
 
   const [locations, setLocations] = useState(initialLocations);
-  // A manually-added row carries no region (curated OR typed) until the
-  // contributor picks/types one. Such a row must not tick the "Places" step
-  // or satisfy the submit gate -- it is not a location yet, and
-  // saveLocations() does not persist it either. Everything that asks "how
-  // many locations are there" means this, not locations.length.
-  const completeLocationCount = locations.filter(
-    (l) => l.regionId || l.customRegionLabel?.trim(),
-  ).length;
   const [locationSearchNotice, setLocationSearchNotice] = useState<
     string | null
   >(null);
@@ -1005,7 +997,7 @@ export function StoryEditForm({
       ...locations,
       {
         // No regionId -- the discriminant the render below, saveLocations()
-        // and completeLocationCount all use to tell a manual (typed-region)
+        // and the render use to tell a manual (typed-region)
         // row from a curated one. Starts as an empty string, not null, so
         // typing immediately updates a real string rather than replacing a
         // null.
@@ -1170,7 +1162,9 @@ export function StoryEditForm({
       [initialMedia.length > 0, "photos"],
       [tripFilled, "trip"],
       [expensesFilled, "expenses"],
-      [completeLocationCount > 0 && selectedTags.length > 0, "places"],
+      // Tags only: locations are optional (lib/story/steps.ts), so an
+      // empty location list must not leave this step looking unfinished.
+      [selectedTags.length > 0, "places"],
     ] as const
   )
     .filter(([filled]) => filled)
@@ -1182,7 +1176,6 @@ export function StoryEditForm({
   const missingRequirements = missingStoryRequirements({
     title,
     hasContent: contentFilled,
-    locationCount: completeLocationCount,
     tagCount: selectedTags.length,
   });
   const canReview = missingRequirements.length === 0;
@@ -1572,7 +1565,6 @@ export function StoryEditForm({
             <fieldset>
               <legend className="text-sm font-medium">
                 {t("fields.locations")}
-                <RequiredMark />
               </legend>
               <div className="mt-1">
                 <LocationSearch

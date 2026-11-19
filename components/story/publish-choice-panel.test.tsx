@@ -101,21 +101,18 @@ describe("PublishChoicePanel", () => {
     ).toBeInTheDocument();
   });
 
-  it("drops the location and tag requirements when the destination changes", async () => {
+  it("drops the tag requirement when the destination changes", async () => {
     // Both lists are computed server-side and handed in; switching between
     // them must actually change what the notice demands, or a contributor
     // who chose "Just me" would still be blocked on public-only fields.
     const user = userEvent.setup();
     renderPanel({
-      missingForPublic: [
-        { labelKey: "location", step: "places" },
-        { labelKey: "tag", step: "places" },
-      ],
+      missingForPublic: [{ labelKey: "tag", step: "places" }],
       missingForPrivate: [],
     });
 
     const notice = screen.getByRole("status");
-    expect(within(notice).getByText(/at least one location/)).toBeVisible();
+    expect(within(notice).getByText(/at least one tag/)).toBeVisible();
 
     await user.click(screen.getByRole("radio", { name: /Just me/ }));
     expect(screen.queryByRole("status")).not.toBeInTheDocument();

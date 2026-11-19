@@ -885,7 +885,6 @@
     "requirements": {
       "title": "a title",
       "content": "your story",
-      "location": "at least one location",
       "tag": "at least one tag"
     },
     "progress": {

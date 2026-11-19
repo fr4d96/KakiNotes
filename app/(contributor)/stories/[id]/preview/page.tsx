@@ -174,15 +174,14 @@ export default async function StoryPreviewPage({
   // now a choice the contributor makes in the browser, so the server cannot
   // know which gate applies. It computes both from this request's own fresh
   // reads and PublishChoicePanel switches between them; what it must not do
-  // is let the client compute either. A public story still needs a location
-  // and a tag so it can be found in browse and search; a private one needs
-  // neither, because nobody will ever search for it.
+  // is let the client compute either. A public story still needs a tag so it
+  // can be found in browse and search; a private one does not, because
+  // nobody will ever search for it. Locations are optional for both.
   const requirementInput = {
     title: preview.title,
     hasContent: Boolean(
       parsedContent && storyContentText(parsedContent).trim(),
     ),
-    locationCount: selections?.locations.length ?? 0,
     tagCount: selections?.tags.length ?? 0,
   };
   const missingForPublic = canSubmitOwnConsent
@@ -212,10 +211,7 @@ export default async function StoryPreviewPage({
       ],
       [preview.media.length > 0, "photos"],
       [Boolean(preview.tripYear ?? preview.tripStartDate), "trip"],
-      [
-        Boolean(selections?.locations.length && selections?.tags.length),
-        "places",
-      ],
+      [Boolean(selections?.tags.length), "places"],
     ] as const
   )
     .filter(([filled]) => filled)

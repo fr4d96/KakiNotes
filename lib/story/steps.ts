@@ -60,7 +60,7 @@ export type StoryRequirement = {
    * A key rather than the sentence, for the same reason the steps above
    * carry none.
    */
-  labelKey: "title" | "content" | "location" | "tag";
+  labelKey: "title" | "content" | "tag";
   /** Which step the contributor has to go to in order to supply it. */
   step: StoryStepId;
 };
@@ -85,7 +85,6 @@ export type StoryRequirement = {
 export function missingStoryRequirements(input: {
   title: string;
   hasContent: boolean;
-  locationCount: number;
   tagCount: number;
   /**
    * Where the story is headed. Defaults to "public", so every existing
@@ -93,10 +92,15 @@ export function missingStoryRequirements(input: {
    *
    * A private story needs a title and some actual writing -- that is what
    * makes it a story rather than an empty shell, and keep_revision_private()
-   * enforces the content half itself (WHV03). It does NOT need a location
-   * or a tag: those two exist so a story can be FOUND in public browse and
-   * search (app/(public)), and nobody will ever search for a story only its
-   * author can see. Requiring them would be friction bought for nothing.
+   * enforces the content half itself (WHV03). It does NOT need a tag: tags
+   * exist so a story can be FOUND in public browse and search (app/(public)),
+   * and nobody will ever search for a story only its author can see.
+   *
+   * Locations are never required, for either destination (2026-11-19):
+   * plenty of stories -- a visa-process write-up, a "what I packed" piece,
+   * a reflection on the whole year -- are not about one place, and forcing
+   * a location onto them only produced a meaningless tag. A story that does
+   * name places is still findable by them.
    */
   destination?: StoryDestination;
 }): StoryRequirement[] {
@@ -104,9 +108,6 @@ export function missingStoryRequirements(input: {
   if (!input.title.trim()) missing.push({ labelKey: "title", step: "title" });
   if (!input.hasContent) missing.push({ labelKey: "content", step: "story" });
   if (input.destination === "private") return missing;
-  if (input.locationCount < 1) {
-    missing.push({ labelKey: "location", step: "places" });
-  }
   if (input.tagCount < 1) {
     missing.push({ labelKey: "tag", step: "places" });
   }

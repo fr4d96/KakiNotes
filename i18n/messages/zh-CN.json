@@ -885,7 +885,6 @@
     "requirements": {
       "title": "标题",
       "content": "正文",
-      "location": "至少一个地点",
       "tag": "至少一个标签"
     },
     "progress": {
