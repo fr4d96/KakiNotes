@@ -11850,3 +11850,20 @@ drops them (the dev project is also production). Until then, saving a draft no l
 on revisions saved before this change. The integration test for that function stays, because
 anon can still call it. Next: if Fred agrees, one migration to drop the column, parameters and
 function, then regenerate `types/database.ts` and remove that test.
+
+## 2026-11-18 — Related stories match by shared places and tags
+
+A story page's Related stories used to be the three newest published stories in the story's
+FIRST region, topped up with the country's newest. They are now ranked by what they share with
+the story (`lib/story/related-stories.ts`, pure and unit-tested): 3 points per shared destination
+(same region too), 2 per shared region, 1 per shared tag, names compared case- and
+space-insensitively; ties and the zero-score fill go to the newest. Candidates are the country's
+50 newest published stories from `list_published_stories()` (its row already carries `regions`
+and `tags`; 50 is the RPC's ceiling and covers today's whole catalogue). The story itself and its
+sub stories are excluded before picking, so they no longer leave the section a card short. No
+migration; the page also stops calling `list_public_regions()`, which only served the old lookup.
+Checked live: "Queenstown Spots" now gets three Queenstown stories (was Queenstown Food, Dunedin
+2D1N, a Cromwell fruit stall); "Wharariki Beach" gets the other Tasman story first, then stories
+sharing its Tourism tag. If the catalogue outgrows 50 stories per country, move the ranking into
+a database function so older strong matches stay reachable.
+

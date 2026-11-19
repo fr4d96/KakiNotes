@@ -8,7 +8,6 @@ import {
   getPublicContributorDeduped,
   coverOf,
   listPublishedStories,
-  listPublicRegions,
 } from "@/lib/story/public-queries";
 import { getImageUrl } from "@/lib/story/image-url";
 import { imageBlockMediaIds } from "@/lib/validation/story";
@@ -29,6 +28,7 @@ import {
 } from "@/lib/story/story-folders";
 import { StoryCard } from "@/components/story/story-card";
 import { AttributionChip } from "@/components/story/attribution-chip";
+import { pickRelatedStories } from "@/lib/story/related-stories";
 import { PersonalExperienceLabel } from "@/components/story/personal-experience-label";
 import { ReportStoryForm } from "@/components/story/report-story-form";
 import {
@@ -49,13 +49,6 @@ import { countryUrlPrefix, type CountrySlug } from "@/lib/story/countries";
 // split: this route never had a cacheable window (see the original
 // comment history in git blame of app/(public)/stories/[id]/page.tsx).
 
-type RegionEntry = {
-  region_name?: string;
-  region_name_zh_cn?: string | null;
-  destination_name?: string | null;
-  destination_name_zh_cn?: string | null;
-};
-
 /** Display labels ("destination, region"), in the visitor's language. */
 function regionLabels(regions: unknown, locale: Locale): string[] {
   if (!Array.isArray(regions)) return [];
@@ -67,16 +60,6 @@ function regionLabels(regions: unknown, locale: Locale): string[] {
       return destination ? `${destination}, ${region}` : region;
     })
     .filter((v): v is string => v !== null);
-}
-
-/** Bare region names only (no destination suffix) -- used to resolve a
- * region id for the related-stories lookup, since get_published_story()
- * returns region names, not ids (public-shape curation, docs/architecture.md). */
-function regionLabelsRaw(regions: unknown): string[] {
-  if (!Array.isArray(regions)) return [];
-  return regions
-    .map((r: RegionEntry) => r?.region_name)
-    .filter((v): v is string => Boolean(v));
 }
 
 function stringList(value: unknown): string[] {
@@ -193,9 +176,8 @@ export async function StoryDetail({
   ]);
   if (!story) notFound();
 
-  const [media, activeRegions, family, profileContributor] = await Promise.all([
+  const [media, family, profileContributor] = await Promise.all([
     getPublishedStoryMediaDeduped(story.story_id),
-    listPublicRegions(country),
     getPublishedStoryFamilyDeduped(story.story_id),
     // The contributor's public profile, for the sub story cards and the
     // "See this on ... journey" link. The journey map is New Zealand only,
@@ -254,39 +236,20 @@ export async function StoryDetail({
     }),
   );
 
-  const firstRegionName = regionLabelsRaw(story.regions)[0] ?? null;
-  const matchedRegionId = firstRegionName
-    ? activeRegions.find((r) => r.name === firstRegionName)?.id
-    : undefined;
-
-  const sameRegionMatches = matchedRegionId
-    ? await listPublishedStories({
-        countrySlug: country,
-        regionId: matchedRegionId,
-        excludeStoryId: story.story_id,
-        limit: 3,
-      })
-    : [];
-
-  const relatedStories =
-    sameRegionMatches.length >= 3
-      ? sameRegionMatches
-      : [
-          ...sameRegionMatches,
-          ...(await listPublishedStories({
-            countrySlug: country,
-            excludeStoryId: story.story_id,
-            limit: 3,
-          })),
-        ]
-          .filter(
-            (s, i, arr) =>
-              arr.findIndex((x) => x.story_id === s.story_id) === i,
-          )
-          .slice(0, 3);
-  // Already shown as sub story cards at the end of the story -- don't repeat them.
-  const relatedWithoutSubStories = relatedStories.filter(
-    (s) => !subStoryIds.has(s.story_id),
+  // Related stories: the country's newest published stories, ranked by
+  // shared places and tags (lib/story/related-stories.ts) -- the story
+  // itself and its sub stories (already shown as cards above) are left out
+  // before picking, so they never leave a gap. 50 is the list RPC's
+  // ceiling; the catalogue is far smaller today, so every story is a
+  // candidate. Uncached, like every read on this page.
+  const relatedWithoutSubStories = pickRelatedStories(
+    story,
+    await listPublishedStories({
+      countrySlug: country,
+      excludeStoryId: story.story_id,
+      limit: 50,
+    }),
+    { limit: 3, excludeIds: new Set([story.story_id, ...subStoryIds]) },
   );
   // Related cards swipe through their published photos, like every other
   // story card. One cached read per card; a failed read keeps the cover.
