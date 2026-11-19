@@ -221,10 +221,21 @@ async function loadPdfDocument(bytes: Buffer): Promise<LoadPdfResult> {
   // pdfjs-dist copies `data` into its own internal buffer on load — the
   // Uint8Array view passed here does not extend how long the original
   // `bytes` Buffer is referenced beyond this synchronous call.
+  //
+  // useSystemFonts: false (was true until 2026-11-19). With true, a PDF
+  // that names one of the 14 standard fonts without embedding it (Helvetica,
+  // Times...) had its text drawn with whatever font the MACHINE has under
+  // that name. A Mac has Helvetica, so it looked fine locally; the Linux CI
+  // runner (and Vercel's Linux functions) don't, so the text came out
+  // missing and every page of the test PDF rendered to the same blank PNG
+  // -- CI's pdf-page-attachment and pdf-attach tests saw them as duplicates.
+  // With false, pdfjs draws those fonts from the metric-compatible font
+  // files it ships in standard_fonts/ (standardFontDataUrl above), so a
+  // page renders the same everywhere. Embedded fonts are unaffected.
   const loadingTask = pdfjsLib.getDocument({
     data: new Uint8Array(bytes),
     standardFontDataUrl: standardFontDataUrl(),
-    useSystemFonts: true,
+    useSystemFonts: false,
   });
 
   try {
