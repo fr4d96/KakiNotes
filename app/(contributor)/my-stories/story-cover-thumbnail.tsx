@@ -120,6 +120,7 @@ export function StoryCoverThumbnail({
       src={url}
       alt={altText ?? ""}
       loadingLabel={t("loading")}
+      loading="lazy"
       wrapperClassName="relative block h-full w-full overflow-hidden bg-surface-muted"
       className="h-full w-full object-cover"
       onError={() => {

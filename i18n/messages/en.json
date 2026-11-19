@@ -716,7 +716,9 @@
     "updatedAt": "Updated {date}",
     "myPhotosLink": "My Photos",
     "storyMapLink": "Open story folders",
-    "journeyLink": "Open journey map"
+    "journeyLink": "Open journey map",
+    "statusTabsLabel": "Story status",
+    "showMore": "Show more ({count} left)"
   },
   "storyStatus": {
     "draft": "Draft",

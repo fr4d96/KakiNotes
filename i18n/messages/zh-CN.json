@@ -716,7 +716,9 @@
     "updatedAt": "更新于 {date}",
     "myPhotosLink": "我的照片",
     "storyMapLink": "打开故事文件夹",
-    "journeyLink": "打开旅程地图"
+    "journeyLink": "打开旅程地图",
+    "statusTabsLabel": "故事状态",
+    "showMore": "显示更多（还有 {count} 个）"
   },
   "storyStatus": {
     "draft": "草稿",

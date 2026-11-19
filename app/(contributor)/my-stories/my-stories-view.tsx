@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   DEFAULT_COUNTRY_SLUG,
   countryMessageSegment,
@@ -12,6 +18,7 @@ import Link from "next/link";
 import { StatusBadge } from "./status-badge";
 import { StoryCoverThumbnail } from "./story-cover-thumbnail";
 import { MyStoryPhotos } from "./my-story-photos";
+import { LazyMount } from "./lazy-mount";
 import {
   deleteDraftStoryAction,
   requestStoryTakedownAction,
@@ -66,19 +73,18 @@ const TOOL_CLASS =
 const VIEW_STORAGE_KEY = "kaki-my-stories-view";
 
 /**
- * 12 per page. It divides evenly by both grid widths (2 columns on a phone,
- * 3 from `sm`), so a page never ends in a ragged half-row, and it keeps the
- * list view to roughly one screen of scrolling.
+ * Stories revealed per step. 12 divides evenly by both grid widths (2 columns
+ * on a phone, 3 from `sm`), so a step never ends in a ragged half-row.
  *
- * Paged CLIENT-side, over the stories this page already loaded, because the
- * Region/Destination/Tags filter axes above the list are built from the whole
- * set (buildFilterAxes) -- server-side paging would rebuild those chips from
- * whatever 12 stories happened to be on screen, so a filter could vanish
- * just because you turned the page. list_my_stories() returns a single
- * contributor's own stories in one round trip, which is a few dozen rows at
- * the scale this product is for; if that ever stops being true, the RPC
- * needs p_limit/p_offset AND the axes need their own query, together.
+ * Revealed CLIENT-side, over the stories the page already loaded: the
+ * Region/Destination/Tags filter axes and the status counts are built from the
+ * whole set (buildFilterAxes), so server paging would make a filter chip or a
+ * count vanish just because of what happened to be on screen. What made the
+ * page slow was never the one list_my_stories() round trip but every row
+ * mounting its cover at once (see LazyMount); rendering a step at a time also
+ * keeps the DOM and the client components under it small.
  */
+const PAGE_SIZE = 12;
 
 // Same useSyncExternalStore pattern as components/theme-toggle.tsx: the DOM
 // (here, localStorage) is the source of truth, read synchronously rather
@@ -686,18 +692,20 @@ function StoryGrid({
               swipeable={story.mediaIds.length > 1}
               className="relative block aspect-square overflow-hidden rounded-md border border-border-subtle"
             >
-              {story.mediaIds.length > 1 ? (
-                <MyStoryPhotos
-                  mediaIds={story.mediaIds}
-                  href={href}
-                  sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-                />
-              ) : (
-                <StoryCoverThumbnail
-                  mediaId={story.coverMediaId}
-                  altText={story.coverAltText}
-                />
-              )}
+              <LazyMount>
+                {story.mediaIds.length > 1 ? (
+                  <MyStoryPhotos
+                    mediaIds={story.mediaIds}
+                    href={href}
+                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                  />
+                ) : (
+                  <StoryCoverThumbnail
+                    mediaId={story.coverMediaId}
+                    altText={story.coverAltText}
+                  />
+                )}
+              </LazyMount>
               {/* An OPAQUE pill exactly the badge's own size. Two things were
                   wrong before: `p-0.5` drew a 2px ring of plain surface
                   around the tinted badge, reading as a grey halo, and
@@ -814,7 +822,7 @@ function StoryList({
   const rawLocale = useLocale();
   const locale = isLocale(rawLocale) ? rawLocale : "en";
   return (
-    <ul>
+    <ul className="flex flex-col gap-3">
       {stories.map((story, index) => {
         const {
           awaitingApproval,
@@ -827,19 +835,20 @@ function StoryList({
           updateInFlight,
         } = storyStatusFlags(story);
         const updated = formatUpdatedAt(story.updated_at, locale);
+        const places = destinationNames(story.regions, locale).join(", ");
         const title = story.title ?? t("untitled");
         const href = primaryStoryHref(story);
         return (
           <li
             key={story.id}
-            className="nf-entry [@media(hover:hover)]:has-[a[data-card-link]:active]:bg-accent/10"
+            className="relative rounded-2xl border border-border-subtle bg-surface transition-colors [@media(hover:hover)]:hover:bg-surface-muted/60 [@media(hover:hover)]:has-[a[data-card-link]:active]:bg-accent/10 has-[:focus-visible]:bg-surface-muted/60"
           >
             {/* One grid, two shapes. Mobile: [thumb | stacked content],
             numeral hidden (display:none claims no track). From sm up
             the inner wrapper becomes `display: contents` so its
             children drop into the parent grid as real columns
             [numeral | thumb | title+meta | actions]. */}
-            <div className="grid grid-cols-[6rem_minmax(0,1fr)] items-stretch gap-x-3.5 py-4 sm:grid-cols-[2.5rem_7rem_minmax(0,1fr)_auto] sm:items-center sm:gap-x-5">
+            <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-stretch gap-x-3.5 p-3 sm:grid-cols-[2rem_7.5rem_minmax(0,1fr)_auto] sm:items-center sm:gap-x-5 sm:px-4">
               <span
                 aria-hidden="true"
                 className="hidden font-mono text-sm text-foreground/40 tabular-nums sm:block"
@@ -855,20 +864,22 @@ function StoryList({
               <CoverFrame
                 href={href}
                 swipeable={story.mediaIds.length > 1}
-                className="relative block h-full min-h-24 w-24 overflow-hidden rounded-lg border border-border-subtle bg-surface-muted sm:h-20 sm:min-h-0 sm:w-28"
+                className="relative block aspect-[4/3] h-full min-h-24 w-[6.5rem] overflow-hidden rounded-xl border border-border-subtle bg-surface-muted sm:h-[5.625rem] sm:min-h-0 sm:w-[7.5rem]"
               >
-                {story.mediaIds.length > 1 ? (
-                  <MyStoryPhotos
-                    mediaIds={story.mediaIds}
-                    href={href}
-                    sizes="112px"
-                  />
-                ) : (
-                  <StoryCoverThumbnail
-                    mediaId={story.coverMediaId}
-                    altText={null}
-                  />
-                )}
+                <LazyMount>
+                  {story.mediaIds.length > 1 ? (
+                    <MyStoryPhotos
+                      mediaIds={story.mediaIds}
+                      href={href}
+                      sizes="112px"
+                    />
+                  ) : (
+                    <StoryCoverThumbnail
+                      mediaId={story.coverMediaId}
+                      altText={null}
+                    />
+                  )}
+                </LazyMount>
               </CoverFrame>
 
               <div className="sm:contents">
@@ -892,14 +903,20 @@ function StoryList({
                       {story.excerpt}
                     </p>
                   )}
-                  {updated && (
-                    <p className="mt-1 font-mono text-xs text-foreground/45 tabular-nums">
-                      {t("updatedAt", { date: updated })}
+                  {(places || updated) && (
+                    <p className="mt-1.5 text-xs text-foreground/55">
+                      {places}
+                      {places && updated ? " · " : null}
+                      {updated && (
+                        <span className="font-mono tabular-nums">
+                          {t("updatedAt", { date: updated })}
+                        </span>
+                      )}
                     </p>
                   )}
                 </div>
 
-                <div className="relative z-10 -ml-3 mt-0.5 flex items-center sm:mt-0 md:-ml-1.5">
+                <div className="relative z-10 -ml-3 mt-1 flex items-center border-t border-border-subtle/60 pt-1 sm:mt-0 sm:ml-0 sm:border-t-0 sm:pt-0">
                   {editable && (
                     <ActionIconLink
                       href={`/stories/${story.id}/edit`}
@@ -1086,6 +1103,75 @@ export function MyStoriesView({
   const [closedSections, setClosedSections] = useState<
     Partial<Record<StorySection, boolean>>
   >({ drafts: true });
+  // The status chips narrow the list to one section (or "all" for grouped).
+  const [activeSection, setActiveSection] = useState<StorySection | "all">(
+    "all",
+  );
+  // How many rows of OPEN sections are on screen; grows by PAGE_SIZE.
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const nonEmptySections = SECTIONS.filter(
+    ({ key }) => grouped[key].length > 0,
+  );
+  // A chip whose section has since emptied (a delete, a filter) falls back to
+  // "all" rather than showing an empty page.
+  const selectedSection =
+    activeSection !== "all" && grouped[activeSection].length > 0
+      ? activeSection
+      : "all";
+
+  const { shownBySection, hiddenCount } = useMemo(() => {
+    let budget = visibleCount;
+    let hidden = 0;
+    const shown = {} as Record<StorySection, MyStoryWithCover[]>;
+    for (const { key } of SECTIONS) {
+      const rows = grouped[key];
+      const open =
+        selectedSection === key ||
+        (selectedSection === "all" && !closedSections[key]);
+      if (selectedSection !== "all" && selectedSection !== key) {
+        shown[key] = [];
+      } else if (open) {
+        const take = Math.min(rows.length, budget);
+        budget -= take;
+        hidden += rows.length - take;
+        shown[key] = rows.slice(0, take);
+      } else {
+        // Folded away: rows stay in the DOM (a <details> keeps its content)
+        // but are capped, don't spend the budget, and their covers never
+        // mount while the box has no layout (LazyMount).
+        shown[key] = rows.slice(0, PAGE_SIZE);
+      }
+    }
+    return { shownBySection: shown, hiddenCount: hidden };
+  }, [grouped, visibleCount, selectedSection, closedSections]);
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (
+      !node ||
+      hiddenCount === 0 ||
+      typeof IntersectionObserver === "undefined"
+    )
+      return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVisibleCount((count) => count + PAGE_SIZE);
+        }
+      },
+      { rootMargin: "600px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+    // Re-observe after each step: if the sentinel is still on screen once the
+    // new rows render, a fresh observation fires again and loads the next.
+  }, [hiddenCount, visibleCount]);
+
+  function selectSection(next: StorySection | "all") {
+    setActiveSection(next);
+    setVisibleCount(PAGE_SIZE);
+  }
 
   function toggleSection(key: StorySection, open: boolean) {
     setClosedSections((current) => ({ ...current, [key]: !open }));
@@ -1095,10 +1181,12 @@ export function MyStoriesView({
   // of the old result set means nothing in the new one.
   function changeFilter(key: string, value: string) {
     setActiveFilters((current) => ({ ...current, [key]: value }));
+    setVisibleCount(PAGE_SIZE);
   }
 
   function clearFilters() {
     setActiveFilters({});
+    setVisibleCount(PAGE_SIZE);
   }
 
   function changeView(next: ViewMode) {
@@ -1329,12 +1417,58 @@ export function MyStoriesView({
             </BottomSheet>
           )}
 
+          {nonEmptySections.length > 1 && (
+            <div
+              role="group"
+              aria-label={t("statusTabsLabel")}
+              className="nf-scroll-x -mx-4 mt-5 flex snap-x gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+            >
+              {(
+                [
+                  ["all", t("filters.all"), filtered.length],
+                  ...nonEmptySections.map(
+                    ({ key }) =>
+                      [key, t(`sections.${key}`), grouped[key].length] as const,
+                  ),
+                ] as const
+              ).map(([key, label, count]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => selectSection(key)}
+                  aria-pressed={selectedSection === key}
+                  className={`press relative inline-flex h-11 shrink-0 snap-start items-center gap-2 rounded-full border px-4 text-sm font-semibold whitespace-nowrap ${
+                    selectedSection === key
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border-subtle text-foreground/75 hover:bg-surface-muted"
+                  }`}
+                >
+                  {label}
+                  <span
+                    className={`font-mono text-xs tabular-nums ${
+                      selectedSection === key
+                        ? "text-background/75"
+                        : "text-foreground/55"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {axes.length > 0 && (
             <p
               className="mt-5 font-mono text-xs tracking-wider text-foreground/50 tabular-nums"
               aria-live="polite"
             >
-              {t("storyCount", { count: filtered.length })}
+              {t("storyCount", {
+                count:
+                  selectedSection === "all"
+                    ? filtered.length
+                    : grouped[selectedSection].length,
+              })}
               {isFiltered ? (
                 <>
                   {" · "}
@@ -1367,11 +1501,14 @@ export function MyStoriesView({
               {SECTIONS.map(({ key }) => {
                 const label = t(`sections.${key}`);
                 const hint = t(`sections.${key}Hint`);
-                const rows = grouped[key];
+                const rows = shownBySection[key];
+                const total = grouped[key].length;
                 // An empty section is not drawn at all. A contributor who has
                 // never had anything rejected should not be told so.
-                if (rows.length === 0) return null;
-                const open = !closedSections[key];
+                if (total === 0) return null;
+                if (selectedSection !== "all" && selectedSection !== key)
+                  return null;
+                const open = selectedSection !== "all" || !closedSections[key];
                 return (
                   <details
                     key={key}
@@ -1412,7 +1549,7 @@ export function MyStoriesView({
                         {label}
                       </span>
                       <span className="font-mono text-xs text-foreground/45 tabular-nums">
-                        {rows.length}
+                        {total}
                       </span>
                       <span className="ml-auto hidden text-sm text-foreground/45 sm:block">
                         {hint}
@@ -1434,6 +1571,20 @@ export function MyStoriesView({
                   </details>
                 );
               })}
+              {hiddenCount > 0 && (
+                <div
+                  ref={sentinelRef}
+                  className="flex justify-center pt-2 pb-4"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                    className="press inline-flex min-h-11 items-center justify-center rounded-full border border-border-subtle px-6 text-sm font-semibold hover:bg-surface-muted"
+                  >
+                    {t("showMore", { count: hiddenCount })}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </>

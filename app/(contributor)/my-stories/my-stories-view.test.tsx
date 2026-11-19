@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MyStoriesView } from "./my-stories-view";
@@ -1002,7 +1002,7 @@ describe("MyStoriesView", () => {
     const user = userEvent.setup();
     render(<MyStoriesView stories={sectioned()} />);
 
-    await user.click(screen.getByText("Drafts"));
+    await user.click(within(section("Drafts")).getByText("Drafts"));
 
     // <details> keeps its content in the DOM; what changes is the open state,
     // which is what a screen reader announces and what hides the rows.
@@ -1011,7 +1011,7 @@ describe("MyStoriesView", () => {
     expect(screen.getByText("Live one")).toBeVisible();
 
     // And closing it again leaves its neighbours alone.
-    await user.click(screen.getByText("Drafts"));
+    await user.click(within(section("Drafts")).getByText("Drafts"));
     expect(section("Drafts")).not.toHaveAttribute("open");
     expect(section("Published")).toHaveAttribute("open");
   });
@@ -1110,6 +1110,151 @@ describe("MyStoriesView", () => {
     it("keeps a single cover as a plain link, with no strip", () => {
       const { container } = render(<MyStoriesView stories={[makeStory()]} />);
       expect(container.querySelector(".snap-x")).toBeNull();
+    });
+  });
+
+  describe("incremental loading", () => {
+    // The shared test setup's observer reports "intersecting" the moment it
+    // observes, which would auto-load every batch; default to one that never
+    // fires and let the sentinel test drive its own.
+    beforeEach(() => {
+      vi.stubGlobal(
+        "IntersectionObserver",
+        class {
+          observe() {}
+          disconnect() {}
+          unobserve() {}
+        },
+      );
+    });
+
+    function many(n: number, overrides: StoryOverrides = {}) {
+      return Array.from({ length: n }, (_, i) =>
+        makeStory({
+          id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
+          title: `Story ${i + 1}`,
+          lifecycle_status: "published",
+          published_revision_id: "44444444-4444-4444-8444-444444444444",
+          current_draft_revision_id: null,
+          coverMediaId: null,
+          mediaIds: [],
+          ...overrides,
+        }),
+      );
+    }
+
+    it("renders only the first batch, then reveals more on Show more", async () => {
+      const user = userEvent.setup();
+      render(<MyStoriesView stories={many(30)} />);
+
+      expect(screen.getByText("Story 12")).toBeInTheDocument();
+      expect(screen.queryByText("Story 13")).not.toBeInTheDocument();
+
+      await user.click(
+        screen.getByRole("button", { name: "Show more (18 left)" }),
+      );
+      expect(screen.getByText("Story 24")).toBeInTheDocument();
+      expect(screen.queryByText("Story 25")).not.toBeInTheDocument();
+
+      await user.click(
+        screen.getByRole("button", { name: "Show more (6 left)" }),
+      );
+      expect(screen.getByText("Story 30")).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /Show more/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("offers no Show more when everything fits in one batch", () => {
+      render(<MyStoriesView stories={many(12)} />);
+      expect(
+        screen.queryByRole("button", { name: /Show more/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("loads the next batch when the sentinel scrolls into view", async () => {
+      let trigger: (() => void) | undefined;
+      class FakeObserver {
+        constructor(cb: IntersectionObserverCallback) {
+          trigger = () =>
+            cb(
+              [{ isIntersecting: true } as IntersectionObserverEntry],
+              this as unknown as IntersectionObserver,
+            );
+        }
+        observe() {}
+        disconnect() {}
+        unobserve() {}
+      }
+      vi.stubGlobal("IntersectionObserver", FakeObserver);
+      try {
+        render(<MyStoriesView stories={many(30)} />);
+        expect(screen.queryByText("Story 13")).not.toBeInTheDocument();
+        act(() => trigger?.());
+        expect(await screen.findByText("Story 24")).toBeInTheDocument();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it("does not mint a cover URL until the card is near the viewport", async () => {
+      const observed: Element[] = [];
+      class IdleObserver {
+        observe(el: Element) {
+          observed.push(el);
+        }
+        disconnect() {}
+        unobserve() {}
+      }
+      vi.stubGlobal("IntersectionObserver", IdleObserver);
+      vi.mocked(mintPreviewUrlAction).mockClear();
+      try {
+        render(
+          <MyStoriesView
+            stories={many(3, {
+              coverMediaId: "33333333-3333-4333-8333-333333333333",
+              mediaIds: ["33333333-3333-4333-8333-333333333333"],
+            })}
+          />,
+        );
+        expect(
+          observed.filter((el) => el.classList.contains("nf-skeleton")),
+        ).toHaveLength(3);
+        expect(mintPreviewUrlAction).not.toHaveBeenCalled();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it("filters by status chip across the whole list, not just the loaded batch", async () => {
+      const user = userEvent.setup();
+      const published = many(20);
+      const drafts = Array.from({ length: 3 }, (_, i) =>
+        makeStory({
+          id: `99999999-9999-4999-8999-${String(i).padStart(12, "0")}`,
+          title: `Draft ${i + 1}`,
+          coverMediaId: null,
+          mediaIds: [],
+        }),
+      );
+      render(<MyStoriesView stories={[...drafts, ...published]} />);
+
+      const tabs = screen.getByRole("group", { name: "Story status" });
+      expect(
+        within(tabs).getByRole("button", { name: /^All ?23$/ }),
+      ).toBeInTheDocument();
+      await user.click(
+        within(tabs).getByRole("button", { name: /^Drafts ?3$/ }),
+      );
+      // Drafts is folded in the grouped view; its chip opens it and shows all.
+      expect(screen.getByText("Draft 3")).toBeVisible();
+      expect(screen.queryByText("Story 1")).not.toBeInTheDocument();
+
+      await user.click(
+        within(tabs).getByRole("button", { name: /^Published ?20$/ }),
+      );
+      expect(screen.getByText("Story 12")).toBeInTheDocument();
+      expect(screen.queryByText("Story 13")).not.toBeInTheDocument();
     });
   });
 });
