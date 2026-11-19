@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.3](https://github.com/fr4d96/KakiNotes/compare/v4.2.2...v4.2.3) (2026-11-19)
+
+
+### Bug Fixes
+
+* **story:** the preview page's edit button says just "Edit" ([73510e7](https://github.com/fr4d96/KakiNotes/commit/73510e769ed87f46acb3a523d923ff7edb8fde28))
+
 ## [4.2.2](https://github.com/fr4d96/KakiNotes/compare/v4.2.1...v4.2.2) (2026-11-19)
 
 
