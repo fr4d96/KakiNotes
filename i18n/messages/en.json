@@ -941,6 +941,7 @@
       "state": {
         "queued": "Waiting",
         "uploading": "Uploading…",
+        "paused": "Paused — resumes when you're back",
         "preparing": "Preparing…",
         "processing": "Processing…",
         "ready": "Ready",

@@ -12,6 +12,13 @@
  * must run inside the shared mutation queue).
  */
 
+import {
+  MAX_RESUME_ATTEMPTS,
+  retryOnNetworkError,
+  waitForResume as defaultWaitForResume,
+  type WaitForResume,
+} from "@/lib/story/wait-for-resume";
+
 export type DriveUploadProgress = { sentBytes: number; totalBytes: number };
 
 // Google's resumable-upload protocol requires each chunk's size to be a
@@ -39,6 +46,17 @@ export class DriveChunkUploadError extends Error {
   }
 }
 
+/** Drive's resumable session is gone (404/410): the caller must start over
+ * with a fresh begin — resuming is impossible. */
+export class DriveSessionExpiredError extends DriveChunkUploadError {
+  constructor(status?: number) {
+    super("Drive upload session expired", status);
+    this.name = "DriveSessionExpiredError";
+  }
+}
+
+const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
+
 /**
  * PUTs `file` to an already-opened Drive resumable session URI, in
  * CHUNK_SIZE_BYTES chunks (a multiple of 256 KiB), using `Content-Range`
@@ -47,17 +65,35 @@ export class DriveChunkUploadError extends Error {
  * from the final 200/201 response body — never trusts a locally-tracked
  * "done" flag over what Drive itself reports.
  *
- * `fetchImpl` is injectable so this is testable with a mocked fetch,
- * without a real network call or a real File object's binary content.
+ * Survives the page freezing (iOS screen lock): a chunk PUT that rejects
+ * with a network error, or returns 408/429/500/502/503/504, is not fatal.
+ * We wait (waitForResume: page visible + online + backoff), ask Drive how
+ * much it has (`PUT` with `Content-Range: bytes * /total`), and continue
+ * from its answer. The session URI stays valid ~1 week. After
+ * MAX_RESUME_ATTEMPTS consecutive failures without progress, we give up.
+ *
+ * `fetchImpl` and `waitForResume` are injectable so this is testable
+ * without a real network, DOM or timers.
  */
 export async function uploadFileToDriveSession(
   sessionUri: string,
   file: Blob,
   onProgress?: (progress: DriveUploadProgress) => void,
   fetchImpl: typeof fetch = fetch,
+  waitForResume: WaitForResume = defaultWaitForResume,
+  onPause?: (paused: boolean) => void,
 ): Promise<string> {
   const totalBytes = file.size;
   let offset = 0;
+  let failures = 0;
+  let needStatusQuery = false;
+  let paused = false;
+
+  const setPaused = (value: boolean) => {
+    if (paused === value) return;
+    paused = value;
+    onPause?.(value);
+  };
 
   // A zero-byte file would loop forever below (offset never advances past
   // 0..0) — not a real case for an image upload (image-validation.ts's own
@@ -67,49 +103,101 @@ export async function uploadFileToDriveSession(
     throw new DriveChunkUploadError("Cannot upload an empty file");
   }
 
-  while (offset < totalBytes) {
-    const end = Math.min(offset + CHUNK_SIZE_BYTES, totalBytes);
-    const chunk = file.slice(offset, end);
-
-    const response = await fetchImpl(sessionUri, {
-      method: "PUT",
-      headers: {
-        "Content-Range": `bytes ${offset}-${end - 1}/${totalBytes}`,
-        "Content-Length": String(end - offset),
-      },
-      body: chunk,
-    });
-
-    if (response.status === 200 || response.status === 201) {
-      onProgress?.({ sentBytes: totalBytes, totalBytes });
-      const json = (await response.json().catch(() => null)) as {
-        id?: string;
-      } | null;
-      if (!json?.id) {
-        throw new DriveChunkUploadError(
-          "Drive upload completed with no file id in the response",
-        );
+  try {
+    while (offset < totalBytes) {
+      if (needStatusQuery) {
+        await waitForResume(failures);
       }
-      return json.id;
-    }
 
-    if (response.status === 308) {
-      const rangeHeader = response.headers.get("Range");
-      const confirmedUpperBound = rangeHeader
-        ? parseRangeUpperBound(rangeHeader)
-        : null;
-      // No Range header on a 308 means Drive has received nothing yet —
-      // resume from the very start, not from wherever we last thought we
-      // were.
-      offset = confirmedUpperBound === null ? 0 : confirmedUpperBound + 1;
-      onProgress?.({ sentBytes: offset, totalBytes });
-      continue;
-    }
+      let response: Response | null = null;
+      try {
+        if (needStatusQuery) {
+          response = await fetchImpl(sessionUri, {
+            method: "PUT",
+            headers: {
+              "Content-Range": `bytes */${totalBytes}`,
+              "Content-Length": "0",
+            },
+          });
+        } else {
+          const end = Math.min(offset + CHUNK_SIZE_BYTES, totalBytes);
+          response = await fetchImpl(sessionUri, {
+            method: "PUT",
+            headers: {
+              "Content-Range": `bytes ${offset}-${end - 1}/${totalBytes}`,
+              "Content-Length": String(end - offset),
+            },
+            body: file.slice(offset, end),
+          });
+        }
+      } catch {
+        // Network-level rejection (frozen page, dropped connection):
+        // fall through to the pause-and-query path below.
+        response = null;
+      }
 
-    throw new DriveChunkUploadError(
-      `Drive upload chunk failed (${response.status})`,
-      response.status,
-    );
+      if (response === null || RETRYABLE_STATUSES.has(response.status)) {
+        failures += 1;
+        if (failures >= MAX_RESUME_ATTEMPTS) {
+          throw new DriveChunkUploadError(
+            response
+              ? `Drive upload chunk failed (${response.status})`
+              : "Drive upload failed: network unavailable",
+            response?.status,
+          );
+        }
+        needStatusQuery = true;
+        setPaused(true);
+        continue;
+      }
+
+      if (response.status === 200 || response.status === 201) {
+        onProgress?.({ sentBytes: totalBytes, totalBytes });
+        const json = (await response.json().catch(() => null)) as {
+          id?: string;
+        } | null;
+        if (!json?.id) {
+          throw new DriveChunkUploadError(
+            "Drive upload completed with no file id in the response",
+          );
+        }
+        return json.id;
+      }
+
+      if (response.status === 308) {
+        const rangeHeader = response.headers.get("Range");
+        const confirmedUpperBound = rangeHeader
+          ? parseRangeUpperBound(rangeHeader)
+          : null;
+        // No Range header on a 308 means Drive has received nothing yet —
+        // resume from the very start, not from wherever we last thought we
+        // were.
+        const confirmed =
+          confirmedUpperBound === null ? 0 : confirmedUpperBound + 1;
+        // A status query answered: we are back online. Only real forward
+        // progress resets the failure budget.
+        if (confirmed > offset) failures = 0;
+        offset = confirmed;
+        needStatusQuery = false;
+        setPaused(false);
+        onProgress?.({ sentBytes: offset, totalBytes });
+        continue;
+      }
+
+      if (
+        needStatusQuery &&
+        (response.status === 404 || response.status === 410)
+      ) {
+        throw new DriveSessionExpiredError(response.status);
+      }
+
+      throw new DriveChunkUploadError(
+        `Drive upload chunk failed (${response.status})`,
+        response.status,
+      );
+    }
+  } finally {
+    setPaused(false);
   }
 
   // Unreachable in practice (the loop only exits via an explicit return or
@@ -147,11 +235,15 @@ export async function beginAndUploadToDrive(
   },
   beginUpload: BeginDriveUploadFn,
   onProgress?: (progress: DriveUploadProgress) => void,
+  onPause?: (paused: boolean) => void,
+  waitForResume?: WaitForResume,
 ): Promise<{ mediaId: string; driveFileId: string }> {
-  const begun = await beginUpload(
-    params.revisionId,
-    params.mimeType,
-    params.file.size,
+  // Retried on a network REJECTION only (frozen page); a returned
+  // { error } is never retried. A lost response can leave one orphan
+  // pending reservation, which expires on its own (30 min).
+  const begun = await retryOnNetworkError(
+    () => beginUpload(params.revisionId, params.mimeType, params.file.size),
+    { wait: waitForResume, onPause },
   );
   if ("error" in begun) {
     throw new DriveUploadBeginError(begun.error);
@@ -160,6 +252,9 @@ export async function beginAndUploadToDrive(
     begun.sessionUri,
     params.file,
     onProgress,
+    undefined,
+    waitForResume,
+    onPause,
   );
   return { mediaId: begun.mediaId, driveFileId };
 }

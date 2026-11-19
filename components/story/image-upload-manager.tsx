@@ -37,6 +37,7 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { SortablePhotoTile } from "@/components/story/sortable-photo-tile";
+import { retryOnNetworkError } from "@/lib/story/wait-for-resume";
 import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client";
 import {
   reorderMediaAction,
@@ -147,6 +148,9 @@ type UploadingItem = {
   /** "queued": selected, waiting for the photos ahead of it to finish --
    * photos go up strictly one at a time, in the order they were picked. */
   progress: "queued" | "uploading" | "processing";
+  /** True while the page is frozen/offline and the upload is waiting to
+   * resume on its own (iOS screen lock). Not a failure. */
+  paused?: boolean;
   /** Local object URL for the file being uploaded, so the tile can show the
    * actual image (dimmed, with a centered spinner over it) instead of a
    * blank placeholder while the real upload/processing is in flight.
@@ -542,6 +546,16 @@ export function ImageUploadManager({
           ),
         );
 
+        // Pause/resume on a frozen page (iOS screen lock): while paused the
+        // tile says so instead of looking failed. Only a NETWORK rejection
+        // is retried -- never a returned { error } or a real server error.
+        const setPaused = (paused: boolean) =>
+          setUploading((prev) =>
+            prev.map((u) => (u.key === key ? { ...u, paused } : u)),
+          );
+        const retry = <T,>(fn: () => Promise<T>) =>
+          retryOnNetworkError(fn, { onPause: setPaused });
+
         const isHeic = looksLikeHeicUpload(file.type, file.name);
         const sourceMimeType = isHeic
           ? ("image/heic" as const)
@@ -565,6 +579,8 @@ export function ImageUploadManager({
             const begunDrive = await driveClient.beginAndUploadToDrive(
               { revisionId, file, mimeType: sourceMimeType },
               driveActions.beginDriveMediaUploadAction,
+              undefined,
+              setPaused,
             );
 
             setUploading((prev) =>
@@ -587,12 +603,17 @@ export function ImageUploadManager({
               queue.enqueue(
                 `media-finalize:${begunDrive.mediaId}`,
                 async () => {
-                  const result =
-                    await driveActions.finalizeDriveMediaUploadAction(
+                  // Retried on a network rejection only: the finalize RPC is
+                  // idempotent once the media has left pending_upload (its
+                  // check runs before the stale-version check), so a lost
+                  // response cannot double-run it.
+                  const result = await retry(() =>
+                    driveActions.finalizeDriveMediaUploadAction(
                       begunDrive.mediaId,
                       versionRef.current,
                       begunDrive.driveFileId,
-                    );
+                    ),
+                  );
                   if (!("error" in result)) {
                     if (result.version !== null) {
                       versionRef.current = result.version;
@@ -643,7 +664,9 @@ export function ImageUploadManager({
             );
 
             if (isHeic) {
-              const transcoded = await transcodeHeicUploadAction(mediaId);
+              const transcoded = await retry(() =>
+                transcodeHeicUploadAction(mediaId),
+              );
               if ("error" in transcoded) throw new Error(transcoded.error);
             }
 
@@ -664,9 +687,10 @@ export function ImageUploadManager({
               Awaited<ReturnType<typeof finalizeMediaUploadAction>>
             >((resolve) => {
               queue.enqueue(`media-finalize:${mediaId}`, async () => {
-                const result = await finalizeMediaUploadAction(
-                  mediaId,
-                  versionRef.current,
+                // Idempotent past pending_upload (see the RPC), so a retry
+                // after a lost response is a safe no-op.
+                const result = await retry(() =>
+                  finalizeMediaUploadAction(mediaId, versionRef.current),
                 );
                 if (!("error" in result)) {
                   // The server's own post-bump version, not an assumed "+1":
@@ -1263,17 +1287,22 @@ export function ImageUploadManager({
                         />
                       ) : null}
                       {isActive ? (
-                        <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-white">
-                          <Spinner className="h-7 w-7" />
+                        <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/25 p-2 text-center text-xs text-white">
+                          {u.paused ? null : <Spinner className="h-7 w-7" />}
+                          {u.paused ? (
+                            <span data-upload-paused>{t("state.paused")}</span>
+                          ) : null}
                         </span>
                       ) : null}
                       <span className="sr-only">
                         {u.fileName}:{" "}
                         {u.progress === "queued"
                           ? t("state.queued")
-                          : u.progress === "uploading"
-                            ? t("state.uploading")
-                            : t("state.processing")}
+                          : u.paused
+                            ? t("state.paused")
+                            : u.progress === "uploading"
+                              ? t("state.uploading")
+                              : t("state.processing")}
                       </span>
                     </li>
                   );

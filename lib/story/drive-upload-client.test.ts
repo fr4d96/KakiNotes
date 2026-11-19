@@ -5,6 +5,7 @@ import {
   beginAndUploadToDrive,
   DriveChunkUploadError,
   DriveUploadBeginError,
+  DriveSessionExpiredError,
 } from "@/lib/story/drive-upload-client";
 
 function blobOfSize(bytes: number): Blob {
@@ -140,13 +141,14 @@ describe("uploadFileToDriveSession", () => {
   it("throws DriveChunkUploadError for an unexpected status", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValue(new Response(null, { status: 500 }));
+      .mockResolvedValue(new Response(null, { status: 400 }));
     await expect(
       uploadFileToDriveSession(
         "https://upload.example/session",
         blobOfSize(10),
         undefined,
         fetchMock,
+        async () => {},
       ),
     ).rejects.toBeInstanceOf(DriveChunkUploadError);
   });
@@ -216,5 +218,141 @@ describe("beginAndUploadToDrive", () => {
     ).rejects.toBeInstanceOf(DriveUploadBeginError);
     expect(fetchMock).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
+  });
+});
+
+describe("uploadFileToDriveSession resume", () => {
+  const CHUNK = 8 * 1024 * 1024;
+  const uri = "https://upload.example/session";
+  const net = () => new TypeError("Load failed");
+  const ok = (id: string) =>
+    new Response(JSON.stringify({ id }), { status: 200 });
+
+  it("resumes from the reported byte after a network rejection", async () => {
+    const file = blobOfSize(CHUNK * 2 + 10);
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 308,
+          headers: { Range: `bytes=0-${CHUNK - 1}` },
+        }),
+      )
+      .mockRejectedValueOnce(net())
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 308,
+          headers: { Range: `bytes=0-${CHUNK - 1}` },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 308,
+          headers: { Range: `bytes=0-${CHUNK * 2 - 1}` },
+        }),
+      )
+      .mockResolvedValueOnce(ok("done"));
+    const wait = vi.fn().mockResolvedValue(undefined);
+    const onPause = vi.fn();
+    const id = await uploadFileToDriveSession(
+      uri,
+      file,
+      undefined,
+      fetchMock,
+      wait,
+      onPause,
+    );
+    expect(id).toBe("done");
+    expect(wait).toHaveBeenCalledTimes(1);
+    const query = fetchMock.mock.calls[2][1];
+    expect(query.headers["Content-Range"]).toBe(`bytes */${file.size}`);
+    expect(query.headers["Content-Length"]).toBe("0");
+    expect(fetchMock.mock.calls[3][1].headers["Content-Range"]).toBe(
+      `bytes ${CHUNK}-${CHUNK * 2 - 1}/${file.size}`,
+    );
+    expect(onPause.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it("returns the id when the status query says the file finished", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(net())
+      .mockResolvedValueOnce(ok("already-done"));
+    const id = await uploadFileToDriveSession(
+      uri,
+      blobOfSize(500),
+      undefined,
+      fetchMock,
+      async () => {},
+    );
+    expect(id).toBe("already-done");
+  });
+
+  it("throws DriveSessionExpiredError when the status query is 404", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(net())
+      .mockResolvedValueOnce(new Response(null, { status: 404 }));
+    await expect(
+      uploadFileToDriveSession(
+        uri,
+        blobOfSize(500),
+        undefined,
+        fetchMock,
+        async () => {},
+      ),
+    ).rejects.toBeInstanceOf(DriveSessionExpiredError);
+  });
+
+  it("treats a 503 as retryable and resumes from 0 when no Range", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(new Response(null, { status: 308 }))
+      .mockResolvedValueOnce(ok("after-503"));
+    const id = await uploadFileToDriveSession(
+      uri,
+      blobOfSize(500),
+      undefined,
+      fetchMock,
+      async () => {},
+    );
+    expect(id).toBe("after-503");
+    expect(fetchMock.mock.calls[2][1].headers["Content-Range"]).toBe(
+      "bytes 0-499/500",
+    );
+  });
+
+  it("gives up after 8 consecutive failures", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(net());
+    const wait = vi.fn().mockResolvedValue(undefined);
+    await expect(
+      uploadFileToDriveSession(
+        uri,
+        blobOfSize(500),
+        undefined,
+        fetchMock,
+        wait,
+      ),
+    ).rejects.toBeInstanceOf(DriveChunkUploadError);
+    expect(fetchMock).toHaveBeenCalledTimes(8);
+  });
+
+  it("still throws immediately on a non-retryable 403", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 403 }));
+    const wait = vi.fn();
+    await expect(
+      uploadFileToDriveSession(
+        uri,
+        blobOfSize(500),
+        undefined,
+        fetchMock,
+        wait,
+      ),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(wait).not.toHaveBeenCalled();
   });
 });

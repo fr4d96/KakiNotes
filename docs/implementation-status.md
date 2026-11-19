@@ -11812,3 +11812,18 @@ definer and ownership filter copied unchanged. Applied with `supabase db push` (
 was the only pending one); types generated from the linked project match `types/database.ts`
 exactly. Also: LazyMount no longer causes a hydration mismatch (server and first client render
 both show the placeholder).
+
+## 2026-11-19 — Photo uploads resume after an iPhone screen lock
+
+iOS freezes a home-screen PWA when the screen locks, and in-flight fetches reject. A Drive upload
+used to treat that as a failed photo. `uploadFileToDriveSession()` now treats a network rejection
+or a 408/429/5xx chunk reply as a pause: it waits until the page is visible and online
+(`lib/story/wait-for-resume.ts`, backoff 1s→30s), asks Drive what it has (`PUT` with
+`Content-Range: bytes */<total>`), and continues from that byte. 404/410 on that query throws
+`DriveSessionExpiredError`; 8 consecutive failures without progress still fail the photo. The
+begin, HEIC-transcode and finalize server actions are retried the same way on a network
+rejection only (`retryOnNetworkError`), never on a returned `{ error }`. Finalize is a no-op
+once past `pending_upload`; a repeated transcode is refused, so neither double-runs; a retried
+begin can leave one orphan reservation that expires (~30 min). The tile shows "Paused — resumes
+when you're back" meanwhile. Unit-tested; not yet tried on a real iPhone (uploading in the
+browser would write to the live Drive/database).
