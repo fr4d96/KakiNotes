@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { ChevronIcon } from "@/components/icons";
 import {
   COUNTRY_FLAGS,
   COUNTRY_SLUGS,
@@ -37,18 +36,16 @@ export function CountrySwitcher() {
         aria-label={t("button", { country: name(current) })}
         title={t("button", { country: name(current) })}
         onClick={() => setOpen(true)}
-        // No outline: it reads as part of the name ("Kakinotes 🇳🇿⌄"), so
-        // the bar isn't a row of boxes. -ml-1.5 pulls it toward the logo;
-        // the padding keeps a 44px-tall tap target.
-        className="press -ml-1.5 flex h-11 shrink-0 items-center gap-0.5 rounded-full px-1.5 hover:bg-surface-muted md:h-9"
+        // Just the flag: no outline and no ⌄ chevron (dropped 2026-11-19,
+        // it looked cluttered beside the bell), so the bar isn't a row of
+        // boxes. The aria-label still says it changes the country, and a
+        // round 44px tap target (36px from md) keeps it easy to hit.
+        // -ml-1.5 pulls it toward the logo on desktop.
+        className="press -ml-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-surface-muted md:h-9 md:w-9"
       >
         <span aria-hidden="true" className="text-xl leading-none">
           {COUNTRY_FLAGS[current]}
         </span>
-        <ChevronIcon
-          aria-hidden="true"
-          className="h-3.5 w-3.5 rotate-90 opacity-70"
-        />
       </button>
 
       <BottomSheet
