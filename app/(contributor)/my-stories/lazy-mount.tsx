@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 /**
  * Mounts its children only once the box is near the viewport, and keeps them
@@ -16,7 +16,14 @@ import { useEffect, useRef, useState } from "react";
  * The placeholder is the same fixed-size box the image fills, so nothing
  * shifts when it resolves. A collapsed <details> has no layout box, so rows
  * folded away never intersect and never mint. Without IntersectionObserver
- * (old browsers, jsdom) the children mount straight away.
+ * (old browsers, jsdom) the children mount right after hydration.
+ *
+ * The server always renders the placeholder: it has no IntersectionObserver
+ * either, so deciding with `typeof IntersectionObserver` during render made
+ * the server paint the children while a modern browser's first render
+ * painted the placeholder -- a hydration mismatch. useSyncExternalStore's
+ * server snapshot pins hydration to the placeholder, then re-renders with
+ * the browser's real answer.
  */
 export function LazyMount({
   children,
@@ -26,12 +33,18 @@ export function LazyMount({
   rootMargin?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [near, setNear] = useState(
-    () => typeof IntersectionObserver === "undefined",
+  const [near, setNear] = useState(false);
+  const noObserver = useSyncExternalStore(
+    subscribeToNothing,
+    lacksIntersectionObserver,
+    renderPlaceholderOnServer,
   );
+  const show = near || noObserver;
 
   useEffect(() => {
-    if (near) return;
+    // Hydration commits with the server snapshot first, so this effect can
+    // run once before the re-render that reports a missing observer.
+    if (show || lacksIntersectionObserver()) return;
     const node = ref.current;
     if (!node) return;
     const observer = new IntersectionObserver(
@@ -45,9 +58,9 @@ export function LazyMount({
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [near, rootMargin]);
+  }, [show, rootMargin]);
 
-  if (near) return <>{children}</>;
+  if (show) return <>{children}</>;
   return (
     <div
       ref={ref}
@@ -55,4 +68,18 @@ export function LazyMount({
       className="nf-skeleton h-full w-full rounded-none"
     />
   );
+}
+
+// Whether the browser has IntersectionObserver never changes, so there is
+// nothing to subscribe to.
+function subscribeToNothing() {
+  return () => {};
+}
+
+function lacksIntersectionObserver() {
+  return typeof IntersectionObserver === "undefined";
+}
+
+function renderPlaceholderOnServer() {
+  return false;
 }
