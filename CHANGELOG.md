@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.3.0](https://github.com/fr4d96/KakiNotes/compare/v4.2.6...v4.3.0) (2026-11-19)
+
+
+### Features
+
+* **stories:** related stories match by shared places and tags ([8e521f7](https://github.com/fr4d96/KakiNotes/commit/8e521f72a79e2169a093efca78a019faae2e8043))
+* **stories:** remove travel style ([80e6c21](https://github.com/fr4d96/KakiNotes/commit/80e6c215ba168d13e4aa6b50558d7f85349189f8))
+
+
+### Bug Fixes
+
+* **editor:** formatting toolbar stays on screen in long stories ([1831ebb](https://github.com/fr4d96/KakiNotes/commit/1831ebbc9e929492f7210874cfc616da863e187e))
+* **notifications:** bell no longer sticks on "Loading…" ([0449faf](https://github.com/fr4d96/KakiNotes/commit/0449faff1a7cc07b7eb7204706df29f349af0f76))
+* **uploads:** resume photo uploads after an iPhone screen lock ([7352e36](https://github.com/fr4d96/KakiNotes/commit/7352e361b86e3a22b014e491971f5f3aed3ab2d2))
+
 ## [4.2.6](https://github.com/fr4d96/KakiNotes/compare/v4.2.5...v4.2.6) (2026-11-19)
 
 
