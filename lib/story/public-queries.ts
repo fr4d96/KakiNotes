@@ -9,8 +9,7 @@ import type { CostBand } from "@/lib/validation/discovery";
 // rather than the session-bound lib/supabase/server.ts client: every RPC
 // this module calls is one of the handful actually granted to `anon`
 // (get_published_story, list_published_stories, get_published_story_media,
-// list_distinct_public_travel_styles, list_public_contributors,
-// get_public_contributor), so no session was ever needed to answer them --
+// list_public_contributors, get_public_contributor), so no session was ever needed to answer them --
 // and a function that reads no cookies is one unstable_cache() is allowed
 // to wrap.
 //
@@ -45,8 +44,8 @@ import type { CostBand } from "@/lib/validation/discovery";
 //   The two index pages, /stories and /contributors, are unchanged: they
 //   await searchParams, were never cacheable, and call the UNCACHED
 //   functions so a filter result is always fresh. Note the cost that leaves
-//   in place: /stories issues 5 round trips per visit (regions,
-//   destinations, tags, travel styles, stories) plus middleware's
+//   in place: /stories issues 4 round trips per visit (regions,
+//   destinations, tags, stories) plus middleware's
 //   get_published_story existence check, on every request.
 //
 // On-demand invalidation still works. unstable_cache() entries carry
@@ -85,7 +84,6 @@ export type PublishedStoriesFilter = {
   destinationId?: string;
   tagId?: string;
   tripYear?: number;
-  travelStyle?: string;
   contributorId?: string;
   costBand?: CostBand;
   hasReportedExpense?: boolean;
@@ -258,7 +256,6 @@ async function listPublishedStoriesRaw(filter: PublishedStoriesFilter = {}) {
     // rows) but nothing in the product filters by it any more.
     p_tag_id: filter.tagId,
     p_trip_year: filter.tripYear,
-    p_travel_style: filter.travelStyle,
     p_contributor_id: filter.contributorId,
     p_cost_band: filter.costBand,
     p_has_reported_expense: filter.hasReportedExpense,
@@ -292,16 +289,6 @@ export async function listContributorPublishedStories(
   filter: Omit<PublishedStoriesFilter, "contributorId"> = {},
 ) {
   return listPublishedStories({ ...filter, contributorId });
-}
-
-/** Travel-style filter options, drawn only from currently-public stories. */
-export async function listDistinctPublicTravelStyles() {
-  const supabase = createPublicClient();
-  const { data, error } = await supabase.rpc(
-    "list_distinct_public_travel_styles",
-  );
-  if (error) throw error;
-  return (data ?? []).map((row) => row.travel_style);
 }
 
 export type PublicContributorsFilter = {

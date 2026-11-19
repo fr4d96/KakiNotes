@@ -139,7 +139,6 @@ export type StoryPreview = {
   tripStartDate: string | null;
   tripEndDate: string | null;
   tripYear: number | null;
-  travelStyle: string | null;
   totalExpenseNzdCents: number | null;
   sourceKind: string;
   lifecycleStatus: string;
@@ -198,7 +197,6 @@ export async function getStoryPreview(
     tripStartDate: row.trip_start_date,
     tripEndDate: row.trip_end_date,
     tripYear: row.trip_year,
-    travelStyle: row.travel_style,
     totalExpenseNzdCents: row.total_expense_nzd_cents,
     sourceKind: row.source_kind,
     lifecycleStatus: row.lifecycle_status,

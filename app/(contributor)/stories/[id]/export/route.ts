@@ -21,7 +21,6 @@ import {
   canExportStory,
   contentDispositionAttachment,
   exportStatusLabel,
-  travelStyleLabel,
   tripLabel,
 } from "@/lib/story/story-export";
 import { logAppEvent } from "@/lib/log";
@@ -141,7 +140,6 @@ export async function GET(
       preview.tripEndDate,
       preview.tripYear,
     ),
-    travelStyleLabel: travelStyleLabel(preview.travelStyle),
     locations,
     tags: selections.tags.map((tag) => tag.name),
     expenses: selections.expenses.map((expense) => ({
@@ -156,7 +154,6 @@ export async function GET(
     labels: {
       personalExperienceBy: (name) => t("personalExperienceBy", { name }),
       trip: t("trip"),
-      travelStyle: t("travelStyle"),
       places: t("places"),
       tags: t("tags"),
       totalCost: t("totalCost"),

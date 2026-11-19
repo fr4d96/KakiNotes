@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { isKnownTravelStyle } from "@/lib/validation/story";
 import type { StorySearchFilters } from "@/lib/validation/discovery";
 import { costBands } from "@/lib/validation/discovery";
 import { FilterIcon, StorySearchIcon } from "@/components/icons";
@@ -64,14 +63,12 @@ export function FilterBar({
   regions,
   destinations,
   tags,
-  travelStyles,
   current,
   trailing,
 }: {
   regions: Option[];
   destinations: DestinationOption[];
   tags: Option[];
-  travelStyles: string[];
   current: StorySearchFilters;
   /**
    * Sits at the right end of the panel's button row (beside Filters on a
@@ -81,7 +78,6 @@ export function FilterBar({
   trailing?: React.ReactNode;
 }) {
   const t = useTranslations("stories.filters");
-  const tStyle = useTranslations("travelStyles");
   const [selectedRegion, setSelectedRegion] = useState(current.region ?? "");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const isPhone = useIsPhone();
@@ -169,22 +165,6 @@ export function FilterBar({
           placeholder={t("anyYear")}
           className="min-h-11 rounded-md border border-border-subtle bg-surface px-3 py-2"
         />
-      </label>
-
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium">{t("travelStyle")}</span>
-        <select
-          name="travelStyle"
-          defaultValue={current.travelStyle ?? ""}
-          className="min-h-11 rounded-md border border-border-subtle bg-surface px-3 py-2"
-        >
-          <option value="">{t("anyStyle")}</option>
-          {travelStyles.map((style) => (
-            <option key={style} value={style}>
-              {isKnownTravelStyle(style) ? tStyle(style) : style}
-            </option>
-          ))}
-        </select>
       </label>
 
       <label className="flex flex-col gap-1 text-sm">

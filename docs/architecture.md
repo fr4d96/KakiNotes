@@ -2191,7 +2191,10 @@ then `grant execute ... to anon, authenticated`):
 - `list_distinct_public_travel_styles()` — `travel_style` has no lookup table (free text), so
   filter options must come from what's actually in use among public stories, never a hardcoded list.
   Scans the same public+approved+consent-valid invariant `list_published_stories` checks; dedupes
-  case-insensitively/trimmed via `distinct on (lower(trim(...)))`.
+  case-insensitively/trimmed via `distinct on (lower(trim(...)))`. **Unused since 2026-11-19:**
+  travel style was removed from the product. The app no longer calls this function, sends
+  `p_travel_style`, or reads `story_revisions.travel_style`. The column, the parameters and this
+  function stay in the database until a separate, approved migration drops them.
 - `list_public_contributors(cursor, limit)` / `get_public_contributor(slug)` — the contributor
   directory/detail. Deliberately narrower than "`public_status = 'public'`" alone: requires a usable
   `public_slug`, excludes `attribution_type = 'anonymous'` (a contributor who chose to be anonymous
@@ -2245,8 +2248,8 @@ together and claimed `revalidate` had no practical effect on any of them):
   cursor respectively), which forces per-request dynamic rendering in the App Router independent of
   the Supabase client used. A `revalidate` export there is a **silent no-op**, so both have been
   removed and replaced with a comment saying why, to stop anyone re-adding them. These two pages are
-  always fresh, and they pay for it: `/stories` issues five Supabase round trips per visit (regions,
-  destinations, tags, travel styles, stories) plus middleware's `get_published_story` existence
+  always fresh, and they pay for it: `/stories` issues four Supabase round trips per visit (regions,
+  destinations, tags, stories) plus middleware's `get_published_story` existence
   check, on every single request. Making it genuinely cacheable would mean moving the filtering
   client-side — a separate, larger piece of work, not yet scheduled.
 

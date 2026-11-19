@@ -127,13 +127,6 @@ export function tripLabel(
   return null;
 }
 
-/** "midRange" -> "Mid range", matching the editor's own display helper. */
-export function travelStyleLabel(value: string | null): string | null {
-  if (!value) return null;
-  const spaced = value.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
-
 /**
  * `filename=` must stay ASCII for older clients, while `filename*` carries the
  * real, possibly non-ASCII name (RFC 5987). Both are emitted, ASCII first, so

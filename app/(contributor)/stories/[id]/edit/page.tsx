@@ -162,7 +162,6 @@ export default async function EditStoryPage({
       initialTripStartDate={draft.trip_start_date}
       initialTripEndDate={draft.trip_end_date}
       initialTripYear={draft.trip_year}
-      initialTravelStyle={draft.travel_style}
       initialTotalExpenseNzdCents={draft.total_expense_nzd_cents}
       initialContributorNote={draft.contributor_note ?? ""}
       initialLocations={selections.locations}

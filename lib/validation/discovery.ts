@@ -16,7 +16,6 @@ const fieldSchemas = {
   destination: z.uuid(),
   tag: z.uuid(),
   tripYear: z.coerce.number().int().min(2000).max(2100),
-  travelStyle: z.string().trim().min(1).max(100),
   costBand: z.enum(costBands),
   hasReportedExpense: z.enum(["true", "false"]).transform((v) => v === "true"),
   q: z.string().trim().min(1).max(200),
@@ -29,7 +28,6 @@ export type StorySearchFilters = {
   destination?: string;
   tag?: string;
   tripYear?: number;
-  travelStyle?: string;
   costBand?: CostBand;
   hasReportedExpense?: boolean;
   q?: string;
@@ -78,7 +76,6 @@ export const FILTER_PARAM_KEYS = [
   "destination",
   "tag",
   "tripYear",
-  "travelStyle",
   "costBand",
   "hasReportedExpense",
   "q",

@@ -87,7 +87,6 @@ export type ModeratorStoryDetail = {
   trip_start_date: string | null;
   trip_end_date: string | null;
   trip_year: number | null;
-  travel_style: string | null;
   total_expense_nzd_cents: number | null;
   contributor_display_name: string | null;
   contributor_public_slug: string | null;
@@ -215,7 +214,6 @@ export type PublishedRevisionSnapshot = {
   trip_start_date: string | null;
   trip_end_date: string | null;
   trip_year: number | null;
-  travel_style: string | null;
   total_expense_nzd_cents: number | null;
 };
 

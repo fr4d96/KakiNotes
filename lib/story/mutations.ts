@@ -27,7 +27,6 @@ function revisionArgs(input: RevisionInput) {
     p_trip_start_date: input.tripStartDate || undefined,
     p_trip_end_date: input.tripEndDate || undefined,
     p_trip_year: input.tripYear,
-    p_travel_style: input.travelStyle,
     p_total_expense_nzd_cents: input.totalExpenseNzdCents,
     p_contributor_note: input.contributorNote || undefined,
   };

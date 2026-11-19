@@ -3,7 +3,6 @@ import {
   canExportStory,
   contentDispositionAttachment,
   exportStatusLabel,
-  travelStyleLabel,
   tripLabel,
 } from "@/lib/story/story-export";
 
@@ -106,14 +105,6 @@ describe("tripLabel", () => {
     expect(tripLabel(null, null, 2025)).toBe("2025");
     expect(tripLabel("2025-03-01", null, null)).toBeNull();
     expect(tripLabel(null, null, null)).toBeNull();
-  });
-});
-
-describe("travelStyleLabel", () => {
-  it("humanises the stored camelCase value", () => {
-    expect(travelStyleLabel("midRange")).toBe("Mid range");
-    expect(travelStyleLabel("budget")).toBe("Budget");
-    expect(travelStyleLabel(null)).toBeNull();
   });
 });
 

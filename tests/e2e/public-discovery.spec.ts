@@ -109,7 +109,6 @@ test.beforeAll(async () => {
         },
       ],
       p_total_expense_nzd_cents: 750000,
-      p_travel_style: "e2e-discovery-style",
     },
   );
   if (createError || !created) {

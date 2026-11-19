@@ -29,7 +29,6 @@ const card: StoryCardData = {
   excerpt: "Worth the queue",
   published_at: "2026-09-01T00:00:00Z",
   trip_year: 2026,
-  travel_style: null,
   total_expense_nzd_cents: null,
   attribution_value: "Kai",
   contributor_slug: "kai",

@@ -15,7 +15,6 @@ const tags = [
   { id: "t1", name: "Fruit picking" },
   { id: "t2", name: "Rural" },
 ];
-const travelStyles = ["budget", "comfort"];
 
 describe("FilterBar", () => {
   it("renders every filter field with its options", () => {
@@ -24,7 +23,6 @@ describe("FilterBar", () => {
         regions={regions}
         destinations={destinations}
         tags={tags}
-        travelStyles={travelStyles}
         current={{}}
       />,
     );
@@ -34,7 +32,7 @@ describe("FilterBar", () => {
     expect(screen.getByLabelText(/destination/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^tag$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/trip year/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/travel style/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/travel style/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/reported cost/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/cost availability/i)).toBeInTheDocument();
     expect(
@@ -51,7 +49,6 @@ describe("FilterBar", () => {
         regions={regions}
         destinations={destinations}
         tags={tags}
-        travelStyles={travelStyles}
         current={{}}
       />,
     );
@@ -69,7 +66,6 @@ describe("FilterBar", () => {
         regions={regions}
         destinations={destinations}
         tags={tags}
-        travelStyles={travelStyles}
         current={{ region: "r1", q: "apples" }}
       />,
     );
@@ -104,7 +100,6 @@ describe("FilterBar", () => {
           regions={regions}
           destinations={destinations}
           tags={tags}
-          travelStyles={travelStyles}
           current={{ region: "r1", q: "apples" }}
         />,
       );
@@ -179,7 +174,6 @@ describe("FilterBar", () => {
           regions={regions}
           destinations={destinations}
           tags={tags}
-          travelStyles={travelStyles}
           current={current}
         />,
       );
@@ -233,28 +227,5 @@ describe("FilterBar", () => {
       act(() => vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS));
       expect(replace).toHaveBeenCalledWith("/stories", { scroll: false });
     });
-  });
-
-  it("labels known travel styles, old and new, and shows custom ones as typed", () => {
-    render(
-      <FilterBar
-        regions={regions}
-        destinations={destinations}
-        tags={tags}
-        travelStyles={["roadTrip", "midRange", "Van life"]}
-        current={{}}
-      />,
-    );
-    const select = screen.getByLabelText(/travel style/i);
-    const labels = within(select)
-      .getAllByRole("option")
-      .map((option) => option.textContent);
-    expect(labels).toEqual(
-      expect.arrayContaining([
-        "Road trip (campervan or car)",
-        "Mid-range",
-        "Van life",
-      ]),
-    );
   });
 });

@@ -11,7 +11,7 @@ web
 - **Readers (public, no account required):** people researching a Working Holiday Visa (WHV) to
   New Zealand — initially concentrated among Malaysian travellers, but the product must not assume
   a single nationality. They want to filter and browse stories by things that map to their own
-  plans: region/destination, work type, trip year, travel style, reported cost.
+  plans: region/destination, work type, trip year, reported cost.
 - **Contributors (registered):** people who have completed or are undertaking a WHV and are willing
   to write and publish their story under their own attribution (full name, first name + initial, or
   a pseudonym — their choice, recorded explicitly). They draft, preview privately, and submit for
@@ -55,7 +55,7 @@ also claim to be a booking site, social network, or advice platform.
 ## Capabilities and Constraints
 
 - Public browsing of approved stories, filterable by region, destination, work type, trip year,
-  travel style, and reported cost band; search.
+  and reported cost band; search.
 - Structured written stories (defined content blocks — paragraph, heading, quote, list; never
   free-form HTML) with a separate, ordered image gallery (images are not inline with text).
 - Image upload with automatic metadata stripping (EXIF/GPS, etc.) before publication; only

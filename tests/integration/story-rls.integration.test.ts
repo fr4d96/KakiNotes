@@ -1586,6 +1586,10 @@ describe("Prompt 5: list_published_stories never duplicates a story row across m
   }, 30000);
 });
 
+// Travel style was removed from the app on 2026-11-19, but the column and
+// this anon-granted function stay in the database until an approved
+// migration drops them. While anon can still call it, this keeps proving it
+// never leaks a draft's value (Rules 10-12). Delete it with that migration.
 describe("Prompt 5: list_distinct_public_travel_styles", () => {
   it("dedupes case-insensitively/whitespace and only reflects public stories", async () => {
     const styleWord = slug("Backpacker-Style");

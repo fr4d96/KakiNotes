@@ -234,7 +234,6 @@ const fakeSupabase = {
               trip_start_date: null,
               trip_end_date: null,
               trip_year: null,
-              travel_style: null,
               total_expense_nzd_cents: null,
               source_kind: "editorial_import",
               lifecycle_status: "draft",

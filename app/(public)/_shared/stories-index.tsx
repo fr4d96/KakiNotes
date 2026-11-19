@@ -9,7 +9,6 @@ import { getLocale, getTranslations } from "next-intl/server";
 import {
   listCardPhotoUrlsCached,
   listPublishedStories,
-  listDistinctPublicTravelStyles,
   listPublicRegions,
   listPublicDestinations,
   listPublicTags,
@@ -57,11 +56,10 @@ export async function StoriesIndex({
   const segment = countryMessageSegment(country);
   const basePath = `${countryUrlPrefix(country)}/stories`;
 
-  const [regions, destinations, tags, travelStyles] = await Promise.all([
+  const [regions, destinations, tags] = await Promise.all([
     listPublicRegions(country),
     listPublicDestinations(),
     listPublicTags(),
-    listDistinctPublicTravelStyles(),
   ]);
   // Destinations scoped to the regions this country actually has, the same
   // "no direct country_id, inherit through region_id" shape as
@@ -80,7 +78,6 @@ export async function StoriesIndex({
       destinationId: filters.destination,
       tagId: filters.tag,
       tripYear: filters.tripYear,
-      travelStyle: filters.travelStyle,
       costBand: filters.costBand,
       hasReportedExpense: filters.hasReportedExpense,
       search: filters.q,
@@ -143,7 +140,6 @@ export async function StoriesIndex({
             regionId: d.regionId,
           }))}
           tags={tags}
-          travelStyles={travelStyles}
           current={filters}
           trailing={
             stories.length > 0 ? <CardSizeSwitch size={cardSize} /> : null

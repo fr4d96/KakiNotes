@@ -16,7 +16,6 @@ const baseStory: StoryCardData = {
   excerpt: "Six weeks on an orchard, from dawn shifts to weekend hikes.",
   published_at: "2024-03-01T00:00:00.000Z",
   trip_year: 2023,
-  travel_style: "budget",
   total_expense_nzd_cents: 850000,
   attribution_value: "Mei L.",
   contributor_slug: "mei-l",

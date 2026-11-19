@@ -91,7 +91,6 @@ const fixtureStory = {
   excerpt: "I landed in Queenstown with no plan.",
   published_at: "2025-01-01T00:00:00.000Z",
   trip_year: 2024,
-  travel_style: "backpacker",
   total_expense_nzd_cents: null,
   attribution_type: "display_name",
   attribution_value: "Aiman R.",

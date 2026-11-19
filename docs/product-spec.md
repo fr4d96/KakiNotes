@@ -17,7 +17,7 @@ trustworthy publication of written stories.
 
 People researching a WHV to New Zealand — initially concentrated among Malaysian travellers, but the
 product must not assume a single nationality. Readers want to filter and browse stories by things that
-map to their own plans: region/destination, work type, trip year, travel style, reported cost.
+map to their own plans: region/destination, work type, trip year, reported cost.
 
 ### Contributors (registered)
 
@@ -64,7 +64,7 @@ Moderators are not the same role as editors, even though one person may hold bot
 ## MVP scope
 
 - Public browsing of approved stories, filterable by region, destination, work type, trip year,
-  travel style, and reported cost band.
+  and reported cost band. (Travel style was removed on 2026-11-19 as not useful.)
 - Structured written stories (defined content blocks, not free HTML) with inline images.
 - Image upload with automatic metadata stripping before publication.
 - Contributor attribution (contributor-chosen display name) and optional public contributor profile

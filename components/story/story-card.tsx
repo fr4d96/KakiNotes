@@ -22,7 +22,6 @@ export type StoryCardData = {
   excerpt: string | null;
   published_at: string;
   trip_year: number | null;
-  travel_style: string | null;
   total_expense_nzd_cents: number | null;
   attribution_value: string | null;
   contributor_slug: string | null;

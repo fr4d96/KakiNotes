@@ -244,7 +244,7 @@ describe("revisionInputSchema", () => {
 
   // DELIBERATELY REVERSED. This used to assert that empty content was
   // rejected, which is what stopped every OTHER field on the same payload
-  // (sub-title, travel style, total expenses, contributor note) from saving
+  // (sub-title, total expenses, contributor note) from saving
   // on a story whose body had not been written yet -- and step 1 of the
   // timeline is Title, step 2 is Your story, so walking the steps in order
   // was the path straight into it. Content is a SUBMIT-time requirement,

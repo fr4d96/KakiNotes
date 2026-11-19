@@ -577,10 +577,6 @@ export default async function ModerationReviewPage({
                     : (detail.trip_year?.toString() ?? "Not given")
                 }
               />
-              <Check
-                label="Travel style"
-                value={detail.travel_style ?? "Not given"}
-              />
             </dl>
           </section>
 

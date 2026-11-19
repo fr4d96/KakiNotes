@@ -16,7 +16,6 @@ function storyRow(id: string, slug: string, title: string) {
     trip_year: 2025,
     trip_start_date: null,
     trip_end_date: null,
-    travel_style: null,
     total_expense_nzd_cents: null,
     expenses: [],
     attribution_value: "Mun",

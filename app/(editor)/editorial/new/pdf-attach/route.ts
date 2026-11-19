@@ -369,7 +369,6 @@ export async function POST(request: NextRequest) {
       contentJson,
       tripStartDate: "",
       tripEndDate: "",
-      travelStyle: "",
       contributorNote: "",
     });
   } catch (error) {

@@ -5,8 +5,6 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import {
   revisionInputSchema,
-  travelStyles,
-  legacyTravelStyles,
   imageBlockMediaIds,
   markdownToStoryContent,
   storyContentText,
@@ -84,7 +82,6 @@ export type StoryEditFormProps = {
   initialTripStartDate: string | null;
   initialTripEndDate: string | null;
   initialTripYear: number | null;
-  initialTravelStyle: string | null;
   initialTotalExpenseNzdCents: number | null;
   initialContributorNote: string;
   initialLocations: Array<{
@@ -326,7 +323,6 @@ export function StoryEditForm({
   initialTripStartDate,
   initialTripEndDate,
   initialTripYear,
-  initialTravelStyle,
   initialTotalExpenseNzdCents,
   initialContributorNote,
   initialLocations,
@@ -348,7 +344,6 @@ export function StoryEditForm({
   const tCountry = useTranslations("countryContent");
   const locale = useLocale() as Locale;
   const tValidation = useTranslations("validation");
-  const tStyle = useTranslations("travelStyles");
   const versionRef = useRef(initialVersion);
   const [conflict, setConflict] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -411,29 +406,6 @@ export function StoryEditForm({
   const [tripEndDate, setTripEndDate] = useState(initialTripEndDate ?? "");
   const [tripYear, setTripYear] = useState(
     initialTripYear ? String(initialTripYear) : "",
-  );
-  const [travelStyle, setTravelStyle] = useState(initialTravelStyle ?? "");
-  // travel_style is a loosely-typed `text` column (no DB enum/CHECK --
-  // confirmed by reading supabase/migrations/20260803090200_story_revisions.sql
-  // before relying on it), so a contributor's own wording is just as valid
-  // a value as the curated presets -- "other" here is a UI-only mode,
-  // never itself a stored value. Detects an existing custom value on load
-  // (e.g. from an earlier session) so re-opening the form doesn't silently
-  // drop it into "Not specified".
-  // A story saved with one of the retired spend presets ("budget", ...)
-  // keeps it as a selectable option, labelled, instead of reopening as
-  // "Other" with the raw key in the text box. Once changed, it is gone.
-  const legacyStyle =
-    initialTravelStyle &&
-    (legacyTravelStyles as readonly string[]).includes(initialTravelStyle)
-      ? (initialTravelStyle as (typeof legacyTravelStyles)[number])
-      : null;
-  const [travelStyleMode, setTravelStyleMode] = useState<"preset" | "other">(
-    initialTravelStyle &&
-      !legacyStyle &&
-      !(travelStyles as readonly string[]).includes(initialTravelStyle)
-      ? "other"
-      : "preset",
   );
   /** The story's stored total, "" when it has none. */
   const storedTotalDollars =
@@ -615,7 +587,6 @@ export function StoryEditForm({
       tripStartDate: string;
       tripEndDate: string;
       tripYear: string;
-      travelStyle: string;
       expenseDollars: string;
       contributorNote: string;
     }) => {
@@ -640,7 +611,6 @@ export function StoryEditForm({
             next.dateMode === "year" && next.tripYear
               ? Number(next.tripYear)
               : undefined,
-          travelStyle: next.travelStyle || undefined,
           totalExpenseNzdCents: next.expenseDollars
             ? Math.round(Number(next.expenseDollars) * 100)
             : undefined,
@@ -709,7 +679,6 @@ export function StoryEditForm({
     tripStartDate: string;
     tripEndDate: string;
     tripYear: string;
-    travelStyle: string;
     expenseDollars: string;
     contributorNote: string;
   };
@@ -723,7 +692,6 @@ export function StoryEditForm({
       tripStartDate,
       tripEndDate,
       tripYear,
-      travelStyle,
       expenseDollars,
       contributorNote,
       ...overrides,
@@ -758,7 +726,6 @@ export function StoryEditForm({
         tripEndDate: dateMode === "range" ? tripEndDate : "",
         tripYear:
           dateMode === "year" && tripYear ? Number(tripYear) : undefined,
-        travelStyle: travelStyle || undefined,
         totalExpenseNzdCents: expenseDollars
           ? Math.round(Number(expenseDollars) * 100)
           : undefined,
@@ -1477,59 +1444,6 @@ export function StoryEditForm({
                 scheduleSave({ tripYear: value });
               }}
             />
-
-            <div>
-              <label
-                htmlFor="edit-travel-style"
-                className="block text-sm font-medium"
-              >
-                {t("fields.travelStyle")}
-              </label>
-              <select
-                id="edit-travel-style"
-                value={travelStyleMode === "other" ? "other" : travelStyle}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === "other") {
-                    // Switching mode alone doesn't save -- nothing changes on
-                    // the server until real text is typed below, so toggling
-                    // to "Other" and back to a preset without typing anything
-                    // is a no-op, not a save of an empty string.
-                    setTravelStyleMode("other");
-                    return;
-                  }
-                  setTravelStyleMode("preset");
-                  setTravelStyle(value);
-                  scheduleSave({ travelStyle: value });
-                }}
-                className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2 dark:bg-transparent"
-              >
-                <option value="">{t("fields.travelStyleUnset")}</option>
-                {travelStyles.map((style) => (
-                  <option key={style} value={style}>
-                    {tStyle(style)}
-                  </option>
-                ))}
-                {legacyStyle && (
-                  <option value={legacyStyle}>{tStyle(legacyStyle)}</option>
-                )}
-                <option value="other">{t("fields.travelStyleOther")}</option>
-              </select>
-              {travelStyleMode === "other" && (
-                <input
-                  type="text"
-                  value={travelStyle}
-                  maxLength={50}
-                  placeholder={t("fields.travelStylePlaceholder")}
-                  onChange={(e) => {
-                    setTravelStyle(e.target.value);
-                    scheduleSave({ travelStyle: e.target.value });
-                  }}
-                  className="mt-2 w-full rounded-md border border-border-subtle px-3 py-2 dark:bg-transparent"
-                  aria-label={t("fields.travelStyleOwnLabel")}
-                />
-              )}
-            </div>
           </StepSection>
 
           {/* Expenses is its own step, not a panel inside Trip. It carries two

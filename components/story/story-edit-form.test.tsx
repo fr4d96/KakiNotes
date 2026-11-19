@@ -107,7 +107,6 @@ function baseProps() {
     initialTripStartDate: null,
     initialTripEndDate: null,
     initialTripYear: null,
-    initialTravelStyle: null,
     initialTotalExpenseNzdCents: null,
     initialContributorNote: "",
     initialLocations: [],

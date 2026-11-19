@@ -52,7 +52,6 @@ function input(overrides: Partial<StoryPdfInput> = {}): StoryPdfInput {
     markdown: "It rained for a week.",
     images: [],
     tripLabel: "2025-03-01 – 2026-02-28",
-    travelStyleLabel: "Budget",
     locations: ["Manawatū", "Whakatāne"],
     tags: ["kiwifruit", "first job"],
     expenses: [],

@@ -403,7 +403,6 @@ export type StoryPdfInput = {
   markdown: string;
   images: StoryPdfImage[];
   tripLabel: string | null;
-  travelStyleLabel: string | null;
   locations: string[];
   tags: string[];
   expenses: StoryPdfExpense[];
@@ -427,7 +426,6 @@ export type StoryPdfInput = {
 export type StoryPdfLabels = {
   personalExperienceBy: (name: string) => string;
   trip: string;
-  travelStyle: string;
   places: string;
   tags: string;
   totalCost: string;
@@ -447,7 +445,6 @@ const DEFAULT_PDF_LABELS: StoryPdfLabels = {
   personalExperienceBy: (name) =>
     `Personal experience, not advice — shared by ${endWithStop(name)}`,
   trip: "Trip",
-  travelStyle: "Travel style",
   places: "Places",
   tags: "Tags",
   totalCost: "Total cost",
@@ -1401,8 +1398,6 @@ class StoryPdfRenderer {
     const rows: [string, string][] = [];
     if (this.input.tripLabel)
       rows.push([this.labels.trip, this.input.tripLabel]);
-    if (this.input.travelStyleLabel)
-      rows.push([this.labels.travelStyle, this.input.travelStyleLabel]);
     if (this.input.locations.length)
       rows.push([this.labels.places, this.input.locations.join(", ")]);
     if (this.input.tags.length)

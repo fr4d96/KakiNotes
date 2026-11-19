@@ -8,7 +8,6 @@ describe("parseStorySearchParams", () => {
       destination: "22222222-2222-4222-8222-222222222222",
       tag: "44444444-4444-4444-8444-444444444444",
       tripYear: "2024",
-      travelStyle: "budget",
       costBand: "5k_15k",
       hasReportedExpense: "true",
       q: "hawke's bay",
@@ -20,7 +19,6 @@ describe("parseStorySearchParams", () => {
       destination: "22222222-2222-4222-8222-222222222222",
       tag: "44444444-4444-4444-8444-444444444444",
       tripYear: 2024,
-      travelStyle: "budget",
       costBand: "5k_15k",
       hasReportedExpense: true,
       q: "hawke's bay",
@@ -36,9 +34,9 @@ describe("parseStorySearchParams", () => {
   it("drops an invalid uuid field but keeps other valid fields", () => {
     const result = parseStorySearchParams({
       region: "not-a-uuid",
-      travelStyle: "budget",
+      q: "apples",
     });
-    expect(result).toEqual({ travelStyle: "budget" });
+    expect(result).toEqual({ q: "apples" });
   });
 
   it("drops an invalid cost band", () => {
@@ -61,9 +59,17 @@ describe("parseStorySearchParams", () => {
 
   it("takes the first value when a param is duplicated", () => {
     const result = parseStorySearchParams({
-      travelStyle: ["budget", "comfort"],
+      q: ["apples", "pears"],
     });
-    expect(result).toEqual({ travelStyle: "budget" });
+    expect(result).toEqual({ q: "apples" });
+  });
+
+  // Travel style was removed on 2026-11-19. An old bookmarked or shared
+  // /stories?travelStyle=... link must still load, just unfiltered by it.
+  it("ignores the retired travelStyle param", () => {
+    expect(
+      parseStorySearchParams({ travelStyle: "budget", tripYear: "2024" }),
+    ).toEqual({ tripYear: 2024 });
   });
 
   it("coerces hasReportedExpense=false correctly (not just truthy string)", () => {

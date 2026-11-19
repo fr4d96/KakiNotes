@@ -160,7 +160,7 @@ export const storyContentSchema = z
  * draft, as opposed to importing one or submitting it.
  *
  * WHY THIS EXISTS. Every field on the editor's debounced "fields" save
- * (title, sub-title, travel style, total expenses, contributor note) goes
+ * (title, sub-title, total expenses, contributor note) goes
  * through revisionInputSchema in ONE parse, so `contentJson` failing took
  * the whole payload down with it. On a story with no body text yet -- which
  * is every story for as long as it takes to get from step 1 to step 2 --
@@ -211,45 +211,6 @@ export const draftContentSchema = z.preprocess(
 // constraints — duplicated deliberately for fast/friendly form errors; the
 // DB constraints (and the immutability trigger) are the non-bypassable
 // source of truth per Engineering Rule 3.
-// How the contributor got around and lived, not how much they spent: since
-// 2026-11-18 spend is the Expenses step's job (a total and a per-month
-// figure), so the old spend scale here ("free", "budget", "midRange",
-// "comfort") only repeated it. "workForStay" keeps what "free" was added for
-// -- WWOOF/HelpX, house-sitting -- as the way of travelling it really is.
-export const travelStyles = [
-  "roadTrip",
-  "backpacking",
-  "settledInOneTown",
-  "workForStay",
-  "mixed",
-] as const;
-
-// The previous presets. No longer offered, but stories saved with them keep
-// them (the column is free text), so they still get a proper label.
-export const legacyTravelStyles = [
-  "free",
-  "budget",
-  "midRange",
-  "comfort",
-] as const;
-
-/** Values that have a translated label under `travelStyles.<value>`. */
-export type TravelStyleKey =
-  (typeof travelStyles)[number] | (typeof legacyTravelStyles)[number];
-export function isKnownTravelStyle(value: string): value is TravelStyleKey {
-  return (
-    (travelStyles as readonly string[]).includes(value) ||
-    (legacyTravelStyles as readonly string[]).includes(value)
-  );
-}
-
-// travel_style is a loosely-typed `text` column with no DB enum/CHECK
-// (confirmed by reading supabase/migrations/20260803090200_story_revisions.sql
-// before writing this) -- travelStyles above are curated presets offered in
-// the UI, not an exhaustive allowlist. A contributor's own wording (the
-// edit form's "Other" option) is just as valid a stored value, bounded to
-// the same length as other short free-text fields on this form.
-const TRAVEL_STYLE_MAX_LENGTH = 50;
 
 /**
  * The one wording for "your end date is before your start date" now lives in
@@ -273,12 +234,6 @@ export const revisionInputSchema = z
     tripStartDate: z.iso.date().optional().or(z.literal("")),
     tripEndDate: z.iso.date().optional().or(z.literal("")),
     tripYear: z.number().int().min(2000).max(2100).optional(),
-    travelStyle: z
-      .string()
-      .trim()
-      .max(TRAVEL_STYLE_MAX_LENGTH)
-      .optional()
-      .or(z.literal("")),
     totalExpenseNzdCents: z.number().int().min(0).optional(),
     contributorNote: z.string().trim().max(2000).optional().or(z.literal("")),
   })

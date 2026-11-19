@@ -11836,3 +11836,17 @@ screen lock) or that threw left it there forever — reported as "empty inbox ke
 empty state itself was fine. `loadList()` now races the RPC against `LIST_TIMEOUT_MS` (10s),
 treats a throw as a failed load, and only the latest request may write state. Both cases end on
 "Couldn't load notifications. Try again". Two new tests fail on the old code.
+
+## 2026-11-19 — Travel style removed
+
+Fred found travel style wasn't useful, so it's gone from the app: the editor's Trip-step dropdown
+and its "Other" text box, the /stories filter, the moderation detail row, the PDF export row, the
+`travelStyles` presets and labels, and the i18n strings (including the copy that listed it as a
+filter). Old `?travelStyle=` links are ignored rather than erroring. **The database is
+unchanged on purpose:** `story_revisions.travel_style`, the `p_travel_style` parameters and
+`list_distinct_public_travel_styles()` stay in place, unused, until Fred approves a migration that
+drops them (the dev project is also production). Until then, saving a draft no longer sends
+`p_travel_style`, so `save_revision_draft()` writes NULL there. A story's old value survives only
+on revisions saved before this change. The integration test for that function stays, because
+anon can still call it. Next: if Fred agrees, one migration to drop the column, parameters and
+function, then regenerate `types/database.ts` and remove that test.
