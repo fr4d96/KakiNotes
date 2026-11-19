@@ -61,9 +61,12 @@ function fetchPreviewUrl(mediaId: string): Promise<string | null> {
 export function StoryCoverThumbnail({
   mediaId,
   altText,
+  fallbackSizes = "(min-width: 640px) 33vw, 50vw",
 }: {
   mediaId: string | null;
   altText: string | null;
+  /** `sizes` for the no-cover illustration; small tiles pass their own. */
+  fallbackSizes?: string;
 }) {
   const t = useTranslations("editor.images");
   const [url, setUrl] = useState<string | null>(() =>
@@ -94,7 +97,7 @@ export function StoryCoverThumbnail({
   if (!mediaId) {
     return (
       <div className="relative h-full w-full bg-surface-muted">
-        <StoryCoverFallback sizes="(min-width: 640px) 33vw, 50vw" />
+        <StoryCoverFallback sizes={fallbackSizes} />
       </div>
     );
   }

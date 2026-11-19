@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { BackLink } from "@/components/back-link";
 import { setStoryParentAction } from "./actions";
 import { useToast } from "@/components/ui/toast";
@@ -11,14 +11,15 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { useIsPhone } from "@/components/ui/use-is-phone";
 import { StatusBadge } from "../status-badge";
+import { StoryCoverThumbnail } from "../story-cover-thumbnail";
 import {
   ChevronIcon,
-  FolderIcon,
   PlusIcon,
   RouteIcon,
   StorySearchIcon,
 } from "@/components/icons";
 import type { StoryFolderEntry } from "@/lib/story/story-folders";
+import { sortByLastUpdated } from "@/lib/story/folder-sort";
 
 /** Past this many candidates the picker grows a search box. */
 const SEARCH_THRESHOLD = 6;
@@ -332,6 +333,7 @@ function FolderPicker({
   inSheet: boolean;
 }) {
   const t = useTranslations("storyFolders");
+  const locale = useLocale();
   const [query, setQuery] = useState("");
   const main = mainId ? byId.get(mainId) : undefined;
   // The folder's sub stories as they are now -- the starting ticks, and
@@ -349,14 +351,21 @@ function FolderPicker({
 
   const candidates = main
     ? [
-        // Its own sub stories first, ticked.
-        ...stories.filter((s) => current.has(s.id)),
-        ...stories.filter(
-          (s) =>
-            s.linkable &&
-            s.id !== main.id &&
-            !current.has(s.id) &&
-            subCount(s.id) === 0,
+        // Its own sub stories first, ticked; each group last updated
+        // first, ties by title (the RPC returns them A-Z).
+        ...sortByLastUpdated(
+          stories.filter((s) => current.has(s.id)),
+          locale,
+        ),
+        ...sortByLastUpdated(
+          stories.filter(
+            (s) =>
+              s.linkable &&
+              s.id !== main.id &&
+              !current.has(s.id) &&
+              subCount(s.id) === 0,
+          ),
+          locale,
         ),
       ]
     : stories.filter((s) => s.linkable && !s.parentStoryId);
@@ -430,6 +439,7 @@ function FolderPicker({
                     onChange={() => toggle(story.id)}
                     className="h-5 w-5 shrink-0 accent-[var(--accent)]"
                   />
+                  <MiniThumb story={story} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">
                       {story.title}
@@ -456,7 +466,7 @@ function FolderPicker({
                 onClick={() => onPickMain(story.id)}
                 className="flex min-h-12 w-full items-center gap-3 py-2 text-left"
               >
-                <FolderIcon className="h-5 w-5 shrink-0 text-accent" />
+                <MiniThumb story={story} />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">
                   {story.title}
                 </span>
@@ -534,7 +544,7 @@ function FolderRow({
           onClick={onToggle}
           className="flex min-h-14 min-w-0 flex-1 items-center gap-3 pl-3 text-left"
         >
-          <FolderIcon className="h-5 w-5 shrink-0 text-accent" />
+          <MiniThumb story={folder} />
           <span className="min-w-0 flex-1 truncate font-medium">
             {folder.title}
           </span>
@@ -569,9 +579,12 @@ function FolderRow({
             <span className="text-[0.7rem] font-semibold tracking-wide text-muted-foreground uppercase">
               {t("folders.mainStory")}
             </span>
-            <span className="line-clamp-2 text-sm font-medium">
-              {folder.title}
-            </span>
+            <div className="mt-1 flex items-center gap-3">
+              <MiniThumb story={folder} />
+              <span className="line-clamp-2 min-w-0 flex-1 text-sm font-medium">
+                {folder.title}
+              </span>
+            </div>
             <Link
               href={`/stories/${folder.slug}`}
               className="inline-flex min-h-11 items-center text-xs font-medium text-accent underline underline-offset-2"
@@ -587,7 +600,8 @@ function FolderRow({
               // Title on its own line, actions under it: side by side, a
               // phone left the title three characters wide.
               <li key={child.id} className="rounded-md px-2 pt-2">
-                <div className="flex items-start gap-2">
+                <div className="flex items-center gap-3">
+                  <MiniThumb story={child} />
                   <span className="line-clamp-2 min-w-0 flex-1 text-sm font-medium">
                     {child.title}
                   </span>
@@ -630,5 +644,27 @@ function FolderRow({
         </div>
       ) : null}
     </li>
+  );
+}
+
+/**
+ * A story's cover as a small square, in place of the old folder icon: the
+ * same owner-checked, signed-URL thumbnail My Stories uses (cover photo, or
+ * the shared illustrated fallback when a story has none). Decorative -- the
+ * title always sits beside it -- so it is hidden from screen readers and
+ * keeps button names to the title alone.
+ */
+function MiniThumb({ story }: { story: StoryFolderEntry }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-md bg-surface-muted"
+    >
+      <StoryCoverThumbnail
+        mediaId={story.coverMediaId ?? null}
+        altText={null}
+        fallbackSizes="40px"
+      />
+    </span>
   );
 }

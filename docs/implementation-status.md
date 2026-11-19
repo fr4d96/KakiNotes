@@ -11897,6 +11897,28 @@ accepted an empty list and `submit_revision_with_consent()` never checked it, so
 submit RPC are unchanged. Stories without a location simply don't appear under any place in
 browse; tags and keyword search still find them.
 
+## 2026-11-19 — Story folders: sub story picker lists last updated first
+
+The "Add sub stories" picker on Story folders (`/my-stories/map`) listed candidates A-Z, because
+that is the order `get_my_story_folders()` returns. It now lists them last updated first, ties
+broken by title (untitled last), via `sortByLastUpdated()` (`lib/story/folder-sort.ts`,
+unit-tested). The folder's current sub stories still come first (ticked), each group sorted the
+same way. No migration: the folders page already reads `list_my_stories()` for the country filter,
+so it now also passes each story's `updated_at` to the view as `StoryFolderEntry.updatedAt`. The
+folder list itself, the sub stories shown inside an open folder and the "New folder" main-story
+picker keep the RPC's A-Z order. Checked in `/dev/iphone-17` and on desktop; the signed-in account
+had only two candidates per folder, so the reorder itself is proven by the tests, not on screen.
+
+Same day, same page: the folder icons are gone. Every main story (folder rows and the "New folder"
+picker) and every sub story (inside an open folder and in the "Add sub stories" picker) shows a
+40px cover thumbnail instead — the same `StoryCoverThumbnail` My Stories uses, so the photo URL is
+minted per story after the owner check in `mintPreviewUrlAction()` (no storage path reaches the
+browser) and a story with no cover gets the shared illustrated fallback. Cover ids come from the
+same `list_my_stories()` row (`StoryFolderEntry.coverMediaId`/`coverAltText`); still no
+migration. The thumbnails are decorative (`aria-hidden`, empty alt) since the title always sits
+beside them. `StoryCoverThumbnail` gained an optional `fallbackSizes` so a 40px tile doesn't fetch
+a 33vw illustration; My Stories keeps its old default.
+
 ## 2026-11-19 — Phone header: country flag instead of the + button
 
 Signed in on a phone, the top-right of the header showed the bell and a + that opened a new story.

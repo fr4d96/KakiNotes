@@ -11,6 +11,15 @@ vi.mock("./actions", () => ({
     mockSetStoryParentAction(...args),
 }));
 
+// Each story shows its cover as a mini thumbnail, which mints a signed URL
+// through a Server Action; there is no server in jsdom, so it is stubbed.
+const mockMintPreviewUrl = vi.fn(async (mediaId: string) => ({
+  url: `https://example.test/${mediaId}.jpg`,
+}));
+vi.mock("@/app/(contributor)/stories/[id]/media-actions", () => ({
+  mintPreviewUrlAction: (mediaId: string) => mockMintPreviewUrl(mediaId),
+}));
+
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh, push: vi.fn() }),
@@ -63,6 +72,7 @@ const draftStory: StoryFolderEntry = {
 
 beforeEach(() => {
   mockSetStoryParentAction.mockReset();
+  mockMintPreviewUrl.mockClear();
   refresh.mockReset();
 });
 
@@ -202,6 +212,55 @@ describe("StoryFoldersView", () => {
       ),
     );
     expect(mockSetStoryParentAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows each folder's cover as a mini thumbnail, and its sub stories' when opened", async () => {
+    const user = userEvent.setup();
+    const { container } = renderView([
+      { ...kakiman, coverMediaId: "cover-kakiman" },
+      { ...opotiki, coverMediaId: "cover-opotiki" },
+    ]);
+    await waitFor(() =>
+      expect(mockMintPreviewUrl).toHaveBeenCalledWith("cover-kakiman"),
+    );
+    expect(mockMintPreviewUrl).not.toHaveBeenCalledWith("cover-opotiki");
+
+    await user.click(screen.getByRole("button", { name: /kakiman/i }));
+    await waitFor(() =>
+      expect(mockMintPreviewUrl).toHaveBeenCalledWith("cover-opotiki"),
+    );
+    // Decorative: the folder button is named by its title, not the photo.
+    expect(
+      container.querySelector('img[src$="cover-kakiman.jpg"]'),
+    ).toHaveAttribute("alt", "");
+  });
+
+  it("lists sub story candidates last updated first, not A-Z", async () => {
+    const user = userEvent.setup();
+    const stamp = (s: StoryFolderEntry, updatedAt: string) => ({
+      ...s,
+      updatedAt,
+    });
+    const hamilton = published(
+      "66666666-6666-4666-8666-666666666666",
+      "Hamilton",
+    );
+    renderView([
+      kakiman,
+      opotiki,
+      stamp(napier, "2026-11-01T00:00:00Z"),
+      stamp(tauranga, "2026-11-18T00:00:00Z"),
+      stamp(hamilton, "2026-11-10T00:00:00Z"),
+    ]);
+    await user.click(screen.getByRole("button", { name: /kakiman/i }));
+    await user.click(screen.getByRole("button", { name: /add sub stories/i }));
+
+    // Its current sub story stays first (ticked), then newest-updated.
+    expect(
+      screen
+        .getAllByRole("checkbox")
+        .map((box) => box.closest("label")!.textContent),
+    ).toEqual(["Opotiki Trip", "Tauranga Week", "Hamilton", "Napier"]);
   });
 
   it("offers neither the main story nor drafts as sub stories", async () => {

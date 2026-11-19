@@ -42,12 +42,30 @@ export default async function StoryFoldersPage() {
     getMyStoryFolders(),
     listMyStories(),
   ]);
-  const inCountry = new Set(
+  // id -> this country's own row from list_my_stories(): the filter, plus
+  // what the view needs that get_my_story_folders() doesn't return -- the
+  // "last updated first" order of the sub story picker and each story's
+  // cover thumbnail (same owner-scoped read, so no extra round trip and no
+  // migration).
+  const mineById = new Map(
     mine
       .filter((s) => (s.country_slug ?? DEFAULT_COUNTRY_SLUG) === country)
-      .map((s) => s.id),
+      .map((s) => [s.id, s] as const),
   );
   return (
-    <StoryFoldersView stories={stories.filter((s) => inCountry.has(s.id))} />
+    <StoryFoldersView
+      stories={stories.flatMap((s) => {
+        const row = mineById.get(s.id);
+        if (!row) return [];
+        return [
+          {
+            ...s,
+            updatedAt: row.updated_at ?? null,
+            coverMediaId: row.cover_media_id ?? null,
+            coverAltText: row.cover_alt_text ?? null,
+          },
+        ];
+      })}
+    />
   );
 }

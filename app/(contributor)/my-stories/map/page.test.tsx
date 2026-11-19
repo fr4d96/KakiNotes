@@ -23,8 +23,18 @@ vi.mock("@/lib/story/story-folders", () => ({
 }));
 vi.mock("@/lib/story/contributor-queries", () => ({
   listMyStories: vi.fn(async () => [
-    { id: "nz-1", country_slug: "new-zealand" },
-    { id: "nz-2", country_slug: "new-zealand" },
+    {
+      id: "nz-1",
+      country_slug: "new-zealand",
+      updated_at: "2026-11-01T00:00:00Z",
+    },
+    {
+      id: "nz-2",
+      country_slug: "new-zealand",
+      updated_at: "2026-11-18T00:00:00Z",
+      cover_media_id: "cover-nz-2",
+      cover_alt_text: "Sky Tower at dusk",
+    },
     { id: "cn-1", country_slug: "china" },
   ]),
 }));
@@ -49,5 +59,33 @@ describe("Story folders page", () => {
 
   it("offers New Zealand's stories when nothing is chosen", async () => {
     expect(await shownIds()).toEqual(["nz-1", "nz-2"]);
+  });
+
+  it("hands each story its last-updated time for the picker's order", async () => {
+    const tree = await StoryFoldersPage();
+    const stories = (
+      tree.props as { stories: { id: string; updatedAt: string | null }[] }
+    ).stories;
+    expect(stories.map((s) => [s.id, s.updatedAt])).toEqual([
+      ["nz-1", "2026-11-01T00:00:00Z"],
+      ["nz-2", "2026-11-18T00:00:00Z"],
+    ]);
+  });
+
+  it("hands each story its cover for the mini thumbnail", async () => {
+    const tree = await StoryFoldersPage();
+    const stories = (
+      tree.props as {
+        stories: {
+          id: string;
+          coverMediaId: string | null;
+          coverAltText: string | null;
+        }[];
+      }
+    ).stories;
+    expect(stories.map((s) => [s.id, s.coverMediaId, s.coverAltText])).toEqual([
+      ["nz-1", null, null],
+      ["nz-2", "cover-nz-2", "Sky Tower at dusk"],
+    ]);
   });
 });

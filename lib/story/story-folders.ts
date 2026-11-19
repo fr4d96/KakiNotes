@@ -95,6 +95,18 @@ export type StoryFolderEntry = {
   /** True only when published -- set_story_parent() refuses anything else. */
   linkable: boolean;
   parentStoryId: string | null;
+  /**
+   * stories.updated_at, from list_my_stories() (attached by the folders
+   * page, not by get_my_story_folders()). Orders the sub story picker.
+   */
+  updatedAt?: string | null;
+  /**
+   * Cover photo media id and alt text, also from list_my_stories() (attached
+   * by the folders page). Only an id: the thumbnail mints its own short-lived
+   * URL after an owner check (mintPreviewUrlAction), never a storage path.
+   */
+  coverMediaId?: string | null;
+  coverAltText?: string | null;
 };
 
 const folderEntrySchema = z.object({
