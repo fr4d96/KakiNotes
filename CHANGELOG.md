@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.2.4](https://github.com/fr4d96/KakiNotes/compare/v4.2.3...v4.2.4) (2026-11-19)
+
+
+### A clearer filter badge in My Stories
+
+#### For contributors
+
+- **The filter count is easier to read.** When you turn on filters in My Stories, the little number on the filter button is now a bit bigger and sits in a slightly larger dot, so it's readable at a glance and two-digit counts still fit.
+- **Text sizes tidied up.** The "My Stories" page title now uses the same text sizes as the rest of the site.
+
+### Bug Fixes
+
+* **my-stories:** heading and filter badge use DESIGN.md type steps ([5579c7c](https://github.com/fr4d96/KakiNotes/commit/5579c7c29c93167b03cacc91313ef18608411814))
+
 ## [4.2.3](https://github.com/fr4d96/KakiNotes/compare/v4.2.2...v4.2.3) (2026-11-19)
 
 
