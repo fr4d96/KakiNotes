@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.4](https://github.com/fr4d96/KakiNotes/compare/v4.2.3...v4.2.4) (2026-11-19)
+
+
+### Bug Fixes
+
+* **my-stories:** heading and filter badge use DESIGN.md type steps ([5579c7c](https://github.com/fr4d96/KakiNotes/commit/5579c7c29c93167b03cacc91313ef18608411814))
+
 ## [4.2.3](https://github.com/fr4d96/KakiNotes/compare/v4.2.2...v4.2.3) (2026-11-19)
 
 
