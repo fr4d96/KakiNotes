@@ -29,6 +29,11 @@ import {
   wrapSelection,
 } from "./markdown-commands";
 import { createSlashCommandSource, slashMenuTheme } from "./slash-commands";
+import {
+  EDITOR_SHELL_ATTR,
+  toolbarScrollMargins,
+  useToolbarStickyTop,
+} from "./sticky-toolbar";
 
 // The four transforms moved to ./markdown-commands.ts so slash-commands.ts
 // could reuse them without importing this client component (a cycle). They
@@ -185,24 +190,33 @@ function MarkdownGuideLink() {
 }
 
 /**
- * No longer `sticky`: the editor is now a fixed-height flex column that
- * scrolls its own text (see the shell below), so the toolbar is simply the
- * first row of that column and cannot scroll away in the first place.
+ * Sticky again (2026-11-19), directly under the stuck page chrome.
  *
- * Sticky positioning had stopped working anyway. It was pinned to
- * `top-[76px]` — under components/site-header.tsx's own `sticky top-0`
- * 76px bar — but the story editor has since gained its own sticky bar at
- * that same offset carrying the title, save state and step progress, so the
- * toolbar stuck *underneath* that and was invisible exactly when it was
- * needed. Owning a scroll region is the fix that does not depend on
- * knowing the height of everything above it.
+ * History: it was once `sticky top-[76px]`, which hid it under the story
+ * wizard's own sticky step bar once that arrived at the same offset. The
+ * fix then was a fixed-height editor that scrolled its own text with the
+ * toolbar as its first row -- but on a phone that box plus the header and
+ * step bar (~280px with the safe area) is taller than the screen, so the
+ * PAGE still scrolled and carried the toolbar away, and on iOS a scroller
+ * inside a scrolling page hands the swipe to the page as soon as it hits
+ * an end. Now the editor grows with its text (one page-level scroll, which
+ * is also what iOS keeps the caret visible against), and `top` is
+ * MEASURED from the bars marked STICKY_CHROME_ATTR (./sticky-toolbar.ts)
+ * rather than hard-coded, which is what broke the first sticky version.
+ * z-20 keeps it under the step bar (z-30) and site header (z-40).
  *
  * Layout (2026-11-18): three pill groups -- text style (H, B, I, S),
  * blocks (quote and the three lists), inserts (link, table) -- with 36px
  * round buttons and one consistent line-icon set, replacing 32px square
  * buttons with mixed emoji glyphs and hairline dividers.
  */
-function EditorToolbar({ getView }: { getView: () => EditorView | null }) {
+function EditorToolbar({
+  getView,
+  stickyTop,
+}: {
+  getView: () => EditorView | null;
+  stickyTop: number | undefined;
+}) {
   const t = useTranslations("editor.toolbar");
   const run = (fn: (view: EditorView) => void) => () => {
     const view = getView();
@@ -211,7 +225,14 @@ function EditorToolbar({ getView }: { getView: () => EditorView | null }) {
   const icon = "h-5 w-5";
 
   return (
-    <div className="flex shrink-0 items-center gap-1.5 rounded-t-md border-b border-border-subtle bg-surface py-2 pr-1.5 pl-2">
+    <div
+      data-testid="editor-toolbar"
+      // Until the first measurement lands, stick under the site header alone
+      // (its known 76px + safe area): at worst briefly behind the step bar,
+      // never over the text.
+      style={stickyTop === undefined ? undefined : { top: stickyTop }}
+      className="sticky top-[calc(76px+env(safe-area-inset-top))] z-20 flex shrink-0 items-center gap-1.5 rounded-t-md border-b border-border-subtle bg-surface py-2 pr-1.5 pl-2"
+    >
       {/* Scrolls sideways rather than wrapping. At 375px the groups just
           overflow, and wrapping cost stacked rows of chrome above the
           writing area on a phone -- the opposite of Engineering Rule 18.
@@ -387,6 +408,7 @@ export const MarkdownEditor = React.forwardRef<
   const [initial] = React.useState(initialValue);
   const cmRef = React.useRef<ReactCodeMirrorRef>(null);
   const getView = React.useCallback(() => cmRef.current?.view ?? null, []);
+  const stickyTop = useToolbarStickyTop(editable);
 
   // Mirrors the document purely so the word count below can be derived from
   // it. Safe with the uncontrolled `value` above: @uiw/react-codemirror only
@@ -445,6 +467,11 @@ export const MarkdownEditor = React.forwardRef<
     () => [
       markdownLang(),
       EditorView.lineWrapping,
+      // When CodeMirror scrolls the caret into view (typing on the last
+      // visible line, arrowing up, a toolbar command), it keeps it clear of
+      // the sticky toolbar rather than parking it underneath. Measured from
+      // the DOM at scroll time, so it follows the sticky top unaided.
+      toolbarScrollMargins,
       createPasteHandler(setPasteNotice),
       // Ctrl/Cmd+B, +I and +K. Prec.high so these win over anything the
       // default keymap might bind later. Every one of them is also a
@@ -503,37 +530,22 @@ export const MarkdownEditor = React.forwardRef<
   const minutes = readingTimeMinutes(words, markdownImageCount(text));
 
   return (
-    /* A bounded-height flex column, so the STORY text scrolls inside the
-       editor instead of the whole page growing with it. Three consequences,
-       all of them the point: the toolbar and the word count stay on screen
-       however long the story gets; reaching the end of a long draft no
-       longer means scrolling the page past everything else on the step; and
-       the editor keeps a stable size, so the page does not jump as you
-       type.
+    /* Grows with the story. The toolbar sticks under the page's stuck
+       chrome instead of the editor owning a fixed-height scroll box -- see
+       EditorToolbar for why the box failed on a phone. The 20rem minimum
+       keeps a blank draft looking like a place to write.
 
-       `clamp(20rem, 62vh, 46rem)` rather than a fixed pixel height: 62vh
-       leaves room for the page's own sticky bars above, the 20rem floor
-       keeps it usable on a short phone screen with the keyboard up
-       (Engineering Rule 18), and the 46rem ceiling stops the writing column
-       becoming an unreadably tall block on a desktop monitor.
-
-       Read-only renders (editable=false) keep their natural height: nothing
-       is scrolling anything there, and an arbitrary viewport-relative box
-       around static text would just clip it. */
+       Read-only renders (editable=false) keep their natural height too, with
+       a smaller floor and no toolbar. */
     <div
-      className={
-        editable ? "flex h-[clamp(20rem,62vh,46rem)] flex-col" : undefined
-      }
+      className={editable ? "flex flex-col" : undefined}
+      {...(editable ? { [EDITOR_SHELL_ATTR]: "" } : {})}
     >
-      {editable && <EditorToolbar getView={getView} />}
+      {editable && <EditorToolbar getView={getView} stickyTop={stickyTop} />}
       <div
         aria-label={ariaLabel ?? tFields("storyContent")}
         role="textbox"
         aria-multiline="true"
-        // min-h-0 is load-bearing: a flex child's default `min-height: auto`
-        // refuses to shrink below its content, so without it the editor
-        // grows to fit the whole story and the shell's height is ignored.
-        className={editable ? "min-h-0 flex-1" : undefined}
       >
         <CodeMirror
           ref={cmRef}
@@ -553,7 +565,7 @@ export const MarkdownEditor = React.forwardRef<
           placeholder={t("placeholder")}
           className={
             editable
-              ? "h-full px-1 py-2 text-base [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
+              ? "px-1 py-2 text-base [&_.cm-editor]:min-h-80"
               : "min-h-40 px-1 py-2 text-base [&_.cm-editor]:min-h-40 [&_.cm-scroller]:overflow-auto"
           }
         />

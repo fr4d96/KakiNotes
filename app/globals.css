@@ -470,6 +470,14 @@ html {
      plus the notch inset it pads itself with in the installed app). */
   scroll-padding-top: calc(76px + env(safe-area-inset-top));
 }
+/* While the story editor has focus, the page is what scrolls to follow the
+   caret (the editor grows with its text and its toolbar is sticky --
+   components/story/editor/markdown-editor.tsx). CodeMirror re-scrolls on
+   every Enter/arrow key; animated, each scroll lags the caret and the next
+   keystroke cuts the animation short. Instant while writing. */
+html:has(.cm-editor.cm-focused) {
+  scroll-behavior: auto;
+}
 
 /* Removes the ~300ms double-tap-to-zoom wait on controls while leaving
    pinch-zoom on the page alone (WCAG 1.4.4 -- viewport never disables it). */

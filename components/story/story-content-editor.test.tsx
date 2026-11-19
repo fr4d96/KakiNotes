@@ -38,6 +38,37 @@ describe("StoryContentEditor", () => {
     expect(guideLink).toHaveAttribute("rel", "noopener noreferrer");
   });
 
+  it("sticks the formatting toolbar directly under the page's sticky bars, keeping it a labelled toolbar", async () => {
+    // Stand-ins for the site header (76px at top 0) and the wizard step bar
+    // stuck under it; jsdom does no layout, so heights are given directly.
+    const bars = [
+      { top: "0px", height: 76 },
+      { top: "76px", height: 120 },
+    ].map(({ top, height }) => {
+      const bar = document.createElement("div");
+      bar.setAttribute("data-sticky-chrome", "");
+      bar.style.position = "sticky";
+      bar.style.top = top;
+      Object.defineProperty(bar, "offsetHeight", { value: height });
+      document.body.append(bar);
+      return bar;
+    });
+
+    render(
+      <StoryContentEditor
+        initialContent={markdownToStoryContent("Hello world")}
+        onChange={() => {}}
+      />,
+    );
+    const toolbar = screen.getByRole("toolbar", { name: "Text formatting" });
+    const stuck = screen.getByTestId("editor-toolbar");
+    expect(stuck).toContainElement(toolbar);
+    expect(stuck).toHaveClass("sticky");
+    await vi.waitFor(() => expect(stuck.style.top).toBe("196px"));
+
+    for (const bar of bars) bar.remove();
+  });
+
   it("renders the fully-rendered view (no toolbar, no raw syntax) when not editable", () => {
     render(
       <StoryContentEditor

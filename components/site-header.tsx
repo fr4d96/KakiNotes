@@ -140,6 +140,9 @@ export function SiteHeader() {
     // the side cut-outs now that app/layout.tsx's viewport uses
     // viewportFit: "cover" (they are 0 in an ordinary browser tab).
     <header
+      // Read by the story editor's sticky toolbar
+      // (components/story/editor/sticky-toolbar.ts) to stick beneath it.
+      data-sticky-chrome=""
       className={`sticky top-0 z-40 pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] transition-colors ${headerToneClasses}`}
     >
       <div className="mx-auto flex min-h-[76px] max-w-[1440px] items-center gap-3 px-4 sm:gap-5 sm:px-6">

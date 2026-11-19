@@ -1212,7 +1212,12 @@ export function StoryEditForm({
           (components/story/story-steps.tsx). Below `lg` this lands at
           exactly the old geometry: max-w-3xl, same px-4/sm:px-6, a bar the
           full width of the column. */}
-      <div className="sticky top-[calc(76px+env(safe-area-inset-top))] z-30 border-b border-border-subtle bg-background">
+      <div
+        // The editor toolbar sticks beneath this bar, measured live
+        // (components/story/editor/sticky-toolbar.ts).
+        data-sticky-chrome=""
+        className="sticky top-[calc(76px+env(safe-area-inset-top))] z-30 border-b border-border-subtle bg-background"
+      >
         <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 lg:max-w-5xl">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-3">
             <h1 className="text-lg font-semibold tracking-tight sm:text-xl">

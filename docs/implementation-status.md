@@ -11867,3 +11867,19 @@ Checked live: "Queenstown Spots" now gets three Queenstown stories (was Queensto
 sharing its Tourism tag. If the catalogue outgrows 50 stories per country, move the ranking into
 a database function so older strong matches stay reachable.
 
+## 2026-11-19 — Story editor toolbar stays on screen while writing a long story
+
+On a phone, the formatting toolbar on step 2 ("Your story") scrolled away as soon as a story got
+long. The editor was a fixed `clamp(20rem,62vh,46rem)` box that scrolled its own text, but that
+box plus the site header and the step bar (~280px with the iPhone safe area) is taller than the
+screen, so the page scrolled too and took the toolbar with it. The editor now grows with its text
+(the page is the only scroller, which is also what iOS keeps the caret visible against) and the
+toolbar is `position: sticky`, its `top` measured live from the bars marked `data-sticky-chrome`
+(site header, step bar) plus the iOS keyboard's `visualViewport.offsetTop`
+(`components/story/editor/sticky-toolbar.ts`, unit-tested). CodeMirror's `scrollMargins` keep the
+caret below the toolbar, and `html { scroll-behavior: smooth }` is switched off while the editor has
+focus so caret-follow scrolling is instant. Checked in `/dev/iphone-17` and at 1280px with a
+60-paragraph story (saves blocked, draft unchanged): toolbar stuck under the step bar at the
+bottom of the story, Bold applied to a selection there, caret stayed clear when arrowing up. Not
+checked on a real iPhone with the on-screen keyboard; the word count no longer sticks to the
+bottom (it sits after the story).
