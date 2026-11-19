@@ -150,7 +150,14 @@ export function BottomTabBar({
       ? [
           {
             href: PROFILE_HREF,
-            label: t("profile"),
+            // The viewer's own username (else display name); "Profile"
+            // until the store knows it.
+            label: viewer.name ?? t("profile"),
+            // Heard as "Profile, <name>": the name alone doesn't say where
+            // the tab goes.
+            ariaLabel: viewer.name
+              ? `${t("profile")}, ${viewer.name}`
+              : undefined,
             Icon: ContributorIcon,
             emoji: avatarEmoji,
             active: inProfileTab(pathname),
@@ -214,6 +221,7 @@ export function BottomTabBar({
                   href={href}
                   transitionTypes={["tab"]}
                   aria-current={active ? "page" : undefined}
+                  aria-label={"ariaLabel" in tab ? tab.ariaLabel : undefined}
                   onClick={(event) => {
                     // Native tab-bar behaviour: tapping the tab you are
                     // already on (at its root) scrolls to the top instead of

@@ -31,6 +31,7 @@ export function StaffNav({
   links,
   avatarEmoji,
   role,
+  name,
 }: {
   title: string;
   /** aria-label for the <nav> -- "Moderation", "Editorial", etc. */
@@ -38,6 +39,8 @@ export function StaffNav({
   links: { href: string; label: string }[];
   avatarEmoji: string | null;
   role: AppRole | null;
+  /** The viewer's username (else display name), for the Profile tab. */
+  name?: string | null;
 }) {
   return (
     <header className="border-b border-border-subtle">
@@ -67,7 +70,11 @@ export function StaffNav({
         <div className="order-2 flex shrink-0 items-center gap-2 sm:order-2">
           <NotificationBell />
           <UserAvatarMenu emoji={avatarEmoji} role={role} />
-          <ViewerIdentitySeed avatarEmoji={avatarEmoji} role={role} />
+          <ViewerIdentitySeed
+            avatarEmoji={avatarEmoji}
+            role={role}
+            name={name ?? null}
+          />
         </div>
       </div>
     </header>

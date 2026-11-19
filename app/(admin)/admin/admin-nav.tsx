@@ -1,6 +1,7 @@
 import { StaffNav } from "@/components/staff-nav";
 import {
   getCurrentUserAvatarEmoji,
+  getCurrentUserTabName,
   getCurrentUserRole,
 } from "@/lib/auth/roles";
 
@@ -21,9 +22,10 @@ const adminNav = [
 ];
 
 export async function AdminNav() {
-  const [avatarEmoji, role] = await Promise.all([
+  const [avatarEmoji, role, name] = await Promise.all([
     getCurrentUserAvatarEmoji(),
     getCurrentUserRole(),
+    getCurrentUserTabName(),
   ]);
 
   return (
@@ -32,6 +34,7 @@ export async function AdminNav() {
       label="Admin"
       links={adminNav}
       avatarEmoji={avatarEmoji}
+      name={name}
       role={role}
     />
   );

@@ -1,6 +1,7 @@
 import { StaffNav } from "@/components/staff-nav";
 import {
   getCurrentUserAvatarEmoji,
+  getCurrentUserTabName,
   getCurrentUserRole,
 } from "@/lib/auth/roles";
 
@@ -23,9 +24,10 @@ const readinessNav = [
  * gets the same flat 404 as anyone else.
  */
 export async function ReadinessNav() {
-  const [avatarEmoji, role] = await Promise.all([
+  const [avatarEmoji, role, name] = await Promise.all([
     getCurrentUserAvatarEmoji(),
     getCurrentUserRole(),
+    getCurrentUserTabName(),
   ]);
 
   return (
@@ -34,6 +36,7 @@ export async function ReadinessNav() {
       label="Readiness"
       links={readinessNav}
       avatarEmoji={avatarEmoji}
+      name={name}
       role={role}
     />
   );

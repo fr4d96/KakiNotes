@@ -49,6 +49,35 @@ export const getCurrentUserRole = cache(async (): Promise<AppRole | null> => {
  * client-supplied id. Wrapped in cache() for the same reason as
  * getCurrentUserRole.
  */
+/**
+ * The signed-in viewer's own label for the Profile tab: their sign-in
+ * username, else their display name. Both are the caller's own rows under
+ * RLS ("usernames: owner reads own username", "profiles: owner reads own
+ * profile"); handed only to that same viewer's tab bar.
+ */
+export const getCurrentUserTabName = cache(async (): Promise<string | null> => {
+  const user = await getCurrentUser();
+  if (!user) {
+    return null;
+  }
+
+  const supabase = await createClient();
+  const [{ data: username }, { data: profile }] = await Promise.all([
+    supabase
+      .from("usernames")
+      .select("username")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", user.id)
+      .maybeSingle(),
+  ]);
+
+  return username?.username?.trim() || profile?.display_name?.trim() || null;
+});
+
 export const getCurrentUserAvatarEmoji = cache(
   async (): Promise<string | null> => {
     const user = await getCurrentUser();

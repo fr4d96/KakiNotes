@@ -2,6 +2,7 @@ import { ViewerIdentitySeed } from "@/lib/auth/viewer-identity";
 import {
   getCurrentUserAvatarEmoji,
   getCurrentUserRole,
+  getCurrentUserTabName,
 } from "@/lib/auth/roles";
 
 /**
@@ -16,9 +17,12 @@ import {
  * page; only this server-side identity hand-off was left to do here.
  */
 export async function ContributorIdentity() {
-  const [avatarEmoji, role] = await Promise.all([
+  const [avatarEmoji, role, name] = await Promise.all([
     getCurrentUserAvatarEmoji(),
     getCurrentUserRole(),
+    getCurrentUserTabName(),
   ]);
-  return <ViewerIdentitySeed avatarEmoji={avatarEmoji} role={role} />;
+  return (
+    <ViewerIdentitySeed avatarEmoji={avatarEmoji} role={role} name={name} />
+  );
 }

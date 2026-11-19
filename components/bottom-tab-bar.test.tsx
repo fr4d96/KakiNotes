@@ -169,6 +169,14 @@ describe("BottomTabBar", () => {
     );
   });
 
+  it("labels the Profile tab with the viewer's own name", async () => {
+    seedViewerIdentity({ avatarEmoji: "🥝", role: null, name: "munny" });
+    render(<BottomTabBar signedInHint />);
+    const tab = screen.getByRole("link", { name: "Profile, munny" });
+    expect(tab).toHaveTextContent("munny");
+    expect(tab).not.toHaveTextContent("Profile");
+  });
+
   it("has no Profile tab signed out", () => {
     render(<BottomTabBar />);
     expect(screen.queryByRole("link", { name: "Profile" })).toBeNull();

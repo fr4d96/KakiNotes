@@ -41,17 +41,25 @@ import type { AppRole } from "@/lib/auth/staff-guard";
 export type ViewerIdentity = {
   status: "unknown" | "signed-in" | "signed-out";
   avatarEmoji: string | null;
+  /**
+   * What the Profile tab is labelled with: the viewer's own sign-in username
+   * (public.usernames, owner-read only), else their display name. Null until
+   * known, and the tab then says "Profile".
+   */
+  name: string | null;
   role: AppRole | null;
 };
 
 const UNKNOWN: ViewerIdentity = {
   status: "unknown",
   avatarEmoji: null,
+  name: null,
   role: null,
 };
 const SIGNED_OUT: ViewerIdentity = {
   status: "signed-out",
   avatarEmoji: null,
+  name: null,
   role: null,
 };
 
@@ -68,6 +76,7 @@ function setState(next: ViewerIdentity) {
   if (
     next.status === state.status &&
     next.avatarEmoji === state.avatarEmoji &&
+    next.name === state.name &&
     next.role === state.role
   ) {
     return;
@@ -105,7 +114,7 @@ async function loadIdentity(userId: string) {
 
 async function readIdentity(userId: string) {
   const supabase = createClient();
-  const [contributor, profile, roleRow] = await Promise.all([
+  const [contributor, profile, username, roleRow] = await Promise.all([
     supabase
       .from("contributors")
       .select("avatar_emoji")
@@ -113,8 +122,14 @@ async function readIdentity(userId: string) {
       .maybeSingle(),
     supabase
       .from("profiles")
-      .select("avatar_emoji")
+      .select("avatar_emoji, display_name")
       .eq("id", userId)
+      .maybeSingle(),
+    // Optional: an account without a username has no row here.
+    supabase
+      .from("usernames")
+      .select("username")
+      .eq("user_id", userId)
       .maybeSingle(),
     // maybeSingle(): an account with no role row is an ordinary
     // contributor, not an error worth logging.
@@ -130,6 +145,7 @@ async function readIdentity(userId: string) {
     status: "signed-in",
     avatarEmoji:
       contributor.data?.avatar_emoji ?? profile.data?.avatar_emoji ?? null,
+    name: viewerTabName(username.data?.username, profile.data?.display_name),
     role: (roleRow.data?.role as AppRole | undefined) ?? null,
   });
 }
@@ -181,9 +197,25 @@ export function useViewerIdentity(): ViewerIdentity {
 export function seedViewerIdentity(seed: {
   avatarEmoji: string | null;
   role: AppRole | null;
+  /** Omitted by a header that doesn't know it. */
+  name?: string | null;
 }) {
+  const { name, ...rest } = seed;
   seeded = true;
-  setState({ status: "signed-in", ...seed });
+  // A seed without a name keeps whatever name the store already had.
+  setState({
+    status: "signed-in",
+    ...rest,
+    name: name === undefined ? state.name : name,
+  });
+}
+
+/** The Profile tab's label: username first, else the display name. */
+export function viewerTabName(
+  username: string | null | undefined,
+  displayName: string | null | undefined,
+): string | null {
+  return username?.trim() || displayName?.trim() || null;
 }
 
 /** After the viewer changes their avatar (Settings), without a reload. */
@@ -199,13 +231,15 @@ export function setViewerAvatar(avatarEmoji: string | null) {
 export function ViewerIdentitySeed({
   avatarEmoji,
   role,
+  name,
 }: {
   avatarEmoji: string | null;
   role: AppRole | null;
+  name?: string | null;
 }) {
   useEffect(() => {
-    seedViewerIdentity({ avatarEmoji, role });
-  }, [avatarEmoji, role]);
+    seedViewerIdentity({ avatarEmoji, role, name });
+  }, [avatarEmoji, role, name]);
   return null;
 }
 
