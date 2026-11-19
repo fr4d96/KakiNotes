@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.4.0](https://github.com/fr4d96/KakiNotes/compare/v4.3.0...v4.4.0) (2026-11-19)
+
+
+### Features
+
+* **folders:** cover thumbnails and last-updated order for sub stories ([48dfeba](https://github.com/fr4d96/KakiNotes/commit/48dfeba51c155a604fcd9f2dbc2e076e19fbeb34))
+* **header:** country flag replaces the + on the phone header ([edf7b92](https://github.com/fr4d96/KakiNotes/commit/edf7b92e4f30d327e871ca20a0cdc0b61dc7dbdb))
+* **stories:** make location optional ([11b6fe0](https://github.com/fr4d96/KakiNotes/commit/11b6fe061f3b291f9f5435ac63bb266cf1c82279))
+
 ## [4.3.0](https://github.com/fr4d96/KakiNotes/compare/v4.2.6...v4.3.0) (2026-11-19)
 
 
