@@ -1269,7 +1269,7 @@ describe("GUC-bypass unreachability and direct-UPDATE rejection (R6-2)", () => {
 
 // --- Prompt 5: public discovery ---------------------------------------
 //
-// list_published_stories/list_distinct_public_travel_styles/
+// list_published_stories/
 // list_public_contributors/get_public_contributor are new anon-granted
 // functions (or, for list_published_stories, an extended existing one).
 // Helper: publishes a self-service story with the given fields via the
@@ -1278,7 +1278,6 @@ describe("GUC-bypass unreachability and direct-UPDATE rejection (R6-2)", () => {
 async function publishOwnerStory(fields: {
   title: string;
   totalExpenseNzdCents?: number;
-  travelStyle?: string;
 }) {
   const { data: created, error: createError } = await owner.client.rpc(
     "create_self_service_draft",
@@ -1288,7 +1287,6 @@ async function publishOwnerStory(fields: {
         { type: "paragraph", text: [{ text: "Prompt 5 fixture." }] },
       ],
       p_total_expense_nzd_cents: fields.totalExpenseNzdCents,
-      p_travel_style: fields.travelStyle,
     },
   );
   if (createError || !created) {
@@ -1583,43 +1581,6 @@ describe("Prompt 5: list_published_stories never duplicates a story row across m
     expect(data![0].story_id).toBe(storyId);
     expect(data![0].work_types).toHaveLength(2);
     expect(data![0].tags).toHaveLength(2);
-  }, 30000);
-});
-
-// Travel style was removed from the app on 2026-11-19, but the column and
-// this anon-granted function stay in the database until an approved
-// migration drops them. While anon can still call it, this keeps proving it
-// never leaks a draft's value (Rules 10-12). Delete it with that migration.
-describe("Prompt 5: list_distinct_public_travel_styles", () => {
-  it("dedupes case-insensitively/whitespace and only reflects public stories", async () => {
-    const styleWord = slug("Backpacker-Style");
-    await publishOwnerStory({
-      title: slug("travel-style-1"),
-      travelStyle: `  ${styleWord}  `,
-    });
-    await publishOwnerStory({
-      title: slug("travel-style-2"),
-      travelStyle: styleWord.toUpperCase(),
-    });
-
-    // A draft (never submitted/approved) with its own unique travel_style
-    // must never leak into a public-only distinct list.
-    const draftOnlyStyle = slug("draft-only-style");
-    await owner.client.rpc("create_self_service_draft", {
-      p_title: slug("travel-style-draft-only"),
-      p_travel_style: draftOnlyStyle,
-    });
-
-    const { data, error } = await anon.rpc(
-      "list_distinct_public_travel_styles",
-    );
-    expect(error).toBeNull();
-    const values = data!.map((r) => r.travel_style);
-    const matches = values.filter(
-      (v) => v?.trim().toLowerCase() === styleWord.toLowerCase(),
-    );
-    expect(matches).toHaveLength(1);
-    expect(values).not.toContain(draftOnlyStyle);
   }, 30000);
 });
 

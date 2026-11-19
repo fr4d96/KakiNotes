@@ -1661,7 +1661,6 @@ export type Database = {
           story_id: string;
           title: string;
           total_expense_nzd_cents: number | null;
-          travel_style: string | null;
           trip_end_date: string | null;
           trip_start_date: string | null;
           trip_year: number | null;
@@ -1683,7 +1682,6 @@ export type Database = {
           story_id: string;
           title: string;
           total_expense_nzd_cents?: number | null;
-          travel_style?: string | null;
           trip_end_date?: string | null;
           trip_start_date?: string | null;
           trip_year?: number | null;
@@ -1705,7 +1703,6 @@ export type Database = {
           story_id?: string;
           title?: string;
           total_expense_nzd_cents?: number | null;
-          travel_style?: string | null;
           trip_end_date?: string | null;
           trip_start_date?: string | null;
           trip_year?: number | null;
@@ -2114,7 +2111,6 @@ export type Database = {
           p_excerpt?: string;
           p_title: string;
           p_total_expense_nzd_cents?: number;
-          p_travel_style?: string;
           p_trip_end_date?: string;
           p_trip_start_date?: string;
           p_trip_year?: number;
@@ -2136,7 +2132,6 @@ export type Database = {
           p_excerpt?: string;
           p_title: string;
           p_total_expense_nzd_cents?: number;
-          p_travel_style?: string;
           p_trip_end_date?: string;
           p_trip_start_date?: string;
           p_trip_year?: number;
@@ -2403,7 +2398,6 @@ export type Database = {
           story_id: string;
           title: string;
           total_expense_nzd_cents: number;
-          travel_style: string;
           trip_end_date: string;
           trip_start_date: string;
           trip_year: number;
@@ -2470,7 +2464,6 @@ export type Database = {
           revision_id: string;
           title: string;
           total_expense_nzd_cents: number;
-          travel_style: string;
           trip_end_date: string;
           trip_start_date: string;
           trip_year: number;
@@ -2494,7 +2487,6 @@ export type Database = {
           tags: Json;
           title: string;
           total_expense_nzd_cents: number;
-          travel_style: string;
           trip_end_date: string;
           trip_start_date: string;
           trip_year: number;
@@ -2618,7 +2610,6 @@ export type Database = {
           tag_names: string[];
           title: string;
           total_expense_nzd_cents: number;
-          travel_style: string;
           trip_end_date: string;
           trip_start_date: string;
           trip_year: number;
@@ -2656,7 +2647,6 @@ export type Database = {
           story_id: string;
           title: string;
           total_expense_nzd_cents: number;
-          travel_style: string;
           trip_end_date: string;
           trip_start_date: string;
           trip_year: number;
@@ -2717,12 +2707,6 @@ export type Database = {
           slug: string;
           updated_at: string;
           version: number;
-        }[];
-      };
-      list_distinct_public_travel_styles: {
-        Args: never;
-        Returns: {
-          travel_style: string;
         }[];
       };
       list_editorial_queue: {
@@ -2910,7 +2894,6 @@ export type Database = {
           p_region_id?: string;
           p_search?: string;
           p_tag_id?: string;
-          p_travel_style?: string;
           p_trip_year?: number;
           p_work_type_id?: string;
         };
@@ -2930,7 +2913,6 @@ export type Database = {
           tags: Json;
           title: string;
           total_expense_nzd_cents: number;
-          travel_style: string;
           trip_year: number;
           work_types: Json;
         }[];
@@ -3199,7 +3181,6 @@ export type Database = {
           p_revision_id: string;
           p_title: string;
           p_total_expense_nzd_cents?: number;
-          p_travel_style?: string;
           p_trip_end_date?: string;
           p_trip_start_date?: string;
           p_trip_year?: number;

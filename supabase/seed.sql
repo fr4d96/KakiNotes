@@ -118,8 +118,8 @@ update public.stories set current_draft_revision_id = '44444444-0002-0002-0001-0
 insert into public.stories (id, contributor_id, owner_user_id, source_kind, slug, visibility, lifecycle_status, submitted_at, created_by)
 values ('44444444-0003-0001-0001-000000000001', '22222222-2222-2222-2222-222222222201', '11111111-1111-1111-1111-111111111102', 'self_submitted', 'picking-kiwifruit-in-te-puke', 'private', 'pending_review', now(), '11111111-1111-1111-1111-111111111102')
 on conflict (id) do nothing;
-insert into public.story_revisions (id, story_id, revision_number, revision_status, title, excerpt, content_json, trip_start_date, trip_end_date, trip_year, travel_style, total_expense_nzd_cents, created_by, updated_by)
-values ('44444444-0003-0002-0001-000000000001', '44444444-0003-0001-0001-000000000001', 1, 'submitted', 'Picking kiwifruit in Te Puke', 'Three months of seasonal work in the Bay of Plenty.', '[{"type":"markdown","text":"I spent a season picking kiwifruit."}]', '2024-04-01', '2024-06-30', 2024, 'budget', 450000, '11111111-1111-1111-1111-111111111102', '11111111-1111-1111-1111-111111111102')
+insert into public.story_revisions (id, story_id, revision_number, revision_status, title, excerpt, content_json, trip_start_date, trip_end_date, trip_year, total_expense_nzd_cents, created_by, updated_by)
+values ('44444444-0003-0002-0001-000000000001', '44444444-0003-0001-0001-000000000001', 1, 'submitted', 'Picking kiwifruit in Te Puke', 'Three months of seasonal work in the Bay of Plenty.', '[{"type":"markdown","text":"I spent a season picking kiwifruit."}]', '2024-04-01', '2024-06-30', 2024, 450000, '11111111-1111-1111-1111-111111111102', '11111111-1111-1111-1111-111111111102')
 on conflict (id) do nothing;
 update public.stories set current_draft_revision_id = '44444444-0003-0002-0001-000000000001' where id = '44444444-0003-0001-0001-000000000001';
 insert into public.story_revision_locations (revision_id, region_id, destination_id, sort_order)
@@ -139,10 +139,10 @@ on conflict do nothing;
 insert into public.stories (id, contributor_id, owner_user_id, source_kind, slug, visibility, lifecycle_status, published_at, created_by)
 values ('44444444-0004-0001-0001-000000000001', '22222222-2222-2222-2222-222222222201', '11111111-1111-1111-1111-111111111102', 'self_submitted', 'wellington-cafe-life', 'public', 'published', now() - interval '30 days', '11111111-1111-1111-1111-111111111102')
 on conflict (id) do nothing;
-insert into public.story_revisions (id, story_id, revision_number, revision_status, title, excerpt, content_json, trip_start_date, trip_end_date, trip_year, travel_style, total_expense_nzd_cents, created_by, updated_by, approved_at)
+insert into public.story_revisions (id, story_id, revision_number, revision_status, title, excerpt, content_json, trip_start_date, trip_end_date, trip_year, total_expense_nzd_cents, created_by, updated_by, approved_at)
 values
-  ('44444444-0004-0002-0001-000000000001', '44444444-0004-0001-0001-000000000001', 1, 'superseded', 'Working cafes in Wellington', 'My first few months in the capital.', '[{"type":"markdown","text":"Original version of the story."}]', '2023-11-01', '2024-02-28', 2023, 'mid_range', 620000, '11111111-1111-1111-1111-111111111102', '11111111-1111-1111-1111-111111111102', now() - interval '60 days'),
-  ('44444444-0004-0002-0001-000000000002', '44444444-0004-0001-0001-000000000001', 2, 'approved', 'Working cafe life in Wellington', 'A year of cafe work in the capital, updated with photos and more detail.', '[{"type":"markdown","text":"Updated, more detailed version of the story."}]', '2023-11-01', '2024-10-31', 2023, 'mid_range', 980000, '11111111-1111-1111-1111-111111111102', '11111111-1111-1111-1111-111111111102', now() - interval '30 days')
+  ('44444444-0004-0002-0001-000000000001', '44444444-0004-0001-0001-000000000001', 1, 'superseded', 'Working cafes in Wellington', 'My first few months in the capital.', '[{"type":"markdown","text":"Original version of the story."}]', '2023-11-01', '2024-02-28', 2023, 620000, '11111111-1111-1111-1111-111111111102', '11111111-1111-1111-1111-111111111102', now() - interval '60 days'),
+  ('44444444-0004-0002-0001-000000000002', '44444444-0004-0001-0001-000000000001', 2, 'approved', 'Working cafe life in Wellington', 'A year of cafe work in the capital, updated with photos and more detail.', '[{"type":"markdown","text":"Updated, more detailed version of the story."}]', '2023-11-01', '2024-10-31', 2023, 980000, '11111111-1111-1111-1111-111111111102', '11111111-1111-1111-1111-111111111102', now() - interval '30 days')
 on conflict (id) do nothing;
 update public.stories set published_revision_id = '44444444-0004-0002-0001-000000000002' where id = '44444444-0004-0001-0001-000000000001';
 insert into public.story_revision_locations (revision_id, region_id, destination_id, sort_order)
@@ -171,11 +171,11 @@ on conflict do nothing;
 insert into public.stories (id, contributor_id, owner_user_id, source_kind, slug, visibility, lifecycle_status, published_at, submitted_at, created_by)
 values ('44444444-0005-0001-0001-000000000001', '22222222-2222-2222-2222-222222222201', '11111111-1111-1111-1111-111111111102', 'self_submitted', 'marlborough-vineyard-season', 'public', 'published', now() - interval '90 days', now(), '11111111-1111-1111-1111-111111111102')
 on conflict (id) do nothing;
-insert into public.story_revisions (id, story_id, revision_number, revision_status, title, excerpt, content_json, trip_start_date, trip_end_date, trip_year, travel_style, total_expense_nzd_cents, created_by, updated_by, approved_at)
-values ('44444444-0005-0002-0001-000000000001', '44444444-0005-0001-0001-000000000001', 1, 'approved', 'A vineyard season in Marlborough', 'Pruning and picking through a full season.', '[{"type":"markdown","text":"Original published account."}]', '2023-02-01', '2023-05-31', 2023, 'budget', 380000, '11111111-1111-1111-1111-111111111102', '11111111-1111-1111-1111-111111111102', now() - interval '90 days')
+insert into public.story_revisions (id, story_id, revision_number, revision_status, title, excerpt, content_json, trip_start_date, trip_end_date, trip_year, total_expense_nzd_cents, created_by, updated_by, approved_at)
+values ('44444444-0005-0002-0001-000000000001', '44444444-0005-0001-0001-000000000001', 1, 'approved', 'A vineyard season in Marlborough', 'Pruning and picking through a full season.', '[{"type":"markdown","text":"Original published account."}]', '2023-02-01', '2023-05-31', 2023, 380000, '11111111-1111-1111-1111-111111111102', '11111111-1111-1111-1111-111111111102', now() - interval '90 days')
 on conflict (id) do nothing;
-insert into public.story_revisions (id, story_id, revision_number, revision_status, title, excerpt, content_json, trip_start_date, trip_end_date, trip_year, travel_style, total_expense_nzd_cents, created_by, updated_by)
-values ('44444444-0005-0002-0001-000000000002', '44444444-0005-0001-0001-000000000001', 2, 'submitted', 'A vineyard season in Marlborough, revisited', 'Pruning and picking through a full season — updated with cost detail.', '[{"type":"markdown","text":"Revised account with more detail."}]', '2023-02-01', '2023-05-31', 2023, 'budget', 410000, '11111111-1111-1111-1111-111111111102', '11111111-1111-1111-1111-111111111102')
+insert into public.story_revisions (id, story_id, revision_number, revision_status, title, excerpt, content_json, trip_start_date, trip_end_date, trip_year, total_expense_nzd_cents, created_by, updated_by)
+values ('44444444-0005-0002-0001-000000000002', '44444444-0005-0001-0001-000000000001', 2, 'submitted', 'A vineyard season in Marlborough, revisited', 'Pruning and picking through a full season — updated with cost detail.', '[{"type":"markdown","text":"Revised account with more detail."}]', '2023-02-01', '2023-05-31', 2023, 410000, '11111111-1111-1111-1111-111111111102', '11111111-1111-1111-1111-111111111102')
 on conflict (id) do nothing;
 update public.stories
   set published_revision_id = '44444444-0005-0002-0001-000000000001', current_draft_revision_id = '44444444-0005-0002-0001-000000000002'
