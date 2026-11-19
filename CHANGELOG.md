@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.2.2](https://github.com/fr4d96/KakiNotes/compare/v4.2.1...v4.2.2) (2026-11-19)
+
+
+### Bug Fixes
+
+* **my-stories:** one Edit button and a ⋯ menu on each story card ([be5610e](https://github.com/fr4d96/KakiNotes/commit/be5610ed477c5d53a9ea6ef41622d13a30ad1e50))
+* **nav:** label the Profile tab with the viewer's username ([67569e3](https://github.com/fr4d96/KakiNotes/commit/67569e3d29f53601f34ca03b4c5e240efaf5692f))
+* **photos:** pinch and double-tap zoom in the photo viewer ([a84ee23](https://github.com/fr4d96/KakiNotes/commit/a84ee23decbd3a432108ceee8ea5f187687861b9))
+
 ## [4.2.1](https://github.com/fr4d96/KakiNotes/compare/v4.2.0...v4.2.1) (2026-11-19)
 
 
