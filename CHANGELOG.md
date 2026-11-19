@@ -3,6 +3,20 @@
 ## [4.4.0](https://github.com/fr4d96/KakiNotes/compare/v4.3.0...v4.4.0) (2026-11-19)
 
 
+### Optional places, a country flag in the phone header, and story folders with covers
+
+#### For contributors
+
+- **Places are optional now.** You no longer have to add a location before you can submit a story. Plenty of stories aren't about one place (how the visa process went, what you packed, looking back on the whole year), so the Locations field has lost its "required" mark. Public stories still need at least one tag; a title and your story are still needed as before.
+- **The country flag is back in the phone header.** When you're signed in on a phone, the top right now shows the bell and your country's flag, instead of a + button. Tap the flag to switch between New Zealand and China. To start a new story, use the New story button on My Stories.
+- **A cleaner flag.** The country picker is now just the flag, with no little arrow after it, on phones and on bigger screens.
+- **Story folders show your covers.** On the Story folders page, every main story and sub story now shows a small picture of its cover photo instead of a plain folder icon, so you can tell them apart at a glance.
+- **Recent stories first when adding sub stories.** The "Add sub stories" list now shows your most recently updated stories at the top, instead of sorting them A to Z. Stories already in the folder still come first.
+
+#### Behind the scenes
+
+- **Travel style is fully removed.** Version 4.3.0 took travel style out of the site; this release finishes the job by removing it from the database too. Nothing changes on screen.
+
 ### Features
 
 * **folders:** cover thumbnails and last-updated order for sub stories ([48dfeba](https://github.com/fr4d96/KakiNotes/commit/48dfeba51c155a604fcd9f2dbc2e076e19fbeb34))
