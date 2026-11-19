@@ -200,8 +200,8 @@ describe("SiteHeader", () => {
     render(<SiteHeader />);
 
     // The avatar replaces the signed-out buttons once the session resolves
-    // -- on desktop only. On a phone (the md:hidden cluster) a + for a new
-    // story takes its place; the avatar is the bottom bar's Profile tab.
+    // -- on desktop only. On a phone (the md:hidden cluster) the country
+    // flag takes its place; the avatar is the bottom bar's Profile tab.
     const avatars = await screen.findAllByRole("button", {
       name: "Account menu",
     });
@@ -216,8 +216,10 @@ describe("SiteHeader", () => {
       screen.queryByRole("navigation", { name: "Contributor" }),
     ).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "My Stories" })).toBeNull();
-    const plus = screen.getByRole("link", { name: "New Story" });
-    expect(plus).toHaveAttribute("href", "/stories/new");
+    // No + for a new story in the phone bar any more (My Stories has its
+    // own); the country flag sits there instead, beside the desktop one.
+    expect(screen.queryByRole("link", { name: "New Story" })).toBeNull();
+    expect(screen.getAllByRole("button", { name: /country/i })).toHaveLength(2);
 
     // They are still one click away, inside the profile icon's dropdown.
     fireEvent.click(avatars[0]);

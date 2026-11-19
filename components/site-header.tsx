@@ -13,7 +13,6 @@ import { AuthModal } from "@/components/auth/auth-modal";
 import { SignInForm } from "@/components/auth/sign-in-form";
 import { SignUpForm } from "@/components/auth/sign-up-form";
 import { UserAvatarMenu } from "@/components/auth/user-avatar-menu";
-import { NewStoryButton } from "@/components/new-story-button";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { useViewerIdentity } from "@/lib/auth/viewer-identity";
 import { isAuthPage } from "@/lib/navigation/page-titles";
@@ -148,8 +147,9 @@ export function SiteHeader() {
       <div className="mx-auto flex min-h-[76px] max-w-[1440px] items-center gap-3 px-4 sm:gap-5 sm:px-6">
         <HeaderBrand homeHref={countryPrefix || "/"} priority />
         {/* Beside the logo from md up: the current country's flag. On
-            phones the country is chosen on the profile page (Settings →
-            Country) since 2026-11-18, leaving the bar to the title. */}
+            phones a signed-in visitor gets it at the right of the bar,
+            beside the bell (below); signed out, the country is chosen on
+            Settings → Country, leaving the bar to the title and Sign in. */}
         <div className="hidden md:contents">
           <CountrySwitcher />
         </div>
@@ -234,12 +234,15 @@ export function SiteHeader() {
             </button>
           )}
           {signedIn ? (
-            // Signed in on a phone: the bell and a + for a new story. The
-            // avatar and everything its menu held (About included) live on
-            // the Profile tab's screen (components/profile-links.tsx).
+            // Signed in on a phone: the bell and the country flag. The flag
+            // replaced a + for a new story (2026-11-19): My Stories already
+            // has its own New story button, while switching country had no
+            // way in from the bar. The avatar and everything its menu held
+            // (About included) live on the Profile tab's screen
+            // (components/profile-links.tsx).
             <>
               <NotificationBell />
-              <NewStoryButton />
+              <CountrySwitcher />
             </>
           ) : (
             <MobileNavToggle
