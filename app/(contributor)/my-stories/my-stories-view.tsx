@@ -1241,7 +1241,7 @@ export function MyStoriesView({
             and broke "My Stories" onto two lines beside New Story. Same
             weight, tracking and family; phone-sized here, and from sm up the
             heading's own clamp(), so desktop is unchanged. */}
-        <h1 className="min-w-0 font-sans text-[1.75rem] leading-none font-extrabold tracking-[-0.035em] whitespace-nowrap max-md:sr-only sm:text-[clamp(2.35rem,5vw,4.7rem)] sm:leading-[0.98]">
+        <h1 className="min-w-0 font-sans text-2xl leading-none font-extrabold tracking-[-0.035em] whitespace-nowrap max-md:sr-only sm:text-[clamp(2.35rem,5vw,4.7rem)] sm:leading-[0.98]">
           {t("title")}
         </h1>
         <Link
@@ -1315,7 +1315,7 @@ export function MyStoriesView({
                 {activeFilterCount > 0 && (
                   <span
                     aria-hidden="true"
-                    className="absolute top-0.5 right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-mono text-[10px] leading-none font-bold text-accent-foreground tabular-nums"
+                    className="absolute top-0.5 right-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 font-mono text-xs leading-none font-bold text-accent-foreground tabular-nums"
                   >
                     {activeFilterCount}
                   </span>
