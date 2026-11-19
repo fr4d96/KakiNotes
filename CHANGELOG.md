@@ -1,5 +1,26 @@
 # Changelog
 
+## [4.2.2](https://github.com/fr4d96/KakiNotes/compare/v4.2.1...v4.2.2) (2026-11-19)
+
+
+### Zoom into photos, simpler story cards, and your name on the tab bar
+
+#### For readers
+
+- **Zoom into any photo.** Open a photo full screen and pinch to zoom in, up to four times its size, or double-tap to zoom straight in on the spot you tapped. While zoomed in, drag with one finger to look around; double-tap again to zoom back out. Swiping to the next photo and dragging down to close work again once you're back at normal size. On a keyboard, + and − zoom and 0 resets.
+
+#### For contributors
+
+- **One Edit button per story.** Each card in My Stories now has one clear button — usually just "Edit" — instead of a row of small icons.
+- **Everything else is under ⋯.** Preview, Edit anyway, Delete and Take down (or Cancel takedown request) are now in the ⋯ menu on each card. On a phone it slides up from the bottom of the screen. Delete and Take down still ask you to confirm first.
+- **Your name on the tab bar.** The Profile tab now shows your username, or your display name if you haven't set a username, next to your avatar. Only you see it.
+
+### Bug Fixes
+
+* **my-stories:** one Edit button and a ⋯ menu on each story card ([be5610e](https://github.com/fr4d96/KakiNotes/commit/be5610ed477c5d53a9ea6ef41622d13a30ad1e50))
+* **nav:** label the Profile tab with the viewer's username ([67569e3](https://github.com/fr4d96/KakiNotes/commit/67569e3d29f53601f34ca03b4c5e240efaf5692f))
+* **photos:** pinch and double-tap zoom in the photo viewer ([a84ee23](https://github.com/fr4d96/KakiNotes/commit/a84ee23decbd3a432108ceee8ea5f187687861b9))
+
 ## [4.2.1](https://github.com/fr4d96/KakiNotes/compare/v4.2.0...v4.2.1) (2026-11-19)
 
 
