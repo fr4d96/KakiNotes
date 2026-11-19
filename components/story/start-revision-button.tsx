@@ -28,6 +28,7 @@ export function StartRevisionButton({
   isPublished,
   variant = "button",
   className,
+  label,
 }: {
   storyId: string;
   storyTitle: string;
@@ -35,6 +36,12 @@ export function StartRevisionButton({
   isPublished: boolean;
   variant?: "icon" | "button";
   className?: string;
+  /**
+   * Shorter visible text for the "button" variant (My Stories cards say just
+   * "Edit"). The accessible name then becomes "Edit <title>", so a list of
+   * cards doesn't read as a column of identical "Edit" buttons.
+   */
+  label?: string;
 }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -66,12 +73,14 @@ export function StartRevisionButton({
         onClick={() => setConfirmOpen(true)}
         title={t("editTitle", { title: storyTitle })}
         aria-label={
-          variant === "icon" ? t("editTitle", { title: storyTitle }) : undefined
+          variant === "icon" || label
+            ? t("editTitle", { title: storyTitle })
+            : undefined
         }
         className={className}
       >
         <EditorialPencilIcon className="h-4 w-4" aria-hidden="true" />
-        {variant === "button" && <span>{t("edit")}</span>}
+        {variant === "button" && <span>{label ?? t("edit")}</span>}
       </button>
       <ConfirmDialog
         open={confirmOpen}

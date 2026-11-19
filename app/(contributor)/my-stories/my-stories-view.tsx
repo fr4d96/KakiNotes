@@ -24,7 +24,12 @@ import {
   requestStoryTakedownAction,
   cancelStoryTakedownAction,
 } from "./actions";
-import { ACTION_ICON_CLASS } from "./action-icon-class";
+import { PRIMARY_ACTION_CLASS, menuItemClass } from "./action-icon-class";
+import {
+  StoryActionsMenu,
+  StoryMenuLink,
+  useStoryActionsMenu,
+} from "./story-actions-menu";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
@@ -53,11 +58,6 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import type { MyStoryWithCover } from "@/lib/story/contributor-queries";
-
-// Moved to ./action-icon-class.ts (re-exported here for anything already
-// importing it from this file) -- the per-story icon action styling shared
-// across this page.
-export { ACTION_ICON_CLASS };
 
 type ViewMode = "grid" | "list";
 
@@ -326,29 +326,29 @@ function primaryStoryHref(story: MyStoryWithCover): string {
 }
 
 /**
- * A story action rendered as an icon-only Link -- Edit / Review / Preview.
- * `label` becomes both the visible tooltip (title) and the accessible name
- * (aria-label), since the icon alone carries no text for a screen reader.
+ * The card's one visible action: a pill with an icon AND text. The accessible
+ * name carries the story title (the visible text is its prefix) so a list of
+ * identical "Edit" pills stays distinguishable to a screen reader.
  */
-function ActionIconLink({
+function PrimaryActionLink({
   href,
   label,
-  className,
+  text,
   children,
 }: {
   href: string;
   label: string;
-  className?: string;
+  text: string;
   children: React.ReactNode;
 }) {
   return (
     <Link
       href={href}
-      title={label}
       aria-label={label}
-      className={`${ACTION_ICON_CLASS} ${className ?? ""}`}
+      className={`${PRIMARY_ACTION_CLASS} text-accent`}
     >
       {children}
+      <span>{text}</span>
     </Link>
   );
 }
@@ -363,13 +363,12 @@ function ActionIconLink({
 function DeleteDraftAction({
   story,
   title,
-  className,
 }: {
   story: MyStoryWithCover;
   title: string;
-  className?: string;
 }) {
   const t = useTranslations("myStories");
+  const { isPhone } = useStoryActionsMenu();
   const router = useRouter();
   const { showToast } = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -392,12 +391,12 @@ function DeleteDraftAction({
     <>
       <button
         type="button"
+        role="menuitem"
         onClick={() => setConfirmOpen(true)}
-        title={t("actions.delete", { title })}
-        aria-label={t("actions.delete", { title })}
-        className={`${ACTION_ICON_CLASS} text-destructive ${className ?? ""}`}
+        className={menuItemClass(isPhone, "danger")}
       >
-        <TrashIcon className="h-4 w-4" />
+        <TrashIcon className="h-4 w-4" aria-hidden="true" />
+        <span>{t("actions.deleteShort")}</span>
       </button>
       <ConfirmDialog
         open={confirmOpen}
@@ -447,14 +446,13 @@ function TakedownAction({
   story,
   title,
   request,
-  className,
 }: {
   story: MyStoryWithCover;
   title: string;
   request: TakedownRequestRow | null;
-  className?: string;
 }) {
   const t = useTranslations("myStories");
+  const { isPhone } = useStoryActionsMenu();
   const router = useRouter();
   const { showToast } = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -495,12 +493,13 @@ function TakedownAction({
       <>
         <button
           type="button"
+          role="menuitem"
           onClick={() => setCancelOpen(true)}
           title={t("actions.takedownPending", { title })}
-          aria-label={t("actions.cancelTakedown", { title })}
-          className={`${ACTION_ICON_CLASS} text-muted-foreground ${className ?? ""}`}
+          className={menuItemClass(isPhone, "muted")}
         >
-          <HiddenEyeIcon className="h-4 w-4" />
+          <HiddenEyeIcon className="h-4 w-4" aria-hidden="true" />
+          <span>{t("actions.cancelTakedownShort")}</span>
         </button>
         <ConfirmDialog
           open={cancelOpen}
@@ -519,12 +518,12 @@ function TakedownAction({
     <>
       <button
         type="button"
+        role="menuitem"
         onClick={() => setConfirmOpen(true)}
-        title={t("actions.takeDown", { title })}
-        aria-label={t("actions.takeDown", { title })}
-        className={`${ACTION_ICON_CLASS} text-destructive ${className ?? ""}`}
+        className={menuItemClass(isPhone, "danger")}
       >
-        <HiddenEyeIcon className="h-4 w-4" />
+        <HiddenEyeIcon className="h-4 w-4" aria-hidden="true" />
+        <span>{t("actions.takeDownShort")}</span>
       </button>
       <ConfirmDialog
         open={confirmOpen}
@@ -537,6 +536,129 @@ function TakedownAction({
         onCancel={() => setConfirmOpen(false)}
       />
     </>
+  );
+}
+
+/**
+ * Runs a real button component (ReopenForEditingButton) as a menu row: it
+ * owns its own confirm dialog and has no role prop, so the wrapper stamps
+ * role="menuitem" on its trigger and passes the row classes down.
+ */
+function MenuItemHost({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      role="none"
+      ref={(el) => {
+        el?.querySelector(":scope > button")?.setAttribute("role", "menuitem");
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Every action on one story card: ONE visible primary action, and the rest
+ * in the "..." menu (destructive ones last). Which action leads:
+ *
+ *   editable         -> Edit (link to the editor)
+ *   canStartRevision -> Edit (confirm, then create the next draft)
+ *   awaitingApproval -> Review
+ *   otherwise        -> Preview (nothing else is sensible but viewing)
+ *
+ * The menu holds Preview/Review (when it is not already primary), "Edit
+ * anyway" (reopen a submitted revision), then Delete / Take down / Cancel
+ * takedown. With nothing left over there is no menu button at all.
+ */
+function StoryActions({
+  story,
+  title,
+  takedown,
+}: {
+  story: MyStoryWithCover;
+  title: string;
+  takedown: TakedownRequestRow | null;
+}) {
+  const t = useTranslations("myStories");
+  const {
+    awaitingApproval,
+    editable,
+    deletable,
+    withdrawable,
+    canStartRevision,
+    canReopen,
+  } = storyStatusFlags(story);
+  const editLeads = editable || canStartRevision;
+  const viewLabel = awaitingApproval
+    ? t("actions.review", { title })
+    : t("actions.preview", { title });
+  const viewText = awaitingApproval
+    ? t("actions.reviewShort")
+    : t("actions.previewShort");
+  const previewHref = `/stories/${story.id}/preview`;
+  const hasMenu = editLeads || canReopen || deletable || withdrawable;
+
+  return (
+    <div className="flex items-center justify-between gap-2">
+      {editable ? (
+        <PrimaryActionLink
+          href={`/stories/${story.id}/edit`}
+          label={t("actions.edit", { title })}
+          text={t("actions.editShort")}
+        >
+          <EditorialPencilIcon className="h-4 w-4" aria-hidden="true" />
+        </PrimaryActionLink>
+      ) : canStartRevision ? (
+        <StartRevisionButton
+          storyId={story.id}
+          storyTitle={title}
+          isPublished={story.lifecycle_status === "published"}
+          label={t("actions.editShort")}
+          className={`${PRIMARY_ACTION_CLASS} text-accent`}
+        />
+      ) : (
+        <PrimaryActionLink href={previewHref} label={viewLabel} text={viewText}>
+          <EyeIcon className="h-4 w-4" aria-hidden="true" />
+        </PrimaryActionLink>
+      )}
+      {hasMenu && (
+        <StoryActionsMenu title={title}>
+          {editLeads && (
+            <StoryMenuLink
+              href={previewHref}
+              icon={<EyeIcon className="h-4 w-4" aria-hidden="true" />}
+            >
+              {viewText}
+            </StoryMenuLink>
+          )}
+          {canReopen && <MenuItemHostReopen story={story} title={title} />}
+          {deletable && <DeleteDraftAction story={story} title={title} />}
+          {withdrawable && (
+            <TakedownAction story={story} title={title} request={takedown} />
+          )}
+        </StoryActionsMenu>
+      )}
+    </div>
+  );
+}
+
+function MenuItemHostReopen({
+  story,
+  title,
+}: {
+  story: MyStoryWithCover;
+  title: string;
+}) {
+  const { isPhone } = useStoryActionsMenu();
+  return (
+    <MenuItemHost>
+      <ReopenForEditingButton
+        storyId={story.id}
+        storyTitle={title}
+        isPublished={story.published_revision_id !== null}
+        className={menuItemClass(isPhone)}
+      />
+    </MenuItemHost>
   );
 }
 
@@ -661,16 +783,7 @@ function StoryGrid({
   return (
     <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
       {stories.map((story) => {
-        const {
-          awaitingApproval,
-          editable,
-          deletable,
-          withdrawable,
-          canStartRevision,
-          canReopen,
-          inReview,
-          updateInFlight,
-        } = storyStatusFlags(story);
+        const { inReview, updateInFlight } = storyStatusFlags(story);
         const title = story.title ?? t("untitled");
         const href = primaryStoryHref(story);
         return (
@@ -737,59 +850,12 @@ function StoryGrid({
                   <UpdateChip inReview={inReview} />
                 </p>
               )}
-              <div className="relative z-10 -ml-3 mt-0.5 flex flex-wrap items-center md:-ml-1.5 md:mt-1">
-                {editable && (
-                  <ActionIconLink
-                    href={`/stories/${story.id}/edit`}
-                    label={t("actions.edit", { title })}
-                    className="text-accent"
-                  >
-                    <EditorialPencilIcon className="h-4 w-4" />
-                  </ActionIconLink>
-                )}
-                {canStartRevision && (
-                  <StartRevisionButton
-                    storyId={story.id}
-                    storyTitle={title}
-                    isPublished={story.lifecycle_status === "published"}
-                    variant="icon"
-                    className={`${ACTION_ICON_CLASS} text-accent`}
-                  />
-                )}
-                {canReopen && (
-                  <ReopenForEditingButton
-                    storyId={story.id}
-                    storyTitle={title}
-                    isPublished={story.published_revision_id !== null}
-                    variant="icon"
-                    className={`${ACTION_ICON_CLASS} text-accent`}
-                  />
-                )}
-                {awaitingApproval ? (
-                  <ActionIconLink
-                    href={`/stories/${story.id}/preview`}
-                    label={t("actions.review", { title })}
-                    className="text-accent"
-                  >
-                    <EyeIcon className="h-4 w-4" />
-                  </ActionIconLink>
-                ) : (
-                  <ActionIconLink
-                    href={`/stories/${story.id}/preview`}
-                    label={t("actions.preview", { title })}
-                    className="text-foreground/70"
-                  >
-                    <EyeIcon className="h-4 w-4" />
-                  </ActionIconLink>
-                )}
-                {deletable && <DeleteDraftAction story={story} title={title} />}
-                {withdrawable && (
-                  <TakedownAction
-                    story={story}
-                    title={title}
-                    request={takedownByStory.get(story.id) ?? null}
-                  />
-                )}
+              <div className="relative z-10 mt-1.5">
+                <StoryActions
+                  story={story}
+                  title={title}
+                  takedown={takedownByStory.get(story.id) ?? null}
+                />
               </div>
             </div>
           </li>
@@ -824,16 +890,7 @@ function StoryList({
   return (
     <ul className="flex flex-col gap-3">
       {stories.map((story, index) => {
-        const {
-          awaitingApproval,
-          editable,
-          deletable,
-          withdrawable,
-          canStartRevision,
-          canReopen,
-          inReview,
-          updateInFlight,
-        } = storyStatusFlags(story);
+        const { inReview, updateInFlight } = storyStatusFlags(story);
         const updated = formatUpdatedAt(story.updated_at, locale);
         const places = destinationNames(story.regions, locale).join(", ");
         const title = story.title ?? t("untitled");
@@ -916,61 +973,12 @@ function StoryList({
                   )}
                 </div>
 
-                <div className="relative z-10 -ml-3 mt-1 flex items-center border-t border-border-subtle/60 pt-1 sm:mt-0 sm:ml-0 sm:border-t-0 sm:pt-0">
-                  {editable && (
-                    <ActionIconLink
-                      href={`/stories/${story.id}/edit`}
-                      label={t("actions.edit", { title })}
-                      className="text-accent"
-                    >
-                      <EditorialPencilIcon className="h-4 w-4" />
-                    </ActionIconLink>
-                  )}
-                  {canStartRevision && (
-                    <StartRevisionButton
-                      storyId={story.id}
-                      storyTitle={title}
-                      isPublished={story.lifecycle_status === "published"}
-                      variant="icon"
-                      className={`${ACTION_ICON_CLASS} text-accent`}
-                    />
-                  )}
-                  {canReopen && (
-                    <ReopenForEditingButton
-                      storyId={story.id}
-                      storyTitle={title}
-                      isPublished={story.published_revision_id !== null}
-                      variant="icon"
-                      className={`${ACTION_ICON_CLASS} text-accent`}
-                    />
-                  )}
-                  {awaitingApproval ? (
-                    <ActionIconLink
-                      href={`/stories/${story.id}/preview`}
-                      label={t("actions.review", { title })}
-                      className="text-accent"
-                    >
-                      <EyeIcon className="h-4 w-4" />
-                    </ActionIconLink>
-                  ) : (
-                    <ActionIconLink
-                      href={`/stories/${story.id}/preview`}
-                      label={t("actions.preview", { title })}
-                      className="text-foreground/70"
-                    >
-                      <EyeIcon className="h-4 w-4" />
-                    </ActionIconLink>
-                  )}
-                  {deletable && (
-                    <DeleteDraftAction story={story} title={title} />
-                  )}
-                  {withdrawable && (
-                    <TakedownAction
-                      story={story}
-                      title={title}
-                      request={takedownByStory.get(story.id) ?? null}
-                    />
-                  )}
+                <div className="relative z-10 mt-2 border-t border-border-subtle/60 pt-2 sm:mt-0 sm:border-t-0 sm:pt-0">
+                  <StoryActions
+                    story={story}
+                    title={title}
+                    takedown={takedownByStory.get(story.id) ?? null}
+                  />
                 </div>
               </div>
             </div>

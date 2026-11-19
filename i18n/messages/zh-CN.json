@@ -689,7 +689,15 @@
       "delete": "删除《{title}》",
       "takeDown": "申请撤下《{title}》",
       "cancelTakedown": "取消《{title}》的撤下申请",
-      "takedownPending": "《{title}》的撤下申请正在等待处理。点击可取消申请。"
+      "takedownPending": "《{title}》的撤下申请正在等待处理。点击可取消申请。",
+      "more": "“{title}”的更多操作",
+      "menuLabel": "“{title}”的操作",
+      "editShort": "编辑",
+      "reviewShort": "审阅",
+      "previewShort": "预览",
+      "deleteShort": "删除",
+      "takeDownShort": "下架",
+      "cancelTakedownShort": "取消下架请求"
     },
     "deleteDialog": {
       "title": "确定删除这篇故事？",

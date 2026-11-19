@@ -689,7 +689,15 @@
       "delete": "Delete {title}",
       "takeDown": "Take down {title}",
       "cancelTakedown": "Cancel the takedown request for {title}",
-      "takedownPending": "Takedown requested for {title} — awaiting review. Choose to cancel the request."
+      "takedownPending": "Takedown requested for {title} — awaiting review. Choose to cancel the request.",
+      "more": "More actions for {title}",
+      "menuLabel": "Actions for {title}",
+      "editShort": "Edit",
+      "reviewShort": "Review",
+      "previewShort": "Preview",
+      "deleteShort": "Delete",
+      "takeDownShort": "Take down",
+      "cancelTakedownShort": "Cancel takedown request"
     },
     "deleteDialog": {
       "title": "Delete this story?",

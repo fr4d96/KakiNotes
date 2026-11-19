@@ -79,6 +79,18 @@ function makeStory(overrides: StoryOverrides = {}) {
   } as MyStoryWithCover;
 }
 
+// The per-story actions beyond the one primary pill live in a "..." menu:
+// open the one belonging to `title` and hand back the menu element.
+async function openMenu(
+  user: ReturnType<typeof userEvent.setup>,
+  title = "Picking apples in Hawke's Bay",
+) {
+  await user.click(
+    screen.getByRole("button", { name: `More actions for ${title}` }),
+  );
+  return screen.getByRole("menu", { name: `Actions for ${title}` });
+}
+
 // This test environment provides no localStorage, so stub a minimal
 // in-memory one -- the view reads it synchronously through
 // useSyncExternalStore and the "no stored preference" default is exactly
@@ -194,14 +206,16 @@ describe("MyStoriesView", () => {
       expect(thumb.className).toContain("translate-x-0");
     });
 
-    it("gives the per-story icon actions a 44px box", () => {
+    it("gives the primary action and the more button a 44px target", () => {
       render(
         <MyStoriesView stories={[makeStory({ lifecycle_status: "draft" })]} />,
       );
       const edit = screen.getByRole("link", { name: /^Edit / });
       expect(edit.className).toContain("h-11");
-      expect(edit.className).toContain("w-11");
       expect(edit.className).toContain("press");
+      const more = screen.getByRole("button", { name: /^More actions for / });
+      expect(more.className).toContain("h-11");
+      expect(more.className).toContain("w-11");
     });
 
     it("makes the whole row (and grid card) one link via the title", () => {
@@ -311,7 +325,7 @@ describe("MyStoriesView", () => {
       expect(thumb).not.toBeNull();
       expect(
         thumb!.compareDocumentPosition(
-          within(row).getByRole("link", { name: /^(Preview|Review)/ }),
+          within(row).getByRole("link", { name: /^Edit / }),
         ) & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
     }
@@ -367,11 +381,12 @@ describe("MyStoriesView", () => {
   // `deletable` on revisionCount === 1 too (my-stories-view.tsx), matching
   // the RPC's own rule exactly via list_my_stories()'s new revision_count
   // column (supabase/migrations/20260926110804_list_my_stories_revision_count.sql).
-  it("hides Delete for a draft with prior review history, even though it looks like a plain draft otherwise", () => {
+  it("hides Delete for a draft with prior review history, even though it looks like a plain draft otherwise", async () => {
     render(<MyStoriesView stories={[makeStory({ revisionCount: 2 })]} />);
 
+    await openMenu(userEvent.setup());
     expect(
-      screen.queryByRole("button", { name: /^Delete/ }),
+      screen.queryByRole("menuitem", { name: /^Delete/ }),
     ).not.toBeInTheDocument();
   });
 
@@ -392,12 +407,16 @@ describe("MyStoriesView", () => {
       />,
     );
 
-    // Only the plain draft is deletable -- exactly one trash-icon trigger.
-    expect(screen.getAllByRole("button", { name: /^Delete/ })).toHaveLength(1);
+    // Only the plain draft is deletable -- the published story's menu has no
+    // Delete.
+    await openMenu(user, "Already published");
+    expect(
+      screen.queryByRole("menuitem", { name: "Delete" }),
+    ).not.toBeInTheDocument();
+    await user.keyboard("{Escape}");
 
-    const deleteButton = screen.getByRole("button", {
-      name: "Delete Picking apples in Hawke's Bay",
-    });
+    await openMenu(user);
+    const deleteButton = screen.getByRole("menuitem", { name: "Delete" });
     await user.click(deleteButton);
 
     expect(
@@ -418,6 +437,184 @@ describe("MyStoriesView", () => {
     );
   });
 
+  describe("per-story actions menu", () => {
+    const published = makeStory({
+      id: "44444444-4444-4444-8444-444444444444",
+      title: "Already published",
+      lifecycle_status: "published",
+      published_revision_id: "55555555-5555-4555-8555-555555555555",
+      current_draft_revision_id: null,
+      draftRevisionStatus: null,
+    });
+
+    function menuItemNames(menu: HTMLElement) {
+      return within(menu)
+        .getAllByRole("menuitem")
+        .map((item) => item.textContent);
+    }
+
+    it("shows ONE labelled primary action per card and no other action buttons", () => {
+      render(<MyStoriesView stories={[makeStory()]} />);
+      const row = screen.getByRole("listitem");
+      expect(
+        within(row).getByRole("link", { name: /^Edit / }),
+      ).toHaveTextContent("Edit");
+      expect(
+        within(row).queryByRole("button", { name: /^(Delete|Take down)/ }),
+      ).not.toBeInTheDocument();
+      expect(
+        within(row).queryByRole("link", { name: /^Preview/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("lists Preview then Delete for an editable draft", async () => {
+      const user = userEvent.setup();
+      render(<MyStoriesView stories={[makeStory()]} />);
+      const button = screen.getByRole("button", {
+        name: "More actions for Picking apples in Hawke's Bay",
+      });
+      expect(button).toHaveAttribute("aria-haspopup", "menu");
+      expect(button).toHaveAttribute("aria-expanded", "false");
+      const menu = await openMenu(user);
+      expect(button).toHaveAttribute("aria-expanded", "true");
+      expect(menuItemNames(menu)).toEqual(["Preview", "Delete"]);
+    });
+
+    it("leads with Edit and keeps Take down last for a published story", async () => {
+      const user = userEvent.setup();
+      render(<MyStoriesView stories={[published]} />);
+      expect(
+        screen.getByRole("button", { name: "Edit Already published" }),
+      ).toBeInTheDocument();
+      const menu = await openMenu(user, "Already published");
+      expect(menuItemNames(menu)).toEqual(["Preview", "Take down"]);
+    });
+
+    it("makes Review the primary action and offers no menu when nothing else applies", () => {
+      render(
+        <MyStoriesView
+          stories={[
+            makeStory({ lifecycle_status: "awaiting_contributor_approval" }),
+          ]}
+        />,
+      );
+      expect(screen.getByRole("link", { name: /^Review/ })).toHaveTextContent(
+        "Review",
+      );
+      expect(
+        screen.queryByRole("button", { name: /^More actions/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("puts Edit anyway in the menu of a story that is in review", async () => {
+      const user = userEvent.setup();
+      render(
+        <MyStoriesView
+          stories={[
+            makeStory({
+              lifecycle_status: "pending_review",
+              draftRevisionStatus: "submitted",
+            }),
+          ]}
+        />,
+      );
+      expect(screen.getByRole("link", { name: /^Preview/ })).toHaveTextContent(
+        "Preview",
+      );
+      const menu = await openMenu(user);
+      expect(menuItemNames(menu)).toEqual(["Edit anyway"]);
+    });
+
+    it("closes on Escape and returns focus to the button", async () => {
+      const user = userEvent.setup();
+      render(<MyStoriesView stories={[makeStory()]} />);
+      const button = screen.getByRole("button", { name: /^More actions for / });
+      await openMenu(user);
+      await user.keyboard("{Escape}");
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+      expect(button).toHaveAttribute("aria-expanded", "false");
+      expect(button).toHaveFocus();
+    });
+
+    it("closes on a click outside, and moves between items with the arrow keys", async () => {
+      const user = userEvent.setup();
+      render(<MyStoriesView stories={[makeStory()]} />);
+      const menu = await openMenu(user);
+      const [preview, del] = within(menu).getAllByRole("menuitem");
+      expect(preview).toHaveFocus();
+      await user.keyboard("{ArrowDown}");
+      expect(del).toHaveFocus();
+      await user.keyboard("{ArrowDown}");
+      expect(preview).toHaveFocus();
+      await user.click(document.body);
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    });
+
+    it("keeps only one menu open at a time", async () => {
+      const user = userEvent.setup();
+      render(
+        <MyStoriesView
+          stories={[
+            makeStory(),
+            makeStory({
+              id: "44444444-4444-4444-8444-444444444444",
+              title: "Second draft",
+            }),
+          ]}
+        />,
+      );
+      await openMenu(user, "Second draft");
+      await openMenu(user);
+      expect(screen.getAllByRole("menu")).toHaveLength(1);
+      expect(
+        screen.getByRole("menu", {
+          name: "Actions for Picking apples in Hawke's Bay",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("still asks before deleting, from inside the menu", async () => {
+      const { deleteDraftStoryAction } = await import("./actions");
+      vi.mocked(deleteDraftStoryAction).mockClear();
+      const user = userEvent.setup();
+      render(<MyStoriesView stories={[makeStory()]} />);
+      await openMenu(user);
+      await user.click(screen.getByRole("menuitem", { name: "Delete" }));
+      expect(deleteDraftStoryAction).not.toHaveBeenCalled();
+      expect(
+        screen.getByRole("heading", { name: "Delete this story?" }),
+      ).toBeInTheDocument();
+    });
+
+    it("opens the actions in a bottom sheet on a phone", async () => {
+      Object.defineProperty(window, "matchMedia", {
+        configurable: true,
+        value: (query: string) => ({
+          matches: true,
+          media: query,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        }),
+      });
+      try {
+        const user = userEvent.setup();
+        render(<MyStoriesView stories={[makeStory()]} />);
+        await user.click(
+          screen.getByRole("button", { name: /^More actions for / }),
+        );
+        const sheet = screen.getByRole("dialog", {
+          name: "Actions for Picking apples in Hawke's Bay",
+        });
+        expect(
+          within(sheet).getByRole("menuitem", { name: "Delete" }),
+        ).toBeInTheDocument();
+      } finally {
+        // @ts-expect-error -- jsdom has no matchMedia by default
+        delete window.matchMedia;
+      }
+    });
+  });
+
   describe("taking a published story down", () => {
     const published = makeStory({
       id: "44444444-4444-4444-8444-444444444444",
@@ -429,21 +626,29 @@ describe("MyStoriesView", () => {
       version: 7,
     });
 
-    it("offers Take down only on a published story, never on a draft", () => {
+    it("offers Take down only on a published story, never on a draft", async () => {
+      const user = userEvent.setup();
       render(<MyStoriesView stories={[makeStory(), published]} />);
 
-      const takeDowns = screen.getAllByRole("button", {
-        name: /^Take down/,
-      });
-      expect(takeDowns).toHaveLength(1);
-      expect(takeDowns[0]).toHaveAccessibleName("Take down Already published");
+      const publishedMenu = await openMenu(user, "Already published");
+      expect(
+        within(publishedMenu).getByRole("menuitem", { name: "Take down" }),
+      ).toBeInTheDocument();
+      expect(
+        within(publishedMenu).queryByRole("menuitem", { name: "Delete" }),
+      ).not.toBeInTheDocument();
+      await user.keyboard("{Escape}");
 
       // ...and the two destructive actions are never offered on the same
       // story: Delete belongs to the never-published draft, Take down to the
       // published one.
+      const draftMenu = await openMenu(user);
       expect(
-        screen.getByRole("button", { name: /^Delete/ }),
-      ).toHaveAccessibleName("Delete Picking apples in Hawke's Bay");
+        within(draftMenu).getByRole("menuitem", { name: "Delete" }),
+      ).toBeInTheDocument();
+      expect(
+        within(draftMenu).queryByRole("menuitem", { name: "Take down" }),
+      ).not.toBeInTheDocument();
     });
 
     it("says what a takedown actually does before doing it, and can be backed out of", async () => {
@@ -452,9 +657,8 @@ describe("MyStoriesView", () => {
       const user = userEvent.setup();
       render(<MyStoriesView stories={[published]} />);
 
-      await user.click(
-        screen.getByRole("button", { name: "Take down Already published" }),
-      );
+      await openMenu(user, "Already published");
+      await user.click(screen.getByRole("menuitem", { name: "Take down" }));
 
       expect(requestStoryTakedownAction).not.toHaveBeenCalled();
       expect(
@@ -485,9 +689,8 @@ describe("MyStoriesView", () => {
       const user = userEvent.setup();
       render(<MyStoriesView stories={[published]} />);
 
-      await user.click(
-        screen.getByRole("button", { name: "Take down Already published" }),
-      );
+      await openMenu(user, "Already published");
+      await user.click(screen.getByRole("menuitem", { name: "Take down" }));
       await user.click(
         screen.getByRole("button", { name: "Ask for takedown" }),
       );
@@ -513,9 +716,8 @@ describe("MyStoriesView", () => {
         </ToastProvider>,
       );
 
-      await user.click(
-        screen.getByRole("button", { name: "Take down Already published" }),
-      );
+      await openMenu(user, "Already published");
+      await user.click(screen.getByRole("menuitem", { name: "Take down" }));
       await user.click(
         screen.getByRole("button", { name: "Ask for takedown" }),
       );
@@ -823,7 +1025,7 @@ describe("MyStoriesView", () => {
     expect(startStoryRevisionAction).not.toHaveBeenCalled();
   });
 
-  it("swaps plain Edit for a reopen-for-review button while a published story's update is with a moderator, and says so", () => {
+  it("swaps plain Edit for a reopen-for-review menu item while a published story's update is with a moderator, and says so", async () => {
     render(
       <MyStoriesView
         stories={[
@@ -849,16 +1051,13 @@ describe("MyStoriesView", () => {
       screen.queryByRole("link", { name: /^Edit/ }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", {
-        name: "Edit Picking apples in Hawke's Bay",
-      }),
+      screen.queryByRole("button", { name: /^Edit (?!anyway)/ }),
     ).not.toBeInTheDocument();
     // ...but the story is not stuck: ReopenForEditingButton offers to pull
-    // the submitted revision back out of the queue.
+    // the submitted revision back out of the queue (from the menu).
+    const menu = await openMenu(userEvent.setup());
     expect(
-      screen.getByRole("button", {
-        name: "Edit Picking apples in Hawke's Bay anyway",
-      }),
+      within(menu).getByRole("menuitem", { name: "Edit anyway" }),
     ).toBeInTheDocument();
   });
 
@@ -919,7 +1118,7 @@ describe("MyStoriesView", () => {
     return screen.getByRole("group", { name: new RegExp(name) });
   }
 
-  it("groups stories into Drafts, In review and Published, each with a count", () => {
+  it("groups stories into Drafts, In review and Published, each with a count", async () => {
     render(<MyStoriesView stories={sectioned()} />);
 
     expect(within(section("Drafts")).getByText("A draft")).toBeInTheDocument();
@@ -932,11 +1131,11 @@ describe("MyStoriesView", () => {
     // A first submission sitting with a moderator is not a dead end either:
     // the reopen-for-editing icon button is offered right there in the
     // section, same as it is for a published story's in-flight update.
+    const menu = await openMenu(userEvent.setup(), "With a moderator");
     expect(
-      within(section("In review")).getByRole("button", {
-        name: "Edit With a moderator anyway",
-      }),
+      within(menu).getByRole("menuitem", { name: "Edit anyway" }),
     ).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
     expect(
       within(section("Published")).getByText("Live one"),
     ).toBeInTheDocument();
