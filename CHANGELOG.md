@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.2.6](https://github.com/fr4d96/KakiNotes/compare/v4.2.5...v4.2.6) (2026-11-19)
+
+
+### Features
+
+* **my-stories:** sort by title, trip date, trip year, trip month, edited or created ([ffa6968](https://github.com/fr4d96/KakiNotes/commit/ffa69689f3ac5bd79bf740ee1dc57e552a848b7f))
+
+
+### Bug Fixes
+
+* **my-stories:** stop LazyMount hydration mismatch ([4b80fd2](https://github.com/fr4d96/KakiNotes/commit/4b80fd240ac547284df1bb6e65e9ba608aaca055))
+
 ## [4.2.5](https://github.com/fr4d96/KakiNotes/compare/v4.2.4...v4.2.5) (2026-11-19)
 
 
