@@ -668,6 +668,34 @@
       "buttonActive": "Filters, {count} active",
       "showResults": "{count, plural, one {Show # story} other {Show # stories}}"
     },
+    "sort": {
+      "button": "Sort",
+      "buttonActive": "Sort: {summary}",
+      "title": "Sort stories",
+      "keyLabel": "Sort by",
+      "directionLabel": "Order",
+      "summary": "{key}, {direction}",
+      "toggleDirection": "Order: {direction}. Change order",
+      "announce": "Sorted by {key}, {direction}",
+      "done": "Done",
+      "reset": "Reset",
+      "keys": {
+        "updated": "Last edited",
+        "created": "Date created",
+        "title": "Title",
+        "tripDate": "Trip date",
+        "tripYear": "Trip year",
+        "tripMonth": "Trip month"
+      },
+      "directions": {
+        "updated": { "asc": "Oldest first", "desc": "Newest first" },
+        "created": { "asc": "Oldest first", "desc": "Newest first" },
+        "title": { "asc": "A–Z", "desc": "Z–A" },
+        "tripDate": { "asc": "Oldest first", "desc": "Newest first" },
+        "tripYear": { "asc": "Oldest first", "desc": "Newest first" },
+        "tripMonth": { "asc": "Jan → Dec", "desc": "Dec → Jan" }
+      }
+    },
     "sections": {
       "drafts": "Drafts",
       "draftsHint": "Yours to finish",

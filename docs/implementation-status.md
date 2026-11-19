@@ -11795,3 +11795,20 @@ the directory still need a public profile. Applied with `supabase db push` to
 deployed release needs nothing. `docs/content-governance.md` records the rule. Also, the byline
 draws an emoji avatar at `text-lg` (a letter initial stays `text-xs`); at 12px the sheep was a
 faint speck. Checked on "Queenstown Spots" at 375px after the 60s public cache expired.
+
+## 2026-11-19 — My Stories sorting
+
+My Stories has a Sort control beside Filters: Last edited (default, newest first — the order the
+page always had), Date created, Title, Trip date, Trip year and Trip month, each ascending or
+descending. Picking a key starts it in its natural direction (Title A–Z, Trip month Jan–Dec, dates
+newest first). Pure logic in `lib/story/my-stories-sort.ts` (unit-tested): untitled stories and
+stories without a trip date always sort last; trip year breaks ties by title, trip month by year
+then title. Sorting runs client-side after filtering, inside each status section, before the
+12-at-a-time reveal; the choice persists in localStorage (`kaki-my-stories-sort`), same pattern as
+the grid/list toggle. Phone: a ⇅ icon opens a bottom sheet of radio groups; md+: a select plus a
+direction button. Migration `20261119100000_list_my_stories_trip_dates` adds `trip_start_date` /
+`trip_end_date` (from the same revision row) to the end of `list_my_stories()`; grants, security
+definer and ownership filter copied unchanged. Applied with `supabase db push` (dry run showed it
+was the only pending one); types generated from the linked project match `types/database.ts`
+exactly. Also: LazyMount no longer causes a hydration mismatch (server and first client render
+both show the placeholder).

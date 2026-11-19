@@ -2851,6 +2851,8 @@ export type Database = {
           submitted_at: string;
           tags: Json;
           title: string;
+          trip_end_date: string;
+          trip_start_date: string;
           updated_at: string;
           version: number;
           visibility: Database["public"]["Enums"]["story_visibility"];

@@ -55,9 +55,21 @@ import {
   HiddenEyeIcon,
   ImportIcon,
   PlusIcon,
+  SortIcon,
   TrashIcon,
 } from "@/components/icons";
 import type { MyStoryWithCover } from "@/lib/story/contributor-queries";
+import {
+  DEFAULT_MY_STORIES_SORT,
+  MY_STORIES_SORT_KEYS,
+  parseMyStoriesSort,
+  serializeMyStoriesSort,
+  sortForKey,
+  sortMyStories,
+  type MyStoriesSort,
+  type MyStoriesSortDirection,
+  type MyStoriesSortKey,
+} from "@/lib/story/my-stories-sort";
 
 type ViewMode = "grid" | "list";
 
@@ -71,6 +83,7 @@ const TOOL_CLASS =
   "press relative inline-flex h-10 min-w-10 shrink-0 items-center justify-center gap-2 rounded-full text-foreground/75 transition-colors after:absolute after:-inset-0.5 after:content-[''] hover:bg-surface-muted hover:text-foreground active:bg-surface-muted md:border md:border-border-subtle md:px-3.5 md:text-sm md:font-medium";
 
 const VIEW_STORAGE_KEY = "kaki-my-stories-view";
+const SORT_STORAGE_KEY = "kaki-my-stories-sort";
 
 /**
  * Stories revealed per step. 12 divides evenly by both grid widths (2 columns
@@ -122,6 +135,37 @@ function setStoredView(next: ViewMode) {
     // ignore (private browsing / storage disabled)
   }
   viewListeners.forEach((listener) => listener());
+}
+
+// Sort preference: same pattern as the view above. The snapshot is the raw
+// stored string (a primitive, so useSyncExternalStore sees a stable value);
+// it is validated by parseMyStoriesSort, which falls back to the default.
+const sortListeners = new Set<() => void>();
+
+function getSortSnapshot(): string {
+  try {
+    return localStorage.getItem(SORT_STORAGE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function getServerSortSnapshot(): string {
+  return "";
+}
+
+function subscribeToSort(listener: () => void) {
+  sortListeners.add(listener);
+  return () => sortListeners.delete(listener);
+}
+
+function setStoredSort(next: MyStoriesSort) {
+  try {
+    localStorage.setItem(SORT_STORAGE_KEY, serializeMyStoriesSort(next));
+  } catch {
+    // ignore (private browsing / storage disabled)
+  }
+  sortListeners.forEach((listener) => listener());
 }
 
 /** "14 Sept 2026" / "2026年9月14日", via the shared locale-aware helper. */
@@ -662,6 +706,45 @@ function MenuItemHostReopen({
   );
 }
 
+/** A native radio group: keyboard-operable, announced with its legend. */
+function SortRadioGroup<V extends MyStoriesSortKey | MyStoriesSortDirection>({
+  name,
+  legend,
+  value,
+  options,
+  onChange,
+}: {
+  name: string;
+  legend: string;
+  value: V;
+  options: { value: V; label: string }[];
+  onChange: (value: V) => void;
+}) {
+  return (
+    <fieldset className="flex flex-col gap-1">
+      <legend className="mb-1 font-mono text-xs font-bold tracking-wide text-foreground/60 uppercase">
+        {legend}
+      </legend>
+      {options.map((option) => (
+        <label
+          key={option.value}
+          className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-2 text-sm font-medium has-[:checked]:bg-surface-muted has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent"
+        >
+          <input
+            type="radio"
+            name={name}
+            value={option.value}
+            checked={value === option.value}
+            onChange={() => onChange(option.value)}
+            className="h-4 w-4 accent-accent"
+          />
+          {option.label}
+        </label>
+      ))}
+    </fieldset>
+  );
+}
+
 function GridIcon() {
   return (
     <svg
@@ -1047,6 +1130,13 @@ export function MyStoriesView({
     getServerViewSnapshot,
   );
 
+  const sortRaw = useSyncExternalStore(
+    subscribeToSort,
+    getSortSnapshot,
+    getServerSortSnapshot,
+  );
+  const sort = useMemo(() => parseMyStoriesSort(sortRaw), [sortRaw]);
+
   const axes = useMemo(
     () =>
       buildFilterAxes(
@@ -1091,9 +1181,14 @@ export function MyStoriesView({
       private: [],
       closed: [],
     };
-    for (const story of filtered) buckets[storySection(story)].push(story);
+    // Sorted once, after filtering and before bucketing: each bucket keeps
+    // that order, so every section (and the single-section view) is sorted
+    // before the PAGE_SIZE reveal slices it.
+    for (const story of sortMyStories(filtered, sort, locale)) {
+      buckets[storySection(story)].push(story);
+    }
     return buckets;
-  }, [filtered]);
+  }, [filtered, sort, locale]);
 
   // Tracks what is CLOSED rather than what is open, so a section added later
   // is never accidentally hidden by a stale key.
@@ -1192,6 +1287,11 @@ export function MyStoriesView({
     setVisibleCount(PAGE_SIZE);
   }
 
+  function changeSort(next: MyStoriesSort) {
+    setStoredSort(next);
+    setVisibleCount(PAGE_SIZE);
+  }
+
   function clearFilters() {
     setActiveFilters({});
     setVisibleCount(PAGE_SIZE);
@@ -1211,6 +1311,14 @@ export function MyStoriesView({
   // exactly one set of chip groups is ever exposed.
   const isPhone = useIsPhone();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+  const isDefaultSort =
+    serializeMyStoriesSort(sort) ===
+    serializeMyStoriesSort(DEFAULT_MY_STORIES_SORT);
+  const sortSummary = t("sort.summary", {
+    key: t(`sort.keys.${sort.key}`),
+    direction: t(`sort.directions.${sort.key}.${sort.direction}`),
+  });
 
   const filterRows = (wrap: boolean) =>
     axes.map((axis) => (
@@ -1322,6 +1430,67 @@ export function MyStoriesView({
                 )}
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => setSortOpen(true)}
+              aria-haspopup="dialog"
+              aria-label={t("sort.buttonActive", { summary: sortSummary })}
+              title={t("sort.button")}
+              className={`${TOOL_CLASS} sm:hidden ${
+                isDefaultSort ? "" : "text-accent"
+              }`}
+            >
+              <SortIcon className="h-5 w-5" />
+            </button>
+            <div className="flex items-center gap-1 max-sm:hidden">
+              <label
+                className={`${TOOL_CLASS} cursor-pointer`}
+                title={t("sort.keyLabel")}
+              >
+                <SortIcon className="h-5 w-5" />
+                <span className="sr-only">{t("sort.keyLabel")}</span>
+                <select
+                  value={sort.key}
+                  onChange={(event) =>
+                    changeSort(
+                      sortForKey(event.target.value as MyStoriesSortKey),
+                    )
+                  }
+                  className="cursor-pointer bg-transparent text-sm font-medium focus:outline-none"
+                >
+                  {MY_STORIES_SORT_KEYS.map((key) => (
+                    <option key={key} value={key}>
+                      {t(`sort.keys.${key}`)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() =>
+                  changeSort({
+                    ...sort,
+                    direction: sort.direction === "asc" ? "desc" : "asc",
+                  })
+                }
+                aria-label={t("sort.toggleDirection", {
+                  direction: t(`sort.directions.${sort.key}.${sort.direction}`),
+                })}
+                className={TOOL_CLASS}
+              >
+                {t(`sort.directions.${sort.key}.${sort.direction}`)}
+              </button>
+            </div>
+            <span role="status" className="sr-only">
+              {isDefaultSort
+                ? ""
+                : t("sort.announce", {
+                    key: t(`sort.keys.${sort.key}`),
+                    direction: t(
+                      `sort.directions.${sort.key}.${sort.direction}`,
+                    ),
+                  })}
+            </span>
             <div
               role="group"
               aria-label={t("viewLabel")}
@@ -1422,6 +1591,57 @@ export function MyStoriesView({
               }
             >
               <div className="flex flex-col gap-5">{filterRows(true)}</div>
+            </BottomSheet>
+          )}
+
+          {isPhone && (
+            <BottomSheet
+              open={sortOpen}
+              onClose={() => setSortOpen(false)}
+              title={t("sort.title")}
+              footer={
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSortOpen(false)}
+                    className="press inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-accent px-5 text-sm font-black text-accent-foreground"
+                  >
+                    {t("sort.done")}
+                  </button>
+                  {!isDefaultSort && (
+                    <button
+                      type="button"
+                      onClick={() => changeSort(DEFAULT_MY_STORIES_SORT)}
+                      className="press inline-flex min-h-12 items-center justify-center rounded-full border border-border-subtle px-5 text-sm font-bold"
+                    >
+                      {t("sort.reset")}
+                    </button>
+                  )}
+                </div>
+              }
+            >
+              <div className="flex flex-col gap-5">
+                <SortRadioGroup
+                  name="my-stories-sort-key"
+                  legend={t("sort.keyLabel")}
+                  value={sort.key}
+                  options={MY_STORIES_SORT_KEYS.map((key) => ({
+                    value: key,
+                    label: t(`sort.keys.${key}`),
+                  }))}
+                  onChange={(key) => changeSort(sortForKey(key))}
+                />
+                <SortRadioGroup
+                  name="my-stories-sort-direction"
+                  legend={t("sort.directionLabel")}
+                  value={sort.direction}
+                  options={(["asc", "desc"] as const).map((direction) => ({
+                    value: direction,
+                    label: t(`sort.directions.${sort.key}.${direction}`),
+                  }))}
+                  onChange={(direction) => changeSort({ ...sort, direction })}
+                />
+              </div>
             </BottomSheet>
           )}
 

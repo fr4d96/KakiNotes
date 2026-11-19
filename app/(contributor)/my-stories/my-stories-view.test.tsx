@@ -1456,4 +1456,49 @@ describe("MyStoriesView", () => {
       expect(screen.queryByText("Story 13")).not.toBeInTheDocument();
     });
   });
+
+  it("reorders rows when the sort changes and remembers the choice", async () => {
+    const user = userEvent.setup();
+    const stories = [
+      makeStory({
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        title: "Zebra farm",
+        lifecycle_status: "published",
+        current_draft_revision_id: null,
+        published_revision_id: "99999999-9999-4999-8999-999999999991",
+        draftRevisionStatus: null,
+        updated_at: "2026-09-01T00:00:00.000Z",
+      }),
+      makeStory({
+        id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        title: "Apple orchard",
+        lifecycle_status: "published",
+        current_draft_revision_id: null,
+        published_revision_id: "99999999-9999-4999-8999-999999999992",
+        draftRevisionStatus: null,
+        updated_at: "2026-08-01T00:00:00.000Z",
+      }),
+    ];
+    render(<MyStoriesView stories={stories} />);
+
+    const order = () =>
+      screen
+        .getAllByText(/^(Zebra farm|Apple orchard)$/)
+        .map((el) => el.textContent);
+
+    // Default: last edited, newest first -- Zebra (Sept) above Apple (Aug).
+    expect(order()[0]).toBe("Zebra farm");
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Sort by" }),
+      "title",
+    );
+    // A new key starts in its natural direction: Title opens A-Z.
+    expect(store["kaki-my-stories-sort"]).toBe("title:asc");
+    expect(order()[0]).toBe("Apple orchard");
+
+    await user.click(screen.getByRole("button", { name: /Order: A–Z/ }));
+    expect(store["kaki-my-stories-sort"]).toBe("title:desc");
+    expect(order()[0]).toBe("Zebra farm");
+  });
 });

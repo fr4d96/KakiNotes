@@ -668,6 +668,34 @@
       "buttonActive": "筛选（已启用 {count} 项）",
       "showResults": "显示 {count} 个故事"
     },
+    "sort": {
+      "button": "排序",
+      "buttonActive": "排序：{summary}",
+      "title": "故事排序",
+      "keyLabel": "排序方式",
+      "directionLabel": "顺序",
+      "summary": "{key}，{direction}",
+      "toggleDirection": "顺序：{direction}。点击切换顺序",
+      "announce": "已按{key}排序，{direction}",
+      "done": "完成",
+      "reset": "重置",
+      "keys": {
+        "updated": "最近编辑",
+        "created": "创建日期",
+        "title": "标题",
+        "tripDate": "旅行日期",
+        "tripYear": "旅行年份",
+        "tripMonth": "旅行月份"
+      },
+      "directions": {
+        "updated": { "asc": "最早优先", "desc": "最新优先" },
+        "created": { "asc": "最早优先", "desc": "最新优先" },
+        "title": { "asc": "A–Z", "desc": "Z–A" },
+        "tripDate": { "asc": "最早优先", "desc": "最新优先" },
+        "tripYear": { "asc": "最早优先", "desc": "最新优先" },
+        "tripMonth": { "asc": "1月 → 12月", "desc": "12月 → 1月" }
+      }
+    },
     "sections": {
       "drafts": "草稿",
       "draftsHint": "等你继续写",

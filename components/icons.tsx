@@ -157,6 +157,16 @@ export function FilterIcon(props: IconProps) {
   );
 }
 
+/** Sort control: two opposed arrows. */
+export function SortIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M8 19V5M4.5 8.5 8 5l3.5 3.5" />
+      <path d="M16 5v14M12.5 15.5 16 19l3.5-3.5" />
+    </svg>
+  );
+}
+
 /** "Find a story like yours" search. */
 export function StorySearchIcon(props: IconProps) {
   return (
