@@ -19,6 +19,13 @@ import {
 /** How often the badge re-counts while the tab is visible. */
 const REFRESH_INTERVAL_MS = 60_000;
 const LIST_LIMIT = 20;
+/**
+ * How long the dropdown waits for its list before offering "Try again".
+ * Without a ceiling, a request that never settles -- typical when an iOS
+ * home-screen app is woken after the screen was locked mid-request --
+ * left the panel on "Loading…" forever, whatever the inbox held.
+ */
+export const LIST_TIMEOUT_MS = 10_000;
 
 /**
  * The header bell: an unread badge, and a dropdown listing the caller's
@@ -72,19 +79,44 @@ export function NotificationBell({ inverted = false }: { inverted?: boolean }) {
     if (!error && typeof data === "number") setUnreadCount(data);
   }, []);
 
+  // Each loadList call takes a number; only the latest one may write state,
+  // so a slow answer to an earlier open (or a timed-out request that
+  // finally lands) never overwrites a newer one.
+  const listRequestRef = useRef(0);
+
   const loadList = useCallback(async () => {
-    const { data, error } = await supabase().rpc("list_my_notifications", {
-      p_limit: LIST_LIMIT,
-    });
+    const request = ++listRequestRef.current;
+    let timer: number | undefined;
+    let failed: boolean;
+    let rows: NotificationRow[] = [];
+    try {
+      const timedOut = new Promise<{ data: null; error: Error }>((resolve) => {
+        timer = window.setTimeout(
+          () => resolve({ data: null, error: new Error("timeout") }),
+          LIST_TIMEOUT_MS,
+        );
+      });
+      const { data, error } = await Promise.race([
+        supabase().rpc("list_my_notifications", { p_limit: LIST_LIMIT }),
+        timedOut,
+      ]);
+      failed = !!error || !data;
+      // The generated type marks read_at non-null (see NotificationRow);
+      // the cast is the one place that mismatch is reconciled.
+      if (!failed) rows = data as NotificationRow[];
+    } catch {
+      // A thrown request is a failed load, not an endless "Loading…".
+      failed = true;
+    } finally {
+      window.clearTimeout(timer);
+    }
+    if (request !== listRequestRef.current) return;
     // State is only ever set after the await -- the open-effect calls this
     // synchronously, and a setState before the first await would run inside
     // the effect body itself.
-    const failed = !!error || !data;
     setLoadError(failed);
     if (failed) return;
-    // The generated type marks read_at non-null (see NotificationRow); the
-    // cast is the one place that mismatch is reconciled.
-    setItems((data as NotificationRow[]).map(describeNotification));
+    setItems(rows.map(describeNotification));
     void refreshCount();
   }, [refreshCount]);
 

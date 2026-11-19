@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  act,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { NotificationRow } from "@/lib/notifications/notification-view";
 
@@ -10,7 +16,7 @@ vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({ rpc: rpcMock }),
 }));
 
-import { NotificationBell } from "./notification-bell";
+import { LIST_TIMEOUT_MS, NotificationBell } from "./notification-bell";
 
 const rows: NotificationRow[] = [
   {
@@ -215,6 +221,46 @@ describe("NotificationBell", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Try again" }),
+    ).toBeInTheDocument();
+  });
+
+  it("offers a retry instead of loading forever when the list request never settles", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      rpcMock.mockImplementation((fn: string) =>
+        fn === "count_my_unread_notifications"
+          ? Promise.resolve({ data: 0, error: null })
+          : new Promise(() => {}),
+      );
+      render(<NotificationBell />);
+      fireEvent.click(
+        await screen.findByRole("button", { name: "Notifications" }),
+      );
+      expect(await screen.findByText("Loading…")).toBeInTheDocument();
+      await act(async () => {
+        vi.advanceTimersByTime(LIST_TIMEOUT_MS);
+      });
+      expect(
+        await screen.findByText(/Couldn't load notifications/),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Loading…")).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("offers a retry when the list request throws", async () => {
+    rpcMock.mockImplementation((fn: string) =>
+      fn === "count_my_unread_notifications"
+        ? Promise.resolve({ data: 0, error: null })
+        : Promise.reject(new TypeError("Load failed")),
+    );
+    render(<NotificationBell />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Notifications" }),
+    );
+    expect(
+      await screen.findByText(/Couldn't load notifications/),
     ).toBeInTheDocument();
   });
 

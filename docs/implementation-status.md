@@ -11827,3 +11827,12 @@ once past `pending_upload`; a repeated transcode is refused, so neither double-r
 begin can leave one orphan reservation that expires (~30 min). The tile shows "Paused — resumes
 when you're back" meanwhile. Unit-tested; not yet tried on a real iPhone (uploading in the
 browser would write to the live Drive/database).
+
+## 2026-11-19 — Notification bell never sticks on "Loading…"
+
+The bell's dropdown showed "Loading…" until `list_my_notifications` answered, with no ceiling and
+no catch, so a request that never settled (typical when an iOS home-screen app wakes after a
+screen lock) or that threw left it there forever — reported as "empty inbox keeps loading"; the
+empty state itself was fine. `loadList()` now races the RPC against `LIST_TIMEOUT_MS` (10s),
+treats a throw as a failed load, and only the latest request may write state. Both cases end on
+"Couldn't load notifications. Try again". Two new tests fail on the old code.
