@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.1](https://github.com/fr4d96/KakiNotes/compare/v4.2.0...v4.2.1) (2026-11-19)
+
+
+### Performance Improvements
+
+* **my-stories:** load stories in batches and redesign the list ([b6bafa9](https://github.com/fr4d96/KakiNotes/commit/b6bafa990af36c7d748cf782fd2bb3e1b37e7524))
+
 ## [4.2.0](https://github.com/fr4d96/KakiNotes/compare/v4.1.0...v4.2.0) (2026-11-18)
 
 
