@@ -3,6 +3,12 @@
 ## [4.2.5](https://github.com/fr4d96/KakiNotes/compare/v4.2.4...v4.2.5) (2026-11-19)
 
 
+### A matching My Stories title on bigger screens
+
+#### For contributors on tablets and computers
+
+- **The "My Stories" title matches the home page.** On a tablet or computer, the big title at the top of My Stories now uses the same size and spacing as the home page heading. It's a little smaller on wide screens and a little larger on tablets than before. Phones look the same.
+
 ### Bug Fixes
 
 * **my-stories:** big-screen heading uses the DESIGN.md display step ([c1dce32](https://github.com/fr4d96/KakiNotes/commit/c1dce320978a7790feb017010e0384a23dfdc619))
