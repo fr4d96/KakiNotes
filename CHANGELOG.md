@@ -3,6 +3,20 @@
 ## [4.3.0](https://github.com/fr4d96/KakiNotes/compare/v4.2.6...v4.3.0) (2026-11-19)
 
 
+### Better related stories, a simpler story form, and fixes for iPhone
+
+#### For readers
+
+- **Related stories that actually relate.** At the bottom of a story, the suggestions are now picked by what they have in common with it — the same places first, then the same region, then shared tags — instead of just the newest stories nearby. The story you're reading and its own sub-stories no longer take up a slot.
+- **One less filter.** The "travel style" filter on the stories page is gone. Old links that used it still open fine; they just show all stories.
+
+#### For contributors
+
+- **Travel style removed from the story form.** The Trip step no longer asks for a travel style, and it no longer appears in exports or for moderators. Nothing you've written is lost.
+- **The formatting toolbar stays with you.** In a long story, the toolbar (headings, bold, lists, quotes) now stays just under the top of the screen as you scroll, so you don't have to scroll back up to format.
+- **Photo uploads survive a locked screen.** If your iPhone locks while photos are uploading, they now show "Paused — resumes when you're back" and carry on where they left off when you return, instead of failing.
+- **The notification bell no longer gets stuck.** If your notifications can't load, the bell now offers "Try again" after a few seconds instead of showing "Loading…" forever.
+
 ### Features
 
 * **stories:** related stories match by shared places and tags ([8e521f7](https://github.com/fr4d96/KakiNotes/commit/8e521f72a79e2169a093efca78a019faae2e8043))
