@@ -1,5 +1,30 @@
 # Changelog
 
+## [4.2.6](https://github.com/fr4d96/KakiNotes/compare/v4.2.5...v4.2.6) (2026-11-19)
+
+
+### Sort your stories in My Stories
+
+#### For contributors
+
+- **New Sort button.** Next to Filters there's now a sort button (⇅). On a phone it opens a sheet; on a bigger screen it's a dropdown with an order button beside it.
+- **Six ways to sort.** Last edited, date created, title (A–Z), trip date, trip year, and trip month — the last one puts all your January trips together whatever the year, handy for comparing seasons. Each can be flipped the other way.
+- **Nothing moves until you choose.** The list still starts as "last edited, newest first", exactly like before. Stories without a title or a trip date always go to the end, so they never crowd the top.
+- **It remembers.** Your chosen order sticks on that device the next time you open My Stories.
+
+#### Behind the scenes
+
+- **Smoother loading of My Stories.** Fixed a glitch where the page's first draw on the server didn't match your browser's, which made it redraw the photos on load.
+
+### Features
+
+* **my-stories:** sort by title, trip date, trip year, trip month, edited or created ([ffa6968](https://github.com/fr4d96/KakiNotes/commit/ffa69689f3ac5bd79bf740ee1dc57e552a848b7f))
+
+
+### Bug Fixes
+
+* **my-stories:** stop LazyMount hydration mismatch ([4b80fd2](https://github.com/fr4d96/KakiNotes/commit/4b80fd240ac547284df1bb6e65e9ba608aaca055))
+
 ## [4.2.5](https://github.com/fr4d96/KakiNotes/compare/v4.2.4...v4.2.5) (2026-11-19)
 
 
