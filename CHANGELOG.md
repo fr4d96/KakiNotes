@@ -3,6 +3,12 @@
 ## [4.2.3](https://github.com/fr4d96/KakiNotes/compare/v4.2.2...v4.2.3) (2026-11-19)
 
 
+### "Edit" everywhere
+
+#### For contributors
+
+- **The preview page's button now just says "Edit".** When you preview one of your published stories, the button to change it says "Edit" instead of "Edit this story", matching the cards in My Stories. It still asks you to confirm before starting an update, and your live story stays up while the update is reviewed.
+
 ### Bug Fixes
 
 * **story:** the preview page's edit button says just "Edit" ([73510e7](https://github.com/fr4d96/KakiNotes/commit/73510e769ed87f46acb3a523d923ff7edb8fde28))
