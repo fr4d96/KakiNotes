@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.4.1](https://github.com/fr4d96/KakiNotes/compare/v4.4.0...v4.4.1) (2026-11-19)
+
+
+### Bug Fixes
+
+* **pdf-import:** render standard fonts from pdfjs, not the machine ([064b52d](https://github.com/fr4d96/KakiNotes/commit/064b52dfd72ebf39985574c9263c24585b4e4c01))
+
 ## [4.4.0](https://github.com/fr4d96/KakiNotes/compare/v4.3.0...v4.4.0) (2026-11-19)
 
 
