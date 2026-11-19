@@ -14,6 +14,7 @@ import {
 } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronIcon, CloseIcon } from "@/components/icons";
+import { usePinchZoom } from "@/components/ui/use-pinch-zoom";
 
 /**
  * Full-screen photo viewer ("lightbox") for every story photo on the site.
@@ -228,6 +229,18 @@ function LightboxDialog({
     [],
   );
 
+  // Pinch / double-tap / +/- zoom inside the viewer (page zoom stays blocked).
+  const zoom = usePinchZoom({
+    surfaceRef: trackRef,
+    getImg: () => currentImg(index),
+    enabled: isOpen,
+  });
+  // Another photo, or closed: back to 1x.
+  useEffect(() => {
+    zoom.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index, isOpen]);
+
   // Open: show the dialog, park the track on the tapped photo, zoom it in.
   useLayoutEffect(() => {
     const dialog = dialogRef.current;
@@ -397,6 +410,11 @@ function LightboxDialog({
   // --- Drag down to dismiss -------------------------------------------
   const onPointerDown = (event: React.PointerEvent) => {
     dragged.current = false;
+    // Zoomed (or mid-pinch): the photo owns the touch; no dismiss drag.
+    if (zoom.isGesturing()) {
+      drag.current = null;
+      return;
+    }
     // Primary pointer, main button (fields some engines leave unset count).
     if (event.isPrimary === false || event.button > 0) return;
     drag.current = {
@@ -410,6 +428,10 @@ function LightboxDialog({
   const onPointerMove = (event: React.PointerEvent) => {
     const d = drag.current;
     if (!d || d.id !== event.pointerId || d.mode === "none") return;
+    if (zoom.isGesturing()) {
+      drag.current = null;
+      return;
+    }
     const dx = event.clientX - d.x;
     const dy = event.clientY - d.y;
     if (d.mode === "pending") {
@@ -474,7 +496,14 @@ function LightboxDialog({
         requestClose();
       }}
       onKeyDown={(event) => {
-        if (event.key === "ArrowRight") {
+        if (
+          !event.ctrlKey &&
+          !event.metaKey &&
+          !event.altKey &&
+          zoom.handleKey(event.key)
+        ) {
+          event.preventDefault();
+        } else if (event.key === "ArrowRight") {
           event.preventDefault();
           onGoTo(index + 1);
         } else if (event.key === "ArrowLeft") {

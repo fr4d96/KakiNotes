@@ -250,4 +250,194 @@ describe("PhotoLightboxProvider / LightboxPhoto", () => {
     const caption = within(getDialog()).getByText("Third caption");
     expect(caption.tagName).toBe("FIGCAPTION");
   });
+
+  describe("zoom", () => {
+    // jsdom has no layout: fake an 400x600 image centred in a 400x600 view
+    // whose box follows the transform the viewer writes onto it.
+    function fakeLayout(img: HTMLElement, track: HTMLElement) {
+      track.getBoundingClientRect = () =>
+        ({
+          left: 0,
+          top: 0,
+          width: 400,
+          height: 600,
+          right: 400,
+          bottom: 600,
+        }) as DOMRect;
+      img.getBoundingClientRect = () => {
+        const m =
+          /translate\(([-\d.]+)px, ([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(
+            img.style.transform,
+          );
+        const [tx, ty, s] = m ? [+m[1], +m[2], +m[3]] : [0, 0, 1];
+        const w = 400 * s;
+        const h = 600 * s;
+        return {
+          left: 200 + tx - w / 2,
+          top: 300 + ty - h / 2,
+          width: w,
+          height: h,
+          right: 200 + tx + w / 2,
+          bottom: 300 + ty + h / 2,
+        } as DOMRect;
+      };
+    }
+    async function openZoomable() {
+      const user = userEvent.setup();
+      render(<ThreePhotos />);
+      await user.click(screen.getByRole("button", { name: /Photo one/i }));
+      const dialog = getDialog();
+      const track = dialog.querySelector<HTMLElement>(".nf-scroll-x")!;
+      const img = within(dialog).getByAltText("Photo one");
+      fakeLayout(img, track);
+      return { user, dialog, track, img };
+    }
+    const pt = (x: number, y: number) => ({ clientX: x, clientY: y });
+    const scaleOf = (img: HTMLElement) =>
+      Number(/scale\(([\d.]+)\)/.exec(img.style.transform)?.[1] ?? 1);
+
+    it("pinch zooms, and releasing below 1x springs back to 1x", async () => {
+      const { track, img } = await openZoomable();
+      fireEvent.touchStart(img, {
+        touches: [pt(150, 300), pt(250, 300)],
+      });
+      fireEvent.touchMove(img, {
+        touches: [pt(100, 300), pt(300, 300)],
+      });
+      expect(scaleOf(img)).toBeCloseTo(2);
+      fireEvent.touchEnd(img, {
+        touches: [],
+        changedTouches: [pt(100, 300)],
+      });
+      expect(scaleOf(img)).toBeCloseTo(2);
+
+      fireEvent.touchStart(img, {
+        touches: [pt(100, 300), pt(300, 300)],
+      });
+      fireEvent.touchMove(img, {
+        touches: [pt(190, 300), pt(210, 300)],
+      });
+      expect(scaleOf(img)).toBeLessThan(1);
+      fireEvent.touchEnd(img, {
+        touches: [],
+        changedTouches: [pt(190, 300)],
+      });
+      expect(img.style.transform).toBe("");
+    });
+
+    it("caps pinch at 4x", async () => {
+      const { track, img } = await openZoomable();
+      fireEvent.touchStart(img, {
+        touches: [pt(190, 300), pt(210, 300)],
+      });
+      fireEvent.touchMove(img, {
+        touches: [pt(0, 300), pt(400, 300)],
+      });
+      expect(scaleOf(img)).toBe(4);
+    });
+
+    it("double-tap zooms to 2.5x at the tap, and a second double-tap resets", async () => {
+      const { track, img } = await openZoomable();
+      const tap = (t: number) => {
+        fireEvent.touchStart(img, {
+          touches: [pt(300, 200)],
+          timeStamp: t,
+        });
+        fireEvent.touchEnd(img, {
+          touches: [],
+          changedTouches: [pt(300, 200)],
+          timeStamp: t + 30,
+        });
+      };
+      tap(1000);
+      tap(1150);
+      expect(scaleOf(img)).toBeCloseTo(2.5);
+      tap(2000);
+      tap(2150);
+      expect(img.style.transform).toBe("");
+    });
+
+    it("pans with one finger while zoomed, clamped to the screen edges", async () => {
+      const { track, img } = await openZoomable();
+      fireEvent.touchStart(img, {
+        touches: [pt(150, 300), pt(250, 300)],
+      });
+      fireEvent.touchMove(img, {
+        touches: [pt(100, 300), pt(300, 300)],
+      });
+      fireEvent.touchEnd(img, {
+        touches: [],
+        changedTouches: [pt(100, 300)],
+      });
+      fireEvent.touchStart(img, {
+        touches: [pt(200, 300)],
+      });
+      fireEvent.touchMove(img, {
+        touches: [pt(1200, 300)],
+      });
+      // 2x of a 400 wide image in a 400 wide view: at most +200.
+      expect(img.style.transform).toContain("translate(200px");
+    });
+
+    it("ignores the drag-down dismiss while zoomed", async () => {
+      const { track, img, dialog } = await openZoomable();
+      fireEvent.touchStart(img, {
+        touches: [pt(150, 300), pt(250, 300)],
+      });
+      fireEvent.touchMove(img, {
+        touches: [pt(100, 300), pt(300, 300)],
+      });
+      fireEvent.touchEnd(img, {
+        touches: [],
+        changedTouches: [pt(100, 300)],
+      });
+      const before = img.style.transform;
+      fireEvent.pointerDown(track, {
+        pointerId: 1,
+        pointerType: "touch",
+        isPrimary: true,
+        button: 0,
+        clientX: 200,
+        clientY: 100,
+      });
+      fireEvent.pointerMove(track, {
+        pointerId: 1,
+        pointerType: "touch",
+        isPrimary: true,
+        clientX: 200,
+        clientY: 400,
+      });
+      fireEvent.pointerUp(track, {
+        pointerId: 1,
+        pointerType: "touch",
+        isPrimary: true,
+        clientX: 200,
+        clientY: 400,
+      });
+      expect(dialog).toHaveAttribute("open");
+      expect(img.style.transform).toBe(before);
+    });
+
+    it("zooms with + / - / = and resets with 0", async () => {
+      const { dialog, img } = await openZoomable();
+      fireEvent.keyDown(dialog, { key: "+" });
+      expect(scaleOf(img)).toBeCloseTo(1.5);
+      fireEvent.keyDown(dialog, { key: "=" });
+      expect(scaleOf(img)).toBeCloseTo(2.25);
+      fireEvent.keyDown(dialog, { key: "-" });
+      expect(scaleOf(img)).toBeCloseTo(1.5);
+      fireEvent.keyDown(dialog, { key: "0" });
+      expect(img.style.transform).toBe("");
+      fireEvent.keyDown(dialog, { key: "-" });
+      expect(img.style.transform).toBe("");
+    });
+
+    it("resets zoom when moving to another photo", async () => {
+      const { dialog, img } = await openZoomable();
+      fireEvent.keyDown(dialog, { key: "+" });
+      expect(scaleOf(img)).toBeGreaterThan(1);
+      fireEvent.keyDown(dialog, { key: "ArrowRight" });
+      expect(img.style.transform).toBe("");
+    });
+  });
 });
