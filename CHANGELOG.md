@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.5.0](https://github.com/fr4d96/KakiNotes/compare/v4.4.1...v4.5.0) (2026-11-21)
+
+
+### Features
+
+* **nav:** phone tabs remember their page and scroll ([7a57775](https://github.com/fr4d96/KakiNotes/commit/7a577752a05dfe9f1110b18bb0f25c80148d35ac))
+* **stories:** share sheet on public story pages ([278cfbd](https://github.com/fr4d96/KakiNotes/commit/278cfbdfd65d2652795431d818bdd73273479cf8))
+
+
+### Bug Fixes
+
+* **notifications:** one "Your story is live" notification per story ([aca38cd](https://github.com/fr4d96/KakiNotes/commit/aca38cd304240d40ea5cae72ed8fe28b0725bee7))
+
 ## [4.4.1](https://github.com/fr4d96/KakiNotes/compare/v4.4.0...v4.4.1) (2026-11-19)
 
 
