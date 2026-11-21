@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.7.0](https://github.com/fr4d96/KakiNotes/compare/v4.6.0...v4.7.0) (2026-11-21)
+
+
+### Features
+
+* **profile:** published stories as small cards ([98bf8d1](https://github.com/fr4d96/KakiNotes/commit/98bf8d14f28acf5194899a8a16d6c7054cc5cd03))
+
 ## [4.6.0](https://github.com/fr4d96/KakiNotes/compare/v4.5.0...v4.6.0) (2026-11-21)
 
 
