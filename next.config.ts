@@ -64,6 +64,16 @@ const nextConfig: NextConfig = {
       bodySizeLimit: SERVER_ACTION_BODY_SIZE_LIMIT,
     },
     proxyClientMaxBodySize: PROXY_CLIENT_MAX_BODY_SIZE,
+    // The phone tab bar remembers each tab's last page (components/
+    // bottom-tab-bar.tsx), so switching tabs and coming back re-visits a
+    // dynamic page within seconds. Next's default (dynamic: 0) re-fetches it
+    // and flashes its loading.tsx skeleton; keeping it in the client router
+    // cache for 5 minutes lets it render instantly from cache. Server Actions
+    // that call revalidatePath/revalidateTag/refresh still invalidate this
+    // cache, so edits made by the viewer show up straight away.
+    staleTimes: {
+      dynamic: 300,
+    },
   },
   // lib/story/pdf-import.ts's PDF-page rasterizer (docs/pdf-import-plan.md
   // Stage 1) depends on @napi-rs/canvas (a native-binary Node addon) and

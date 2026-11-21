@@ -10,7 +10,11 @@ import en from "@/i18n/messages/en.json";
 import zhCN from "@/i18n/messages/zh-CN.json";
 import { setTestLocale } from "@/tests/support/i18n";
 
-const { usePathnameMock, sessionMock } = vi.hoisted(() => ({
+const { usePathnameMock, sessionMock, authEvents } = vi.hoisted(() => ({
+  // The auth listener the viewer store registers, so a test can sign out.
+  authEvents: {
+    current: null as null | ((event: string, session: unknown) => void),
+  },
   usePathnameMock: vi.fn(() => "/"),
   // Mutable so a test can flip the bar into its signed-in state.
   sessionMock: { current: null as { user: { id: string } } | null },
@@ -24,9 +28,14 @@ vi.mock("@/lib/supabase/client", () => ({
     auth: {
       getSession: () =>
         Promise.resolve({ data: { session: sessionMock.current } }),
-      onAuthStateChange: () => ({
-        data: { subscription: { unsubscribe: vi.fn() } },
-      }),
+      onAuthStateChange: (
+        callback: (event: string, session: unknown) => void,
+      ) => {
+        authEvents.current = callback;
+        return {
+          data: { subscription: { unsubscribe: vi.fn() } },
+        };
+      },
     },
   }),
 }));
@@ -38,6 +47,7 @@ import {
 } from "@/lib/auth/viewer-identity";
 
 beforeEach(() => {
+  window.sessionStorage.clear();
   // The viewer store is tab-wide; each test starts as a fresh tab.
   resetViewerIdentityForTests();
   usePathnameMock.mockReturnValue("/");
@@ -466,6 +476,125 @@ describe("BottomTabBar", () => {
       fireEvent.click(screen.getByRole("link", { name: "Stories" }));
       expect(scrollTo).not.toHaveBeenCalled();
       vi.unstubAllGlobals();
+    });
+  });
+
+  describe("tab memory", () => {
+    it("points Stories at the story you left, after moving to Home", () => {
+      usePathnameMock.mockReturnValue("/stories/some-story");
+      const { rerender } = render(<BottomTabBar />);
+      usePathnameMock.mockReturnValue("/");
+      rerender(<BottomTabBar />);
+      expect(screen.getByRole("link", { name: "Stories" })).toHaveAttribute(
+        "href",
+        "/stories/some-story",
+      );
+      // Home is active now, so it links to its root.
+      expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute(
+        "href",
+        "/",
+      );
+    });
+
+    it("keeps each country's tab memory separate", () => {
+      usePathnameMock.mockReturnValue("/stories/some-story");
+      const { rerender } = render(<BottomTabBar />);
+      usePathnameMock.mockReturnValue("/cn");
+      rerender(<BottomTabBar />);
+      expect(screen.getByRole("link", { name: "Stories" })).toHaveAttribute(
+        "href",
+        "/cn/stories",
+      );
+    });
+
+    it("pops the active Stories tab from a story back to /stories", () => {
+      usePathnameMock.mockReturnValue("/stories/some-story");
+      render(<BottomTabBar />);
+      const stories = screen.getByRole("link", { name: "Stories" });
+      expect(stories).toHaveAttribute("href", "/stories");
+      fireEvent.click(stories);
+      expect(
+        window.sessionStorage.getItem("kakinotes:tab-locations"),
+      ).toBeNull();
+    });
+
+    it("lights the tapped tab by tab, even when its href is remembered", () => {
+      usePathnameMock.mockReturnValue("/stories/some-story");
+      const { rerender } = render(<BottomTabBar />);
+      usePathnameMock.mockReturnValue("/");
+      rerender(<BottomTabBar />);
+      const stories = screen.getByRole("link", { name: "Stories" });
+      fireEvent.click(stories);
+      expect(stories.className).toContain("text-accent");
+      expect(
+        screen.getByRole("link", { name: "Home" }).className,
+      ).not.toContain("text-accent");
+    });
+
+    it("restores the saved scroll once the remembered page is showing", async () => {
+      const scrollTo = vi.fn();
+      vi.stubGlobal("scrollTo", scrollTo);
+      Object.defineProperty(document.documentElement, "scrollHeight", {
+        configurable: true,
+        value: 5000,
+      });
+      usePathnameMock.mockReturnValue("/stories/some-story");
+      const { rerender } = render(<BottomTabBar />);
+      Object.defineProperty(window, "scrollY", {
+        configurable: true,
+        value: 640,
+      });
+      // The (rAF-throttled) scroll listener records it for the active tab.
+      fireEvent.scroll(window);
+      await waitFor(() =>
+        expect(window.sessionStorage.getItem("kakinotes:tab-scroll")).toContain(
+          "640",
+        ),
+      );
+      Object.defineProperty(window, "scrollY", {
+        configurable: true,
+        value: 0,
+      });
+      usePathnameMock.mockReturnValue("/");
+      rerender(<BottomTabBar />);
+      fireEvent.click(screen.getByRole("link", { name: "Stories" }));
+      usePathnameMock.mockReturnValue("/stories/some-story");
+      rerender(<BottomTabBar />);
+      await waitFor(() =>
+        expect(scrollTo).toHaveBeenCalledWith({
+          top: 640,
+          behavior: "instant",
+        }),
+      );
+      vi.unstubAllGlobals();
+      Reflect.deleteProperty(document.documentElement, "scrollHeight");
+      Reflect.deleteProperty(window, "scrollY");
+    });
+
+    it("forgets every tab's place when the viewer signs out", async () => {
+      sessionMock.current = { user: { id: "u1" } };
+      seedViewerIdentity({ avatarEmoji: null, role: null });
+      usePathnameMock.mockReturnValue("/stories/some-story");
+      const { rerender } = render(<BottomTabBar />);
+      usePathnameMock.mockReturnValue("/");
+      rerender(<BottomTabBar />);
+      expect(screen.getByRole("link", { name: "Stories" })).toHaveAttribute(
+        "href",
+        "/stories/some-story",
+      );
+      // The auth store reports the session ending.
+      act(() => {
+        authEvents.current?.("SIGNED_OUT", null);
+      });
+      await waitFor(() =>
+        expect(screen.getByRole("link", { name: "Stories" })).toHaveAttribute(
+          "href",
+          "/stories",
+        ),
+      );
+      expect(
+        window.sessionStorage.getItem("kakinotes:tab-locations"),
+      ).toBeNull();
     });
   });
 

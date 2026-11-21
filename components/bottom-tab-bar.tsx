@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -21,6 +27,17 @@ import {
   isWithin,
   showsTabBar,
 } from "@/lib/navigation/app-chrome";
+import {
+  clearTabMemory,
+  forgetTab,
+  getTabMemoryServerSnapshot,
+  getTabMemorySnapshot,
+  parseTabMemory,
+  recallTab,
+  rememberLocation,
+  saveTabScroll,
+  subscribeTabMemory,
+} from "@/lib/navigation/tab-memory";
 
 /**
  * App-style bottom tab bar for phones (below `md`), rendered by the (public),
@@ -55,7 +72,12 @@ import {
  *    backdrop, see `.nf-glass` in globals.css) clear of the screen edges;
  *  - a glass bubble slides between tabs behind the active one and the newly
  *    active icon pops once;
- *  - tapping the tab you are already on scrolls to the top;
+ *  - tapping the tab you are already on scrolls to the top (at its root) or
+ *    pops back to its root (deeper in it), like iOS pop-to-root;
+ *  - each tab remembers the last page you were on in it and its scroll
+ *    position (lib/navigation/tab-memory.ts, sessionStorage), so leaving the
+ *    Stories tab mid-story and tapping it again returns to that story, scrolled
+ *    to where you were; sign-out forgets all of it;
  *  - every tab uses the shared `.press` feedback.
  * The tab links carry the `tab` view-transition type so a tab switch
  * crossfades instead of sliding (components/page-transition.tsx).
@@ -85,28 +107,39 @@ export function BottomTabBar({
   const signedIn =
     viewer.status === "unknown" ? hint : viewer.status === "signed-in";
   const typing = useTextEntryFocus();
+  const memorySnapshot = useSyncExternalStore(
+    subscribeTabMemory,
+    getTabMemorySnapshot,
+    getTabMemoryServerSnapshot,
+  );
   // The tab just tapped, lit at once (bubble and colour) while its page
   // loads, the way a native tab bar answers the touch before the screen
   // changes. Remembered with the path it was tapped on, so it simply stops
   // counting once the navigation lands (or is abandoned for another path).
-  const [tapped, setTapped] = useState<{ href: string; from: string } | null>(
+  const [tapped, setTapped] = useState<{ root: string; from: string } | null>(
     null,
   );
-  const pendingHref = tapped && tapped.from === pathname ? tapped.href : null;
+  const pendingRoot = tapped && tapped.from === pathname ? tapped.root : null;
+  // Remembered location per tab root. Empty on the server and first client
+  // render (so hydration matches), then read from sessionStorage.
+  const memory = useMemo(
+    () => parseTabMemory(memorySnapshot),
+    [memorySnapshot],
+  );
   const avatarEmoji = viewer.avatarEmoji;
 
   const homeHref = prefix || "/";
   const storiesHref = `${prefix}/stories`;
   const inMyArea = isContributorArea(pathname);
-  const tabs = [
+  const baseTabs = [
     {
-      href: homeHref,
+      root: homeHref,
       label: t("home"),
       Icon: HomeIcon,
       active: pathname === homeHref,
     },
     {
-      href: storiesHref,
+      root: storiesHref,
       label: t("stories"),
       Icon: JournalIcon,
       // The reader pages (/stories, /stories/<slug>) stay here; the author's
@@ -116,20 +149,20 @@ export function BottomTabBar({
     },
     signedIn
       ? {
-          href: FOLDERS_HREF,
+          root: FOLDERS_HREF,
           label: t("folders"),
           Icon: FolderIcon,
           active: inFoldersTab(pathname),
         }
       : {
-          href: `${prefix}/contributors`,
+          root: `${prefix}/contributors`,
           label: t("contributors"),
           Icon: UsersIcon,
           active: isWithin(pathname, `${prefix}/contributors`),
         },
     signedIn
       ? {
-          href: "/my-stories",
+          root: "/my-stories",
           label: t("myStories"),
           Icon: EditorialPencilIcon,
           // Folders, and each folder's journey, belong to their own tab;
@@ -138,7 +171,7 @@ export function BottomTabBar({
             inMyArea && !inFoldersTab(pathname) && !inProfileTab(pathname),
         }
       : {
-          href: "/sign-in",
+          root: "/sign-in",
           label: t("signIn"),
           Icon: ContributorIcon,
           active: isWithin(pathname, "/sign-in"),
@@ -149,7 +182,7 @@ export function BottomTabBar({
     ...(signedIn
       ? [
           {
-            href: PROFILE_HREF,
+            root: PROFILE_HREF,
             // The viewer's own username (else display name); "Profile"
             // until the store knows it.
             label: viewer.name ?? t("profile"),
@@ -166,10 +199,94 @@ export function BottomTabBar({
       : []),
   ];
 
+  const activeRoot = baseTabs.find((tab) => tab.active)?.root ?? null;
+  // Where each link goes: the active tab always links to its root (tap =
+  // pop to root / scroll to top); any other tab links to where you left it.
+  const tabs = baseTabs.map((tab) => {
+    const remembered = tab.active ? undefined : memory[tab.root];
+    return { ...tab, href: remembered ?? tab.root, remembered: !!remembered };
+  });
+
+  // Set when a tab is tapped, so the scroll listener stops writing the old
+  // tab's offset while the page underneath changes; read by the restore.
+  const leavingRef = useRef(false);
+  const restoreRef = useRef<{ path: string; scroll: number } | null>(null);
+
+  // Record where the active tab is, whenever the page changes.
+  useEffect(() => {
+    if (!activeRoot || !pathname || !showsTabBar(pathname)) return;
+    if (isTaskScreen(pathname)) return;
+    rememberLocation(activeRoot, pathname + window.location.search);
+  }, [activeRoot, pathname]);
+
+  // Keep the active tab's scroll offset current.
+  useEffect(() => {
+    if (!activeRoot || !showsTabBar(pathname)) return;
+    let frame = 0;
+    const save = () => {
+      frame = 0;
+      if (leavingRef.current || isTaskScreen(window.location.pathname)) return;
+      saveTabScroll(activeRoot, window.scrollY);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(save);
+    };
+    const onHide = () => {
+      if (document.visibilityState === "hidden") save();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("pagehide", save);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("pagehide", save);
+      document.removeEventListener("visibilitychange", onHide);
+    };
+  }, [activeRoot, pathname]);
+
+  // A tab switch that landed on a remembered page: put the scroll back once
+  // the page is tall enough (it may be shorter now, or still streaming in).
+  useEffect(() => {
+    const pending = restoreRef.current;
+    restoreRef.current = null;
+    if (!pending || pending.path !== pathname) {
+      leavingRef.current = false;
+      return;
+    }
+    let frame = 0;
+    let tries = 0;
+    const step = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      if (max >= pending.scroll || tries >= 30) {
+        window.scrollTo({
+          top: Math.min(pending.scroll, Math.max(max, 0)),
+          behavior: "instant",
+        });
+        leavingRef.current = false;
+        return;
+      }
+      tries += 1;
+      frame = requestAnimationFrame(step);
+    };
+    step();
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      leavingRef.current = false;
+    };
+  }, [pathname]);
+
+  // Signing out forgets every tab's place (My Stories, Folders, Profile).
+  const wasSignedIn = useRef(signedIn);
+  useEffect(() => {
+    if (wasSignedIn.current && !signedIn) clearTabMemory();
+    wasSignedIn.current = signedIn;
+  }, [signedIn]);
+
   if (!showsTabBar(pathname)) return null;
 
-  const litIndex = pendingHref
-    ? tabs.findIndex((tab) => tab.href === pendingHref)
+  const litIndex = pendingRoot
+    ? tabs.findIndex((tab) => tab.root === pendingRoot)
     : -1;
   const activeIndex =
     litIndex >= 0 ? litIndex : tabs.findIndex((tab) => tab.active);
@@ -215,49 +332,79 @@ export function BottomTabBar({
               gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`,
             }}
           >
-            {tabs.map(({ href, label, Icon, active, ...tab }) => (
-              <li key={href}>
-                <Link
-                  href={href}
-                  transitionTypes={["tab"]}
-                  aria-current={active ? "page" : undefined}
-                  aria-label={"ariaLabel" in tab ? tab.ariaLabel : undefined}
-                  onClick={(event) => {
-                    // Native tab-bar behaviour: tapping the tab you are
-                    // already on (at its root) scrolls to the top instead of
-                    // re-navigating to the same URL.
-                    if (!isPlainClick(event)) return;
-                    if (!isSameLocation(pathname, href)) {
-                      setTapped({ href, from: pathname ?? "" });
-                      return;
-                    }
-                    event.preventDefault();
-                    window.scrollTo({
-                      top: 0,
-                      behavior: prefersReducedMotion() ? "instant" : "smooth",
-                    });
-                  }}
-                  className={`press relative flex min-h-14 min-w-11 flex-col items-center justify-center gap-0.5 rounded-full px-1 text-xs font-bold focus-visible:outline-offset-[-3px] ${
-                    (pendingHref ? href === pendingHref : active)
-                      ? "text-accent"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {"emoji" in tab && tab.emoji ? (
-                    // The viewer's chosen avatar stands in for the icon.
-                    <span
-                      aria-hidden="true"
-                      className="nf-tab-icon grid h-6 w-6 place-items-center text-[1.15rem] leading-none"
-                    >
-                      {tab.emoji}
-                    </span>
-                  ) : (
-                    <Icon className="nf-tab-icon h-6 w-6" />
-                  )}
-                  <span className="max-w-full truncate">{label}</span>
-                </Link>
-              </li>
-            ))}
+            {tabs.map(
+              ({ root, href, remembered, label, Icon, active, ...tab }) => (
+                <li key={root}>
+                  <Link
+                    href={href}
+                    // A remembered page keeps its own scroll: restored by the
+                    // effect above instead of Next resetting to the top.
+                    scroll={remembered ? false : undefined}
+                    transitionTypes={["tab"]}
+                    aria-current={active ? "page" : undefined}
+                    aria-label={"ariaLabel" in tab ? tab.ariaLabel : undefined}
+                    onClick={(event) => {
+                      // Native tab-bar behaviour: tapping the tab you are
+                      // already on (at its root) scrolls to the top instead of
+                      // re-navigating to the same URL.
+                      if (!isPlainClick(event)) return;
+                      if (!isSameLocation(pathname, href)) {
+                        if (active) {
+                          // Pop to root: forget where this tab had gone, and
+                          // land at the top of the root. Next's own reset
+                          // can't be trusted here -- seen in the iPhone frame
+                          // (2026-11-21), popping from a story scrolled 1000px
+                          // opened /stories still scrolled 1000px.
+                          forgetTab(root);
+                          leavingRef.current = true;
+                          restoreRef.current = {
+                            path: root.split(/[?#]/)[0],
+                            scroll: 0,
+                          };
+                        } else {
+                          if (activeRoot)
+                            saveTabScroll(activeRoot, window.scrollY);
+                          leavingRef.current = true;
+                          const saved = recallTab(root);
+                          restoreRef.current = saved
+                            ? {
+                                path: saved.href.split(/[?#]/)[0],
+                                scroll: saved.scroll,
+                              }
+                            : null;
+                        }
+                        setTapped({ root, from: pathname ?? "" });
+                        return;
+                      }
+                      event.preventDefault();
+                      if (activeRoot) saveTabScroll(root, 0);
+                      window.scrollTo({
+                        top: 0,
+                        behavior: prefersReducedMotion() ? "instant" : "smooth",
+                      });
+                    }}
+                    className={`press relative flex min-h-14 min-w-11 flex-col items-center justify-center gap-0.5 rounded-full px-1 text-xs font-bold focus-visible:outline-offset-[-3px] ${
+                      (pendingRoot ? root === pendingRoot : active)
+                        ? "text-accent"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {"emoji" in tab && tab.emoji ? (
+                      // The viewer's chosen avatar stands in for the icon.
+                      <span
+                        aria-hidden="true"
+                        className="nf-tab-icon grid h-6 w-6 place-items-center text-[1.15rem] leading-none"
+                      >
+                        {tab.emoji}
+                      </span>
+                    ) : (
+                      <Icon className="nf-tab-icon h-6 w-6" />
+                    )}
+                    <span className="max-w-full truncate">{label}</span>
+                  </Link>
+                </li>
+              ),
+            )}
           </ul>
         </div>
       </nav>
