@@ -1,5 +1,21 @@
 # Changelog
 
+## [4.6.0](https://github.com/fr4d96/KakiNotes/compare/v4.5.0...v4.6.0) (2026-11-21)
+
+
+### Features
+
+* **account:** one "You" page for account and settings ([2bd5532](https://github.com/fr4d96/KakiNotes/commit/2bd55324f6abb3bfee8e20ad131f41e8002cd6b8))
+* **brand:** app icon without the "New Zealand" wording ([838dc32](https://github.com/fr4d96/KakiNotes/commit/838dc32216b73bdd489415eadc9ac95b12b5660f))
+* **currency:** each country records amounts in its own currency ([03b823a](https://github.com/fr4d96/KakiNotes/commit/03b823ad215c284c798e1a3ccd003852696ef7f0))
+* **tags:** tags belong to a country ([084a35d](https://github.com/fr4d96/KakiNotes/commit/084a35df95e4e62c978f7b79a0ba1fe738275ef1))
+
+
+### Bug Fixes
+
+* **my-photos:** show only the selected country's stories ([1e02978](https://github.com/fr4d96/KakiNotes/commit/1e02978a792aa11f31da2dc5b927cea45e2780a3))
+* **new-story:** New Zealand wording under China ([01c8160](https://github.com/fr4d96/KakiNotes/commit/01c8160b07f6441b8caf6df1813122d30cab3e2c))
+
 ## [4.5.0](https://github.com/fr4d96/KakiNotes/compare/v4.4.1...v4.5.0) (2026-11-21)
 
 
