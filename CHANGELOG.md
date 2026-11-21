@@ -1,5 +1,43 @@
 # Changelog
 
+## [4.6.0](https://github.com/fr4d96/KakiNotes/compare/v4.5.0...v4.6.0) (2026-11-21)
+
+
+### China stories in yuan, and one "You" page
+
+#### For readers
+
+- **China stories show costs in yuan.** Expenses on a China story are now recorded and shown in Chinese yuan (CN¥) instead of New Zealand dollars. New Zealand stories are unchanged.
+- **Cost filter on New Zealand stories only.** The "cost" filter on the stories page uses New Zealand dollar ranges, so it now only appears on the New Zealand stories page.
+- **Tags belong to a country.** The tags you can filter by on each country's stories page are now that country's own tags, so China stories no longer offer New Zealand tags.
+- **New app icon.** The logo keeps its pencil sketch, but the "New Zealand" wording and map are replaced by a small drawing of mountains, a sun and two birds. If you added Kakinotes to your iPhone home screen, remove it and add it again to see the new icon.
+
+#### For contributors
+
+- **One "You" page.** Tapping your avatar in the bottom bar now opens a single page with everything about your account and settings: your name, bio, country and page address; your username and account name; Google Drive; your places (My Photos, notes, notifications); and this device's appearance, story country and language. Tap any row to change it right there, then Save.
+- **Shorter, tidier bios.** Bios are now up to 300 characters, with a live count as you type, and the line breaks you type are kept on your public page.
+- **Listed straight away.** When you set up how you appear on stories, you get a page address made from your name if you don't choose one, so you show up in Contributors right away.
+- **Expenses in the story's own currency.** When writing a China story, you enter costs in yuan. Amounts you already entered stay in New Zealand dollars, and a story's country can't be changed if that would change the currency of amounts already in it.
+- **My Photos follows the country you've picked.** With China chosen at the top, My Photos now only lists your China stories' photos.
+- **Wording fix.** Starting a new China story no longer mentions New Zealand.
+
+#### Behind the scenes
+
+- **Database backups.** A new command saves a copy of the database to an external drive.
+
+### Features
+
+* **account:** one "You" page for account and settings ([2bd5532](https://github.com/fr4d96/KakiNotes/commit/2bd55324f6abb3bfee8e20ad131f41e8002cd6b8))
+* **brand:** app icon without the "New Zealand" wording ([838dc32](https://github.com/fr4d96/KakiNotes/commit/838dc32216b73bdd489415eadc9ac95b12b5660f))
+* **currency:** each country records amounts in its own currency ([03b823a](https://github.com/fr4d96/KakiNotes/commit/03b823ad215c284c798e1a3ccd003852696ef7f0))
+* **tags:** tags belong to a country ([084a35d](https://github.com/fr4d96/KakiNotes/commit/084a35df95e4e62c978f7b79a0ba1fe738275ef1))
+
+
+### Bug Fixes
+
+* **my-photos:** show only the selected country's stories ([1e02978](https://github.com/fr4d96/KakiNotes/commit/1e02978a792aa11f31da2dc5b927cea45e2780a3))
+* **new-story:** New Zealand wording under China ([01c8160](https://github.com/fr4d96/KakiNotes/commit/01c8160b07f6441b8caf6df1813122d30cab3e2c))
+
 ## [4.5.0](https://github.com/fr4d96/KakiNotes/compare/v4.4.1...v4.5.0) (2026-11-21)
 
 
