@@ -12210,3 +12210,9 @@ NZ$ cost bands only for NZD countries).
 - **To ship:** deploy the app code; run `npm run backup:db`; apply the migration to
   `yzaonhjieupxyrmbienf` with the owner's OK; `npm run supabase:types:linked`; check a China
   draft's expense step, an NZ story page and `/stories` with a cost band.
+
+## 2026-11-21 — Public profile: small story cards
+
+- The "Published stories" list on a contributor's public page (`app/(public)/_shared/contributor-profile.tsx`) now uses the small card (`size="small"`) in the same grid as the home page's and the Stories tab's small size: two per row on a phone, three from `sm`, four from `lg`. Each card already swiped through its published photos (`listCardPhotoUrlsCached`, up to `CARD_PHOTO_LIMIT`), so that is unchanged; the small card uses the same `CardPhotos` scroller in a 4:5 frame.
+- No card-size switch on the profile: it always shows small cards. No data, RLS or query change.
+- New test in `contributor-profile.test.tsx` pins the small size. Checked in the iPhone 17 frame on `/contributors/kakitest` (4 cards, two columns, horizontal snap scroller). Its stories each have one published photo, so swiping with several photos is covered by the unit test rather than seen live.

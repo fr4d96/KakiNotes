@@ -90,6 +90,21 @@ describe("Contributor profile page", () => {
     }
   });
 
+  // Small cards, as on the home page and the Stories tab: two per row on a
+  // phone, the photo in the small card's 4:5 frame.
+  it("shows the published stories as small cards", async () => {
+    const { container } = render(
+      await ContributorProfile({ country: "new-zealand", slug: "aiman-r" }),
+    );
+
+    const cards = [...container.querySelectorAll("article")];
+    expect(cards).toHaveLength(2);
+    expect(cards[0].parentElement).toHaveClass("grid-cols-2");
+    for (const card of cards) {
+      expect(card.querySelector(".aspect-\\[4\\/5\\]")).not.toBeNull();
+    }
+  });
+
   // Each country is its own catalogue (Rule 10/12): a China profile asks
   // for the contributor and their stories in China only, links its cards
   // into /cn, and never asks for the New Zealand-only journey map.

@@ -194,13 +194,16 @@ export async function ContributorProfile({
         <h2 className="text-xl font-semibold tracking-tight">
           {t("publishedStories")}
         </h2>
-        <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Small cards, two per row on a phone: the same compact grid as
+            the home page's and the Stories tab's small size. */}
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
           {stories.map((story, index) => (
             <StoryCard
               key={story.story_id}
               story={story}
               photos={cardPhotos[index]}
               basePath={`${countryUrlPrefix(country)}/stories`}
+              size="small"
             />
           ))}
         </div>
