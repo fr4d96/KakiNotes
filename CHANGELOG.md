@@ -1,5 +1,37 @@
 # Changelog
 
+## [4.5.0](https://github.com/fr4d96/KakiNotes/compare/v4.4.1...v4.5.0) (2026-11-21)
+
+
+### Share a story, and tabs that remember where you were
+
+#### For readers
+
+- **Share any story.** Every story page now has a Share button next to the author's name. It opens a share card showing the story's cover, title, author and place, with buttons to copy the link, send it on WhatsApp, or email it. On an iPhone there's also a More button that opens the phone's own share menu. On a phone the card slides up from the bottom; on a computer it opens in the middle of the screen.
+- **Copy link works inside other apps too.** If you opened Kakinotes from WhatsApp or Instagram, copying the link still works, and the button tells you straight away whether it copied.
+- **Better link previews.** When you paste a story link into WhatsApp or other chat apps, the preview now shows the story's title, short description and cover photo.
+- **Tabs remember where you were.** On a phone, if you're reading a story and switch to another tab, tapping Stories brings you back to that same story, at the same spot on the page. Every tab does this. Tap the tab you're already on to go back to its main page.
+- **No more reloading when you come back.** A page you looked at in the last 5 minutes now appears instantly when you return to it, instead of showing a loading screen first.
+
+#### For contributors
+
+- **One "Your story is live" notification per story.** You used to get this notification again every time an edit to an already-published story was approved. Now you get it once, when the story first goes live.
+
+#### Behind the scenes
+
+- **App Store plan.** A written plan for putting Kakinotes on the App Store. Nothing has been built yet.
+- **Automatic checks are working again.** The automatic checks that run before each release were still pointing at the old database and had been failing since the move on 13 November. They now use the current one.
+
+### Features
+
+* **nav:** phone tabs remember their page and scroll ([7a57775](https://github.com/fr4d96/KakiNotes/commit/7a577752a05dfe9f1110b18bb0f25c80148d35ac))
+* **stories:** share sheet on public story pages ([278cfbd](https://github.com/fr4d96/KakiNotes/commit/278cfbdfd65d2652795431d818bdd73273479cf8))
+
+
+### Bug Fixes
+
+* **notifications:** one "Your story is live" notification per story ([aca38cd](https://github.com/fr4d96/KakiNotes/commit/aca38cd304240d40ea5cae72ed8fe28b0725bee7))
+
 ## [4.4.1](https://github.com/fr4d96/KakiNotes/compare/v4.4.0...v4.4.1) (2026-11-19)
 
 
