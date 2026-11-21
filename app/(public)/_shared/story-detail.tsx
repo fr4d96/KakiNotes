@@ -35,6 +35,7 @@ import {
   PublicExpenses,
   type PublicExpense,
 } from "@/components/story/public-expenses";
+import { ShareStoryButton } from "@/components/story/share-story-button";
 import { countryUrlPrefix, type CountrySlug } from "@/lib/story/countries";
 
 // Shared by /stories/[id] (NZ) and /cn/stories/[id] (China), parameterized
@@ -153,10 +154,17 @@ export async function generateStoryDetailMetadata(
     robots: { index: true, follow: true },
     openGraph: {
       type: "article",
+      url: `${countryUrlPrefix(country)}/stories/${story.slug}`,
       title: story.title,
       description: story.excerpt ?? undefined,
       publishedTime: story.published_at,
       images: coverUrl ? [{ url: coverUrl }] : undefined,
+    },
+    twitter: {
+      card: coverUrl ? "summary_large_image" : "summary",
+      title: story.title,
+      description: story.excerpt ?? undefined,
+      images: coverUrl ? [coverUrl] : undefined,
     },
   };
 }
@@ -287,6 +295,19 @@ export async function StoryDetail({
   const galleryMedia = media.filter((m) => !inlineMediaIds.has(m.media_id));
 
   const regions = regionLabels(story.regions, locale);
+
+  // The share sheet's preview cover: the page's own published cover, resolved
+  // exactly like the og:image in generateStoryDetailMetadata (published media
+  // only -> getImageUrl(): the public bucket URL or the Drive proxy path,
+  // never a signed or share link). null shows the placeholder.
+  const shareCover = coverOf(media);
+  const shareCoverUrl = shareCover
+    ? getImageUrl({
+        id: shareCover.media_id,
+        storage_backend: shareCover.storage_backend ?? "supabase",
+        public_url: shareCover.public_url,
+      })
+    : null;
   const tripLabel =
     story.trip_start_date && story.trip_end_date
       ? `${story.trip_start_date} – ${story.trip_end_date}`
@@ -344,6 +365,19 @@ export async function StoryDetail({
             {t("trip", { range: tripLabel })}
           </span>
         ) : null}
+        <div className="sm:ml-auto">
+          <ShareStoryButton
+            title={story.title}
+            subtitle={[
+              story.attribution_value ?? tCommon("anonymous"),
+              regions[0],
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+            path={`${countryUrlPrefix(country)}/stories/${story.slug}`}
+            coverUrl={shareCoverUrl}
+          />
+        </div>
       </div>
 
       {(regions.length > 0 || stringList(story.tags).length > 0) && (

@@ -282,6 +282,17 @@
     "trip": "Trip: {range}",
     "contentUnavailable": "This story's content couldn't be rendered.",
     "relatedStories": "Related stories",
+    "share": {
+      "button": "Share",
+      "title": "Share",
+      "copyLink": "Copy link",
+      "linkCopied": "Link copied",
+      "copyFailed": "Couldn't copy the link. Try again.",
+      "copyFailedShort": "Couldn't copy",
+      "whatsapp": "WhatsApp",
+      "email": "Email",
+      "more": "More"
+    },
     "expenses": {
       "heading": "What this trip cost",
       "reportedForWholeTrip": "reported for the whole trip",

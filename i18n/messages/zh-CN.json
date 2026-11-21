@@ -282,6 +282,17 @@
     "trip": "行程：{range}",
     "contentUnavailable": "这篇故事的内容无法显示。",
     "relatedStories": "相关故事",
+    "share": {
+      "button": "分享",
+      "title": "分享",
+      "copyLink": "复制链接",
+      "linkCopied": "链接已复制",
+      "copyFailed": "无法复制链接，请重试。",
+      "copyFailedShort": "复制失败",
+      "whatsapp": "WhatsApp",
+      "email": "邮件",
+      "more": "更多"
+    },
     "expenses": {
       "heading": "这趟行程花了多少",
       "reportedForWholeTrip": "为整趟行程记录的花费",

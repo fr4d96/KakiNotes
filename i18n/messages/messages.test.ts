@@ -85,6 +85,8 @@ describe("messages", () => {
       // "Google Drive" is a product/brand name -- there is nothing to
       // translate (the tab's description text around it IS translated).
       "account.tabs.drive",
+      // "WhatsApp" is a product name, the same in every language.
+      "story.share.whatsapp",
       // A proper place name used as the accent-preview sample word.
       "settings.previewWord",
     ]);

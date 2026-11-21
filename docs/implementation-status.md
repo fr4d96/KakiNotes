@@ -12013,3 +12013,13 @@ separate review task or carries its own reason. Checked after the push: 81 rows 
 index exists, and the live function contains the upsert. No app code changed, so there are no new
 Vitest tests. The trigger has no SQL test either.
 
+## 2026-11-21 — Share button on public story pages
+
+- Public story pages (`/stories/[id]` and `/cn/stories/[id]`, both via `StoryDetail`) have a **Share** button beside the author and trip line. It opens a share sheet: a bottom sheet on phones (`components/ui/bottom-sheet.tsx`), a centred modal on wider screens. The sheet shows a preview card (cover, title, author · place, host) and Copy link, WhatsApp, Email and, where the browser supports it, More. No Embed option.
+- New: `components/story/share-story-button.tsx`, `components/story/share-story-sheet.tsx` (+ test), `story.share.*` strings in `en.json` and `zh-CN.json`.
+- The shared link is the story's canonical path (`/stories/<slug>` or `/cn/stories/<slug>`) on the origin the reader is on (`window.location.origin` when the sheet opens), so `lib/affirmations/share-origin.ts` is unchanged.
+- Privacy (Rules 12-14): the preview cover is the page's own published cover, `coverOf(getPublishedStoryMediaDeduped())` through `getImageUrl()` -- the same call as the `og:image`. No cover shows `StoryCoverFallback`. Nothing beyond what the page already shows is in the sheet.
+- `generateStoryDetailMetadata` now also sets `openGraph.url` and `twitter` title/description/image so WhatsApp and other link previews work. `og:image` was already there (same public cover).
+- Copy link falls back to a selection copy (`document.execCommand("copy")`) when the async Clipboard API is blocked (in-app webviews), and shows "Link copied" / "Couldn't copy" on the button itself: the sheet is a modal `<dialog>` in the top layer, so the toast renders underneath it.
+- Verified in the iPhone 17 frame (402×874, dark and light) and on desktop; "More" only appears where `navigator.share` exists (iOS Safari), so the four-button row was checked with a stubbed `navigator.share`. Not yet tried on a real iPhone.
+
