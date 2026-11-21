@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
+import { revisionCurrency } from "@/lib/story/currency";
 
 // Every function here derives the caller from the session internally — none
 // accept a userId parameter (the RPCs themselves also re-derive auth.uid()
@@ -140,6 +141,8 @@ export type StoryPreview = {
   tripEndDate: string | null;
   tripYear: number | null;
   totalExpenseNzdCents: number | null;
+  /** ISO 4217 code of the amounts (get_story_preview's currency, 20261121). */
+  currency: string;
   sourceKind: string;
   lifecycleStatus: string;
   revisionId: string;
@@ -198,6 +201,7 @@ export async function getStoryPreview(
     tripEndDate: row.trip_end_date,
     tripYear: row.trip_year,
     totalExpenseNzdCents: row.total_expense_nzd_cents,
+    currency: revisionCurrency(row),
     sourceKind: row.source_kind,
     lifecycleStatus: row.lifecycle_status,
     revisionId: row.revision_id,

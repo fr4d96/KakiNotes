@@ -358,3 +358,19 @@ describe("breakdownTotalDollars", () => {
     );
   });
 });
+
+describe("ExpenseBreakdown currency", () => {
+  it("prompts for amounts in the story's own currency", () => {
+    render(
+      <ExpenseBreakdown
+        categories={categories}
+        rows={[row()]}
+        totalExpenseDollars=""
+        currency="CNY"
+        onChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByPlaceholderText("CNY")).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("NZD")).not.toBeInTheDocument();
+  });
+});

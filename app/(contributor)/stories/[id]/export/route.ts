@@ -163,6 +163,7 @@ export async function GET(
       note: expense.note,
     })),
     totalExpenseNzdCents: preview.totalExpenseNzdCents,
+    currency: preview.currency,
     statusLabel: t(`status.${statusKey}`),
     exportedAt,
     locale,

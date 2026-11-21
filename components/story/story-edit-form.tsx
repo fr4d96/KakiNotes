@@ -15,11 +15,9 @@ import { getStoryStarters, outlineMarkdown } from "@/lib/story/story-starters";
 import { StoryStartersCard } from "@/components/story/story-starters-card";
 import { LightBulbIcon } from "@/components/icons";
 import type { Locale } from "@/i18n/locales";
-import {
-  expensePerMonth,
-  formatMonths,
-  formatNzdCents,
-} from "@/lib/story/expense-per-month";
+import { expensePerMonth, formatMonths } from "@/lib/story/expense-per-month";
+import { currencyLabel, formatMoneyCents } from "@/lib/i18n/format";
+import { DEFAULT_CURRENCY } from "@/lib/story/currency";
 import {
   StoryContentEditor,
   type StoryContentEditorHandle,
@@ -139,6 +137,12 @@ export type StoryEditFormProps = {
    * components/story/expense-breakdown.tsx for why).
    */
   expenseCategories: ActiveExpenseCategory[];
+  /**
+   * ISO 4217 code of this revision's amounts (story_revisions.currency, set
+   * by the database from the story's country -- never chosen here). NZD
+   * when absent, which is what every amount was before 20261121.
+   */
+  currency?: string;
   /**
    * Editorial-only addition (Prompt 4 Sub-phase 4): shows the paste/convert
    * content-import panel above the rich text editor. Omitted (falsy) by
@@ -336,6 +340,7 @@ export function StoryEditForm({
   initialCountrySlug,
   tags,
   expenseCategories,
+  currency = DEFAULT_CURRENCY,
   showContentImport,
   isNewStory = false,
   initialStep = "title",
@@ -1461,7 +1466,9 @@ export function StoryEditForm({
                   htmlFor="edit-expense"
                   className="block text-sm font-medium"
                 >
-                  {t("fields.totalExpenses")}
+                  {t("fields.totalExpenses", {
+                    currency: currencyLabel(currency, locale),
+                  })}
                 </label>
                 <input
                   id="edit-expense"
@@ -1499,10 +1506,12 @@ export function StoryEditForm({
                       className="mt-2 block text-xs underline underline-offset-2 hover:no-underline"
                     >
                       Use the breakdown total (
-                      {formatNzdCents(
+                      {formatMoneyCents(
                         Math.round(
                           Number(breakdownTotalDollars(expenseRows) || 0) * 100,
                         ),
+                        currency,
+                        locale,
                       )}
                       )
                     </button>
@@ -1520,7 +1529,11 @@ export function StoryEditForm({
                   <p className="mt-2 text-sm text-muted-foreground">
                     That&apos;s about{" "}
                     <strong className="font-medium">
-                      {formatNzdCents(perMonth.perMonthCents)}
+                      {formatMoneyCents(
+                        perMonth.perMonthCents,
+                        currency,
+                        locale,
+                      )}
                     </strong>{" "}
                     a month across {formatMonths(perMonth.months)} months.
                   </p>
@@ -1535,6 +1548,7 @@ export function StoryEditForm({
                   categories={expenseCategories}
                   rows={expenseRows}
                   totalExpenseDollars={expenseDollars}
+                  currency={currency}
                   onChange={changeExpenses}
                 />
               </div>
@@ -1551,7 +1565,7 @@ export function StoryEditForm({
                   tall empty column. `self-center` tracks whatever height
                   the list actually is instead of guessing at one. */}
               <div className="min-w-0 lg:self-center">
-                <ExpenseDonut rows={donutRows} />
+                <ExpenseDonut rows={donutRows} currency={currency} />
               </div>
             </div>
           </StepSection>

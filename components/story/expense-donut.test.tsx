@@ -156,3 +156,19 @@ describe("ExpenseDonut layout", () => {
     expect(beside).toBe(stacked);
   });
 });
+
+describe("ExpenseDonut currency", () => {
+  it("writes its amounts in the given currency", () => {
+    render(
+      <ExpenseDonut
+        rows={[
+          { label: "Flights", cents: 90_000 },
+          { label: "Rent", cents: 30_000 },
+        ]}
+        currency="CNY"
+      />,
+    );
+    expect(screen.getByText("CN¥900.00")).toBeInTheDocument();
+    expect(screen.getByText("CN¥1,200.00")).toBeInTheDocument();
+  });
+});

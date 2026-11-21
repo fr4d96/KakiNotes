@@ -22,6 +22,10 @@ import {
   countryUrlPrefix,
   type CountrySlug,
 } from "@/lib/story/countries";
+import {
+  costBandsOffered,
+  countryCurrency,
+} from "@/lib/story/country-currency";
 
 /**
  * The /stories and /cn/stories pages share this one renderer, parameterized
@@ -56,11 +60,16 @@ export async function StoriesIndex({
   const segment = countryMessageSegment(country);
   const basePath = `${countryUrlPrefix(country)}/stories`;
 
-  const [regions, destinations, tags] = await Promise.all([
+  const [regions, destinations, tags, currency] = await Promise.all([
     listPublicRegions(country),
     listPublicDestinations(),
     listPublicTags(country),
+    countryCurrency(country),
   ]);
+  // NZ$ cost bands only where amounts are NZD; a hand-typed ?costBand= on
+  // another country is dropped rather than applied to amounts it can't
+  // describe.
+  const showCostBands = costBandsOffered(currency);
   // Destinations scoped to the regions this country actually has, the same
   // "no direct country_id, inherit through region_id" shape as
   // lib/story/active-lookups.ts.
@@ -78,7 +87,7 @@ export async function StoriesIndex({
       destinationId: filters.destination,
       tagId: filters.tag,
       tripYear: filters.tripYear,
-      costBand: filters.costBand,
+      costBand: showCostBands ? filters.costBand : undefined,
       hasReportedExpense: filters.hasReportedExpense,
       search: filters.q,
       cursorPublishedAt: filters.cursorPublishedAt,
@@ -141,6 +150,7 @@ export async function StoriesIndex({
           }))}
           tags={tags}
           current={filters}
+          showCostBands={showCostBands}
           trailing={
             stories.length > 0 ? <CardSizeSwitch size={cardSize} /> : null
           }

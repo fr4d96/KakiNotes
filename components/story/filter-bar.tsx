@@ -65,6 +65,7 @@ export function FilterBar({
   tags,
   current,
   trailing,
+  showCostBands = true,
 }: {
   regions: Option[];
   destinations: DestinationOption[];
@@ -76,6 +77,12 @@ export function FilterBar({
    * big | small card switch here so it doesn't need a row of its own.
    */
   trailing?: React.ReactNode;
+  /**
+   * The NZ$ cost bands, offered only for a country that records NZD
+   * (lib/story/country-currency.ts): bands in one currency can't describe
+   * amounts in another.
+   */
+  showCostBands?: boolean;
 }) {
   const t = useTranslations("stories.filters");
   const [selectedRegion, setSelectedRegion] = useState(current.region ?? "");
@@ -167,21 +174,23 @@ export function FilterBar({
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium">{t("reportedCost")}</span>
-        <select
-          name="costBand"
-          defaultValue={current.costBand ?? ""}
-          className="min-h-11 rounded-md border border-border-subtle bg-surface px-3 py-2"
-        >
-          <option value="">{t("anyCost")}</option>
-          {costBands.map((band) => (
-            <option key={band} value={band}>
-              {t(`costBands.${band}`)}
-            </option>
-          ))}
-        </select>
-      </label>
+      {showCostBands && (
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium">{t("reportedCost")}</span>
+          <select
+            name="costBand"
+            defaultValue={current.costBand ?? ""}
+            className="min-h-11 rounded-md border border-border-subtle bg-surface px-3 py-2"
+          >
+            <option value="">{t("anyCost")}</option>
+            {costBands.map((band) => (
+              <option key={band} value={band}>
+                {t(`costBands.${band}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium">{t("costAvailability")}</span>

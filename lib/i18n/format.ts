@@ -68,15 +68,42 @@ export function formatNumber(value: number, locale: Locale): string {
 }
 
 /**
- * Cents -> "$1,234.50" (en-NZ) / "NZ$1,234.50" (zh-CN). The currency is
- * always New Zealand dollars; only the locale's way of writing it changes.
- * Cents in, because that is how story_revision_expenses stores money.
+ * Minor units -> money in `currency` (ISO 4217): NZD is "$1,234.50" (en-NZ)
+ * / "NZ$1,234.50" (zh-CN); CNY is "CN¥1,234.50" / "¥1,234.50". Minor units
+ * in, because that is how story revisions store amounts (the
+ * `*_nzd_cents` columns hold the revision's own currency since 20261121).
+ * Divides by 100: every currency in `countries` today has two decimals, and
+ * the editor converts typed amounts the same way.
  */
-export function formatCurrencyNzd(cents: number, locale: Locale): string {
+export function formatMoneyCents(
+  cents: number,
+  currency: string,
+  locale: Locale,
+): string {
   return new Intl.NumberFormat(intlLocale(locale), {
     style: "currency",
-    currency: "NZD",
+    currency,
   }).format(cents / 100);
+}
+
+/** formatMoneyCents() in New Zealand dollars -- /costs, which is NZ only. */
+export function formatCurrencyNzd(cents: number, locale: Locale): string {
+  return formatMoneyCents(cents, "NZD", locale);
+}
+
+/**
+ * How a currency is named in a field label: the code in English ("NZD",
+ * "CNY", as the label always read), the currency's own name in Chinese
+ * ("新西兰元", "人民币").
+ */
+export function currencyLabel(currency: string, locale: Locale): string {
+  if (locale === "zh-CN") {
+    return (
+      new Intl.DisplayNames(["zh-CN"], { type: "currency" }).of(currency) ??
+      currency
+    );
+  }
+  return currency;
 }
 
 const MINUTE = 60_000;

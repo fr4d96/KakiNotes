@@ -1,11 +1,9 @@
 import { useLocale, useTranslations } from "next-intl";
 import { ExpenseDonut } from "@/components/story/expense-donut";
 import { isLocale } from "@/i18n/locales";
-import {
-  expensePerMonth,
-  formatMonths,
-  formatNzdCents,
-} from "@/lib/story/expense-per-month";
+import { formatMoneyCents } from "@/lib/i18n/format";
+import { DEFAULT_CURRENCY } from "@/lib/story/currency";
+import { expensePerMonth, formatMonths } from "@/lib/story/expense-per-month";
 
 /**
  * What one trip cost, on the public story page.
@@ -42,11 +40,14 @@ export function PublicExpenses({
   tripStartDate,
   tripEndDate,
   expenses,
+  currency = DEFAULT_CURRENCY,
 }: {
   totalCents: number | null;
   tripStartDate: string | null;
   tripEndDate: string | null;
   expenses: PublicExpense[];
+  /** ISO 4217 code of the published revision's amounts. */
+  currency?: string;
 }) {
   const t = useTranslations("story.expenses");
   const rawLocale = useLocale();
@@ -86,7 +87,7 @@ export function PublicExpenses({
       {totalCents != null && (
         <p className="mt-2">
           <span className="text-2xl font-semibold">
-            {formatNzdCents(totalCents, locale)}
+            {formatMoneyCents(totalCents, currency, locale)}
           </span>{" "}
           <span className="text-sm text-foreground/60">
             {t("reportedForWholeTrip")}
@@ -104,7 +105,11 @@ export function PublicExpenses({
               the month count in a different order, and only the message
               file can express that. */}
           {t.rich("perMonth", {
-            amountValue: formatNzdCents(perMonth.perMonthCents, locale),
+            amountValue: formatMoneyCents(
+              perMonth.perMonthCents,
+              currency,
+              locale,
+            ),
             months: formatMonths(perMonth.months),
             amount: (chunks) => (
               <strong className="font-medium text-foreground">{chunks}</strong>
@@ -119,7 +124,7 @@ export function PublicExpenses({
           fixed column and its legend runs alongside. */}
       {slices.length > 0 && (
         <div className="mt-6">
-          <ExpenseDonut rows={slices} layout="beside" />
+          <ExpenseDonut rows={slices} layout="beside" currency={currency} />
         </div>
       )}
 

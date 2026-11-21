@@ -35,6 +35,7 @@ import {
   PublicExpenses,
   type PublicExpense,
 } from "@/components/story/public-expenses";
+import { revisionCurrency } from "@/lib/story/currency";
 import { ShareStoryButton } from "@/components/story/share-story-button";
 import { countryUrlPrefix, type CountrySlug } from "@/lib/story/countries";
 
@@ -425,6 +426,7 @@ export async function StoryDetail({
         tripStartDate={story.trip_start_date}
         tripEndDate={story.trip_end_date}
         expenses={localizedExpenses(story.expenses, locale)}
+        currency={revisionCurrency(story)}
       />
 
       <SubStoryList

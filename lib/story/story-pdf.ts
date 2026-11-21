@@ -17,7 +17,8 @@ import type {
   Table,
 } from "mdast";
 import { MEDIA_EMBED_REGEX } from "@/lib/story/markdown-media";
-import { formatNzdCents } from "@/lib/story/expense-per-month";
+import { formatMoneyCents } from "@/lib/i18n/format";
+import { DEFAULT_CURRENCY } from "@/lib/story/currency";
 import type { Locale } from "@/i18n/locales";
 import { isSafeHref } from "@/lib/validation/story";
 
@@ -407,6 +408,11 @@ export type StoryPdfInput = {
   tags: string[];
   expenses: StoryPdfExpense[];
   totalExpenseNzdCents: number | null;
+  /**
+   * ISO 4217 code of the amounts above (the revision's currency; their
+   * names predate currencies other than NZD). NZD when absent.
+   */
+  currency?: string;
   /** "Published", "Draft", "In review" -- what this copy actually is. */
   statusLabel: string;
   exportedAt: Date;
@@ -1405,7 +1411,11 @@ class StoryPdfRenderer {
     if (typeof this.input.totalExpenseNzdCents === "number")
       rows.push([
         this.labels.totalCost,
-        formatNzdCents(this.input.totalExpenseNzdCents, this.locale),
+        formatMoneyCents(
+          this.input.totalExpenseNzdCents,
+          this.input.currency ?? DEFAULT_CURRENCY,
+          this.locale,
+        ),
       ]);
     if (rows.length === 0) return;
 
@@ -1493,16 +1503,23 @@ class StoryPdfRenderer {
         y: top,
         width: labelWidth,
       });
-      this.drawPlain(formatNzdCents(expense.amountNzdCents), {
-        baseFont: "regular",
-        size: BODY_SIZE,
-        color: INK,
-        x: column.left,
-        y: top,
-        width: column.width,
-        align: "right",
-        lineBreak: false,
-      });
+      this.drawPlain(
+        formatMoneyCents(
+          expense.amountNzdCents,
+          this.input.currency ?? DEFAULT_CURRENCY,
+          "en",
+        ),
+        {
+          baseFont: "regular",
+          size: BODY_SIZE,
+          color: INK,
+          x: column.left,
+          y: top,
+          width: column.width,
+          align: "right",
+          lineBreak: false,
+        },
+      );
       this.doc.y = top + height + 4;
     }
 
@@ -1525,7 +1542,11 @@ class StoryPdfRenderer {
           width: column.width / 2,
         });
       this.doc.text(
-        formatNzdCents(this.input.totalExpenseNzdCents),
+        formatMoneyCents(
+          this.input.totalExpenseNzdCents,
+          this.input.currency ?? DEFAULT_CURRENCY,
+          "en",
+        ),
         column.left,
         top,
         { width: column.width, align: "right", lineBreak: false },

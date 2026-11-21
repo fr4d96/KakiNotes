@@ -14,6 +14,7 @@ import {
   listActiveCountries,
 } from "@/lib/story/active-lookups";
 import { StoryEditForm } from "@/components/story/story-edit-form";
+import { revisionCurrency } from "@/lib/story/currency";
 import { DEFAULT_COUNTRY_SLUG } from "@/lib/story/countries";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
 import { getStoryEditorialHistory } from "@/lib/story/moderation";
@@ -139,6 +140,7 @@ export default async function EditorialEditPage({
         initialCountrySlug={countrySlug ?? undefined}
         tags={tags}
         expenseCategories={expenseCategories}
+        currency={revisionCurrency(draft)}
         showContentImport
       />
       <div className="mx-auto max-w-3xl px-4 pb-12 sm:px-6">

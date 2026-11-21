@@ -16,6 +16,7 @@ import {
   listActiveCountries,
 } from "@/lib/story/active-lookups";
 import { StoryEditForm } from "@/components/story/story-edit-form";
+import { revisionCurrency } from "@/lib/story/currency";
 import { DEFAULT_COUNTRY_SLUG } from "@/lib/story/countries";
 import { ReopenForEditingButton } from "@/components/story/reopen-for-editing-button";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
@@ -177,6 +178,7 @@ export default async function EditStoryPage({
       initialCountrySlug={countrySlug ?? undefined}
       tags={tags}
       expenseCategories={expenseCategories}
+      currency={revisionCurrency(draft)}
       isNewStory={draft.revision_number === 1}
       initialStep={resolveStep(step)}
     />

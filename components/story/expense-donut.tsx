@@ -1,5 +1,6 @@
 import { useLocale, useTranslations } from "next-intl";
-import { formatNzdCents } from "@/lib/story/expense-per-month";
+import { formatMoneyCents } from "@/lib/i18n/format";
+import { DEFAULT_CURRENCY } from "@/lib/story/currency";
 import { isLocale } from "@/i18n/locales";
 
 /**
@@ -150,9 +151,12 @@ export type ExpenseDonutLayout = "stacked" | "beside";
 export function ExpenseDonut({
   rows,
   layout = "stacked",
+  currency = DEFAULT_CURRENCY,
 }: {
   rows: ExpenseSlice[];
   layout?: ExpenseDonutLayout;
+  /** ISO 4217 code of the amounts (the revision's currency). */
+  currency?: string;
 }) {
   const t = useTranslations("expenses.donut");
   const rawLocale = useLocale();
@@ -227,7 +231,7 @@ export function ExpenseDonut({
             {t("brokenDown")}
           </span>
           <span className="text-base font-semibold">
-            {formatNzdCents(totalCents, locale)}
+            {formatMoneyCents(totalCents, currency, locale)}
           </span>
         </div>
       </div>
@@ -254,7 +258,7 @@ export function ExpenseDonut({
                 {formatShare(slice.share)}
               </span>
               <span className="shrink-0 tabular-nums">
-                {formatNzdCents(slice.cents, locale)}
+                {formatMoneyCents(slice.cents, currency, locale)}
               </span>
             </li>
           ))}

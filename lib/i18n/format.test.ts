@@ -5,6 +5,8 @@ import zhCN from "@/i18n/messages/zh-CN.json";
 import {
   formatCalendarDate,
   formatCurrencyNzd,
+  formatMoneyCents,
+  currencyLabel,
   formatDate,
   formatDateTime,
   formatCountryName,
@@ -79,6 +81,21 @@ describe("formatNumber / formatCurrencyNzd", () => {
   it("keeps the NZ dollar and only changes the locale's way of writing it", () => {
     expect(formatCurrencyNzd(123450, "en")).toBe("$1,234.50");
     expect(formatCurrencyNzd(123450, "zh-CN")).toBe("NZ$1,234.50");
+  });
+
+  it("writes each currency the way its locale does", () => {
+    expect(formatMoneyCents(123450, "NZD", "en")).toBe("$1,234.50");
+    expect(formatMoneyCents(123450, "CNY", "en")).toBe("CN¥1,234.50");
+    expect(formatMoneyCents(123450, "CNY", "zh-CN")).toBe("¥1,234.50");
+  });
+});
+
+describe("currencyLabel", () => {
+  it("is the code in English and the currency's name in Chinese", () => {
+    expect(currencyLabel("NZD", "en")).toBe("NZD");
+    expect(currencyLabel("CNY", "en")).toBe("CNY");
+    expect(currencyLabel("NZD", "zh-CN")).toBe("新西兰元");
+    expect(currencyLabel("CNY", "zh-CN")).toBe("人民币");
   });
 });
 

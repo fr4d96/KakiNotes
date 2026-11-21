@@ -27,6 +27,19 @@ describe("PublicExpenses", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the amounts in the revision's own currency", () => {
+    render(
+      <PublicExpenses
+        totalCents={1_400_000}
+        {...YEAR}
+        expenses={[]}
+        currency="CNY"
+      />,
+    );
+    expect(screen.getByText("CN¥14,000.00")).toBeInTheDocument();
+    expect(screen.queryByText("$14,000.00")).not.toBeInTheDocument();
+  });
+
   it("derives a per-month figure from the trip dates", () => {
     render(<PublicExpenses totalCents={1_200_000} {...YEAR} expenses={[]} />);
     expect(screen.getByText(/a month across 12 months/i)).toBeInTheDocument();

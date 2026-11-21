@@ -4,7 +4,8 @@ import { useId, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ActiveExpenseCategory } from "@/lib/story/active-lookups";
 import { EXPENSE_NOTE_MAX_LENGTH } from "@/lib/validation/story";
-import { formatNzdCents } from "@/lib/story/expense-per-month";
+import { formatMoneyCents } from "@/lib/i18n/format";
+import { DEFAULT_CURRENCY } from "@/lib/story/currency";
 import { CloseIcon } from "@/components/icons";
 import { isLocale } from "@/i18n/locales";
 
@@ -162,12 +163,15 @@ export function ExpenseBreakdown({
   categories,
   rows,
   totalExpenseDollars,
+  currency = DEFAULT_CURRENCY,
   onChange,
 }: {
   categories: ActiveExpenseCategory[];
   rows: ExpenseDraftRow[];
   /** The headline total, as typed. Used only for the advisory line. */
   totalExpenseDollars: string;
+  /** ISO 4217 code of the revision's amounts (the editor's `currency`). */
+  currency?: string;
   onChange: (next: ExpenseDraftRow[]) => void;
 }) {
   const t = useTranslations("editor.expenses");
@@ -359,7 +363,7 @@ export function ExpenseBreakdown({
                         min={0}
                         step="0.01"
                         value={row.amountDollars}
-                        placeholder="NZD"
+                        placeholder={currency}
                         aria-label={
                           custom
                             ? `Amount for ${row.name.trim() || "this category"}`
@@ -457,7 +461,9 @@ export function ExpenseBreakdown({
 
           {rows.length > 0 && (
             <p className="mt-3 text-sm text-muted-foreground">
-              {t("subtotal", { amount: formatNzdCents(subtotalCents, locale) })}
+              {t("subtotal", {
+                amount: formatMoneyCents(subtotalCents, currency, locale),
+              })}
               {exceedsTotal && (
                 // Advisory, never blocking -- see this component's header.
                 <span role="status" className="block text-xs">

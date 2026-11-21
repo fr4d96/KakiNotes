@@ -355,6 +355,22 @@ describe("buildStoryPdf", () => {
     expect(text).toContain("$10,920.50");
   });
 
+  it("writes the costs in the story's own currency", async () => {
+    const text = await extractText(
+      await buildStoryPdf(
+        input({
+          expenses: [{ name: "Rent", amountNzdCents: 780000, note: null }],
+          totalExpenseNzdCents: 1092050,
+          currency: "CNY",
+        }),
+      ),
+    );
+
+    expect(text).toContain("CN¥7,800.00");
+    expect(text).toContain("CN¥10,920.50");
+    expect(text).not.toContain("NZ$");
+  });
+
   it("renders Chinese in the title, the body and the facts block", async () => {
     const pdf = await buildStoryPdf(
       input({
