@@ -1137,6 +1137,45 @@ Rules, enforced by convention (no script does these automatically):
 - The project ref and any keys stay out of committed files — only in `.env.local` / your shell,
   never `.env.example`.
 
+### Database backups (2026-11-21)
+
+The hosted project is also the live site's database, and the free plan has no backups you can
+restore yourself, so backups are taken by hand to the external SSD:
+
+```bash
+npm run backup:db   # scripts/backup-db.sh
+```
+
+- **What it writes:** one `pg_dump` custom-format file,
+  `kakinotes-db-<project-ref>-<UTC timestamp>.dump`, and a `.sha256` beside it, in
+  `/Volumes/Fred punya/Mac archive/KakiNotes backups/db/` (override with `KAKINOTES_BACKUP_DIR`).
+  It holds schema and data for every schema the `postgres` role can read — `public`, `auth`
+  (users), `storage` (object rows only). **Image files are not included:** contributor photos
+  live in their own Google Drive, and editorial images in Supabase storage need a separate copy.
+- **Read-only:** `pg_dump` runs in one read-only transaction; nothing is written to the database.
+- **Checks before keeping a dump:** the SSD must be mounted (it never falls back to the internal
+  disk), `pg_dump` must be 17+ (server is Postgres 17; Homebrew `libpq` is used), and
+  `pg_restore --list` must read the file and find data for `public.stories`,
+  `public.story_revisions` and `auth.users`. A failed run leaves no partial file.
+- **Connection:** the session pooler URL from `supabase/.temp/pooler-url` (written by
+  `supabase link`, gitignored, no password in it), or `KAKINOTES_DB_URL`.
+- **Password:** never in a file. Store it once in the macOS Keychain (Supabase dashboard →
+  Project Settings → Database → reset the password if you don't have it):
+
+  ```bash
+  security add-generic-password -s kakinotes-db -a postgres -w
+  ```
+
+  `KAKINOTES_DB_PASSWORD` in the shell overrides it for one run.
+
+- **When:** before every `supabase db push` (migrations hit the live site at once) and at least
+  weekly. Dumps are about 1 MB; none are deleted automatically.
+- **Restoring** (into a fresh project or a local stack — never over the live one without a plan):
+  `pg_restore --list <file>` to inspect, then
+  `pg_restore --no-owner --dbname=<target url> --schema=public --data-only <file>` after the
+  target has had the repo migrations applied. Restore `auth` data the same way with
+  `--schema=auth` before `public`, since `public` rows reference `auth.users`.
+
 ## CI and releases
 
 ### Branch model

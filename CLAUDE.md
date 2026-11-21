@@ -76,6 +76,7 @@ npm run supabase:start / :stop / :reset   # local Supabase stack — needs Docke
 npm run supabase:migration:new -- <name>
 npm run supabase:types          # from the local stack (Docker)
 npm run supabase:types:linked   # from a linked Supabase DEVELOPMENT project (no Docker needed)
+npm run backup:db               # dump the live database to the external SSD (Keychain password)
 ```
 
 See [docs/architecture.md](docs/architecture.md#local-vs-hosted-supabase-development) for the full
