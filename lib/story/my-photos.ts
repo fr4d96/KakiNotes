@@ -1,6 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { mintMediaPreviewSignedUrls } from "@/lib/story/image-pipeline";
+import { listMyStories } from "@/lib/story/contributor-queries";
+import { DEFAULT_COUNTRY_SLUG } from "@/lib/story/countries";
 
 /**
  * Data for the My Photos page (docs/google-drive-integration.md section 7).
@@ -84,13 +86,44 @@ export function groupPhotosByStory(
   return stories;
 }
 
+/**
+ * Keeps only the rows whose story belongs to `countrySlug`. list_my_photos()
+ * returns no country, so each story's comes from list_my_stories()'s
+ * country_slug (same ownership rule); a story without one, or missing from
+ * that list, counts as New Zealand -- the same fallback My Stories uses.
+ */
+export function rowsInCountry<T extends { story_id: string }>(
+  rows: readonly T[],
+  storyCountries: ReadonlyMap<string, string | null>,
+  countrySlug: string,
+): T[] {
+  return rows.filter(
+    (row) =>
+      (storyCountries.get(row.story_id) ?? DEFAULT_COUNTRY_SLUG) ===
+      countrySlug,
+  );
+}
+
 export async function listMyPhotos(options: {
   driveConnected: boolean;
+  /**
+   * The country chosen in the top bar (kakinotes-country cookie). A display
+   * filter only: which photos are the caller's is still decided by the RPCs
+   * (Engineering Rule 2).
+   */
+  countrySlug: string;
 }): Promise<MyPhotoStory[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("list_my_photos");
+  const [{ data, error }, myStories] = await Promise.all([
+    supabase.rpc("list_my_photos"),
+    listMyStories(),
+  ]);
   if (error) throw error;
-  const rows = data ?? [];
+  const rows = rowsInCountry(
+    data ?? [],
+    new Map(myStories.map((s) => [s.id, s.country_slug ?? null] as const)),
+    options.countrySlug,
+  );
 
   const supabaseIds = rows
     .filter((row) => row.storage_backend !== "google_drive")

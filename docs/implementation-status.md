@@ -12048,6 +12048,28 @@ Vitest tests. The trigger has no SQL test either.
 - No code, RLS or storage change. An installed home-screen app keeps its old icon until it is
   removed and added again (iOS caches it).
 
+## 2026-11-21 — My Photos per country
+
+Bug: with China chosen in the top bar, My Stories → My Photos still listed every New Zealand story
+and its photos for download. My Stories (2026-11-16) and Story folders were already scoped by the
+`kakinotes-country` cookie; My Photos was not, because `list_my_photos()` returns no country.
+
+- `app/(contributor)/my-photos/page.tsx` reads the cookie (New Zealand when none or unknown) and
+  passes it to `listMyPhotos({ driveConnected, countrySlug })`.
+- `lib/story/my-photos.ts` reads each story's country from `list_my_stories()`'s `country_slug`
+  (same ownership rule, run in parallel) and keeps only that country's rows (`rowsInCountry`)
+  **before** minting thumbnail URLs, so no other country's photo gets a URL. A story with no
+  country counts as New Zealand, as on My Stories. No migration, no policy change: a display
+  filter on the caller's own photos only (Rules 2, 3, 21). The existing empty state ("No photos
+  yet…") shows when the chosen country has none.
+- Other My Stories tabs checked: the story list and Story folders (`/my-stories/map`) were already
+  filtered; `/my-stories/journey` only redirects to folders, and a journey page opens from its
+  folder.
+
+**Verified:** new tests in `lib/story/my-photos.test.ts` (filter, China-only minting, NZ unchanged,
+empty under China); `npm run verify`; in the iPhone 17 frame with the owner's account, China shows
+the empty state and New Zealand shows 12 photos across 8 stories.
+
 ## 2026-11-21 — Tags belong to a country
 
 **Why:** `tags` was one global list, so a China story's editor offered New Zealand WHV tags

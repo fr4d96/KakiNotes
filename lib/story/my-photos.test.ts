@@ -6,8 +6,18 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
 vi.mock("@/lib/story/image-pipeline", () => ({
   mintMediaPreviewSignedUrls: vi.fn(),
 }));
+vi.mock("@/lib/story/contributor-queries", () => ({
+  listMyStories: vi.fn(),
+}));
 
-import { groupPhotosByStory } from "@/lib/story/my-photos";
+import { createClient } from "@/lib/supabase/server";
+import { mintMediaPreviewSignedUrls } from "@/lib/story/image-pipeline";
+import { listMyStories } from "@/lib/story/contributor-queries";
+import {
+  groupPhotosByStory,
+  listMyPhotos,
+  rowsInCountry,
+} from "@/lib/story/my-photos";
 
 function row(
   mediaId: string,
@@ -64,5 +74,86 @@ describe("groupPhotosByStory", () => {
     );
     expect(story.title).toBeNull();
     expect(story.lifecycleStatus).toBe("published");
+  });
+});
+
+describe("rowsInCountry", () => {
+  const countries = new Map<string, string | null>([
+    ["nz", "new-zealand"],
+    ["cn", "china"],
+    ["legacy", null],
+  ]);
+  const rows = [
+    row("m1", "nz"),
+    row("m2", "cn"),
+    row("m3", "legacy"),
+    row("m4", "unknown"),
+  ];
+
+  it("keeps only the chosen country's stories", () => {
+    expect(
+      rowsInCountry(rows, countries, "china").map((r) => r.media_id),
+    ).toEqual(["m2"]);
+  });
+
+  it("counts a story with no country (or not listed) as New Zealand", () => {
+    expect(
+      rowsInCountry(rows, countries, "new-zealand").map((r) => r.media_id),
+    ).toEqual(["m1", "m3", "m4"]);
+  });
+});
+
+describe("listMyPhotos", () => {
+  function setup() {
+    vi.mocked(createClient).mockResolvedValue({
+      rpc: vi.fn().mockResolvedValue({
+        data: [row("m1", "nz"), row("m2", "cn"), row("m3", "nz")],
+        error: null,
+      }),
+    } as never);
+    vi.mocked(listMyStories).mockResolvedValue([
+      { id: "nz", country_slug: "new-zealand" },
+      { id: "cn", country_slug: "china" },
+    ] as never);
+    vi.mocked(mintMediaPreviewSignedUrls).mockImplementation(async (ids) =>
+      Object.fromEntries(ids.map((id) => [id, `signed:${id}`])),
+    );
+  }
+
+  it("under China lists only China stories and mints only their thumbnails", async () => {
+    setup();
+    const stories = await listMyPhotos({
+      driveConnected: false,
+      countrySlug: "china",
+    });
+    expect(stories.map((s) => s.storyId)).toEqual(["cn"]);
+    expect(mintMediaPreviewSignedUrls).toHaveBeenLastCalledWith(
+      ["m2"],
+      expect.any(Number),
+    );
+  });
+
+  it("under New Zealand still lists the New Zealand stories", async () => {
+    setup();
+    const stories = await listMyPhotos({
+      driveConnected: false,
+      countrySlug: "new-zealand",
+    });
+    expect(stories.map((s) => s.storyId)).toEqual(["nz"]);
+    expect(stories[0].photos.map((p) => p.thumbnailUrl)).toEqual([
+      "signed:m1",
+      "signed:m3",
+    ]);
+  });
+
+  it("is empty when the chosen country has no stories", async () => {
+    setup();
+    vi.mocked(listMyStories).mockResolvedValue([
+      { id: "nz", country_slug: "new-zealand" },
+      { id: "cn", country_slug: "new-zealand" },
+    ] as never);
+    expect(
+      await listMyPhotos({ driveConnected: false, countrySlug: "china" }),
+    ).toEqual([]);
   });
 });
