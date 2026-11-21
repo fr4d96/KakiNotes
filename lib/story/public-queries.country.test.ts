@@ -12,6 +12,7 @@ vi.mock("server-only", () => ({}));
 
 type RpcCall = { fn: string; args: Record<string, unknown> };
 const rpcCalls: RpcCall[] = [];
+const tagFilters: Record<string, unknown>[] = [];
 
 // A minimal fake PostgREST-ish client: .rpc() records the call and resolves
 // with configurable data, and .from().select()... supports the handful of
@@ -38,6 +39,31 @@ function makeClient(options: {
                   }),
               }),
             }),
+          }),
+        };
+      }
+      if (table === "tags") {
+        return {
+          select: () => ({
+            eq: (col: string, value: unknown) => {
+              const filters: Record<string, unknown> = { [col]: value };
+              const builder = {
+                eq: (col2: string, value2: unknown) => {
+                  filters[col2] = value2;
+                  return builder;
+                },
+                order: () => {
+                  tagFilters.push({ ...filters });
+                  return Promise.resolve({
+                    data: filters.country_id
+                      ? [{ id: "scoped-tag", name: "Food" }]
+                      : [],
+                    error: null,
+                  });
+                },
+              };
+              return builder;
+            },
           }),
         };
       }
@@ -77,6 +103,7 @@ const {
   getPublishedStoryBySlug,
   listPublishedStories,
   listPublicRegions,
+  listPublicTags,
   getPublicCountryId,
 } = await import("@/lib/story/public-queries");
 
@@ -127,5 +154,19 @@ describe("country-scoped public readers", () => {
     currentClient = makeClient({ countryRow: null });
     const regions = await listPublicRegions("atlantis");
     expect(regions).toEqual([]);
+  });
+
+  it("listPublicTags filters tags by the resolved country id", async () => {
+    currentClient = makeClient({ countryRow: { id: "china-id" } });
+    const tags = await listPublicTags("china");
+    expect(tags).toEqual([{ id: "scoped-tag", name: "Food" }]);
+    expect(tagFilters.at(-1)).toEqual({ active: true, country_id: "china-id" });
+  });
+
+  it("listPublicTags returns nothing for an unknown country, never every tag", async () => {
+    currentClient = makeClient({ countryRow: null });
+    tagFilters.length = 0;
+    expect(await listPublicTags("atlantis")).toEqual([]);
+    expect(tagFilters).toEqual([]);
   });
 });

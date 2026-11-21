@@ -213,12 +213,25 @@ export async function listActiveExpenseCategories(): Promise<
   return data ?? [];
 }
 
-export async function listActiveTags(): Promise<ActiveTag[]> {
+/**
+ * Tags belong to a country (20261121100000_country_scoped_tags.sql): a
+ * China story is never offered New Zealand's tags and vice versa. The
+ * database is the boundary -- set_revision_tags() and
+ * story_revision_tags_validate_country() reject another country's tag --
+ * this just keeps the picker from offering one. An unknown/inactive slug
+ * returns an empty list, never every country's tags.
+ */
+export async function listActiveTags(
+  countrySlug: string,
+): Promise<ActiveTag[]> {
+  const countryId = await resolveCountryId(countrySlug);
+  if (!countryId) return [];
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("tags")
     .select("id, name, slug")
     .eq("active", true)
+    .eq("country_id", countryId)
     .order("name");
   if (error) throw error;
   return data ?? [];

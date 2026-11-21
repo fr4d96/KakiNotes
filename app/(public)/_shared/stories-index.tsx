@@ -59,7 +59,7 @@ export async function StoriesIndex({
   const [regions, destinations, tags] = await Promise.all([
     listPublicRegions(country),
     listPublicDestinations(),
-    listPublicTags(),
+    listPublicTags(country),
   ]);
   // Destinations scoped to the regions this country actually has, the same
   // "no direct country_id, inherit through region_id" shape as

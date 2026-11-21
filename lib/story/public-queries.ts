@@ -442,12 +442,22 @@ export async function listPublicDestinations(
 // browse surface as of 2026-08-16 (every non-fixture work_types row is now
 // inactive).
 
-export async function listPublicTags(): Promise<PublicTag[]> {
+/**
+ * One country's tags only (20261121100000): the /stories and /cn/stories
+ * filter bars never offer the other country's tags. Unknown/inactive slug
+ * => empty list, same as listPublicRegions().
+ */
+export async function listPublicTags(
+  countrySlug: string,
+): Promise<PublicTag[]> {
+  const countryId = await getPublicCountryId(countrySlug);
+  if (!countryId) return [];
   const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("tags")
     .select("id, name")
     .eq("active", true)
+    .eq("country_id", countryId)
     .order("name");
   if (error) throw error;
   return data ?? [];

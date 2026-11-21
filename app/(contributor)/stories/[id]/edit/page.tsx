@@ -16,6 +16,7 @@ import {
   listActiveCountries,
 } from "@/lib/story/active-lookups";
 import { StoryEditForm } from "@/components/story/story-edit-form";
+import { DEFAULT_COUNTRY_SLUG } from "@/lib/story/countries";
 import { ReopenForEditingButton } from "@/components/story/reopen-for-editing-button";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
 import { STORY_STEPS, type StoryStepId } from "@/lib/story/steps";
@@ -129,6 +130,7 @@ export default async function EditStoryPage({
     );
   }
 
+  const countrySlugPromise = getStoryCountry(id);
   const [
     selections,
     preview,
@@ -143,10 +145,11 @@ export default async function EditStoryPage({
     getStoryPreview(id),
     listActiveRegions(),
     listActiveDestinations(),
-    listActiveTags(),
+    // Tags belong to the story's country (20261121100000).
+    countrySlugPromise.then((c) => listActiveTags(c ?? DEFAULT_COUNTRY_SLUG)),
     listActiveExpenseCategories(),
     listActiveCountries(),
-    getStoryCountry(id),
+    countrySlugPromise,
   ]);
 
   const parsedContent = normalizeStoryContentJson(draft.content_json);
