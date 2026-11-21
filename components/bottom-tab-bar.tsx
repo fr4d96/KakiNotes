@@ -414,7 +414,9 @@ export function BottomTabBar({
 
 const FOLDERS_HREF = "/my-stories/map";
 
-const PROFILE_HREF = "/settings";
+// The signed-in Profile tab opens the "You" page (2026-11-21); /settings
+// stays the signed-out preferences page and still lights this tab.
+const PROFILE_HREF = "/account";
 
 /**
  * The Profile tab: the profile screen itself and the account places it
@@ -423,7 +425,7 @@ const PROFILE_HREF = "/settings";
 function inProfileTab(pathname: string | null): boolean {
   return (
     isWithin(pathname, PROFILE_HREF) ||
-    isWithin(pathname, "/account") ||
+    isWithin(pathname, "/settings") ||
     isWithin(pathname, "/notifications") ||
     isWithin(pathname, "/my-photos") ||
     isWithin(pathname, "/affirmations")

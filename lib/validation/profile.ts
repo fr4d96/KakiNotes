@@ -34,6 +34,29 @@ export const profileUpdateSchema = z.object({
     .max(120, "common.displayNameTooLong"),
 });
 
+/**
+ * The self-service bio cap. Deliberately tighter than the database's own
+ * contributors_bio_length CHECK (2000): that one also bounds what editors
+ * write for imported contributors, while this keeps the byline page's
+ * "about" line short. The form's live counter reads this same constant.
+ */
+export const BIO_MAX_LENGTH = 300;
+
+// A textarea submits its line breaks as CRLF (HTML form serialization), so
+// "300 characters" in the browser's counter would be 300 + one per line
+// break here. Normalising to LF first means the counter, this check and the
+// stored char_length() all count the same thing.
+const bioSchema = z.preprocess(
+  (value) =>
+    typeof value === "string" ? value.replace(/\r\n?/g, "\n") : value,
+  z
+    .string()
+    .trim()
+    .max(BIO_MAX_LENGTH, "profile.bioTooLong")
+    .optional()
+    .or(z.literal("")),
+);
+
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 
 export const contributorAttributionTypes = [
@@ -56,12 +79,7 @@ export const createOwnContributorSchema = z.object({
   // opt-in; profiles no longer has a competing one.
   publicProfileEnabled: z.boolean(),
   publicSlug: publicSlugSchema,
-  bio: z
-    .string()
-    .trim()
-    .max(2000, "profile.bioTooLong")
-    .optional()
-    .or(z.literal("")),
+  bio: bioSchema,
   // Optional here, unlike the old profiles field which defaulted to MY. An
   // unset home country renders as absent on the public page rather than as
   // a guess -- see the column comment in 20260910090000.

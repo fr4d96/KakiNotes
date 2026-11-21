@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
-import { AccountTabs } from "@/app/(contributor)/account/account-tabs";
-import { ProfileForm } from "@/app/(contributor)/account/profile-form";
-import { UsernameForm } from "@/app/(contributor)/account/username-form";
-import { ContributorForm } from "@/app/(contributor)/account/contributor-form";
-import { SignOutButton } from "@/app/(contributor)/account/sign-out-button";
-import {
-  DriveTab,
-  type DriveResultStatus,
-} from "@/app/(contributor)/account/drive-tab";
+import { YouView } from "@/app/(contributor)/account/you-view";
+import type { DriveResultStatus } from "@/app/(contributor)/account/drive-tab";
+import { isLocale } from "@/i18n/locales";
 import { isDriveConfigured } from "@/lib/env.server";
 import { getMyDriveConnectionStatus } from "@/lib/drive/connection-status";
 import { getMyDriveMoveSummary } from "@/lib/story/media-move";
@@ -52,9 +46,8 @@ export default async function AccountPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [user, t, rawSearchParams] = await Promise.all([
+  const [user, rawSearchParams] = await Promise.all([
     getCurrentUser(),
-    getTranslations("account"),
     searchParams,
   ]);
   if (!user) {
@@ -106,93 +99,32 @@ export default async function AccountPage({
       ? await getMyDriveMoveSummary()
       : null;
 
-  const currentUsername = usernameRow?.username ?? "";
+  const locale = await getLocale();
 
   return (
-    <div className="mx-auto max-w-5xl px-4 pt-4 pb-12 sm:px-6 sm:py-16">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="journiq-heading text-[2.4rem] max-md:sr-only">
-          {t("title")}
-        </h1>
-        <SignOutButton />
-      </div>
-
-      {/* A brand new account has no contributor identity yet, and the first
-          sign-in is routed straight here for that reason (see
-          lib/auth/post-login-redirect.ts). The prompt is driven by the real
-          absence of the row, not by a one-shot query parameter, so it also
-          catches anyone who skipped the step and came back later. The link
-          stays a plain #hash anchor: AccountTabs watches hashchange, so it
-          opens the tab rather than needing to reach into its state. */}
-      {!contributor && (
-        <div className="mt-6 rounded-md border border-border-subtle bg-surface-muted p-4 text-sm">
-          <p className="font-medium">{t("setupPromptTitle")}</p>
-          <p className="mt-1 text-foreground/70">
-            {t("setupPromptBodyBefore")}{" "}
-            <a
-              href="#contributor-identity"
-              className="underline underline-offset-2"
-            >
-              {t("setupPromptLink")}
-            </a>
-            .
-          </p>
-        </div>
-      )}
-
-      <AccountTabs
-        label={t("tablistLabel")}
-        tabs={[
-          {
-            id: "profile",
-            label: t("tabs.profile"),
-            description: t("tabs.profileDescription"),
-            panel: <ProfileForm displayName={profile?.display_name ?? ""} />,
-          },
-          {
-            id: "sign-in",
-            label: t("tabs.signIn"),
-            description: t("tabs.signInDescription"),
-            panel: <UsernameForm username={currentUsername} />,
-          },
-          {
-            id: "contributor-identity",
-            label: t("tabs.contributorIdentity"),
-            description: t("tabs.contributorIdentityDescription"),
-            panel: (
-              <ContributorForm
-                existing={
-                  contributor
-                    ? {
-                        displayName: contributor.display_name,
-                        attributionType: contributor.attribution_type,
-                        publicProfileEnabled:
-                          contributor.public_status === "public",
-                        publicSlug: contributor.public_slug ?? "",
-                        bio: contributor.bio ?? "",
-                        homeCountryCode: contributor.home_country_code ?? "",
-                        avatarEmoji: contributor.avatar_emoji ?? "",
-                      }
-                    : null
-                }
-              />
-            ),
-          },
-          {
-            id: "drive",
-            label: t("tabs.drive"),
-            description: t("tabs.driveDescription"),
-            panel: (
-              <DriveTab
-                configured={driveConfigured}
-                connection={driveConnection}
-                resultStatus={driveResultStatus}
-                moveSummary={driveMoveSummary}
-              />
-            ),
-          },
-        ]}
-      />
-    </div>
+    <YouView
+      locale={isLocale(locale) ? locale : "en"}
+      accountName={profile?.display_name ?? ""}
+      username={usernameRow?.username ?? ""}
+      avatarEmoji={contributor?.avatar_emoji ?? ""}
+      identity={
+        contributor
+          ? {
+              displayName: contributor.display_name,
+              attributionType: contributor.attribution_type,
+              publicProfileEnabled: contributor.public_status === "public",
+              publicSlug: contributor.public_slug ?? "",
+              bio: contributor.bio ?? "",
+              homeCountryCode: contributor.home_country_code ?? "",
+            }
+          : null
+      }
+      drive={{
+        configured: driveConfigured,
+        connection: driveConnection,
+        resultStatus: driveResultStatus,
+        moveSummary: driveMoveSummary,
+      }}
+    />
   );
 }

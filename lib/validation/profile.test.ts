@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { profileUpdateSchema, createOwnContributorSchema } from "./profile";
+import {
+  BIO_MAX_LENGTH,
+  profileUpdateSchema,
+  createOwnContributorSchema,
+} from "./profile";
 
 // 20260910090000 moved every publicly visible field off profiles and onto
 // contributors. The bio / home country / public slug cases that used to sit
@@ -83,9 +87,37 @@ describe("createOwnContributorSchema", () => {
 
   it("rejects a bio over the length limit", () => {
     expect(
-      createOwnContributorSchema.safeParse({ ...base, bio: "a".repeat(2001) })
-        .success,
+      createOwnContributorSchema.safeParse({
+        ...base,
+        bio: "a".repeat(BIO_MAX_LENGTH + 1),
+      }).success,
     ).toBe(false);
+  });
+
+  it("accepts a bio of exactly the length limit", () => {
+    expect(
+      createOwnContributorSchema.safeParse({
+        ...base,
+        bio: "a".repeat(BIO_MAX_LENGTH),
+      }).success,
+    ).toBe(true);
+  });
+
+  it("counts a submitted CRLF line break as one character, like the form's counter", () => {
+    // 299 letters + one line break = exactly 300 in the browser; counting
+    // the submitted CRLF as two would make it 301 and reject it.
+    const bio = `${"a".repeat(149)}\r\n${"a".repeat(150)}`;
+    const parsed = createOwnContributorSchema.safeParse({ ...base, bio });
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.bio).toBe(`${"a".repeat(149)}\n${"a".repeat(150)}`);
+  });
+
+  it("trims a bio and keeps its inner line breaks", () => {
+    const parsed = createOwnContributorSchema.safeParse({
+      ...base,
+      bio: "  Picked kiwifruit.\n\nThen skied.  ",
+    });
+    expect(parsed.data?.bio).toBe("Picked kiwifruit.\n\nThen skied.");
   });
 
   it("rejects a home country code that isn't a 2-letter code", () => {

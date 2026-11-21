@@ -8,7 +8,7 @@ import {
   updateOwnContributorAction,
   type AccountFormState,
 } from "@/app/(contributor)/actions";
-import { contributorAttributionTypes } from "@/lib/validation/profile";
+import { BioField } from "@/app/(contributor)/account/bio-field";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
 import { formatCountryName } from "@/lib/i18n/format";
 import { intlLocale, isLocale } from "@/i18n/locales";
@@ -29,6 +29,7 @@ export function ContributorForm({
   } | null;
 }) {
   const t = useTranslations("account.contributor");
+  const tYou = useTranslations("account.you");
   const rawLocale = useLocale();
   const locale = isLocale(rawLocale) ? rawLocale : "en";
   // Sorted by the LOCALE's own collation, not by the English list's order:
@@ -66,7 +67,7 @@ export function ContributorForm({
         ) : null}
         {t("avatarInSettings")}{" "}
         <Link
-          href="/settings#avatar"
+          href="/account#avatar"
           className="font-semibold text-accent underline-offset-2 hover:underline"
         >
           {t("avatarInSettingsLink")}
@@ -91,44 +92,15 @@ export function ContributorForm({
         />
       </div>
 
-      <fieldset>
-        <legend className="text-sm font-medium">
-          {t("attributionLegend")}
-        </legend>
-        <div className="mt-2 space-y-2">
-          {contributorAttributionTypes.map((type) => (
-            <label key={type} className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="attributionType"
-                value={type}
-                defaultChecked={
-                  existing
-                    ? existing.attributionType === type
-                    : type === "display_name"
-                }
-                className="h-4 w-4 accent-accent"
-              />
-              {t(`attribution.${type}`)}
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      {/* Credited by display name (owner decision 2026-11-21); an existing
+          identity keeps whatever it already has. */}
+      <input
+        type="hidden"
+        name="attributionType"
+        value={existing?.attributionType ?? "display_name"}
+      />
 
-      <div>
-        <label htmlFor="contributorBio" className="block text-sm font-medium">
-          {t("bioLabel")}
-        </label>
-        <p className="mt-1 text-xs text-foreground/55">{t("bioHint")}</p>
-        <textarea
-          id="contributorBio"
-          name="bio"
-          rows={4}
-          maxLength={2000}
-          defaultValue={existing?.bio ?? ""}
-          className="mt-2 w-full rounded-xl border border-border-subtle bg-surface px-3 py-2 focus:border-accent focus:outline-none"
-        />
-      </div>
+      <BioField defaultValue={existing?.bio ?? ""} />
 
       <div>
         <label
@@ -151,22 +123,6 @@ export function ContributorForm({
             </option>
           ))}
         </select>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <input
-          id="contributorPublicProfileEnabled"
-          name="publicProfileEnabled"
-          type="checkbox"
-          defaultChecked={existing?.publicProfileEnabled ?? false}
-          className="h-4 w-4 accent-accent"
-        />
-        <label
-          htmlFor="contributorPublicProfileEnabled"
-          className="text-sm font-medium"
-        >
-          {t("listMe")}
-        </label>
       </div>
 
       <div>
@@ -206,7 +162,9 @@ export function ContributorForm({
             className="w-full bg-surface px-3 py-2 focus:outline-none"
           />
         </div>
-        <p className="mt-1 text-xs text-foreground/55">{t("slugHint2")}</p>
+        <p className="mt-1 text-xs text-foreground/55">
+          {tYou("slugAutoHint")}
+        </p>
       </div>
 
       {state.error && (

@@ -161,7 +161,16 @@ export async function ContributorProfile({
       />
 
       {contributor.bio ? (
-        <p className="mt-6 max-w-2xl text-foreground/70">{contributor.bio}</p>
+        // Plain text from the contributor, rendered as a React text node
+        // (never HTML, Engineering Rules 6-7). whitespace-pre-line keeps the
+        // line breaks they typed and collapses stray runs of spaces;
+        // break-words stops a long unbroken URL widening the phone layout.
+        <p
+          data-testid="contributor-bio"
+          className="mt-6 max-w-2xl whitespace-pre-line break-words text-foreground/70"
+        >
+          {contributor.bio}
+        </p>
       ) : null}
 
       <dl className="mt-6 max-w-2xl space-y-2">

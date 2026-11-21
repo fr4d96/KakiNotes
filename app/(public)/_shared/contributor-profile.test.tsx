@@ -126,4 +126,50 @@ describe("Contributor profile page", () => {
       "new-zealand",
     );
   });
+
+  describe("bio", () => {
+    async function renderWithBio(bio: string | null) {
+      const base = await getPublicContributorDeduped("aiman-r", "new-zealand");
+      vi.mocked(getPublicContributorDeduped).mockResolvedValue({
+        ...base!,
+        bio: bio as string,
+      });
+      try {
+        return render(
+          await ContributorProfile({ country: "new-zealand", slug: "aiman-r" }),
+        );
+      } finally {
+        vi.mocked(getPublicContributorDeduped).mockResolvedValue(base);
+      }
+    }
+
+    it("shows the bio as plain text with its line breaks kept", async () => {
+      await renderWithBio(
+        "Picked apples in Hawke's Bay.\n\nThen a ski season.",
+      );
+      const bio = screen.getByTestId("contributor-bio");
+      // The newline survives to the DOM; whitespace-pre-line shows it.
+      expect(bio.textContent).toBe(
+        "Picked apples in Hawke's Bay.\n\nThen a ski season.",
+      );
+      expect(bio).toHaveClass("whitespace-pre-line");
+    });
+
+    it("never interprets the bio as HTML", async () => {
+      await renderWithBio('<img src=x onerror="alert(1)"><b>bold</b>');
+      const bio = screen.getByTestId("contributor-bio");
+      expect(bio.querySelector("img, b")).toBeNull();
+      expect(bio).toHaveTextContent(
+        '<img src=x onerror="alert(1)"><b>bold</b>',
+      );
+    });
+
+    it.each([
+      ["empty", ""],
+      ["missing", null],
+    ])("hides the bio section when the bio is %s", async (_label, bio) => {
+      await renderWithBio(bio);
+      expect(screen.queryByTestId("contributor-bio")).not.toBeInTheDocument();
+    });
+  });
 });

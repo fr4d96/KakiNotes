@@ -27,7 +27,13 @@ vi.mock("@/lib/story/public-queries", () => ({
 // Server Components against a real Supabase instance.
 const calls: { method: string; args: unknown[] }[] = [];
 let updateResult: { error: unknown } = { error: null };
-let insertResult: { error: unknown } = { error: null };
+type InsertResult = { error: unknown };
+// A function answers each insert from its payload (used to make an
+// auto-made page address clash, then succeed on the next candidate).
+let insertResult:
+  InsertResult | ((payload: Record<string, unknown>) => InsertResult) = {
+  error: null,
+};
 // What the caller's own profiles row holds (createOwnContributorAction reads
 // its avatar_emoji to start the new identity with it).
 let profileRow: { avatar_emoji: string | null } | null = null;
@@ -40,7 +46,11 @@ function chain() {
     },
     insert: (...args: unknown[]) => {
       calls.push({ method: "insert", args });
-      return Promise.resolve(insertResult);
+      return Promise.resolve(
+        typeof insertResult === "function"
+          ? insertResult(args[0] as Record<string, unknown>)
+          : insertResult,
+      );
     },
     select: (...args: unknown[]) => {
       calls.push({ method: "select", args });
@@ -211,38 +221,127 @@ describe("createOwnContributorAction", () => {
     expect(result.error).toMatch(/already have a contributor identity/i);
   });
 
-  it("requires a public slug before listing in the directory", async () => {
+  // Listed by default (owner decision 2026-11-21): the server derives the
+  // directory listing from the page address; the form has no say in it.
+  async function insertedStatus(entries: Record<string, string>) {
     mockGetCurrentUser.mockResolvedValue(user);
+    const result = await createOwnContributorAction({}, formData(entries));
+    const insertCall = calls.find((c) => c.method === "insert");
+    const payload = insertCall?.args[0] as Record<string, unknown>;
+    return { result, status: payload?.public_status };
+  }
 
-    const result = await createOwnContributorAction(
-      {},
-      formData({
-        displayName: "Casey C.",
-        attributionType: "display_name",
-        publicProfileEnabled: "on",
-        publicSlug: "",
-      }),
-    );
-
-    expect(result.error).toMatch(/contributor url/i);
-    expect(mockFrom).not.toHaveBeenCalled();
+  it("lists a contributor with a page address by default", async () => {
+    const { result, status } = await insertedStatus({
+      displayName: "Casey C.",
+      attributionType: "display_name",
+      publicSlug: "casey",
+    });
+    expect(result.error).toBeUndefined();
+    expect(status).toBe("public");
   });
 
-  it("rejects a public, anonymous attribution", async () => {
-    mockGetCurrentUser.mockResolvedValue(user);
+  it("never lists an anonymous credit, even with a page address", async () => {
+    const { result, status } = await insertedStatus({
+      displayName: "Casey C.",
+      attributionType: "anonymous",
+      publicSlug: "casey",
+    });
+    expect(result.error).toBeUndefined();
+    expect(status).toBe("private");
+  });
 
+  it("ignores a posted listing choice", async () => {
+    const { status } = await insertedStatus({
+      displayName: "Casey C.",
+      attributionType: "display_name",
+      publicProfileEnabled: "",
+      publicSlug: "casey",
+    });
+    expect(status).toBe("public");
+  });
+});
+
+describe("createOwnContributorAction page address", () => {
+  const inserts = () =>
+    calls
+      .filter((c) => c.method === "insert")
+      .map((c) => c.args[0] as Record<string, unknown>);
+  const clashOn = (taken: string[]) => (payload: Record<string, unknown>) =>
+    taken.includes(payload.public_slug as string)
+      ? {
+          error: {
+            code: "23505",
+            message:
+              'duplicate key value violates unique constraint "contributors_public_slug_key"',
+          },
+        }
+      : { error: null };
+
+  it("makes one from the display name and lists the new identity", async () => {
+    mockGetCurrentUser.mockResolvedValue(user);
+    const result = await createOwnContributorAction(
+      {},
+      formData({ displayName: "Kaki Ku", attributionType: "display_name" }),
+    );
+    expect(result.error).toBeUndefined();
+    expect(inserts().at(-1)).toMatchObject({
+      public_slug: "kaki-ku",
+      public_status: "public",
+    });
+  });
+
+  it("tries the next numbered address when the name is taken", async () => {
+    mockGetCurrentUser.mockResolvedValue(user);
+    insertResult = clashOn(["kaki-ku", "kaki-ku-2"]);
+    const result = await createOwnContributorAction(
+      {},
+      formData({ displayName: "Kaki Ku", attributionType: "display_name" }),
+    );
+    expect(result.error).toBeUndefined();
+    expect(inserts().map((p) => p.public_slug)).toEqual([
+      "kaki-ku",
+      "kaki-ku-2",
+      "kaki-ku-3",
+    ]);
+  });
+
+  it("never renames an address the contributor typed", async () => {
+    mockGetCurrentUser.mockResolvedValue(user);
+    insertResult = clashOn(["mine"]);
     const result = await createOwnContributorAction(
       {},
       formData({
-        displayName: "Casey C.",
-        attributionType: "anonymous",
-        publicProfileEnabled: "on",
-        publicSlug: "casey",
+        displayName: "Kaki Ku",
+        attributionType: "display_name",
+        publicSlug: "mine",
       }),
     );
+    expect(result.error).toMatch(/already taken/i);
+    expect(inserts()).toHaveLength(1);
+  });
 
-    expect(result.error).toMatch(/anonymous/i);
-    expect(mockFrom).not.toHaveBeenCalled();
+  it("gives an anonymous credit no address and keeps it unlisted", async () => {
+    mockGetCurrentUser.mockResolvedValue(user);
+    await createOwnContributorAction(
+      {},
+      formData({ displayName: "Kaki Ku", attributionType: "anonymous" }),
+    );
+    expect(inserts().at(-1)).toMatchObject({
+      public_slug: null,
+      public_status: "private",
+    });
+  });
+
+  it("stops at the first error that isn't an address clash", async () => {
+    mockGetCurrentUser.mockResolvedValue(user);
+    insertResult = { error: { code: "23505", message: "linked_user_id" } };
+    const result = await createOwnContributorAction(
+      {},
+      formData({ displayName: "Kaki Ku", attributionType: "display_name" }),
+    );
+    expect(result.error).toMatch(/already have a contributor identity/i);
+    expect(inserts()).toHaveLength(1);
   });
 });
 

@@ -44,7 +44,20 @@ describe("POST /country", () => {
     expect(response.cookies.get("kakinotes-country")?.value).toBe("china");
   });
 
-  it.each(["https://evil.example/", "//evil.example", "/account"])(
+  it("goes back to the signed-in You page when it asks to", async () => {
+    const response = await post({ country: "china", return: "/account" });
+    expect(response.headers.get("location")).toBe(
+      "https://kakinotes.test/account",
+    );
+    expect(response.cookies.get("kakinotes-country")?.value).toBe("china");
+  });
+
+  it.each([
+    "https://evil.example/",
+    "//evil.example",
+    "/account/../evil",
+    "/stories",
+  ])(
     "ignores any other return path (%s) and opens the country's home",
     async (back) => {
       const response = await post({ country: "china", return: back });

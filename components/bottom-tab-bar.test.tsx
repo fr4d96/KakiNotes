@@ -87,7 +87,7 @@ describe("BottomTabBar", () => {
     expect(links.at(-2)).toHaveAttribute("href", "/my-stories");
     // ...and the Profile tab after it, opening the profile screen.
     expect(links.at(-1)).toHaveTextContent("Profile");
-    expect(links.at(-1)).toHaveAttribute("href", "/settings");
+    expect(links.at(-1)).toHaveAttribute("href", "/account");
   });
 
   it("is hidden from md up and when printing, and pads for the home indicator", () => {

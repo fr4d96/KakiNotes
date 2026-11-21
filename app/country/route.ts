@@ -9,6 +9,9 @@ import {
 
 const countrySchema = z.enum(COUNTRY_SLUGS);
 const SETTINGS_PATH = "/settings";
+// The signed-in "You" page (app/(contributor)/account) has the same picker.
+const ACCOUNT_PATH = "/account";
+const RETURN_PATHS: readonly string[] = [SETTINGS_PATH, ACCOUNT_PATH];
 
 /**
  * POST /country -- remember the reader's country on this device and open
@@ -31,8 +34,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(new URL("/", request.url), 303);
   }
   const home = countryUrlPrefix(parsed.data) || "/";
+  const requested = form?.get("return");
+  // Only these fixed in-app paths are accepted, so this can never redirect
+  // off-site: anything else lands on the country's home.
   const destination =
-    form?.get("return") === SETTINGS_PATH ? SETTINGS_PATH : home;
+    typeof requested === "string" && RETURN_PATHS.includes(requested)
+      ? requested
+      : home;
   const response = NextResponse.redirect(
     new URL(destination, request.url),
     303,

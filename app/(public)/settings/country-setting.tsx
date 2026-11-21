@@ -21,8 +21,6 @@ import { useCurrentCountry } from "@/lib/story/use-current-country";
  */
 export function CountrySetting() {
   const t = useTranslations("settings");
-  const tCountry = useTranslations("countryContent");
-  const current = useCurrentCountry();
   const headingId = useId();
 
   return (
@@ -33,49 +31,67 @@ export function CountrySetting() {
       <p className="mt-1 px-1 text-sm text-muted-foreground">
         {t("countryHelp")}
       </p>
-      <form
-        method="post"
-        action="/country"
+      <CountryPicker
+        returnTo="/settings"
         className="mt-2 overflow-hidden rounded-2xl bg-surface shadow-sm"
-      >
-        <input type="hidden" name="return" value="/settings" />
-        {COUNTRY_SLUGS.map((slug, index) => {
-          const selected = slug === current;
-          return (
-            <button
-              key={slug}
-              type="submit"
-              name="country"
-              value={slug}
-              aria-pressed={selected}
-              className={`press flex min-h-13 w-full items-center gap-3 px-4 text-left text-base font-medium hover:bg-surface-muted ${
-                index > 0 ? "border-t border-border-subtle" : ""
-              }`}
-            >
-              <span aria-hidden="true" className="text-2xl leading-none">
-                {COUNTRY_FLAGS[slug]}
-              </span>
-              <span className="flex-1">
-                {tCountry(`${countryMessageSegment(slug)}.name`)}
-              </span>
-              {selected ? (
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  className="h-5 w-5 text-accent"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M5 12.5 10 17.5 19 7" />
-                </svg>
-              ) : null}
-            </button>
-          );
-        })}
-      </form>
+      />
     </section>
+  );
+}
+
+/**
+ * The country list itself: one submit per country, posted to /country,
+ * which comes back to `returnTo` (only /settings or /account are accepted
+ * there, see app/country/route.ts).
+ */
+export function CountryPicker({
+  returnTo,
+  className,
+}: {
+  returnTo: "/settings" | "/account";
+  className?: string;
+}) {
+  const tCountry = useTranslations("countryContent");
+  const current = useCurrentCountry();
+  return (
+    <form method="post" action="/country" className={className}>
+      <input type="hidden" name="return" value={returnTo} />
+      {COUNTRY_SLUGS.map((slug, index) => {
+        const selected = slug === current;
+        return (
+          <button
+            key={slug}
+            type="submit"
+            name="country"
+            value={slug}
+            aria-pressed={selected}
+            className={`press flex min-h-13 w-full items-center gap-3 px-4 text-left text-base font-medium hover:bg-surface-muted ${
+              index > 0 ? "border-t border-border-subtle" : ""
+            }`}
+          >
+            <span aria-hidden="true" className="text-2xl leading-none">
+              {COUNTRY_FLAGS[slug]}
+            </span>
+            <span className="flex-1">
+              {tCountry(`${countryMessageSegment(slug)}.name`)}
+            </span>
+            {selected ? (
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5 text-accent"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12.5 10 17.5 19 7" />
+              </svg>
+            ) : null}
+          </button>
+        );
+      })}
+    </form>
   );
 }

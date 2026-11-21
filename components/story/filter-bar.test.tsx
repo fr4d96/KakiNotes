@@ -17,6 +17,20 @@ const tags = [
 ];
 
 describe("FilterBar", () => {
+  it("leaves out the NZ$ cost bands for a country that doesn't record NZD", () => {
+    render(
+      <FilterBar
+        regions={regions}
+        destinations={destinations}
+        tags={tags}
+        current={{}}
+        showCostBands={false}
+      />,
+    );
+    expect(screen.queryByLabelText(/reported cost/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/cost availability/i)).toBeInTheDocument();
+  });
+
   it("renders every filter field with its options", () => {
     render(
       <FilterBar

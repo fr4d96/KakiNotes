@@ -76,36 +76,7 @@ const LANGUAGES: { locale: Locale; label: string }[] = [
 
 export function SettingsView({ locale }: { locale: Locale }) {
   const t = useTranslations("settings");
-  const theme = useThemePreference();
-  const choice = useAccentChoice();
-  const router = useRouter();
-  const [switching, startSwitching] = useTransition();
-  const themeId = useId();
-  const accentId = useId();
   const languageId = useId();
-
-  const chosenHex =
-    choice.kind === "custom"
-      ? choice.hex
-      : (ACCENT_PRESETS.find((p) => p.id === choice.id)?.hex ?? "#0068a3");
-  const preview =
-    choice.kind === "preset" && choice.id === DEFAULT_ACCENT_ID
-      ? KINGFISHER
-      : (deriveAccentPalette(chosenHex) ?? KINGFISHER);
-
-  function chooseLanguage(next: Locale) {
-    if (next === locale) return;
-    startSwitching(async () => {
-      const result = await setLocaleAction(next);
-      if (result.ok) router.refresh();
-    });
-  }
-
-  const themeOptions: { value: ThemePreference; label: string }[] = [
-    { value: "light", label: t("themeLight") },
-    { value: "dark", label: t("themeDark") },
-    { value: "system", label: t("themeSystem") },
-  ];
 
   return (
     <div className="mx-auto w-full max-w-xl px-4 pt-4 pb-16 sm:px-6 sm:pt-10">
@@ -128,150 +99,8 @@ export function SettingsView({ locale }: { locale: Locale }) {
           >
             {t("personalize")}
           </h2>
-          <div className="mt-2 space-y-7 rounded-2xl bg-surface p-4 shadow-sm sm:p-5">
-            {/* Appearance */}
-            <div>
-              <p id={themeId} className="text-base font-bold">
-                {t("theme")}
-              </p>
-              <div
-                role="radiogroup"
-                aria-labelledby={themeId}
-                className="mt-3 grid grid-cols-3 gap-1 rounded-full bg-surface-muted p-1"
-              >
-                {themeOptions.map((option) => {
-                  const selected = theme === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      onClick={() => setThemePreference(option.value)}
-                      className={`press min-h-11 rounded-full px-2 text-sm font-semibold transition-colors ${
-                        selected
-                          ? "bg-surface text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Accent colour */}
-            <div>
-              <p id={accentId} className="text-base font-bold">
-                {t("accent")}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {t("accentHelp")}
-              </p>
-
-              <div
-                role="radiogroup"
-                aria-labelledby={accentId}
-                className="mt-4 grid grid-cols-4 gap-x-2 gap-y-4"
-              >
-                {ACCENT_PRESETS.map((preset) => {
-                  const selected =
-                    choice.kind === "preset" && choice.id === preset.id;
-                  return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      onClick={() => setAccentColor(preset.hex)}
-                      className="press group flex flex-col items-center gap-1.5 rounded-xl focus-visible:outline-offset-4"
-                    >
-                      <Swatch color={preset.hex} selected={selected} />
-                      <span
-                        className={`text-xs ${
-                          selected
-                            ? "font-bold text-foreground"
-                            : "font-medium text-muted-foreground"
-                        }`}
-                      >
-                        {t(`presets.${preset.id}`)}
-                      </span>
-                    </button>
-                  );
-                })}
-
-                {/* Custom: the device's own colour picker. The input covers
-                  the swatch (not hidden behind a label) so a tap reaches it
-                  directly on iOS. `input` previews live while the picker is
-                  open; `change` keeps the colour. */}
-                <label className="press group relative flex cursor-pointer flex-col items-center gap-1.5 rounded-xl focus-within:outline-2 focus-within:outline-offset-4 focus-within:outline-ring">
-                  <Swatch
-                    color={choice.kind === "custom" ? choice.hex : null}
-                    selected={choice.kind === "custom"}
-                  />
-                  <span
-                    className={`text-xs ${
-                      choice.kind === "custom"
-                        ? "font-bold text-foreground"
-                        : "font-medium text-muted-foreground"
-                    }`}
-                  >
-                    {t("custom")}
-                  </span>
-                  <input
-                    type="color"
-                    role="radio"
-                    aria-checked={choice.kind === "custom"}
-                    aria-label={t("customPick")}
-                    value={chosenHex}
-                    onInput={(event) =>
-                      applyAccentPalette(
-                        deriveAccentPalette(event.currentTarget.value),
-                      )
-                    }
-                    onChange={(event) => setAccentColor(event.target.value)}
-                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                  />
-                </label>
-              </div>
-
-              {/* Both themes at once: the picked colour, as each one draws it. */}
-              <div className="mt-5 grid grid-cols-2 gap-3" aria-hidden="true">
-                <PreviewCard
-                  label={t("previewLight")}
-                  ground={GROUNDS.light.ground}
-                  ink="#24201c"
-                  onAccent={GROUNDS.light.onAccent}
-                  set={preview.light}
-                  word={t("previewWord")}
-                  button={t("previewButton")}
-                  tag={t("previewTag")}
-                />
-                <PreviewCard
-                  label={t("previewDark")}
-                  ground={GROUNDS.dark.ground}
-                  ink="#ece7e0"
-                  onAccent={GROUNDS.dark.onAccent}
-                  set={preview.dark}
-                  word={t("previewWord")}
-                  button={t("previewButton")}
-                  tag={t("previewTag")}
-                />
-              </div>
-
-              {!(
-                choice.kind === "preset" && choice.id === DEFAULT_ACCENT_ID
-              ) ? (
-                <button
-                  type="button"
-                  onClick={() => setAccentColor(null)}
-                  className="mt-4 min-h-11 text-sm font-bold text-accent hover:underline"
-                >
-                  {t("reset")}
-                </button>
-              ) : null}
-            </div>
+          <div className="mt-2 rounded-2xl bg-surface p-4 shadow-sm sm:p-5">
+            <AppearanceControls />
           </div>
         </section>
       </div>
@@ -287,46 +116,11 @@ export function SettingsView({ locale }: { locale: Locale }) {
         >
           <span id="settings-language">{t("language")}</span>
         </h2>
-        <div
-          role="radiogroup"
-          aria-labelledby={languageId}
-          aria-busy={switching || undefined}
+        <LanguageList
+          locale={locale}
+          labelledBy={languageId}
           className="mt-2 overflow-hidden rounded-2xl bg-surface shadow-sm"
-        >
-          {LANGUAGES.map((language, index) => {
-            const selected = language.locale === locale;
-            return (
-              <button
-                key={language.locale}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                lang={language.locale}
-                disabled={switching}
-                onClick={() => chooseLanguage(language.locale)}
-                className={`press flex min-h-13 w-full items-center justify-between px-4 text-left text-base font-medium hover:bg-surface-muted ${
-                  index > 0 ? "border-t border-border-subtle" : ""
-                }`}
-              >
-                {language.label}
-                {selected ? (
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    className="h-5 w-5 text-accent"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2.2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M5 12.5 10 17.5 19 7" />
-                  </svg>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
+        />
       </section>
 
       <div className="mt-8">
@@ -336,6 +130,243 @@ export function SettingsView({ locale }: { locale: Locale }) {
       <p className="mt-6 px-1 text-xs text-muted-foreground">
         {t("deviceNote")}
       </p>
+    </div>
+  );
+}
+
+/**
+ * Theme and accent colour: device preferences that apply the moment they
+ * are chosen. Shared by /settings and the signed-in "You" page (/account).
+ */
+export function AppearanceControls() {
+  const t = useTranslations("settings");
+  const theme = useThemePreference();
+  const choice = useAccentChoice();
+  const themeId = useId();
+  const accentId = useId();
+
+  const chosenHex =
+    choice.kind === "custom"
+      ? choice.hex
+      : (ACCENT_PRESETS.find((p) => p.id === choice.id)?.hex ?? "#0068a3");
+  const preview =
+    choice.kind === "preset" && choice.id === DEFAULT_ACCENT_ID
+      ? KINGFISHER
+      : (deriveAccentPalette(chosenHex) ?? KINGFISHER);
+
+  const themeOptions: { value: ThemePreference; label: string }[] = [
+    { value: "light", label: t("themeLight") },
+    { value: "dark", label: t("themeDark") },
+    { value: "system", label: t("themeSystem") },
+  ];
+
+  return (
+    <div className="space-y-7">
+      {/* Appearance */}
+      <div>
+        <p id={themeId} className="text-base font-bold">
+          {t("theme")}
+        </p>
+        <div
+          role="radiogroup"
+          aria-labelledby={themeId}
+          className="mt-3 grid grid-cols-3 gap-1 rounded-full bg-surface-muted p-1"
+        >
+          {themeOptions.map((option) => {
+            const selected = theme === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setThemePreference(option.value)}
+                className={`press min-h-11 rounded-full px-2 text-sm font-semibold transition-colors ${
+                  selected
+                    ? "bg-surface text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Accent colour */}
+      <div>
+        <p id={accentId} className="text-base font-bold">
+          {t("accent")}
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{t("accentHelp")}</p>
+
+        <div
+          role="radiogroup"
+          aria-labelledby={accentId}
+          className="mt-4 grid grid-cols-4 gap-x-2 gap-y-4"
+        >
+          {ACCENT_PRESETS.map((preset) => {
+            const selected =
+              choice.kind === "preset" && choice.id === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setAccentColor(preset.hex)}
+                className="press group flex flex-col items-center gap-1.5 rounded-xl focus-visible:outline-offset-4"
+              >
+                <Swatch color={preset.hex} selected={selected} />
+                <span
+                  className={`text-xs ${
+                    selected
+                      ? "font-bold text-foreground"
+                      : "font-medium text-muted-foreground"
+                  }`}
+                >
+                  {t(`presets.${preset.id}`)}
+                </span>
+              </button>
+            );
+          })}
+
+          {/* Custom: the device's own colour picker. The input covers
+            the swatch (not hidden behind a label) so a tap reaches it
+            directly on iOS. `input` previews live while the picker is
+            open; `change` keeps the colour. */}
+          <label className="press group relative flex cursor-pointer flex-col items-center gap-1.5 rounded-xl focus-within:outline-2 focus-within:outline-offset-4 focus-within:outline-ring">
+            <Swatch
+              color={choice.kind === "custom" ? choice.hex : null}
+              selected={choice.kind === "custom"}
+            />
+            <span
+              className={`text-xs ${
+                choice.kind === "custom"
+                  ? "font-bold text-foreground"
+                  : "font-medium text-muted-foreground"
+              }`}
+            >
+              {t("custom")}
+            </span>
+            <input
+              type="color"
+              role="radio"
+              aria-checked={choice.kind === "custom"}
+              aria-label={t("customPick")}
+              value={chosenHex}
+              onInput={(event) =>
+                applyAccentPalette(
+                  deriveAccentPalette(event.currentTarget.value),
+                )
+              }
+              onChange={(event) => setAccentColor(event.target.value)}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+          </label>
+        </div>
+
+        {/* Both themes at once: the picked colour, as each one draws it. */}
+        <div className="mt-5 grid grid-cols-2 gap-3" aria-hidden="true">
+          <PreviewCard
+            label={t("previewLight")}
+            ground={GROUNDS.light.ground}
+            ink="#24201c"
+            onAccent={GROUNDS.light.onAccent}
+            set={preview.light}
+            word={t("previewWord")}
+            button={t("previewButton")}
+            tag={t("previewTag")}
+          />
+          <PreviewCard
+            label={t("previewDark")}
+            ground={GROUNDS.dark.ground}
+            ink="#ece7e0"
+            onAccent={GROUNDS.dark.onAccent}
+            set={preview.dark}
+            word={t("previewWord")}
+            button={t("previewButton")}
+            tag={t("previewTag")}
+          />
+        </div>
+
+        {!(choice.kind === "preset" && choice.id === DEFAULT_ACCENT_ID) ? (
+          <button
+            type="button"
+            onClick={() => setAccentColor(null)}
+            className="mt-4 min-h-11 text-sm font-bold text-accent hover:underline"
+          >
+            {t("reset")}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/** The language list (each named in itself); switching refreshes the app. */
+export function LanguageList({
+  locale,
+  labelledBy,
+  className,
+}: {
+  locale: Locale;
+  labelledBy: string;
+  className?: string;
+}) {
+  const router = useRouter();
+  const [switching, startSwitching] = useTransition();
+  const languageId = labelledBy;
+
+  function chooseLanguage(next: Locale) {
+    if (next === locale) return;
+    startSwitching(async () => {
+      const result = await setLocaleAction(next);
+      if (result.ok) router.refresh();
+    });
+  }
+
+  return (
+    <div
+      role="radiogroup"
+      aria-labelledby={languageId}
+      aria-busy={switching || undefined}
+      className={className}
+    >
+      {LANGUAGES.map((language, index) => {
+        const selected = language.locale === locale;
+        return (
+          <button
+            key={language.locale}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            lang={language.locale}
+            disabled={switching}
+            onClick={() => chooseLanguage(language.locale)}
+            className={`press flex min-h-13 w-full items-center justify-between px-4 text-left text-base font-medium hover:bg-surface-muted ${
+              index > 0 ? "border-t border-border-subtle" : ""
+            }`}
+          >
+            {language.label}
+            {selected ? (
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5 text-accent"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12.5 10 17.5 19 7" />
+              </svg>
+            ) : null}
+          </button>
+        );
+      })}
     </div>
   );
 }

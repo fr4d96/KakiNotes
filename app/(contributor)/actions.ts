@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
+import { slugCandidates } from "@/lib/contributors/auto-slug";
 import { getTranslations } from "next-intl/server";
 import { invalidateContributorPublicCache } from "@/lib/story/public-cache";
 import { PUBLIC_CONTRIBUTORS_TAG } from "@/lib/story/public-queries";
@@ -34,6 +35,19 @@ export type AccountFormState = {
  * checking without repeating next-intl's generics.
  */
 type AccountTranslator = Awaited<ReturnType<typeof getTranslations<"account">>>;
+
+/**
+ * Every contributor is listed in the /contributors directory by default
+ * (owner decision 2026-11-21; there is no longer a switch for it). A listing
+ * still needs a page address to point at, and an anonymous credit is never
+ * listed -- the same two rules checkContributorPublicVisibility enforces,
+ * so a derived "listed" can never fail that check. A contributor page also
+ * stays empty until a story is published (the public queries only ever read
+ * published stories).
+ */
+function isListedByDefault(data: CreateOwnContributorInput): boolean {
+  return Boolean(data.publicSlug) && data.attributionType !== "anonymous";
+}
 
 function checkContributorPublicVisibility(
   data: CreateOwnContributorInput,
@@ -197,7 +211,9 @@ export async function createOwnContributorAction(
   const parsed = createOwnContributorSchema.safeParse({
     displayName: formData.get("displayName"),
     attributionType: formData.get("attributionType"),
-    publicProfileEnabled: formData.get("publicProfileEnabled") === "on",
+    // Listed is no longer a choice (owner decision 2026-11-21): the server
+    // derives it below from the page address, never from the form.
+    publicProfileEnabled: false,
     publicSlug: formData.get("publicSlug") ?? "",
     bio: formData.get("bio") ?? "",
     homeCountryCode: formData.get("homeCountryCode") ?? "",
@@ -208,6 +224,7 @@ export async function createOwnContributorAction(
       error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
     };
   }
+  parsed.data.publicProfileEnabled = isListedByDefault(parsed.data);
   const publicCheck = checkContributorPublicVisibility(parsed.data, t);
   if (publicCheck) return publicCheck;
 
@@ -224,21 +241,46 @@ export async function createOwnContributorAction(
   // session, never from the form — matches the
   // "contributors: self-service create own contributor record" RLS policy,
   // which independently rejects anything else.
-  const { error } = await supabase.from("contributors").insert({
-    linked_user_id: user.id,
-    created_by: user.id,
-    display_name: parsed.data.displayName,
-    attribution_type: parsed.data.attributionType,
-    public_status: parsed.data.publicProfileEnabled ? "public" : "private",
-    public_slug: parsed.data.publicSlug || null,
-    bio: parsed.data.bio || null,
-    home_country_code: parsed.data.homeCountryCode || null,
-    avatar_emoji: profile?.avatar_emoji ?? null,
-  });
+  // No address typed: make one from the display name so the new identity
+  // is listed straight away (lib/contributors/auto-slug.ts). An anonymous
+  // credit is never listed, so it never gets one. A typed address is used
+  // as-is and a clash on it is reported, never silently renamed.
+  const typedSlug = parsed.data.publicSlug || "";
+  const autoSlug = !typedSlug && parsed.data.attributionType !== "anonymous";
+  const candidates = autoSlug
+    ? slugCandidates(parsed.data.displayName)
+    : [typedSlug || null];
+
+  let savedSlug: string | null = null;
+  let error: { code?: string; message?: string } | null = null;
+  for (const slug of candidates) {
+    ({ error } = await supabase.from("contributors").insert({
+      linked_user_id: user.id,
+      created_by: user.id,
+      display_name: parsed.data.displayName,
+      attribution_type: parsed.data.attributionType,
+      public_status: isListedByDefault({
+        ...parsed.data,
+        publicSlug: slug ?? "",
+      })
+        ? "public"
+        : "private",
+      public_slug: slug,
+      bio: parsed.data.bio || null,
+      home_country_code: parsed.data.homeCountryCode || null,
+      avatar_emoji: profile?.avatar_emoji ?? null,
+    }));
+    const slugClash =
+      error?.code === "23505" && /public_slug/i.test(error.message ?? "");
+    if (!(autoSlug && slugClash)) {
+      savedSlug = slug;
+      break;
+    }
+  }
 
   if (error) {
     if (error.code === "23505") {
-      if (/public_slug/i.test(error.message)) {
+      if (/public_slug/i.test(error.message ?? "")) {
         return { error: t("errors.slugTaken") };
       }
       return { error: t("errors.alreadyHaveIdentity") };
@@ -249,7 +291,7 @@ export async function createOwnContributorAction(
   }
 
   revalidatePath("/account");
-  revalidateContributorPublicPages(parsed.data.publicSlug);
+  revalidateContributorPublicPages(savedSlug ?? "");
   return { success: t("contributor.created") };
 }
 
@@ -270,7 +312,9 @@ export async function updateOwnContributorAction(
   const parsed = createOwnContributorSchema.safeParse({
     displayName: formData.get("displayName"),
     attributionType: formData.get("attributionType"),
-    publicProfileEnabled: formData.get("publicProfileEnabled") === "on",
+    // Listed is no longer a choice (owner decision 2026-11-21): the server
+    // derives it below from the page address, never from the form.
+    publicProfileEnabled: false,
     publicSlug: formData.get("publicSlug") ?? "",
     bio: formData.get("bio") ?? "",
     homeCountryCode: formData.get("homeCountryCode") ?? "",
@@ -283,6 +327,7 @@ export async function updateOwnContributorAction(
       error: firstIssueMessage(parsed.error, tv, "common.invalidInput"),
     };
   }
+  parsed.data.publicProfileEnabled = isListedByDefault(parsed.data);
   const publicCheck = checkContributorPublicVisibility(parsed.data, t);
   if (publicCheck) return publicCheck;
 
