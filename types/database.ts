@@ -215,6 +215,7 @@ export type Database = {
           active: boolean;
           code: string;
           created_at: string;
+          currency_code: string;
           id: string;
           name: string;
           name_zh_cn: string | null;
@@ -225,6 +226,7 @@ export type Database = {
           active?: boolean;
           code: string;
           created_at?: string;
+          currency_code: string;
           id?: string;
           name: string;
           name_zh_cn?: string | null;
@@ -235,6 +237,7 @@ export type Database = {
           active?: boolean;
           code?: string;
           created_at?: string;
+          currency_code?: string;
           id?: string;
           name?: string;
           name_zh_cn?: string | null;
@@ -1673,7 +1676,7 @@ export type Database = {
           contributor_note?: string | null;
           created_at?: string;
           created_by?: string | null;
-          currency?: string;
+          currency: string;
           excerpt?: string | null;
           id?: string;
           revision_number: number;
@@ -1766,6 +1769,7 @@ export type Database = {
       tags: {
         Row: {
           active: boolean;
+          country_id: string;
           created_at: string;
           id: string;
           name: string;
@@ -1774,6 +1778,7 @@ export type Database = {
         };
         Insert: {
           active?: boolean;
+          country_id?: string;
           created_at?: string;
           id?: string;
           name: string;
@@ -1782,13 +1787,22 @@ export type Database = {
         };
         Update: {
           active?: boolean;
+          country_id?: string;
           created_at?: string;
           id?: string;
           name?: string;
           slug?: string;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "tags_country_id_fkey";
+            columns: ["country_id"];
+            isOneToOne: false;
+            referencedRelation: "countries";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       user_roles: {
         Row: {
@@ -1881,6 +1895,7 @@ export type Database = {
         Returns: boolean;
       };
       _content_json_text_length: { Args: { p_content: Json }; Returns: number };
+      _default_tag_country_id: { Args: never; Returns: string };
       _generate_story_slug: { Args: { p_title: string }; Returns: string };
       _has_active_drive_connection: { Args: never; Returns: boolean };
       _is_self_submitted_story_owner: {
@@ -1914,6 +1929,10 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      _move_revision_tags_to_country: {
+        Args: { p_country_id: string; p_revision_id: string };
+        Returns: undefined;
       };
       _my_drive_move_candidates: {
         Args: never;
@@ -2388,6 +2407,7 @@ export type Database = {
           assigned_editor_id: string;
           content_json: Json;
           contributor_note: string;
+          currency: string;
           excerpt: string;
           lifecycle_status: Database["public"]["Enums"]["story_lifecycle_status"];
           revision_id: string;
@@ -2478,6 +2498,7 @@ export type Database = {
           contributor_avatar_emoji: string;
           contributor_slug: string;
           country_slug: string;
+          currency: string;
           excerpt: string;
           expenses: Json;
           published_at: string;
@@ -2638,6 +2659,7 @@ export type Database = {
           attribution_type: Database["public"]["Enums"]["attribution_type"];
           attribution_value: string;
           content_json: Json;
+          currency: string;
           excerpt: string;
           lifecycle_status: Database["public"]["Enums"]["story_lifecycle_status"];
           media: Json;
