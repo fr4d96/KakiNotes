@@ -92,7 +92,8 @@ The internal disk is too full for Xcode, so put the large Xcode files on the SSD
      screen**: "You're offline — Kakinotes needs a connection." No service worker and no cached
      content (Rules 12–13 stay in force).
 4. Reuse the existing assets for the app icon and launch screen (`public/kakinotes-icon.png`,
-   `public/splash`). The icon must be 1024×1024 with no transparency.
+   `public/splash`). The icon must be 1024×1024 with no transparency: render it at 1024 the way
+   `scripts/generate-app-icons.mjs` does (sketch on its paper colour, opaque).
 5. Add a small `lib/native/` client module that checks `Capacitor.isNativePlatform()`, so that web
    and PWA users see no change. Never trust it on the server: it is a UI hint, not an authority
    (Rule 2).

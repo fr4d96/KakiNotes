@@ -3173,9 +3173,11 @@ App Store build, Capacitor or any native code. Files:
   `display: "standalone"`, `start_url`/`scope` `/`, colours from the light `--background` token, and
   192, 512 and maskable 512 icons. `proxy.ts`'s matcher does not cover it, so it is public.
 - `public/icons/icon-192.png`, `icon-512.png`, `icon-maskable-512.png` and `app/apple-icon.png`
-  (180×180, opaque — iOS handles transparency badly) — made once from `public/kakinotes-icon.png`
-  with `sharp` (cream background, the sketch centred; the maskable one has extra padding). The
-  generating script was not kept; re-create the same way if the artwork changes.
+  (180×180, opaque — iOS handles transparency badly), plus `app/favicon.ico` — all **generated** by
+  `scripts/generate-app-icons.mjs` (sharp) from the logo sketch `public/kakinotes-icon.png` (a hand
+  writing in a spiral notebook, with mountains drawn on the page and no words), centred full-width
+  on its paper colour `#fcf4e8`; the maskable one at 72% width for the safe zone. After changing the
+  sketch, rerun that script and then `scripts/generate-splash-screens.mjs`.
 - `app/layout.tsx` — `metadata.appleWebApp` (`capable`, title, `statusBarStyle: "default"`) and a
   `viewport` export: `viewportFit: "cover"` plus light/dark `themeColor`. Pinch-zoom stays enabled
   in browser tabs (the iOS form-field zoom is handled by the 16px input floor in `app/globals.css`).
