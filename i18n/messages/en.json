@@ -1180,7 +1180,6 @@
     "title": "Name your story",
     "intro": "Give it a working title to start. You can change it any time while you write.",
     "titleLabel": "Title",
-    "titlePlaceholder": "Six months picking kiwifruit in Te Puke",
     "starting": "Starting…",
     "startWriting": "Start writing",
     "havePdf": "Have it as a PDF?",
@@ -1242,7 +1241,6 @@
     "whatItCost": "What it cost",
     "total": "Total",
     "morePhotos": "More photos",
-    "colophon": "Your copy of \"{title}\" ({status}), exported from Kakinotes on {date}. This is one person's personal account of a Working Holiday Visa experience, not advice. {siteUrl}",
     "subject": "Personal experience, not advice.",
     "status": {
       "published": "Published",
@@ -1488,7 +1486,9 @@
       "personalExperienceLabel": "One person's experience, not advice.",
       "placeExample": "Queenstown",
       "contributorsIntro": "People who've shared their own Working Holiday experience — showing only the fields each contributor has chosen to make public.",
-      "contributorsMetaDescription": "Contributors who've published a real Working Holiday Visa story on Kakinotes."
+      "contributorsMetaDescription": "Contributors who've published a real Working Holiday Visa story on Kakinotes.",
+      "newStoryTitlePlaceholder": "Six months picking kiwifruit in Te Puke",
+      "pdfColophon": "Your copy of \"{title}\" ({status}), exported from Kakinotes on {date}. This is one person's personal account of a Working Holiday Visa experience, not advice. {siteUrl}"
     },
     "china": {
       "name": "China",
@@ -1503,7 +1503,9 @@
       "placeExample": "Guangzhou",
       "contributorsIntro": "People who've shared their own travel stories from China — showing only the fields each contributor has chosen to make public.",
       "contributorsMetaDescription": "Contributors who've published a first-person travel story from China on Kakinotes.",
-      "costsTitle": "What a trip to China cost"
+      "costsTitle": "What a trip to China cost",
+      "newStoryTitlePlaceholder": "A year teaching English in Guangzhou",
+      "pdfColophon": "Your copy of \"{title}\" ({status}), exported from Kakinotes on {date}. This is one person's personal account of their time in China, not advice. {siteUrl}"
     }
   },
   "affirmations": {

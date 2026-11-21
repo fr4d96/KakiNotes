@@ -12070,6 +12070,43 @@ and its photos for download. My Stories (2026-11-16) and Story folders were alre
 empty under China); `npm run verify`; in the iPhone 17 frame with the owner's account, China shows
 the empty state and New Zealand shows 12 photos across 8 stories.
 
+**Follow-up the same day — the new-story flow under China.** Walked `/stories/new`, the PDF
+import picker, the stepped editor, preview and PDF export with the country set to China.
+Regions, places, the import's country and the preview page already followed the story's country.
+Fixed (copy only, no database change):
+
+- The title example on `/stories/new` was "Six months picking kiwifruit in Te Puke" for every
+  country. It is now `countryContent.<country>.newStoryTitlePlaceholder` (China: "A year teaching
+  English in Guangzhou"; en and zh-CN), picked from the new story's country.
+- The exported PDF's closing line called every story "a Working Holiday Visa experience". It is
+  now `countryContent.<country>.pdfColophon`, picked from the story's own country
+  (`get_story_country()`); the New Zealand wording is unchanged. `newStory.titlePlaceholder` and
+  `pdf.colophon` are removed.
+
+**Not fixed — currency (NZD) needs a schema change.** The editor's "Total expenses (NZD)" field,
+the per-category amounts, the public expense breakdown and donut, the PDF's cost lines, the
+stories cost-band filter (`NZ$5k`…) and `/costs` are all NZD because the database stores NZD
+only: `story_revisions.currency` has `check (currency = 'NZD')`, and the amounts live in
+`total_expense_nzd_cents` / `amount_nzd_cents` (about 49 migrations reference them, including the
+cost-band filter in `list_public_stories`). Relabelling them CNY on a China story would mislabel
+what is stored. Proposed design, not built, waiting on the owner:
+
+1. `countries.currency_code text not null` (ISO 4217; `NZD`, `CNY`), seeded per country.
+2. Drop `story_revisions_currency_nzd_only`; the authoring RPCs set `story_revisions.currency` from
+   the story's country (never from the client, Rule 2). Existing rows stay NZD.
+3. Keep the `*_nzd_cents` column names for now (renaming touches every RPC) but treat them as
+   "minor units in the revision's currency"; return `currency` from the editor, preview,
+   public-story and export reads.
+4. `formatCurrencyNzd` becomes `formatCurrency(cents, currency, locale)`; the editor label reads
+   "Total expenses ({currency})".
+5. Cost bands and `/costs` become per currency (China gets its own bands or none), since NZ$ and
+   ¥ totals can't share bands or averages.
+
+**Verified:** `npm run verify`; new `start-new-story` test for the per-country example title; in
+the iPhone 17 frame under China, `/stories/new` shows the Guangzhou example and the import page
+shows no NZ wording. The editor's later steps were checked in code only: opening them under China
+would mean creating a China draft on the live project.
+
 ## 2026-11-21 — Tags belong to a country
 
 **Why:** `tags` was one global list, so a China story's editor offered New Zealand WHV tags

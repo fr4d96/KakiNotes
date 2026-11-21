@@ -1180,7 +1180,6 @@
     "title": "给你的故事起个名字",
     "intro": "先起一个暂定的标题。写作过程中随时可以修改。",
     "titleLabel": "标题",
-    "titlePlaceholder": "在蒂普基采猕猴桃的半年",
     "starting": "正在创建…",
     "startWriting": "开始写作",
     "havePdf": "已经有 PDF 了？",
@@ -1242,7 +1241,6 @@
     "whatItCost": "这趟行程花了多少",
     "total": "合计",
     "morePhotos": "更多照片",
-    "colophon": "这是你的《{title}》副本（{status}），于 {date} 从 Kakinotes 导出。这是一个人对打工度假签证经历的个人记录，并非建议。{siteUrl}",
     "subject": "个人经历，并非建议。",
     "status": {
       "published": "已发布",
@@ -1488,7 +1486,9 @@
       "personalExperienceLabel": "个人经历分享，非专业建议。",
       "placeExample": "皇后镇",
       "contributorsIntro": "分享了自己打工度假经历的人 — 这里只显示每位投稿人自己选择公开的信息。",
-      "contributorsMetaDescription": "在 Kakinotes 发表过真实打工度假签证（WHV）故事的投稿人。"
+      "contributorsMetaDescription": "在 Kakinotes 发表过真实打工度假签证（WHV）故事的投稿人。",
+      "newStoryTitlePlaceholder": "在蒂普基采猕猴桃的半年",
+      "pdfColophon": "这是你的《{title}》副本（{status}），于 {date} 从 Kakinotes 导出。这是一个人对打工度假签证经历的个人记录，并非建议。{siteUrl}"
     },
     "china": {
       "name": "中国",
@@ -1503,7 +1503,9 @@
       "placeExample": "广州",
       "contributorsIntro": "分享了自己中国旅行故事的人 — 这里只显示每位投稿人自己选择公开的信息。",
       "contributorsMetaDescription": "在 Kakinotes 发表过中国第一人称旅行故事的投稿人。",
-      "costsTitle": "去中国旅行花了多少"
+      "costsTitle": "去中国旅行花了多少",
+      "newStoryTitlePlaceholder": "在广州教英语的一年",
+      "pdfColophon": "这是你的《{title}》副本（{status}），于 {date} 从 Kakinotes 导出。这是一个人在中国经历的个人记录，并非建议。{siteUrl}"
     }
   },
   "affirmations": {

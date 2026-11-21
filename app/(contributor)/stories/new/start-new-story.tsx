@@ -4,6 +4,11 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { BackLink } from "@/components/back-link";
+import {
+  DEFAULT_COUNTRY_SLUG,
+  countryMessageSegment,
+  isCountrySlug,
+} from "@/lib/story/countries";
 import { createDraftAction, type NewStoryFormState } from "./actions";
 
 const initialState: NewStoryFormState = {};
@@ -45,6 +50,15 @@ export function StartNewStory({
 }) {
   const t = useTranslations("newStory");
   const tCommon = useTranslations("common");
+  const tCountry = useTranslations("countryContent");
+  // The example title names a place in the country this story will be
+  // filed under -- a China story shouldn't be prompted with a New Zealand
+  // kiwifruit job. New Zealand when no country was chosen.
+  const placeholderSegment = countryMessageSegment(
+    defaultCountrySlug && isCountrySlug(defaultCountrySlug)
+      ? defaultCountrySlug
+      : DEFAULT_COUNTRY_SLUG,
+  );
   const [state, formAction, pending] = useActionState(
     createDraftAction,
     initialState,
@@ -88,7 +102,9 @@ export function StartNewStory({
             maxLength={MAX_TITLE_LENGTH}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder={t("titlePlaceholder")}
+            placeholder={tCountry(
+              `${placeholderSegment}.newStoryTitlePlaceholder`,
+            )}
             className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2 dark:bg-transparent"
           />
           <p className="mt-1 text-xs text-muted-foreground">

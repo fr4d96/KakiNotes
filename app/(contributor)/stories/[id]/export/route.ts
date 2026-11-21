@@ -7,7 +7,13 @@ import { createClient } from "@/lib/supabase/server";
 import {
   getStoryPreview,
   getRevisionSelections,
+  getStoryCountry,
 } from "@/lib/story/contributor-queries";
+import {
+  DEFAULT_COUNTRY_SLUG,
+  countryMessageSegment,
+  isCountrySlug,
+} from "@/lib/story/countries";
 import { resolveLocationLabels } from "@/lib/story/active-lookups";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
 import { storyContentText } from "@/lib/validation/story";
@@ -113,10 +119,19 @@ export async function GET(
   // The PDF is read away from the site, so it carries the language the
   // contributor was reading in when they asked for it -- including the
   // place names, which is why the locale is resolved BEFORE the labels.
-  const [t, rawLocale] = await Promise.all([
+  const [t, tCountry, rawLocale, storyCountry] = await Promise.all([
     getTranslations("pdf"),
+    getTranslations("countryContent"),
     getLocale(),
+    getStoryCountry(id),
   ]);
+  // The colophon says what kind of trip this was ("Working Holiday Visa" is
+  // New Zealand's term only), so it follows the story's own country.
+  const countrySegment = countryMessageSegment(
+    storyCountry && isCountrySlug(storyCountry)
+      ? storyCountry
+      : DEFAULT_COUNTRY_SLUG,
+  );
   const locale = isLocale(rawLocale) ? rawLocale : "en";
 
   const selections = await getRevisionSelections(preview.revisionId);
@@ -160,7 +175,7 @@ export async function GET(
       whatItCost: t("whatItCost"),
       total: t("total"),
       morePhotos: t("morePhotos"),
-      colophon: (values) => t("colophon", values),
+      colophon: (values) => tCountry(`${countrySegment}.pdfColophon`, values),
       subject: t("subject"),
     },
     siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "https://kakinotes.co.nz",

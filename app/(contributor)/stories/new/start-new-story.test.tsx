@@ -26,6 +26,20 @@ describe("StartNewStory", () => {
     expect(createDraftActionMock).not.toHaveBeenCalled();
   });
 
+  it("suggests an example title from the story's own country", () => {
+    const { unmount } = render(<StartNewStory defaultCountrySlug="china" />);
+    expect(screen.getByLabelText(/^Title/)).toHaveAttribute(
+      "placeholder",
+      "A year teaching English in Guangzhou",
+    );
+    unmount();
+    render(<StartNewStory />);
+    expect(screen.getByLabelText(/^Title/)).toHaveAttribute(
+      "placeholder",
+      "Six months picking kiwifruit in Te Puke",
+    );
+  });
+
   it("keeps the submit button disabled until a title is typed", async () => {
     const user = userEvent.setup();
     render(<StartNewStory />);
