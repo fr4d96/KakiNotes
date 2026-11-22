@@ -3,6 +3,16 @@
 ## [4.7.2](https://github.com/fr4d96/KakiNotes/compare/v4.7.1...v4.7.2) (2026-11-22)
 
 
+### Smooth pop-ups on iPhone, and keyboard photo reordering
+
+#### For everyone
+
+- **Pop-ups now slide and fade on iPhone.** On an iPhone, especially in the home-screen app, pop-ups used to appear and disappear with no animation. They now slide up from the bottom (country picker, filters, share, account menu, photo details) or fade in (confirm boxes, sign in), and slide or fade away again when closed. If Reduce Motion is on in your iPhone's settings, they still appear instantly.
+
+#### For contributors
+
+- **Reorder your photos with the keyboard.** Tab to a photo and a "Move" button appears. Press Space to pick the photo up, use the arrow keys to move it, and press Space again to drop it (Escape puts it back). Dragging works as before.
+
 ### Bug Fixes
 
 * **dialogs:** pop-ups animate on iPhone ([378364c](https://github.com/fr4d96/KakiNotes/commit/378364c187fce4b69dec5f400cd1cd73224d7782))
