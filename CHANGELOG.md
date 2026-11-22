@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.7.2](https://github.com/fr4d96/KakiNotes/compare/v4.7.1...v4.7.2) (2026-11-22)
+
+
+### Bug Fixes
+
+* **dialogs:** pop-ups animate on iPhone ([378364c](https://github.com/fr4d96/KakiNotes/commit/378364c187fce4b69dec5f400cd1cd73224d7782))
+* **photos:** reorder photos with the keyboard again ([880206b](https://github.com/fr4d96/KakiNotes/commit/880206bb34e7c87adfe4bcafc35b7f7d7dd40d27))
+
 ## [4.7.1](https://github.com/fr4d96/KakiNotes/compare/v4.7.0...v4.7.1) (2026-11-22)
 
 
