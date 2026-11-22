@@ -3,6 +3,11 @@
 import { useEffect, useId, useRef, type PointerEvent } from "react";
 import { useTranslations } from "next-intl";
 import { CloseIcon } from "@/components/icons";
+import {
+  CARD_MOTION,
+  SHEET_MOTION,
+  useDialogMotion,
+} from "@/components/ui/dialog-motion";
 
 /**
  * Background scroll lock, reference-counted so two sheets (or a sheet over a
@@ -53,6 +58,16 @@ type DragState = {
   velocity: number;
 };
 
+// Opening and closing are animated in components/ui/dialog-motion.ts.
+function isCentered(desktop: "close" | "center"): boolean {
+  return (
+    desktop === "center" &&
+    typeof window !== "undefined" &&
+    !!window.matchMedia &&
+    window.matchMedia("(min-width: 48rem)").matches
+  );
+}
+
 /**
  * A phone-first bottom sheet on a native <dialog> -- same showModal()/close()
  * mechanics as components/ui/confirm-dialog.tsx and components/auth/
@@ -60,12 +75,10 @@ type DragState = {
  * the sticky header, Escape closes it and focus returns to whatever opened
  * it, all natively.
  *
- * Entrance and exit are CSS only: `translate` (and the backdrop's opacity)
- * transition with `transition-behavior: allow-discrete`, and `starting:` (@starting-style) supplies the
- * off-screen "from" state on open, so the slide plays in both directions
- * even though `close()` flips display to none. Under prefers-reduced-motion
- * (`motion-reduce:`) there is no transition at all: it appears and
- * disappears instantly.
+ * Entrance and exit use element.animate() (components/ui/dialog-motion.ts
+ * explains why not CSS): it slides up on open, and on close it slides down first and only
+ * then calls close(). Under prefers-reduced-motion there is no animation:
+ * it appears and disappears instantly.
  *
  * Dismissal: backdrop tap, Escape, the close button, or dragging the handle /
  * header down. The drag follows the finger through an inline `transform`
@@ -107,18 +120,12 @@ export function BottomSheet({
   const dragRef = useRef<DragState | null>(null);
   const titleId = useId();
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) {
-      // A previous drag-dismiss leaves its offset behind (the exit
-      // transition continued from the finger); clear it for a clean open.
-      dialog.style.transform = "";
-      dialog.style.transition = "";
-      dialog.showModal();
-    }
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
+  const { onCancel } = useDialogMotion(
+    dialogRef,
+    open,
+    () => (isCentered(desktop) ? CARD_MOTION : SHEET_MOTION),
+    onClose,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -200,6 +207,8 @@ export function BottomSheet({
       ref={dialogRef}
       aria-labelledby={titleId}
       onClose={onClose}
+      // Escape animates through onClose (see useDialogMotion).
+      onCancel={onCancel}
       onClick={(event) => {
         // A click landing on the <dialog> element itself (not a child) hit
         // the backdrop -- native <dialog> doesn't close on that by default.
@@ -209,17 +218,13 @@ export function BottomSheet({
         // Geometry: pinned to the bottom edge, full width, capped height.
         "fixed inset-x-0 top-auto bottom-0 m-0 h-auto max-h-[85dvh] w-full max-w-none overflow-hidden",
         "rounded-t-3xl border border-b-0 border-border-subtle bg-surface p-0 text-foreground shadow-2xl",
-        // Slide: closed = fully below the edge; open = resting; the
-        // @starting-style block gives the open transition its "from".
-        "translate-y-full open:translate-y-0 starting:open:translate-y-full",
-        "transition-[translate,transform,overlay,display] transition-discrete duration-250 ease-[cubic-bezier(0.32,0.72,0,1)]",
-        // Backdrop: fades independently.
-        "backdrop:bg-black/50 backdrop:opacity-0 backdrop:transition-[opacity,overlay,display] backdrop:transition-discrete backdrop:duration-250",
-        "[&[open]::backdrop]:opacity-100 [@starting-style]:[&[open]::backdrop]:opacity-0",
-        // Reduced motion: no slide, no fade -- appears and disappears.
-        "motion-reduce:transition-none motion-reduce:backdrop:transition-none",
+        // Only the drag's spring-back is a CSS transition (on the inline
+        // `transform`); opening and closing are animated in the effect above.
+        "transition-transform duration-250 ease-[cubic-bezier(0.32,0.72,0,1)]",
+        "backdrop:bg-black/50",
+        "motion-reduce:transition-none",
         desktop === "center"
-          ? "md:inset-0 md:m-auto md:max-h-[80dvh] md:max-w-md md:rounded-3xl md:border-b md:translate-y-0 md:open:translate-y-0 md:starting:open:translate-y-6"
+          ? "md:inset-0 md:m-auto md:max-h-[80dvh] md:max-w-md md:rounded-3xl md:border-b"
           : "",
       ].join(" ")}
     >

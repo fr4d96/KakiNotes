@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useId, useRef } from "react";
 import { useTranslations } from "next-intl";
+import { POP_MOTION, useDialogMotion } from "@/components/ui/dialog-motion";
 
 /**
  * Native <dialog>-based modal shell -- showModal() gets us focus trapping,
@@ -27,18 +28,15 @@ export function AuthModal({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
+  // Animated open/close that also works on iPhone; see dialog-motion.ts.
+  const motion = useDialogMotion(dialogRef, open, () => POP_MOTION, onClose);
 
   return (
     <dialog
       ref={dialogRef}
       aria-labelledby={titleId}
       onClose={onClose}
+      onCancel={motion.onCancel}
       onClick={(event) => {
         // A click that lands on the <dialog> element itself (not any of
         // its children) means it hit the backdrop area -- native <dialog>

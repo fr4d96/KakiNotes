@@ -185,4 +185,110 @@ describe("BottomSheet", () => {
       expect(dialog.style.transform).toBe("");
     });
   });
+
+  describe("open and close animation (iOS Safari path)", () => {
+    type FakeAnim = {
+      keyframes: unknown;
+      options: KeyframeAnimationOptions;
+      onfinish: (() => void) | null;
+      cancel: () => void;
+    };
+    let anims: FakeAnim[];
+
+    function installAnimate() {
+      anims = [];
+      Object.defineProperty(HTMLElement.prototype, "animate", {
+        configurable: true,
+        value(keyframes: unknown, options: KeyframeAnimationOptions) {
+          const anim: FakeAnim = {
+            keyframes,
+            options,
+            onfinish: null,
+            cancel: vi.fn(),
+          };
+          anims.push(anim);
+          return anim;
+        },
+      });
+    }
+
+    afterEach(() => {
+      delete (HTMLElement.prototype as { animate?: unknown }).animate;
+    });
+
+    it("slides up from below the screen when it opens", () => {
+      installAnimate();
+      render(sheet({}));
+      const slide = anims.find((a) => !a.options.pseudoElement)!;
+      expect(slide.keyframes).toEqual([
+        { transform: "translateY(100%)" },
+        { transform: "none" },
+      ]);
+      // The backdrop fades in alongside it.
+      expect(anims.some((a) => a.options.pseudoElement === "::backdrop")).toBe(
+        true,
+      );
+    });
+
+    it("slides down first and only closes the dialog once that finishes", () => {
+      installAnimate();
+      const { rerender } = render(sheet({}));
+      const dialog = screen.getByRole("dialog") as HTMLDialogElement;
+      anims = [];
+
+      rerender(sheet({ open: false }));
+      const slide = anims.find((a) => !a.options.pseudoElement)!;
+      expect(slide.keyframes).toEqual([
+        { transform: "none" },
+        { transform: "translateY(100%)" },
+      ]);
+      // Still on screen while it slides.
+      expect(dialog.open).toBe(true);
+
+      slide.onfinish!();
+      expect(dialog.open).toBe(false);
+    });
+
+    it("still closes if the finish event never comes (page hidden mid-close)", () => {
+      vi.useFakeTimers();
+      try {
+        installAnimate();
+        const { rerender } = render(sheet({}));
+        const dialog = screen.getByRole("dialog") as HTMLDialogElement;
+        rerender(sheet({ open: false }));
+        expect(dialog.open).toBe(true);
+        vi.advanceTimersByTime(1000);
+        expect(dialog.open).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("stops the close and stays open when reopened mid-slide", () => {
+      installAnimate();
+      const { rerender } = render(sheet({}));
+      const dialog = screen.getByRole("dialog") as HTMLDialogElement;
+      anims = [];
+
+      rerender(sheet({ open: false }));
+      const slide = anims.find((a) => !a.options.pseudoElement)!;
+      rerender(sheet({ open: true }));
+
+      expect(slide.cancel).toHaveBeenCalled();
+      expect(dialog.open).toBe(true);
+    });
+
+    it("animates Escape through onClose instead of closing at once", () => {
+      installAnimate();
+      const onClose = vi.fn();
+      render(sheet({ onClose }));
+      const dialog = screen.getByRole("dialog") as HTMLDialogElement;
+
+      const escape = new Event("cancel", { cancelable: true });
+      dialog.dispatchEvent(escape);
+
+      expect(escape.defaultPrevented).toBe(true);
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+  });
 });

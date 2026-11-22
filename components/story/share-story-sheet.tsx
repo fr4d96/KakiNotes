@@ -8,6 +8,7 @@ import { ResolvingImage } from "@/components/ui/resolving-image";
 import { useIsPhone } from "@/components/ui/use-is-phone";
 import { useToast } from "@/components/ui/toast";
 import { StoryCoverFallback } from "@/components/story/story-cover-fallback";
+import { POP_MOTION, useDialogMotion } from "@/components/ui/dialog-motion";
 
 /**
  * The share sheet for a public story: a preview card (the same public cover
@@ -250,12 +251,8 @@ function ShareDialog({ open, onClose, ...rest }: ShareStorySheetProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
+  // Animated open/close that also works on iPhone; see dialog-motion.ts.
+  const motion = useDialogMotion(dialogRef, open, () => POP_MOTION, onClose);
 
   return (
     <dialog
@@ -264,6 +261,7 @@ function ShareDialog({ open, onClose, ...rest }: ShareStorySheetProps) {
       aria-modal="true"
       aria-labelledby={titleId}
       onClose={onClose}
+      onCancel={motion.onCancel}
       onClick={(event) => {
         if (event.target === dialogRef.current) onClose();
       }}

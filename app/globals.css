@@ -614,58 +614,11 @@ svg g[role="button"]:focus-visible {
   right: 0;
 }
 /*
- * Entrance/exit animation for the native <dialog>-based auth modal
- * (components/auth/auth-modal.tsx). `transition-behavior: allow-discrete`
- * plus a matching `@starting-style` block is the standards-track way to
- * animate a <dialog>'s show/hide (including the exit transition, which a
- * plain `transition` on `[open]` can't do -- the browser would otherwise
- * apply `display: none` the instant `close()` runs, before the transition
- * has a chance to play). Targets the dialog's own box and its ::backdrop
- * separately since ::backdrop isn't a normal descendant.
+ * `.journiq-modal` (ConfirmDialog, AuthModal, the desktop share dialog) has
+ * no CSS animation on purpose: opening and closing are animated with Web
+ * Animations in components/ui/dialog-motion.ts, because Safari can't run the
+ * CSS version (@starting-style + an `overlay` transition) on an iPhone.
  */
-.journiq-modal {
-  opacity: 0;
-  transform: translateY(12px) scale(0.96);
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease,
-    overlay 0.2s ease allow-discrete,
-    display 0.2s ease allow-discrete;
-}
-.journiq-modal[open] {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-@starting-style {
-  .journiq-modal[open] {
-    opacity: 0;
-    transform: translateY(12px) scale(0.96);
-  }
-}
-.journiq-modal::backdrop {
-  opacity: 0;
-  transition:
-    opacity 0.2s ease,
-    overlay 0.2s ease allow-discrete,
-    display 0.2s ease allow-discrete;
-}
-.journiq-modal[open]::backdrop {
-  opacity: 1;
-}
-@starting-style {
-  .journiq-modal[open]::backdrop {
-    opacity: 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .journiq-modal {
-    transition: none;
-    transform: none;
-  }
-  .journiq-modal::backdrop {
-    transition: none;
-  }
-}
 
 /*
  * The photo viewer (components/ui/photo-lightbox.tsx). No dialog-level

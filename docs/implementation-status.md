@@ -11813,6 +11813,50 @@ was the only pending one); types generated from the linked project match `types/
 exactly. Also: LazyMount no longer causes a hydration mismatch (server and first client render
 both show the placeholder).
 
+## 2026-11-22 — Pop-ups animate on iPhone (sheets, confirm, sign-in, share)
+
+Fred saw no slide-up for the photo details sheet in the home-screen app. Every `<dialog>` here
+animated with CSS only: `@starting-style` for the entrance (iOS 17.5+), and `transition-behavior:
+allow-discrete` on `overlay`/`display` for the exit. No Safari transitions `overlay`, so a
+closing dialog left the top layer at once and the exit never played on any iPhone; before iOS
+17.5 the entrance didn't play either.
+
+Opening and closing now run on the Web Animations API through one hook,
+`useDialogMotion()` (`components/ui/dialog-motion.ts`), used by `BottomSheet`, `ConfirmDialog`,
+`AuthModal` and the desktop share dialog. It calls `showModal()` then animates in; on close it
+animates out from wherever the dialog is (a drag-dismissed sheet continues from the finger) and
+only then calls `close()`. Three motions: `SHEET_MOTION` (slide up from `translateY(100%)`),
+`CARD_MOTION` (a sheet's md+ centered card: fade plus 1.5rem rise) and `POP_MOTION` (the old
+`.journiq-modal` fade-and-grow, 200ms). The backdrop fades through `pseudoElement:
+"::backdrop"`, skipped where unsupported. Escape goes through `onCancel` → the caller's close
+handler so it animates too. A reopen mid-close cancels the exit. A timer (exit + 100ms) closes
+the dialog even if the finish event never comes, because a hidden page doesn't paint (seen in
+the preview pane). Reduced motion, or no `animate()` (jsdom): instant, as before. The
+`.journiq-modal` CSS animation in `app/globals.css` is removed, so Chrome doesn't run both.
+Only the sheet's drag spring-back is still a CSS transition. The photo grid's delete confirm is
+now always mounted (`open` toggles it); it used to unmount on answer, which skipped any exit.
+Checked in `/dev/iphone-17`: the details sheet slides out then closes, and the delete confirm
+fades in, and on Cancel fades out (exit started 15ms after the tap, closed ~190ms later), with
+nothing deleted. The sign-in modal was not opened (the pane is signed in); it uses the same
+hook and the unit tests cover the hook. Not yet checked on a real iPhone.
+
+## 2026-11-22 — Keyboard reorder for photos
+
+v4.7.1 removed the Earlier / Later buttons, which left no non-drag way to reorder photos (WCAG
+2.5.7). Each photo tile now has a "Move" handle button, hidden until it has keyboard focus and
+click-through for mouse and touch. Space or Enter picks the photo up, arrow keys move it through
+the grid, Space or Enter drops it, Escape puts it back. It runs on dnd-kit's `KeyboardSensor`
+with `sortableKeyboardCoordinates` (already installed, no new dependency) and saves through the
+same queued `reorderMediaAction` a drag uses. `SortablePhotoTile` now splits its listeners: the
+thumbnail gets mouse/touch, the handle gets `onKeyDown` and the ARIA attributes, and is the
+activator, so focus comes back to it after a drop. The screen-reader instructions are now
+keyboard instructions (`drag.keyboardHint`). `DndContext` gets a `useId()` id: dnd-kit's own
+counter gave the handles a different `aria-describedby` on the server than in the browser
+(hydration mismatch). Checked in `/dev/iphone-17` with real keys: Tab to "Move photo 1", Space,
+→ (the tile slid one cell), Escape (put back, nothing saved, focus stayed on the handle). A
+real drop was not tried there, because it would save to the live database; the drop path is
+the same `onDragEnd` the drag tests cover.
+
 ## 2026-11-22 — Photo details open in a sheet; uploads keep the screen on
 
 **Details sheet.** Tapping a photo's Details used to widen that tile across the grid and push

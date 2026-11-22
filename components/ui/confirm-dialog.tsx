@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useId, useRef } from "react";
 import { useTranslations } from "next-intl";
+import { POP_MOTION, useDialogMotion } from "@/components/ui/dialog-motion";
 
 /**
  * A native <dialog>-based confirmation prompt, same shell mechanics as
@@ -38,12 +39,8 @@ export function ConfirmDialog({
   const titleId = useId();
   const descriptionId = useId();
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
+  // Animated open/close that also works on iPhone; see dialog-motion.ts.
+  const motion = useDialogMotion(dialogRef, open, () => POP_MOTION, onCancel);
 
   return (
     <dialog
@@ -51,6 +48,7 @@ export function ConfirmDialog({
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
       onClose={onCancel}
+      onCancel={motion.onCancel}
       onClick={(event) => {
         // A click landing on the <dialog> element itself (not a child) hit
         // the backdrop -- native <dialog> doesn't close on that by default.
