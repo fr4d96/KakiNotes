@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.7.1](https://github.com/fr4d96/KakiNotes/compare/v4.7.0...v4.7.1) (2026-11-22)
+
+
+### Bug Fixes
+
+* **photos:** photo details open in a sheet instead of pushing the grid ([8990c5d](https://github.com/fr4d96/KakiNotes/commit/8990c5dfa4b3fd6774ec9c79c871f92d97e6384d))
+* **upload:** photo uploads survive the screen going black ([bee6fd1](https://github.com/fr4d96/KakiNotes/commit/bee6fd1b9acdd48ba7d4f4f55d3825404c0a68ce))
+
 ## [4.7.0](https://github.com/fr4d96/KakiNotes/compare/v4.6.0...v4.7.0) (2026-11-21)
 
 
