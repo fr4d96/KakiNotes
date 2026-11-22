@@ -141,18 +141,18 @@ describe("ImageUploadManager — drag to reorder", () => {
     expect(reorderMediaAction.mock.calls[1][2]).toEqual([C, B, A]);
   });
 
-  it("explains dragging when there is something to reorder, and hides it while details are open", async () => {
+  it("explains dragging when there is something to reorder, and keeps it while details are open", async () => {
     renderPanel([A, B]);
     expect(
       screen.getByText(/drag a photo to change its place/i, { selector: "p" }),
     ).toBeVisible();
 
+    // Details open in a sheet over the grid, so the hint stays: hiding it
+    // would shift every photo up by a line.
     await userEvent.click(screen.getByRole("button", { name: /photo 1$/ }));
     expect(
-      screen.queryByText(/drag a photo to change its place/i, {
-        selector: "p",
-      }),
-    ).toBeNull();
+      screen.getByText(/drag a photo to change its place/i, { selector: "p" }),
+    ).toBeInTheDocument();
   });
 
   it("doesn't offer dragging for a single photo", () => {

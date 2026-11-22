@@ -87,6 +87,7 @@ export function BottomSheet({
   children,
   footer,
   keepMounted = false,
+  desktop = "close",
 }: {
   open: boolean;
   onClose: () => void;
@@ -94,6 +95,12 @@ export function BottomSheet({
   children: React.ReactNode;
   footer?: React.ReactNode;
   keepMounted?: boolean;
+  /**
+   * What happens at md+. "close" (default): the caller has its own desktop
+   * layout, so the sheet closes there. "center": the same dialog becomes a
+   * centered card -- for content with no separate desktop surface.
+   */
+  desktop?: "close" | "center";
 }) {
   const t = useTranslations("common");
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -123,6 +130,7 @@ export function BottomSheet({
   // (rotating a tablet, resizing a window) the caller's desktop layout takes
   // over, so close rather than strand a modal over it.
   useEffect(() => {
+    if (desktop === "center") return;
     if (!open || typeof window === "undefined" || !window.matchMedia) return;
     const list = window.matchMedia("(min-width: 48rem)");
     const onChange = (event: MediaQueryListEvent) => {
@@ -130,7 +138,7 @@ export function BottomSheet({
     };
     list.addEventListener("change", onChange);
     return () => list.removeEventListener("change", onChange);
-  }, [open, onClose]);
+  }, [open, onClose, desktop]);
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
     // The close button inside the header is a button, not a drag handle.
@@ -210,6 +218,9 @@ export function BottomSheet({
         "[&[open]::backdrop]:opacity-100 [@starting-style]:[&[open]::backdrop]:opacity-0",
         // Reduced motion: no slide, no fade -- appears and disappears.
         "motion-reduce:transition-none motion-reduce:backdrop:transition-none",
+        desktop === "center"
+          ? "md:inset-0 md:m-auto md:max-h-[80dvh] md:max-w-md md:rounded-3xl md:border-b md:translate-y-0 md:open:translate-y-0 md:starting:open:translate-y-6"
+          : "",
       ].join(" ")}
     >
       <div className="flex max-h-[85dvh] flex-col pb-[env(safe-area-inset-bottom)]">

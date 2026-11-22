@@ -21,6 +21,7 @@ import { LightboxPhoto } from "@/components/ui/photo-lightbox";
 import { ResolvingImage } from "@/components/ui/resolving-image";
 import { PlusIcon, TrashIcon } from "@/components/icons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import {
   DndContext,
   MouseSensor,
@@ -37,7 +38,11 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { SortablePhotoTile } from "@/components/story/sortable-photo-tile";
-import { retryOnNetworkError } from "@/lib/story/wait-for-resume";
+import {
+  abortOnResume,
+  retryOnNetworkError,
+} from "@/lib/story/wait-for-resume";
+import { holdScreenAwake } from "@/lib/story/upload-wake-lock";
 import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client";
 import {
   reorderMediaAction,
@@ -106,6 +111,10 @@ async function uploadDirectlyToStorage(
   // Passed in rather than resolved here: this is a module-scope helper, so
   // it cannot call a translation hook of its own.
   messages: { tooLarge: string; failedWithStatus: (status: number) => string },
+  // True on a retry after a network failure: the earlier attempt may have
+  // landed before the page froze, and its object then already exists.
+  allowExisting = false,
+  signal?: AbortSignal,
 ): Promise<void> {
   const encodedPath = reservedPath
     .split("/")
@@ -122,6 +131,7 @@ async function uploadDirectlyToStorage(
       "x-upsert": "false",
     },
     body: file,
+    signal,
   });
   if (response.ok) return;
 
@@ -130,11 +140,25 @@ async function uploadDirectlyToStorage(
   // failure this function exists to route around.
   const raw = await response.text().catch(() => "");
   let message: string | undefined;
+  let duplicate = response.status === 409;
   try {
-    message = (JSON.parse(raw) as { message?: string }).message;
+    const body = JSON.parse(raw) as {
+      message?: string;
+      statusCode?: string | number;
+      error?: string;
+    };
+    message = body.message;
+    // Older Storage versions answer a duplicate as HTTP 400 carrying
+    // statusCode "409" / error "Duplicate" in the body.
+    if (String(body.statusCode) === "409" || body.error === "Duplicate")
+      duplicate = true;
   } catch {
     // Not JSON — fall through to a status-derived message below.
   }
+  // The reserved path is unique to this one media row, so an object already
+  // there can only be this same photo from the attempt the freeze cut off.
+  // Storage writes an object only once it has every byte, so it is whole.
+  if (duplicate && allowExisting) return;
   if (message) throw new Error(message);
   if (response.status === 413) {
     throw new Error(messages.tooLarge);
@@ -345,43 +369,6 @@ export function ImageUploadManager({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
 
-  // "Done" closing a photo's details panel used to throw the contributor to
-  // the bottom of the page on a phone. Two things happened at once, and both
-  // needed fixing:
-  //
-  //   1. The Done button lives INSIDE the panel it closes, so clicking it
-  //      removes the focused element from the document. Focus falls back to
-  //      <body>, and Safari is free to scroll wherever it likes.
-  //   2. The tile collapses from a full-width `col-span-2` panel back to one
-  //      small grid cell, so the page gets several hundred pixels shorter in
-  //      the same frame. Anyone who had scrolled down to read the caption
-  //      field now has a scroll offset past the new bottom, and the browser
-  //      clamps it -- landing exactly at the end of the page.
-  //
-  // Putting focus back on the Details button that replaces it fixes (1) and
-  // is also simply the correct behaviour for a disclosure widget: collapsing
-  // a panel returns you to the control that opened it. Scrolling that same
-  // button into view fixes (2), and puts the contributor back on the photo
-  // they were just captioning rather than wherever the clamp dropped them.
-  const detailsToggleRefs = useRef(new Map<string, HTMLButtonElement>());
-  const refocusToggleIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    const mediaId = refocusToggleIdRef.current;
-    if (openMediaId !== null || !mediaId) return;
-    refocusToggleIdRef.current = null;
-    const toggle = detailsToggleRefs.current.get(mediaId);
-    if (!toggle) return;
-    // preventScroll, then an explicit scroll: focus() on its own jumps the
-    // tile to the top of the viewport on iOS, which is its own kind of
-    // disorienting. "nearest" moves the page only as far as it has to, and
-    // "instant" opts out of the global `scroll-behavior: smooth` in
-    // app/globals.css -- this is correcting a jump, not performing one, and
-    // animating the correction would just draw the eye to it.
-    toggle.focus({ preventScroll: true });
-    toggle.scrollIntoView({ block: "nearest", behavior: "instant" });
-  }, [openMediaId]);
-
   // Revokes every local preview URL this component ever created (including
   // ones for errored items that never leave `uploading`, since those have
   // no other removal point) once the panel itself unmounts.
@@ -537,6 +524,16 @@ export function ImageUploadManager({
     // uploadChainRef instead of uploading alongside it, so there is only
     // ever one spinner in the row.
     const runBatch = async () => {
+      // Keep the screen on until this batch is done, so it never locks
+      // mid-upload in the first place (see lib/story/upload-wake-lock.ts).
+      const releaseWake = holdScreenAwake();
+      try {
+        await uploadEach();
+      } finally {
+        releaseWake();
+      }
+    };
+    const uploadEach = async () => {
       for (const { file, key, previewUrl, error } of batch) {
         if (error) continue;
 
@@ -633,9 +630,10 @@ export function ImageUploadManager({
               throw new Error(finalizedDrive.error);
             }
           } else {
-            const begun = await beginMediaUploadAction(
-              revisionId,
-              sourceMimeType,
+            // Retried on a network rejection only, like the Drive path's
+            // begin: a lost reply leaves one orphan reservation that expires.
+            const begun = await retry(() =>
+              beginMediaUploadAction(revisionId, sourceMimeType),
             );
             if ("error" in begun) throw new Error(begun.error);
             const { mediaId, reservedPath } = begun;
@@ -646,22 +644,36 @@ export function ImageUploadManager({
               ),
             );
 
-            const {
-              data: { session },
-            } = await createBrowserSupabaseClient().auth.getSession();
-            if (!session) throw new Error(tCommon("mustBeSignedIn"));
-
-            await uploadDirectlyToStorage(
-              reservedPath,
-              file,
-              sourceMimeType,
-              session.access_token,
-              {
-                tooLarge: t("errors.tooLarge"),
-                failedWithStatus: (status) =>
-                  t("errors.uploadFailedStatus", { status }),
-              },
-            );
+            // One POST with the whole file. If the screen locks mid-way the
+            // request dies (or hangs, see abortOnResume); wait for the page
+            // to come back and send it again. The session is read inside
+            // the retry so a token refreshed while frozen is picked up.
+            let attempt = 0;
+            await retry(async () => {
+              const isRetry = attempt++ > 0;
+              const {
+                data: { session },
+              } = await createBrowserSupabaseClient().auth.getSession();
+              if (!session) throw new Error(tCommon("mustBeSignedIn"));
+              const guard = abortOnResume();
+              try {
+                await uploadDirectlyToStorage(
+                  reservedPath,
+                  file,
+                  sourceMimeType,
+                  session.access_token,
+                  {
+                    tooLarge: t("errors.tooLarge"),
+                    failedWithStatus: (status) =>
+                      t("errors.uploadFailedStatus", { status }),
+                  },
+                  isRetry,
+                  guard.signal,
+                );
+              } finally {
+                guard.done();
+              }
+            });
 
             if (isHeic) {
               const transcoded = await retry(() =>
@@ -747,25 +759,10 @@ export function ImageUploadManager({
     await next;
   }
 
-  // Swaps two specific items' positions (rather than splicing a range),
-  // because "Move up/down" now swaps a visible item with its nearest
-  // *visible* neighbor -- images placed inline are excluded from this
-  // panel (see ImageUploadManagerProps.inlineMediaIds) but still occupy a
-  // position in `media`'s underlying order, and a naive index-shift would
-  // reorder across them incorrectly.
-  function reorder(mediaId: string, swapWithMediaId: string) {
-    const next = [...media];
-    const i = next.findIndex((m) => m.mediaId === mediaId);
-    const j = next.findIndex((m) => m.mediaId === swapWithMediaId);
-    if (i === -1 || j === -1) return;
-    [next[i], next[j]] = [next[j], next[i]];
-    commitOrder(next);
-  }
-
   // Drag and drop (task #4). Mouse: a drag starts after 6px of movement, so
   // a plain click still opens the photo. Touch: a 250ms press-and-hold
-  // starts it, so a swipe still scrolls the page. Keyboard users keep the
-  // "Move earlier / Move later" buttons in Details.
+  // starts it, so a swipe still scrolls the page. Dragging is the only way
+  // to reorder: the Earlier / Later buttons left the details sheet.
   const dragSensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, {
@@ -896,6 +893,12 @@ export function ImageUploadManager({
     });
   }
 
+  // The photo whose details sheet is open (null when closed, or once that
+  // photo is gone -- a detach elsewhere simply closes the sheet).
+  const openIndex = media.findIndex((m) => m.mediaId === openMediaId);
+  const openItem = openIndex === -1 ? null : media[openIndex];
+  const closeDetails = () => setOpenMediaId(null);
+
   return (
     <div className="space-y-4">
       <div>
@@ -967,7 +970,7 @@ export function ImageUploadManager({
             </p>
           </div>
 
-          {media.length > 1 && openMediaId === null && (
+          {media.length > 1 && (
             <p className="mt-1 text-xs text-muted-foreground">
               {t("drag.hint")}
             </p>
@@ -1006,8 +1009,6 @@ export function ImageUploadManager({
                     PROCESSING_LABEL_KEYS[state]
                       ? t(`state.${PROCESSING_LABEL_KEYS[state]}` as never)
                       : state;
-                  const isOpen = openMediaId === item.mediaId;
-                  const detailsId = `media-details-${item.mediaId}`;
 
                   const thumb = (
                     <div className="js-image-thumb group/tile relative aspect-square overflow-hidden rounded-md border border-border-subtle bg-surface-muted">
@@ -1085,72 +1086,39 @@ export function ImageUploadManager({
                         </button>
                       </div>
 
-                      {!isOpen && (
-                        <button
-                          type="button"
-                          // Registered so closing the panel can put focus back
-                          // here (see the refocusToggleIdRef effect above).
-                          // Braces, not a concise arrow body: React 19 treats a
-                          // ref callback's return value as a cleanup function,
-                          // and Map.set returns the Map.
-                          ref={(node) => {
-                            const map = detailsToggleRefs.current;
-                            if (node) map.set(item.mediaId, node);
-                            else map.delete(item.mediaId);
-                          }}
-                          onClick={() => setOpenMediaId(item.mediaId)}
-                          aria-expanded={false}
-                          aria-controls={detailsId}
-                          // aria-label, NOT visible text plus an sr-only span:
-                          // the accessible-name algorithm trims each element's
-                          // text before joining them with no separator, so
-                          // "Describe" + <span> photo 1</span> is announced as
-                          // "Describephoto 1".
-                          aria-label={t("detailsLabel", { name })}
-                          // Shown on hover with a mouse (Tailwind 4's hover:
-                          // only applies where the device can hover), on keyboard
-                          // focus, always on touch screens (no hover there), and
-                          // always while there's no photo to look at yet -- a
-                          // failed upload still needs Details to be removed.
-                          //
-                          // scroll-mt clears the two stacked sticky bars (site
-                          // header + editor bar, measured together at 215px on a
-                          // 375px viewport); without it the scrollIntoView above
-                          // parks this button underneath both of them.
-                          className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 scroll-mt-[15rem] rounded-md bg-black/70 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-opacity focus-visible:opacity-100 group-hover/tile:opacity-100 [@media(hover:none)]:opacity-100 ${
-                            thumbnails[item.mediaId]
-                              ? "opacity-0"
-                              : "opacity-100"
-                          }`}
-                        >
-                          {t("details")}
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        // Opens the details sheet over the grid. The sheet is
+                        // a native modal <dialog>, which hands focus back to
+                        // this button on close by itself.
+                        onClick={() => setOpenMediaId(item.mediaId)}
+                        aria-haspopup="dialog"
+                        // aria-label, NOT visible text plus an sr-only span:
+                        // the accessible-name algorithm trims each element's
+                        // text before joining them with no separator, so
+                        // "Describe" + <span> photo 1</span> is announced as
+                        // "Describephoto 1".
+                        aria-label={t("detailsLabel", { name })}
+                        // Shown on hover with a mouse (Tailwind 4's hover:
+                        // only applies where the device can hover), on keyboard
+                        // focus, always on touch screens (no hover there), and
+                        // always while there's no photo to look at yet -- a
+                        // failed upload still needs Details to be removed.
+                        className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 rounded-md bg-black/70 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-opacity focus-visible:opacity-100 group-hover/tile:opacity-100 [@media(hover:none)]:opacity-100 ${
+                          thumbnails[item.mediaId] ? "opacity-0" : "opacity-100"
+                        }`}
+                      >
+                        {t("details")}
+                      </button>
                     </div>
                   );
 
-                  // ONE element tree for both states, laid out differently by
-                  // class. Rendering an `if (isOpen) return <li>…` branch beside
-                  // a separate closed-state <li> looked equivalent but was not:
-                  // React reconciles by position, so the two branches' <img>
-                  // elements are different nodes, and toggling details unmounted
-                  // the image and mounted a fresh one. A fresh <img> actually
-                  // re-requests its src -- and these are 120-second signed URLs,
-                  // so any tile older than two minutes came back blank. Keeping
-                  // the thumbnail at a stable position in the tree means the
-                  // browser never re-requests it at all.
                   return (
                     <SortablePhotoTile
                       key={item.mediaId}
                       id={item.mediaId}
-                      // Not while a details panel is open: that tile spans the
-                      // whole row, and dragging around it reads as chaos.
-                      disabled={openMediaId !== null}
-                      className={
-                        isOpen
-                          ? "col-span-2 flex flex-col gap-4 rounded-lg border border-accent/50 bg-surface-muted/40 p-3 sm:col-span-3 sm:flex-row"
-                          : "flex flex-col gap-1.5"
-                      }
+                      disabled={false}
+                      className="flex flex-col gap-1.5"
                     >
                       {(drag) => (
                         <>
@@ -1163,7 +1131,7 @@ export function ImageUploadManager({
                                 e.stopPropagation();
                               }
                             }}
-                            className={`${isOpen ? "w-full shrink-0 sm:w-40" : ""} ${
+                            className={`${
                               drag.listeners
                                 ? "cursor-grab touch-manipulation select-none [-webkit-touch-callout:none] active:cursor-grabbing"
                                 : ""
@@ -1175,88 +1143,6 @@ export function ImageUploadManager({
                           >
                             {thumb}
                           </div>
-
-                          {isOpen ? (
-                            <div
-                              id={detailsId}
-                              className="min-w-0 flex-1 space-y-3"
-                            >
-                              <div>
-                                <label
-                                  htmlFor={`caption-${item.mediaId}`}
-                                  className="block text-xs font-medium"
-                                >
-                                  {t("caption")}{" "}
-                                  <span className="font-normal text-muted-foreground">
-                                    {t("captionHint")}
-                                  </span>
-                                </label>
-                                <input
-                                  id={`caption-${item.mediaId}`}
-                                  type="text"
-                                  value={item.caption ?? ""}
-                                  onChange={(e) =>
-                                    updateCaption(item.mediaId, e.target.value)
-                                  }
-                                  className="mt-1 w-full rounded-md border border-border-subtle px-2 py-1.5 text-sm dark:bg-transparent"
-                                />
-                              </div>
-
-                              <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-3">
-                                {!item.isCover && (
-                                  <TileAction
-                                    onClick={() => setCover(item.mediaId)}
-                                  >
-                                    {t("setAsCover")}
-                                  </TileAction>
-                                )}
-                                {index > 0 && (
-                                  <TileAction
-                                    onClick={() =>
-                                      reorder(
-                                        item.mediaId,
-                                        media[index - 1].mediaId,
-                                      )
-                                    }
-                                    label={t("moveEarlierLabel", { name })}
-                                  >
-                                    {t("moveEarlier")}
-                                  </TileAction>
-                                )}
-                                {index < media.length - 1 && (
-                                  <TileAction
-                                    onClick={() =>
-                                      reorder(
-                                        item.mediaId,
-                                        media[index + 1].mediaId,
-                                      )
-                                    }
-                                    label={t("moveLaterLabel", { name })}
-                                  >
-                                    {t("moveLater")}
-                                  </TileAction>
-                                )}
-                                <TileAction
-                                  tone="destructive"
-                                  onClick={() => detach(item.mediaId)}
-                                >
-                                  {t("deletePhoto")}
-                                </TileAction>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    // Hand the collapse a target to land on -- see
-                                    // the refocusToggleIdRef effect above.
-                                    refocusToggleIdRef.current = item.mediaId;
-                                    setOpenMediaId(null);
-                                  }}
-                                  className="ml-auto rounded-md border border-border-subtle px-3 py-1.5 text-xs font-medium"
-                                >
-                                  {t("done")}
-                                </button>
-                              </div>
-                            </div>
-                          ) : null}
                         </>
                       )}
                     </SortablePhotoTile>
@@ -1312,6 +1198,79 @@ export function ImageUploadManager({
           </DndContext>
         </div>
       )}
+      {/* Photo details open as a sheet over the grid -- the same bottom
+          sheet as the country picker on a phone, a centered card at md+ --
+          so the other photos never move to make room for the form. */}
+      <BottomSheet
+        open={openItem !== null}
+        onClose={closeDetails}
+        title={t("detailsTitle")}
+        desktop="center"
+        footer={
+          <button
+            type="button"
+            onClick={closeDetails}
+            className="journiq-button w-full bg-accent text-sm font-semibold text-accent-foreground"
+          >
+            {t("done")}
+          </button>
+        }
+      >
+        {openItem !== null && (
+          <div className="space-y-4 px-2 pt-1">
+            {thumbnails[openItem.mediaId] ? (
+              <div className="mx-auto aspect-square w-40 overflow-hidden rounded-lg border border-border-subtle bg-surface-muted">
+                <ResolvingImage
+                  src={thumbnails[openItem.mediaId]}
+                  alt={openItem.altText ?? ""}
+                  loadingLabel={tImages("loading")}
+                  wrapperClassName="relative block h-full w-full"
+                  className="h-full w-full object-cover"
+                  onError={() => retryThumbnail(openItem.mediaId)}
+                />
+              </div>
+            ) : null}
+            <div>
+              <label
+                htmlFor={`caption-${openItem.mediaId}`}
+                className="block text-sm font-medium"
+              >
+                {t("caption")}{" "}
+                <span className="font-normal text-muted-foreground">
+                  {t("captionHint")}
+                </span>
+              </label>
+              <input
+                id={`caption-${openItem.mediaId}`}
+                type="text"
+                value={openItem.caption ?? ""}
+                onChange={(e) =>
+                  updateCaption(openItem.mediaId, e.target.value)
+                }
+                // 16px: anything smaller makes iOS zoom the page on focus.
+                className="mt-1.5 w-full rounded-md border border-border-subtle px-3 py-2 text-base dark:bg-transparent"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2 border-t border-border-subtle pt-4">
+              {!openItem.isCover && (
+                <TileAction onClick={() => setCover(openItem.mediaId)}>
+                  {t("setAsCover")}
+                </TileAction>
+              )}
+              <TileAction
+                tone="destructive"
+                onClick={() => {
+                  const id = openItem.mediaId;
+                  closeDetails();
+                  detach(id);
+                }}
+              >
+                {t("deletePhoto")}
+              </TileAction>
+            </div>
+          </div>
+        )}
+      </BottomSheet>
       {/* Mounted only while asking, so the page carries no idle <dialog>
           beside the photo lightbox's own. */}
       {confirmDeleteId !== null && (

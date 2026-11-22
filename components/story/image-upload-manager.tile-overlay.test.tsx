@@ -125,10 +125,45 @@ describe("ImageUploadManager — photo tile overlay", () => {
     const { container } = renderPanel([mediaItem(READY, 0)]);
     await photoLoaded(container);
 
+    const tile = container.querySelector("li")!;
+    const tileClass = tile.className;
     await userEvent.click(screen.getByRole("button", { name: /photo 1$/ }));
-    expect(screen.getByLabelText(/^Caption/)).toBeInTheDocument();
-    // The overlay button is gone while the panel is open (Done closes it).
-    expect(screen.queryByRole("button", { name: /photo 1$/ })).toBeNull();
+
+    // Details open in a sheet over the grid, not inside the tile: the tile
+    // keeps its grid cell, so no other photo moves.
+    const sheet = screen.getByRole("dialog", {
+      name: "Photo details",
+      hidden: true,
+    });
+    expect(sheet).toHaveAttribute("open");
+    expect(
+      within(sheet).getByLabelText(/^Caption/, { selector: "input" }),
+    ).toBeInTheDocument();
+    expect(tile.contains(sheet)).toBe(false);
+    expect(tile.className).toBe(tileClass);
+
+    // Done closes it.
+    await userEvent.click(
+      within(sheet).getByRole("button", { name: "Done", hidden: true }),
+    );
+    expect(sheet).not.toHaveAttribute("open");
+  });
+
+  it("closes the details sheet when the photo is deleted from it", async () => {
+    const { container } = renderPanel([mediaItem(READY, 0)]);
+    await photoLoaded(container);
+
+    await userEvent.click(screen.getByRole("button", { name: /photo 1$/ }));
+    const sheet = screen.getByRole("dialog", {
+      name: "Photo details",
+      hidden: true,
+    });
+    await userEvent.click(
+      within(sheet).getByRole("button", { name: "Delete photo", hidden: true }),
+    );
+    expect(detachMediaAction).toHaveBeenCalled();
+    expect(sheet).not.toHaveAttribute("open");
+    vi.mocked(detachMediaAction).mockClear();
   });
 
   it("deletes a photo from the trash button beside zoom, only after confirming", async () => {

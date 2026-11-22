@@ -19,8 +19,7 @@ export type PhotoDragHandle = {
  *
  * No `attributes` from useSortable are spread: they would make the
  * thumbnail a focusable role="button" wrapped around the lightbox button
- * (nested interactive controls). Keyboard users reorder with the existing
- * "Move earlier / Move later" buttons instead.
+ * (nested interactive controls). Reordering is by drag only.
  */
 export function SortablePhotoTile({
   id,

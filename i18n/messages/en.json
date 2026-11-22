@@ -992,11 +992,8 @@
       "deleteConfirmTitle": "Delete this photo?",
       "deleteConfirmBody": "It will be removed from this story.",
       "done": "Done",
-      "moveEarlier": "↑ Earlier",
-      "moveLater": "↓ Later",
-      "moveEarlierLabel": "Move {name} earlier",
-      "moveLaterLabel": "Move {name} later",
       "details": "Details",
+      "detailsTitle": "Photo details",
       "detailsLabel": "Details {name}",
       "itemName": "photo {index}",
       "errors": {

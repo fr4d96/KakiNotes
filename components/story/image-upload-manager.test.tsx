@@ -178,8 +178,9 @@ describe("ImageUploadManager — the photo library", () => {
     });
     await userEvent.click(trigger[0]);
 
-    const dialog = document.querySelector("dialog");
-    expect(dialog).toHaveAttribute("open");
+    // The open one: the panel also carries the (closed) details sheet.
+    const dialog = document.querySelector("dialog[open]");
+    expect(dialog).not.toBeNull();
     expect(dialog?.querySelector("img")).toHaveAttribute(
       "src",
       "https://example.com/thumb.jpg",

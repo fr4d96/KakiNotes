@@ -992,11 +992,8 @@
       "deleteConfirmTitle": "删除这张照片？",
       "deleteConfirmBody": "它将从这个故事中移除。",
       "done": "完成",
-      "moveEarlier": "↑ 前移",
-      "moveLater": "↓ 后移",
-      "moveEarlierLabel": "把{name}往前移",
-      "moveLaterLabel": "把{name}往后移",
       "details": "详情",
+      "detailsTitle": "照片详情",
       "detailsLabel": "{name}的详情",
       "itemName": "第 {index} 张照片",
       "errors": {
