@@ -59,8 +59,11 @@ describe("retryOnNetworkError", () => {
     expect(onPause).toHaveBeenLastCalledWith(false);
   });
 
-  it("isNetworkError recognises TypeError only", () => {
+  it("isNetworkError recognises TypeError and AbortError only", () => {
     expect(isNetworkError(new TypeError("x"))).toBe(true);
+    expect(
+      isNetworkError(Object.assign(new Error("x"), { name: "AbortError" })),
+    ).toBe(true);
     expect(isNetworkError(new Error("x"))).toBe(false);
   });
 });

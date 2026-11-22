@@ -11813,6 +11813,39 @@ was the only pending one); types generated from the linked project match `types/
 exactly. Also: LazyMount no longer causes a hydration mismatch (server and first client render
 both show the placeholder).
 
+## 2026-11-22 — Photo details open in a sheet; uploads keep the screen on
+
+**Details sheet.** Tapping a photo's Details used to widen that tile across the grid and push
+every other photo down. It now opens a sheet over the grid: the same `BottomSheet` as the country
+picker on a phone, a centered card at md+ (new `desktop="center"` option, which also stops the
+sheet closing itself when the viewport crosses `md`). Caption, Set as cover and Delete photo
+moved into it; Done is in its pinned footer; deleting from the sheet closes it. The Earlier /
+Later buttons were removed at Fred's request (drag is the way to reorder now); with them went
+`reorder()` and the four `moveEarlier`/`moveLater` strings. Trade-off: there is no keyboard-only
+way to reorder photos any more (WCAG 2.5.7 asks for a non-drag alternative); dnd-kit's
+`KeyboardSensor` could restore one. The
+native modal `<dialog>` returns focus to the Details button, so the old refocus/scroll workaround
+is gone. The drag hint no longer hides while details are open, since hiding it moved the grid by
+a line. Checked in `/dev/iphone-17`: every tile's rect identical before and after opening.
+
+**Screen going black mid-upload (still reported after the 2026-11-19 fix).** That fix covered
+the Drive path only. The Supabase path's begin call and its single direct POST to Storage were
+never retried, so a lock mid-POST still failed the photo. Now:
+
+- `lib/story/upload-wake-lock.ts` holds a Screen Wake Lock while a batch uploads (one shared
+  lock, taken again when the page comes back), so the screen should not lock in the first place.
+  iOS 16.4+ Safari, home-screen apps since iOS 18.4; it does nothing where unsupported or refused.
+- Supabase path: begin, and session + POST, go through `retryOnNetworkError`. On a retry an
+  "already exists" reply (409, or 400 with `statusCode: "409"`) counts as success. The reserved
+  path is unique to that media row, and Storage writes an object only once every byte is there.
+- `abortOnResume()` aborts any upload request that was in flight while the page was hidden, once
+  the page is visible again. iOS sometimes leaves such a fetch hanging instead of rejecting it.
+  `isNetworkError` now also accepts `AbortError`. The Supabase POST and the Drive chunk PUTs both
+  use it.
+- Drive: a final 200/201 whose body can't be read now triggers a status query instead of failing.
+  Unit-tested (wake lock, abort, Supabase retry plus duplicate, cut-off Drive reply). Not yet tried
+  on a real iPhone. Uploading from the dev server writes to the live Drive and database.
+
 ## 2026-11-19 — Photo uploads resume after an iPhone screen lock
 
 iOS freezes a home-screen PWA when the screen locks, and in-flight fetches reject. A Drive upload

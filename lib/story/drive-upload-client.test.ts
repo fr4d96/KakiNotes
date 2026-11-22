@@ -273,6 +273,42 @@ describe("uploadFileToDriveSession resume", () => {
     expect(onPause.mock.calls).toEqual([[true], [false]]);
   });
 
+  it("asks again when the final reply is cut off, instead of failing the photo", async () => {
+    const cutOff = new Response("{", { status: 200 });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(cutOff)
+      .mockResolvedValueOnce(ok("finished"));
+    const wait = vi.fn().mockResolvedValue(undefined);
+    const id = await uploadFileToDriveSession(
+      uri,
+      blobOfSize(500),
+      undefined,
+      fetchMock,
+      wait,
+    );
+    expect(id).toBe("finished");
+    expect(fetchMock.mock.calls[1][1].headers["Content-Range"]).toBe(
+      "bytes */500",
+    );
+  });
+
+  it("treats an aborted (hung) chunk as a pause and resumes", async () => {
+    const aborted = Object.assign(new Error("aborted"), { name: "AbortError" });
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(aborted)
+      .mockResolvedValueOnce(ok("resumed"));
+    const id = await uploadFileToDriveSession(
+      uri,
+      blobOfSize(500),
+      undefined,
+      fetchMock,
+      async () => {},
+    );
+    expect(id).toBe("resumed");
+  });
+
   it("returns the id when the status query says the file finished", async () => {
     const fetchMock = vi
       .fn()

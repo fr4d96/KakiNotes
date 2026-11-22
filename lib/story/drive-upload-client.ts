@@ -13,6 +13,7 @@
  */
 
 import {
+  abortOnResume,
   MAX_RESUME_ATTEMPTS,
   retryOnNetworkError,
   waitForResume as defaultWaitForResume,
@@ -110,6 +111,7 @@ export async function uploadFileToDriveSession(
       }
 
       let response: Response | null = null;
+      const guard = abortOnResume();
       try {
         if (needStatusQuery) {
           response = await fetchImpl(sessionUri, {
@@ -118,6 +120,7 @@ export async function uploadFileToDriveSession(
               "Content-Range": `bytes */${totalBytes}`,
               "Content-Length": "0",
             },
+            signal: guard.signal,
           });
         } else {
           const end = Math.min(offset + CHUNK_SIZE_BYTES, totalBytes);
@@ -128,12 +131,15 @@ export async function uploadFileToDriveSession(
               "Content-Length": String(end - offset),
             },
             body: file.slice(offset, end),
+            signal: guard.signal,
           });
         }
       } catch {
         // Network-level rejection (frozen page, dropped connection):
         // fall through to the pause-and-query path below.
         response = null;
+      } finally {
+        guard.done();
       }
 
       if (response === null || RETRYABLE_STATUSES.has(response.status)) {
@@ -152,10 +158,23 @@ export async function uploadFileToDriveSession(
       }
 
       if (response.status === 200 || response.status === 201) {
+        const json = (await response.json().catch(() => undefined)) as
+          { id?: string } | null | undefined;
+        if (json === undefined) {
+          // The last chunk landed but its reply was cut off (the page froze
+          // while reading it). Drive answers a status query on a finished
+          // upload with the file itself, so ask again instead of failing.
+          failures += 1;
+          if (failures >= MAX_RESUME_ATTEMPTS) {
+            throw new DriveChunkUploadError(
+              "Drive upload completed with an unreadable response",
+            );
+          }
+          needStatusQuery = true;
+          setPaused(true);
+          continue;
+        }
         onProgress?.({ sentBytes: totalBytes, totalBytes });
-        const json = (await response.json().catch(() => null)) as {
-          id?: string;
-        } | null;
         if (!json?.id) {
           throw new DriveChunkUploadError(
             "Drive upload completed with no file id in the response",

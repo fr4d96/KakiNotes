@@ -26,7 +26,36 @@ export type WaitForResume = (attempt: number) => Promise<void>;
 /** Network-level rejection from fetch / a server action (not an HTTP status
  * and not a returned `{ error }`). fetch rejects with TypeError. */
 export function isNetworkError(error: unknown): boolean {
-  return error instanceof TypeError;
+  if (error instanceof TypeError) return true;
+  // Our own abortOnResume() cancelling a request the freeze left hanging.
+  return error instanceof Error && error.name === "AbortError";
+}
+
+/**
+ * A signal that aborts a request if the page was hidden while it ran and has
+ * just become visible again. iOS sometimes leaves a fetch that spanned a
+ * screen lock hanging forever instead of rejecting it, which kept the tile
+ * spinning; aborting turns that into a network error the retry path above
+ * already handles. A request that actually finished meanwhile is safe to
+ * repeat: callers check what the server already has before re-sending.
+ */
+export function abortOnResume(): { signal?: AbortSignal; done: () => void } {
+  if (typeof document === "undefined" || typeof AbortController === "undefined")
+    return { done: () => {} };
+  const controller = new AbortController();
+  let wasHidden = document.visibilityState !== "visible";
+  const onChange = () => {
+    if (document.visibilityState !== "visible") {
+      wasHidden = true;
+    } else if (wasHidden) {
+      controller.abort();
+    }
+  };
+  document.addEventListener("visibilitychange", onChange);
+  return {
+    signal: controller.signal,
+    done: () => document.removeEventListener("visibilitychange", onChange),
+  };
 }
 
 function isReady(): boolean {
