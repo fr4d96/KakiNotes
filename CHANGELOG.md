@@ -3,6 +3,13 @@
 ## [4.7.1](https://github.com/fr4d96/KakiNotes/compare/v4.7.0...v4.7.1) (2026-11-22)
 
 
+### Calmer photo details, and uploads that survive a locked screen
+
+#### For contributors
+
+- **Photo details pop up instead of pushing your photos around.** Tapping Details on a photo now opens a panel from the bottom of the screen, like the country picker, so the rest of your photos stay where they are. It holds the caption, Set as cover and Delete photo. To change the order, drag a photo (press and hold first on a phone); the Earlier / Later buttons are gone.
+- **Uploads keep going when your screen goes black.** While photos are uploading, the app now keeps your screen awake. If it locks anyway, the upload waits and carries on when you come back instead of failing the photo.
+
 ### Bug Fixes
 
 * **photos:** photo details open in a sheet instead of pushing the grid ([8990c5d](https://github.com/fr4d96/KakiNotes/commit/8990c5dfa4b3fd6774ec9c79c871f92d97e6384d))
