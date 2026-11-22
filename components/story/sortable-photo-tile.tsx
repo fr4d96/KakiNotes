@@ -1,25 +1,42 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+type Listeners = Record<string, (event: never) => void>;
+
 export type PhotoDragHandle = {
-  ref: (node: HTMLElement | null) => void;
-  listeners: Record<string, (event: never) => void> | undefined;
+  /** Mouse/touch drag: spread on the thumbnail. No keyboard listener. */
+  listeners: Listeners | undefined;
   isDragging: boolean;
+  /**
+   * Keyboard reorder: spread on a real <button> inside the tile. Space or
+   * Enter picks the photo up, arrow keys move it, Space/Enter drops it,
+   * Escape puts it back. It is the activator, so focus returns to it after
+   * a drop.
+   */
+  keyboardHandle: {
+    ref: (node: HTMLElement | null) => void;
+    onKeyDown: ((event: KeyboardEvent) => void) | undefined;
+    "aria-describedby"?: string;
+    "aria-roledescription"?: string;
+    "aria-pressed"?: boolean;
+    "aria-disabled"?: boolean;
+  };
 };
 
 /**
  * One photo tile in the editor's photo grid, draggable to a new position
  * (image-upload-manager.tsx owns the DndContext and the order). The tile
- * itself is the <li>; the render prop hands the drag listeners to the
- * thumbnail only, so the Details button and the open details panel never
- * start a drag.
+ * itself is the <li>.
  *
- * No `attributes` from useSortable are spread: they would make the
- * thumbnail a focusable role="button" wrapped around the lightbox button
- * (nested interactive controls). Reordering is by drag only.
+ * Two activators, split by input: the thumbnail takes the mouse/touch
+ * listeners, and a separate keyboard handle button takes onKeyDown. The
+ * sortable `attributes` (role="button", tabIndex) are NOT spread on the
+ * thumbnail: they would make it a focusable button wrapped around the
+ * lightbox button (nested interactive controls). The handle is a real
+ * button instead, so only its ARIA attributes are passed through.
  */
 export function SortablePhotoTile({
   id,
@@ -33,6 +50,7 @@ export function SortablePhotoTile({
   children: (handle: PhotoDragHandle) => ReactNode;
 }) {
   const {
+    attributes,
     setNodeRef,
     setActivatorNodeRef,
     listeners,
@@ -41,11 +59,12 @@ export function SortablePhotoTile({
     isDragging,
   } = useSortable({ id, disabled });
 
+  const { onKeyDown, ...pointerListeners } = (listeners ?? {}) as Listeners;
+
   return (
     <li
       ref={setNodeRef}
-      // Translate, not Transform: tiles can differ in size (an open tile
-      // spans several columns), and a scale would stretch the photo.
+      // Translate, not Transform: a scale would stretch the photo.
       style={{
         transform: CSS.Translate.toString(transform),
         transition,
@@ -56,11 +75,18 @@ export function SortablePhotoTile({
       data-dragging={isDragging || undefined}
     >
       {children({
-        ref: setActivatorNodeRef,
-        listeners: disabled
-          ? undefined
-          : (listeners as PhotoDragHandle["listeners"]),
+        listeners: disabled || !listeners ? undefined : pointerListeners,
         isDragging,
+        keyboardHandle: {
+          ref: setActivatorNodeRef,
+          onKeyDown: disabled
+            ? undefined
+            : (onKeyDown as ((event: KeyboardEvent) => void) | undefined),
+          "aria-describedby": attributes["aria-describedby"],
+          "aria-roledescription": attributes["aria-roledescription"],
+          "aria-pressed": attributes["aria-pressed"],
+          "aria-disabled": attributes["aria-disabled"],
+        },
       })}
     </li>
   );

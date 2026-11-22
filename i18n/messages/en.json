@@ -1005,6 +1005,9 @@
         "notAddedToast": "{fileName} wasn't added — {reason}"
       },
       "drag": {
+        "handle": "Move",
+        "handleLabel": "Move {name}",
+        "keyboardHint": "Press Space or Enter to pick up the photo, use the arrow keys to move it, then press Space or Enter again to drop it. Press Escape to cancel.",
         "hint": "Drag a photo to change its place. On a phone, press and hold first.",
         "pickedUp": "Picked up the photo in position {position}.",
         "over": "Moved to position {position} of {total}.",

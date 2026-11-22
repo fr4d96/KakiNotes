@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { RevisionMediaItem } from "@/lib/story/contributor-queries";
 import {
@@ -24,6 +24,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import {
   DndContext,
+  KeyboardSensor,
   MouseSensor,
   TouchSensor,
   closestCenter,
@@ -36,6 +37,7 @@ import {
   SortableContext,
   arrayMove,
   rectSortingStrategy,
+  sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { SortablePhotoTile } from "@/components/story/sortable-photo-tile";
 import {
@@ -761,12 +763,22 @@ export function ImageUploadManager({
 
   // Drag and drop (task #4). Mouse: a drag starts after 6px of movement, so
   // a plain click still opens the photo. Touch: a 250ms press-and-hold
-  // starts it, so a swipe still scrolls the page. Dragging is the only way
-  // to reorder: the Earlier / Later buttons left the details sheet.
+  // starts it, so a swipe still scrolls the page. Keyboard: each tile has a
+  // "Move" handle button (shown on focus); Space picks the photo up, arrow
+  // keys move it through the grid, Space drops, Escape cancels. That keeps a
+  // non-drag way to reorder (WCAG 2.5.7) without the old Earlier / Later
+  // buttons.
+  // A stable id for DndContext: without one dnd-kit numbers its keyboard
+  // instructions element from a module counter, which differs between the
+  // server render and hydration (aria-describedby mismatch on every handle).
+  const dndId = useId();
   const dragSensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, {
       activationConstraint: { delay: 250, tolerance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
   // A mouse drag that ends over the same photo still fires a click on it,
@@ -977,13 +989,14 @@ export function ImageUploadManager({
           )}
 
           <DndContext
+            id={dndId}
             sensors={dragSensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
             onDragCancel={markJustDragged}
             accessibility={{
               announcements: dragAnnouncements,
-              screenReaderInstructions: { draggable: t("drag.hint") },
+              screenReaderInstructions: { draggable: t("drag.keyboardHint") },
             }}
           >
             <SortableContext
@@ -1123,7 +1136,6 @@ export function ImageUploadManager({
                       {(drag) => (
                         <>
                           <div
-                            ref={drag.ref}
                             {...drag.listeners}
                             onClickCapture={(e) => {
                               if (justDraggedRef.current) {
@@ -1143,6 +1155,27 @@ export function ImageUploadManager({
                           >
                             {thumb}
                           </div>
+                          {/* Keyboard reorder. Hidden until it has keyboard
+                              focus and click-through for mouse and touch,
+                              which drag the photo itself. */}
+                          <button
+                            type="button"
+                            ref={drag.keyboardHandle.ref}
+                            onKeyDown={drag.keyboardHandle.onKeyDown}
+                            aria-describedby={
+                              drag.keyboardHandle["aria-describedby"]
+                            }
+                            aria-roledescription={
+                              drag.keyboardHandle["aria-roledescription"]
+                            }
+                            aria-pressed={drag.keyboardHandle["aria-pressed"]}
+                            aria-disabled={drag.keyboardHandle["aria-disabled"]}
+                            aria-label={t("drag.handleLabel", { name })}
+                            data-photo-move-handle
+                            className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md bg-black/80 px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-sm focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                          >
+                            {t("drag.handle")}
+                          </button>
                         </>
                       )}
                     </SortablePhotoTile>
@@ -1271,22 +1304,20 @@ export function ImageUploadManager({
           </div>
         )}
       </BottomSheet>
-      {/* Mounted only while asking, so the page carries no idle <dialog>
-          beside the photo lightbox's own. */}
-      {confirmDeleteId !== null && (
-        <ConfirmDialog
-          open
-          title={t("deleteConfirmTitle")}
-          description={t("deleteConfirmBody")}
-          confirmLabel={t("deletePhoto")}
-          danger
-          onConfirm={() => {
-            if (confirmDeleteId) detach(confirmDeleteId);
-            setConfirmDeleteId(null);
-          }}
-          onCancel={() => setConfirmDeleteId(null)}
-        />
-      )}
+      {/* Always mounted (open toggles it) so closing can play its exit
+          animation; unmounting removed it from the screen at once. */}
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        title={t("deleteConfirmTitle")}
+        description={t("deleteConfirmBody")}
+        confirmLabel={t("deletePhoto")}
+        danger
+        onConfirm={() => {
+          if (confirmDeleteId) detach(confirmDeleteId);
+          setConfirmDeleteId(null);
+        }}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }

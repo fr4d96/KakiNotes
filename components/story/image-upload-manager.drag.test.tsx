@@ -149,10 +149,39 @@ describe("ImageUploadManager — drag to reorder", () => {
 
     // Details open in a sheet over the grid, so the hint stays: hiding it
     // would shift every photo up by a line.
-    await userEvent.click(screen.getByRole("button", { name: /photo 1$/ }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /^Details photo 1$/ }),
+    );
     expect(
       screen.getByText(/drag a photo to change its place/i, { selector: "p" }),
     ).toBeInTheDocument();
+  });
+
+  it("gives every photo a keyboard Move handle that picks it up and cancels", async () => {
+    renderPanel([A, B]);
+    const handle = screen.getByRole("button", { name: "Move photo 1" });
+    // Described by the keyboard instructions, so a screen reader hears how.
+    const describedBy = handle.getAttribute("aria-describedby")!;
+    expect(document.getElementById(describedBy)).toHaveTextContent(
+      /press space or enter to pick up the photo/i,
+    );
+
+    handle.focus();
+    await userEvent.keyboard(" ");
+    // Picked up: the handle is pressed, and the live region is announcing
+    // where the photo is (it reports the hover right after the pick-up).
+    expect(handle).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() =>
+      expect(screen.getByText("Moved to position 1 of 2.")).toBeInTheDocument(),
+    );
+
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() =>
+      expect(
+        screen.getByText("Move cancelled. The photo is back where it was."),
+      ).toBeInTheDocument(),
+    );
+    expect(reorderMediaAction).not.toHaveBeenCalled();
   });
 
   it("doesn't offer dragging for a single photo", () => {

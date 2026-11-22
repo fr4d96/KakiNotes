@@ -1005,6 +1005,9 @@
         "notAddedToast": "{fileName} 未能添加 — {reason}"
       },
       "drag": {
+        "handle": "移动",
+        "handleLabel": "移动{name}",
+        "keyboardHint": "按空格键或回车键拿起照片，用方向键移动，再按空格键或回车键放下。按 Esc 取消。",
         "hint": "拖动照片即可调整顺序。在手机上请先按住照片。",
         "pickedUp": "已拿起第 {position} 张照片。",
         "over": "移到第 {position} 个位置，共 {total} 个。",

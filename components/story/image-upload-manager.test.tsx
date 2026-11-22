@@ -72,7 +72,9 @@ function renderPanel(inlineMediaIds: Set<string>) {
 /** Opens the detail panel for the nth tile (1-based, as the labels read). */
 async function openDetails(index: number) {
   await userEvent.click(
-    screen.getByRole("button", { name: new RegExp(`photo ${index}$`) }),
+    screen.getByRole("button", {
+      name: new RegExp(`^Details photo ${index}$`),
+    }),
   );
 }
 

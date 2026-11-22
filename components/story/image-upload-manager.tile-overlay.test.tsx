@@ -91,7 +91,7 @@ describe("ImageUploadManager — photo tile overlay", () => {
     const { container } = renderPanel([mediaItem(READY, 0)]);
     await photoLoaded(container);
 
-    const details = screen.getByRole("button", { name: /photo 1$/ });
+    const details = screen.getByRole("button", { name: /^Details photo 1$/ });
     expect(thumbOf(details)).not.toBeNull();
     expect(details.className).toContain("opacity-0");
     expect(details.className).toContain("group-hover/tile:opacity-100");
@@ -113,7 +113,7 @@ describe("ImageUploadManager — photo tile overlay", () => {
   it("keeps Details visible, and shows no zoom icon, when there's no photo to look at", () => {
     const { container } = renderPanel([mediaItem(FAILED, 0, "failed")]);
 
-    const details = screen.getByRole("button", { name: /photo 1$/ });
+    const details = screen.getByRole("button", { name: /^Details photo 1$/ });
     expect(details.className).toContain("opacity-100");
     expect(details.className).not.toMatch(/(^|\s)opacity-0(\s|$)/);
     expect(
@@ -127,7 +127,9 @@ describe("ImageUploadManager — photo tile overlay", () => {
 
     const tile = container.querySelector("li")!;
     const tileClass = tile.className;
-    await userEvent.click(screen.getByRole("button", { name: /photo 1$/ }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /^Details photo 1$/ }),
+    );
 
     // Details open in a sheet over the grid, not inside the tile: the tile
     // keeps its grid cell, so no other photo moves.
@@ -153,7 +155,9 @@ describe("ImageUploadManager — photo tile overlay", () => {
     const { container } = renderPanel([mediaItem(READY, 0)]);
     await photoLoaded(container);
 
-    await userEvent.click(screen.getByRole("button", { name: /photo 1$/ }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /^Details photo 1$/ }),
+    );
     const sheet = screen.getByRole("dialog", {
       name: "Photo details",
       hidden: true,
