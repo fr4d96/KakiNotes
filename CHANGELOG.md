@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.7.3](https://github.com/fr4d96/KakiNotes/compare/v4.7.2...v4.7.3) (2026-11-23)
+
+
+### Photo uploads that keep working
+
+#### For contributors
+
+- **Failed uploads no longer use up your photo slots.** Each story holds up to 12 photos. A photo that failed to upload used to keep one of those 12 places for good, so a story with 7 photos could be told it was already full. A failed upload now gives its place back straight away, and any older stuck places are cleared the next time you add a photo.
+- **One dropped connection no longer stops every later photo.** If your phone lost the reply after a photo had already gone through (for example when the screen locked), every photo after it failed with an "out of date" error until you reloaded the page. The app now recognises the photo was added and carries on, so the next photos upload normally.
+
+### Bug Fixes
+
+* **upload:** failed or retried photo uploads no longer block later ones ([594d372](https://github.com/fr4d96/KakiNotes/commit/594d3721fea2a76d0b3e364d67ea14b045aa5d24))
+
 ## [4.7.2](https://github.com/fr4d96/KakiNotes/compare/v4.7.1...v4.7.2) (2026-11-22)
 
 
