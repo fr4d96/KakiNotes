@@ -219,6 +219,54 @@ describe("beginAndUploadToDrive", () => {
     expect(fetchMock).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
+
+  it("gives the reserved slot back when the bytes never reach Drive", async () => {
+    const beginUpload = vi.fn().mockResolvedValue({
+      mediaId: "media-7",
+      sessionUri: "https://upload.example/session-y",
+    });
+    const cancelUpload = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("forbidden", { status: 403 })),
+    );
+
+    await expect(
+      beginAndUploadToDrive(
+        { revisionId: "rev-1", file: blobOfSize(10), mimeType: "image/jpeg" },
+        beginUpload,
+        undefined,
+        undefined,
+        undefined,
+        cancelUpload,
+      ),
+    ).rejects.toThrow();
+    expect(cancelUpload).toHaveBeenCalledWith("media-7");
+    vi.unstubAllGlobals();
+  });
+
+  it("still surfaces the upload failure when giving the slot back fails too", async () => {
+    const beginUpload = vi.fn().mockResolvedValue({
+      mediaId: "media-8",
+      sessionUri: "https://upload.example/session-z",
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("forbidden", { status: 403 })),
+    );
+
+    await expect(
+      beginAndUploadToDrive(
+        { revisionId: "rev-1", file: blobOfSize(10), mimeType: "image/jpeg" },
+        beginUpload,
+        undefined,
+        undefined,
+        undefined,
+        vi.fn().mockRejectedValue(new Error("cancel failed")),
+      ),
+    ).rejects.toThrow(/Drive upload chunk failed/);
+    vi.unstubAllGlobals();
+  });
 });
 
 describe("uploadFileToDriveSession resume", () => {

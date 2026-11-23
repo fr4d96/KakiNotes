@@ -8,6 +8,7 @@ import {
   beginDriveMediaUpload,
   finalizeDriveMediaUpload,
   DriveFinalizeRejectedError,
+  releaseDriveReservation,
 } from "@/lib/story/drive-sync";
 import { DriveConnectionError } from "@/lib/drive/drive-client";
 import { storyVersionForMedia } from "@/lib/story/mutations";
@@ -115,6 +116,10 @@ export async function finalizeDriveMediaUploadAction(
       driveFileId,
     );
   } catch (error) {
+    // A failed finalize leaves the reservation pending, where it would
+    // count toward the 12-photo limit. Release it (a no-op error if the row
+    // already moved past pending_upload, which releaseDriveReservation logs).
+    await releaseDriveReservation(parsedMediaId.data);
     if (error instanceof DriveConnectionError) {
       return { error: tErr("driveDisconnected"), code: "drive_disconnected" };
     }
@@ -136,4 +141,19 @@ export async function finalizeDriveMediaUploadAction(
     () => null,
   );
   return { mediaId: parsedMediaId.data, version };
+}
+
+/**
+ * Gives back a Drive upload slot whose bytes never reached Drive (the
+ * browser's PUT failed). Edit rights and the pending-only rule are
+ * re-checked by cancel_pending_story_media_upload itself.
+ */
+export async function cancelDriveMediaUploadAction(
+  mediaId: string,
+): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) return;
+  const parsed = uuidSchema.safeParse(mediaId);
+  if (!parsed.success) return;
+  await releaseDriveReservation(parsed.data);
 }

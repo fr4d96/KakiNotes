@@ -580,6 +580,8 @@ export function ImageUploadManager({
               driveActions.beginDriveMediaUploadAction,
               undefined,
               setPaused,
+              undefined,
+              driveActions.cancelDriveMediaUploadAction,
             );
 
             setUploading((prev) =>

@@ -171,6 +171,22 @@ describe("beginDriveMediaUpload", () => {
     ).rejects.toThrow();
     expect(getAccessToken).not.toHaveBeenCalled();
   });
+
+  it("releases the reservation when the Drive session cannot be opened", async () => {
+    rpcMock.mockImplementation(async (name: string) =>
+      name === "begin_drive_media_upload"
+        ? { data: [{ media_id: "media-3" }], error: null }
+        : { data: null, error: null },
+    );
+    startResumableUploadSession.mockRejectedValueOnce(new Error("drive down"));
+
+    await expect(
+      beginDriveMediaUpload("revision-1", "image/jpeg", 1000),
+    ).rejects.toThrow("drive down");
+    expect(rpcMock).toHaveBeenCalledWith("cancel_pending_story_media_upload", {
+      p_media_id: "media-3",
+    });
+  });
 });
 
 describe("finalizeDriveMediaUpload", () => {
@@ -188,6 +204,100 @@ describe("finalizeDriveMediaUpload", () => {
     ).rejects.toBeInstanceOf(DriveFinalizeRejectedError);
     expect(getAccessToken).not.toHaveBeenCalled();
     expectNoDownloadOrDelete();
+  });
+
+  it("treats a retry of an already-finished finalize as success, touching nothing", async () => {
+    rpcMock.mockResolvedValue({
+      data: null,
+      error: {
+        message: "Media media-1 is not a pending Drive upload reservation",
+      },
+    });
+
+    await expect(
+      finalizeDriveMediaUpload("media-1", 30, "drive-file-1"),
+    ).resolves.toBeUndefined();
+    expect(getAccessToken).not.toHaveBeenCalled();
+    expectNoDownloadOrDelete();
+  });
+
+  it("still rejects an expired reservation", async () => {
+    rpcMock.mockResolvedValue({
+      data: null,
+      error: {
+        message: "Drive upload reservation for media media-1 has expired",
+      },
+    });
+
+    await expect(
+      finalizeDriveMediaUpload("media-1", 1, "drive-file-1"),
+    ).rejects.toBeInstanceOf(DriveFinalizeRejectedError);
+  });
+
+  it("records at the current version once when the browser's version is stale", async () => {
+    const recordedAt: number[] = [];
+    rpcMock.mockImplementation(
+      async (name: string, args: { p_expected_version?: number }) => {
+        if (name === "authorize_drive_media_finalize_v2") {
+          return { error: null, data: "story-1" };
+        }
+        if (name === "list_story_drive_media_for_sync") {
+          return { data: [], error: null };
+        }
+        if (name === "get_story_version_for_media") {
+          return { data: 31, error: null };
+        }
+        if (name === "finalize_drive_media_upload") {
+          recordedAt.push(args.p_expected_version!);
+          return args.p_expected_version === 31
+            ? { error: null }
+            : {
+                error: {
+                  message:
+                    "Stale version for story story-1 (expected 31, got 30)",
+                },
+              };
+        }
+        return { data: null, error: null };
+      },
+    );
+
+    await finalizeDriveMediaUpload("media-1", 30, "drive-file-1");
+
+    expect(recordedAt).toEqual([30, 31]);
+    // The derivative is kept: it is now what the recorded row points at.
+    expect(deleteFilePermanently).not.toHaveBeenCalledWith(
+      "access-token",
+      "derivative-file-id",
+      "user-1",
+    );
+  });
+
+  it("retries a stale version only once", async () => {
+    const recordedAt: number[] = [];
+    rpcMock.mockImplementation(
+      async (name: string, args: { p_expected_version?: number }) => {
+        if (name === "authorize_drive_media_finalize_v2") {
+          return { error: null, data: "story-1" };
+        }
+        if (name === "list_story_drive_media_for_sync") {
+          return { data: [], error: null };
+        }
+        if (name === "get_story_version_for_media") {
+          return { data: 31, error: null };
+        }
+        if (name === "finalize_drive_media_upload") {
+          recordedAt.push(args.p_expected_version!);
+          return { error: { message: "Stale version for story story-1" } };
+        }
+        return { data: null, error: null };
+      },
+    );
+
+    await expect(
+      finalizeDriveMediaUpload("media-1", 30, "drive-file-1"),
+    ).rejects.toThrow(/Stale version/);
+    expect(recordedAt).toEqual([30, 31]);
   });
 
   it("rejects a forged reservation id, with no download and no delete", async () => {
@@ -643,14 +753,14 @@ describe("attachServerBytesAsDriveMedia (server-held bytes, no staging file)", (
         return { data: [], error: null };
       }
       if (name === "finalize_drive_media_upload") {
-        return { error: { message: "stale version" } };
+        return { error: { message: "db down" } };
       }
       throw new Error(`unexpected rpc ${name}`);
     });
 
     await expect(
       attachServerBytesAsDriveMedia("media-1", 1, Buffer.from("png")),
-    ).rejects.toThrow(/stale version/);
+    ).rejects.toThrow(/db down/);
     expect(deleteFilePermanently).toHaveBeenCalledWith(
       "access-token",
       "derivative-file-id",

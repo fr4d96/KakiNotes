@@ -256,6 +256,7 @@ export async function beginAndUploadToDrive(
   onProgress?: (progress: DriveUploadProgress) => void,
   onPause?: (paused: boolean) => void,
   waitForResume?: WaitForResume,
+  cancelUpload?: (mediaId: string) => Promise<unknown>,
 ): Promise<{ mediaId: string; driveFileId: string }> {
   // Retried on a network REJECTION only (frozen page); a returned
   // { error } is never retried. A lost response can leave one orphan
@@ -267,13 +268,23 @@ export async function beginAndUploadToDrive(
   if ("error" in begun) {
     throw new DriveUploadBeginError(begun.error);
   }
-  const driveFileId = await uploadFileToDriveSession(
-    begun.sessionUri,
-    params.file,
-    onProgress,
-    undefined,
-    waitForResume,
-    onPause,
-  );
+  let driveFileId: string;
+  try {
+    driveFileId = await uploadFileToDriveSession(
+      begun.sessionUri,
+      params.file,
+      onProgress,
+      undefined,
+      waitForResume,
+      onPause,
+    );
+  } catch (error) {
+    // The bytes never reached Drive, so this reservation can never be
+    // finalized. Hand the slot back right away instead of letting it count
+    // toward the 12-photo limit until it expires. Best-effort: the
+    // original failure is what the caller sees.
+    await cancelUpload?.(begun.mediaId).catch(() => {});
+    throw error;
+  }
   return { mediaId: begun.mediaId, driveFileId };
 }

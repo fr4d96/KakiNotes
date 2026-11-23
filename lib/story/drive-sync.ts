@@ -25,6 +25,7 @@ import {
   syncStoryFolder,
   extensionForMimeType,
 } from "@/lib/story/drive-folders";
+import { isStaleVersionConflict } from "@/lib/story/mutation-queue";
 
 /**
  * The only module allowed to import lib/drive/drive-client.ts from outside
@@ -132,19 +133,49 @@ export async function beginDriveMediaUpload(
   const user = await requireUser();
   const mediaId = await reserveDriveMediaSlot(revisionId, sourceMimeType);
 
-  const accessToken = await getAccessToken(user.id);
-  const { stagingFolderId } = await ensureAppFolders(user.id, accessToken);
-  const { sessionUri } = await startResumableUploadSession(
-    accessToken,
-    stagingFolderId,
-    mediaId,
-    sourceMimeType,
-    sizeBytes,
-    user.id,
-  );
-
-  return { mediaId, sessionUri };
+  try {
+    const accessToken = await getAccessToken(user.id);
+    const { stagingFolderId } = await ensureAppFolders(user.id, accessToken);
+    const { sessionUri } = await startResumableUploadSession(
+      accessToken,
+      stagingFolderId,
+      mediaId,
+      sourceMimeType,
+      sizeBytes,
+      user.id,
+    );
+    return { mediaId, sessionUri };
+  } catch (error) {
+    // The slot is reserved but no session exists, so nothing can ever
+    // finalize it: give the slot back now rather than letting it count
+    // toward the 12-photo limit. Best-effort -- never masks the real error.
+    await releaseDriveReservation(mediaId);
+    throw error;
+  }
 }
+
+/**
+ * Best-effort: deletes a still-pending Drive reservation via
+ * cancel_pending_story_media_upload (which re-checks edit rights and
+ * refuses anything past pending_upload). A failure is logged, never thrown.
+ */
+export async function releaseDriveReservation(mediaId: string): Promise<void> {
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("cancel_pending_story_media_upload", {
+      p_media_id: mediaId,
+    });
+    if (error) throw error;
+  } catch (error) {
+    console.error("Failed to release a Drive upload reservation", {
+      mediaId,
+      error,
+    });
+  }
+}
+
+/** authorize_drive_media_finalize_v2's message for a row past pending_upload. */
+const ALREADY_FINALIZED_PATTERN = /is not a pending Drive upload reservation/i;
 
 export class DriveFinalizeRejectedError extends Error {
   constructor(message: string) {
@@ -209,6 +240,19 @@ export async function finalizeDriveMediaUpload(
     "authorize_drive_media_finalize_v2",
     { p_media_id: mediaId },
   );
+  if (authError && ALREADY_FINALIZED_PATTERN.test(authError.message)) {
+    // A retry of a finalize that already succeeded: the first call
+    // recorded the photo and bumped the version, but its reply never
+    // reached the browser (screen locked, network dropped), so the browser
+    // sent it again. A google_drive reservation only ever leaves
+    // pending_upload inside finalize_drive_media_upload, which attaches it
+    // in the same transaction -- so "not pending" here means "done".
+    // Treated as success, matching finalize_story_media_upload's own
+    // "a repeat call is a safe no-op" contract, so the caller reads the
+    // CURRENT version instead of keeping a stale one forever (which made
+    // every later upload fail with "Stale version").
+    return;
+  }
   if (authError || !storyId) {
     throw new DriveFinalizeRejectedError(
       authError?.message ?? "not authorized",
@@ -389,25 +433,44 @@ async function processAndRecordDriveMedia(input: {
     user.id,
   );
 
+  const recordAt = (version: number) =>
+    supabase.rpc("finalize_drive_media_upload", {
+      p_media_id: mediaId,
+      p_expected_version: version,
+      p_drive_processed_file_id: driveProcessedFileId,
+      p_drive_folder_id: storyFolderId,
+      p_source_mime_type: processed.sourceMimeType,
+      p_source_width: processed.sourceWidth,
+      p_source_height: processed.sourceHeight,
+      p_source_file_size_bytes: input.sourceFileSizeBytes,
+      p_processed_mime_type: processed.processedMimeType,
+      p_processed_file_size_bytes: processed.bytes.byteLength,
+      p_processed_width: processed.processedWidth,
+      p_processed_height: processed.processedHeight,
+      p_sha256: processed.sha256,
+    });
+
   try {
-    const { error: finalizeError } = await supabase.rpc(
-      "finalize_drive_media_upload",
-      {
-        p_media_id: mediaId,
-        p_expected_version: expectedVersion,
-        p_drive_processed_file_id: driveProcessedFileId,
-        p_drive_folder_id: storyFolderId,
-        p_source_mime_type: processed.sourceMimeType,
-        p_source_width: processed.sourceWidth,
-        p_source_height: processed.sourceHeight,
-        p_source_file_size_bytes: input.sourceFileSizeBytes,
-        p_processed_mime_type: processed.processedMimeType,
-        p_processed_file_size_bytes: processed.bytes.byteLength,
-        p_processed_width: processed.processedWidth,
-        p_processed_height: processed.processedHeight,
-        p_sha256: processed.sha256,
-      },
-    );
+    let { error: finalizeError } = await recordAt(expectedVersion);
+    // A stale version is not a failed upload: the photo is processed and
+    // already sits in Drive. Same reasoning as the Supabase path's retry in
+    // upload-actions.ts: the version guard stops one writer overwriting
+    // another's content, and this call overwrites nothing -- it inserts a
+    // join row and bumps the version -- so recording it once more against
+    // the current version cannot clobber a concurrent edit. Exactly one
+    // retry, so a genuinely broken upload still fails.
+    if (finalizeError && isStaleVersionConflict(finalizeError.message)) {
+      const { data: currentVersion } = await supabase.rpc(
+        "get_story_version_for_media",
+        { p_media_id: mediaId },
+      );
+      if (
+        typeof currentVersion === "number" &&
+        currentVersion !== expectedVersion
+      ) {
+        ({ error: finalizeError } = await recordAt(currentVersion));
+      }
+    }
     if (finalizeError) {
       throw new Error(
         `finalize_drive_media_upload failed: ${finalizeError.message}`,
