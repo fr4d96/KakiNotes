@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.7.3](https://github.com/fr4d96/KakiNotes/compare/v4.7.2...v4.7.3) (2026-11-23)
+
+
+### Bug Fixes
+
+* **upload:** failed or retried photo uploads no longer block later ones ([594d372](https://github.com/fr4d96/KakiNotes/commit/594d3721fea2a76d0b3e364d67ea14b045aa5d24))
+
 ## [4.7.2](https://github.com/fr4d96/KakiNotes/compare/v4.7.1...v4.7.2) (2026-11-22)
 
 
