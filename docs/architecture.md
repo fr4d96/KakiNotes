@@ -1206,8 +1206,9 @@ project's service-role key in secrets, which don't exist yet. Tracked as future 
 
 ### Hosting (Vercel)
 
-There are no Vercel-specific files in this repo. Deployment is configured entirely in the Vercel
-dashboard, via its GitHub integration. One-time setup:
+Deployment is configured in the Vercel dashboard, via its GitHub integration. The one
+Vercel-specific file is `vercel.json`, which sets the Ignored Build Step (see "Skipped deployments"
+below). One-time setup:
 
 1. Import the GitHub repo into Vercel.
 2. Set Production Branch to `release`.
@@ -1225,6 +1226,20 @@ work: rolling back just repoints the domain at an older immutable deploy.
 Vercel does **not** wait for GitHub checks before deploying, and nothing else gates a deploy on
 CI either. See "Branch rulesets" below for what the repo does enforce, and why required status
 checks were deliberately left off.
+
+#### Skipped deployments
+
+`vercel.json` runs `scripts/vercel-ignore-build.mjs` before each build. It skips the deployment
+when everything changed since the branch's last successful deployment is docs, the changelog,
+`.github/`, or only the version number in `package.json`/`package-lock.json`. Each production
+deployment empties the CDN's photo cache, so the release bot's version bump and the changelog
+rewrite used to make every photo be fetched from Drive and resized again for nothing.
+
+Anything unclear builds: no previous deployment, a commit the shallow clone doesn't reach, or any
+git error. A skipped deployment shows as "Canceled" in Vercel and still counts toward the deployment
+quota. A quick release may still build twice, if the code build hasn't finished when the bump
+arrives. To force a deployment (for example after changing an environment variable), use Redeploy
+in the dashboard and untick "Use project's Ignore Build Step".
 
 ### Branch rulesets
 
@@ -1274,7 +1289,8 @@ Four gotchas worth knowing:
 - The bump PR is created and merged with the default `GITHUB_TOKEN`, so GitHub runs no workflows
   for it — no CI on the PR, and no CI or Release run for the merge push. That's fine: it only ever
   touches version fields and the changelog, and the tag is cut inside the same run. Vercel does
-  still deploy the merge push (its webhook is not subject to that rule).
+  still see the merge push (its webhook is not subject to that rule), but normally skips it: see
+  "Skipped deployments".
 - If you add branch protection to `release` that requires the `verify` check, the bot's merge will
   be blocked, because the PR never gets a check. Use a repository ruleset and put the GitHub Actions
   app on its bypass list, or require the check on `main` only. The rulesets in place today require

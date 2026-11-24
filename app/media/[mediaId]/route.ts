@@ -89,7 +89,7 @@ export async function GET(
     return serveFullQualityCopy(supabase, parsedId.data);
   }
 
-  // ?w=640|828|1080: the card-sized version (lib/story/card-photo-size.ts). Any
+  // ?w=640|1080: the card-sized version (lib/story/card-photo-size.ts). Any
   // other ?w is the same 404 as a missing photo, so the cache can't be
   // flooded with arbitrary sizes. Checked before any database or Drive work.
   const rawWidth = request.nextUrl.searchParams.get("w");

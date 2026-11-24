@@ -21,4 +21,11 @@ describe("robots", () => {
       expect(disallowed()).toContain(path);
     }
   });
+
+  it("keeps crawlers off resized photos but not the share-preview photo", () => {
+    expect(disallowed()).toContain("/media/*?w=");
+    // Either would block /media/<id>, which is every story's og:image.
+    expect(disallowed()).not.toContain("/media");
+    expect(disallowed()).not.toContain("/media/");
+  });
 });

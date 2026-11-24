@@ -53,7 +53,7 @@ export function CardPhotos({
   loadAll?: boolean;
   /**
    * How wide the card is drawn at each breakpoint, so the browser picks the
-   * 640, 828 or 1080px card version (lib/story/card-photo-size.ts) instead of
+   * 640 or 1080px card version (lib/story/card-photo-size.ts) instead of
    * the full photo.
    */
   sizes?: string;

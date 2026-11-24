@@ -14,9 +14,10 @@
  */
 
 /** The only widths the proxy will make; anything else is a 404. */
-// 640 for small screens, 828 for a 2x phone's full-width card, 1080 for a
-// 3x phone's.
-export const CARD_PHOTO_WIDTHS = [640, 828, 1080] as const;
+// 640 for small screens, 1080 for a phone's full-width card. A third width,
+// 828, was dropped on 2026-11-25: every width is a separate CDN entry per
+// photo, and each miss costs a Drive download and a resize.
+export const CARD_PHOTO_WIDTHS = [640, 1080] as const;
 export type CardPhotoWidth = (typeof CARD_PHOTO_WIDTHS)[number];
 
 /** The card frame's shape: 4 wide by 3 tall. */

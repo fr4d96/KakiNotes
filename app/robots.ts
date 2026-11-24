@@ -46,6 +46,12 @@ export default function robots(): MetadataRoute.Robots {
         // route already 404s for anyone without one of those roles, this just
         // stops a crawler trying in the first place.
         "/readiness",
+        // The resized card photos: each one a crawler asks for can cost a
+        // Drive download plus an image resize, and they add nothing the full
+        // photo does not. Only "?w=": the plain /media/<id> URL is the
+        // og:image/twitter:image, so it has to stay reachable for link
+        // previews and image search.
+        "/media/*?w=",
       ],
     },
     sitemap: `${siteUrl}/sitemap.xml`,

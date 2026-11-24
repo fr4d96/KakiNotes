@@ -813,7 +813,8 @@ One tag covers every photo: the purge sites do not all know which photos
 changed, and over-purging only costs speed (the next viewers go back to
 Drive once), never correctness.
 
-**Card sizes (2026-11-15).** `?w=640`, `?w=828` and `?w=1080` on the same route return a
+**Card sizes (2026-11-15).** `?w=640` and `?w=1080` on the same route (a third, `?w=828`, was
+dropped 2026-11-25 to cut Vercel CPU) return a
 4:3, centre-cropped WebP of the same approved, metadata-stripped derivative,
 for story cards (`lib/story/card-photo-size.ts`, `lib/story/card-photo-resize.ts`).
 Same authorization check, same `Cache-Control` and `public-media` purge tag.

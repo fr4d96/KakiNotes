@@ -312,7 +312,7 @@ describe("GET /media/[mediaId]", () => {
       error: null,
     };
 
-    it.each(["640", "828", "1080"])(
+    it.each(["640", "1080"])(
       "serves a %spx WebP card version, cached and tagged like the photo",
       async (width) => {
         rpcMock.mockResolvedValue(publishedRow);
