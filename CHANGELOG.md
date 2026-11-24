@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.7.4](https://github.com/fr4d96/KakiNotes/compare/v4.7.3...v4.7.4) (2026-11-24)
+
+
+### Bug Fixes
+
+* country switch, pop-up focus ring, author link and updated legal pages ([c96f0a4](https://github.com/fr4d96/KakiNotes/commit/c96f0a41d54d71e191cd34016cae73471b2bf853))
+
 ## [4.7.3](https://github.com/fr4d96/KakiNotes/compare/v4.7.2...v4.7.3) (2026-11-23)
 
 
