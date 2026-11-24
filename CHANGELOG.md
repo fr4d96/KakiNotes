@@ -3,6 +3,15 @@
 ## [4.7.4](https://github.com/fr4d96/KakiNotes/compare/v4.7.3...v4.7.4) (2026-11-24)
 
 
+### Cleaner country switching and up-to-date information pages
+
+#### For everyone
+
+- **Switching country now opens a fresh page.** Changing from China to New Zealand could sometimes leave the China story on screen. Choosing a country now fully loads that country's home page, so the previous country's page should no longer linger.
+- **No more circle around the close button.** Opening a pop-up with a tap or click no longer draws a ring around the close button. If you use a keyboard, a slimmer ring still shows where you are.
+- **Author pictures link to profiles.** When an author has made their profile public, their picture on a story now opens it, as their name already did. Authors who have not made their profile public are still not linked.
+- **Information pages rewritten.** About, Privacy, Terms, Community Guidelines and Copyright & Removal now describe the app as it is today, in English and Chinese. Copyright & Removal lists an email address for copyright claims and takedown requests.
+
 ### Bug Fixes
 
 * country switch, pop-up focus ring, author link and updated legal pages ([c96f0a4](https://github.com/fr4d96/KakiNotes/commit/c96f0a41d54d71e191cd34016cae73471b2bf853))
