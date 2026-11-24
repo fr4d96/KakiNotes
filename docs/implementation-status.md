@@ -1,5 +1,7 @@
 # Implementation Status — Kakinotes
 
+**2026-11-24 — country switch, profile links, dialog focus, info pages.** (1) Country switcher now writes the country cookie and does a hard page load of that home (`lib/story/country-cookie.ts` `rememberCountry`/`hardNavigate`) instead of relying on the form POST/303 alone, which could leave the previous country's page on screen (bfcache / 5-minute router cache holding "/" as a redirect to /cn); `/country` redirect is now `no-store`; plain form post remains the no-JS fallback. (2) Story byline name already linked to the contributor profile (which lists published stories); the avatar now links too. (3) Dialogs opened by tap/click focus the dialog itself (no ring on the round close button); keyboard opens keep autofocus with an inset `:focus-visible` ring (`dialog-motion.ts`, `globals.css`). (4) About/Privacy/Terms/Community Guidelines/Copyright & Removal rewritten in `i18n/messages` (en + zh-CN) via `components/legal-page.tsx`, dated 2026-11-24; no contact address exists in code/docs, so the removal page says one is still being finalised and points to the in-app report button.
+
 Read this before starting any task — it reflects what actually exists, not what is planned in
 CLAUDE.md or docs/. Update it as part of the Definition of Done for every task.
 
@@ -230,7 +232,7 @@ each one lands — because `get_published_story_media()` does not return `proces
 even though `story_media` stores them; adding them is a DROP+CREATE migration on a public RPC and a
 separate change. (2) The four hero plates are still `w=2400` Unsplash hotlinks at every viewport.
 (3) `next dev` is materially slower than the production build; judge scroll feel on `npm run build
-&& npm run start` (`kakinotes-prod`, port 3101) before chasing anything further.
+&& npm run start` (then the `kakinotes-prod` config, port 3101; removed 2026-11-23) before chasing anything further.
 
 **2026-09-10 (latest) — a contributor is the same avatar everywhere.**
 `20260910120000_story_cards_contributor_avatar.sql` adds `contributor_avatar_emoji` to
@@ -9358,8 +9360,9 @@ contributor can connect Google Drive from **Account → Google Drive** and disco
 - **Env:** four server-only vars, now in `.env.example`: `GOOGLE_DRIVE_OAUTH_CLIENT_ID`,
   `GOOGLE_DRIVE_OAUTH_CLIENT_SECRET`, `GOOGLE_DRIVE_OAUTH_REDIRECT_URI`,
   `GOOGLE_DRIVE_TOKEN_ENCRYPTION_KEY`. Without them (e.g. Vercel previews) the tab says "not
-  available here". Locally the redirect is `http://localhost:3100/account/drive/callback`, matching
-  the `kakinotes-dev` launch config.
+  available here". Locally the redirect is `http://localhost:3100/account/drive/callback`, which
+  matched the `kakinotes-dev` launch config (removed 2026-11-23; the only local server is now
+  `kakinotes-app` on 3102).
 
 **Verified.** `npm run verify` passes (1,282 tests). `npm run test:rls -- drive-connections`
 passes 4 tests against the real dev table: anon can't read, a contributor can't read or insert

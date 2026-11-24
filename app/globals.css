@@ -543,6 +543,24 @@ body {
   }
 }
 
+/* Pop-ups (native <dialog>: bottom sheets, confirm, auth, share). When one is
+   opened by tap/click, focus lands on the dialog itself (dialog-motion.ts), a
+   container that should never draw a ring. Controls inside still get the ONE
+   ring above on keyboard focus only; inside a dialog it is drawn inset so the
+   sheet's overflow clipping and rounded corners can't cut it off. */
+dialog:focus {
+  outline: none;
+}
+dialog button:focus:not(:focus-visible),
+dialog a:focus:not(:focus-visible) {
+  outline: none;
+}
+dialog button:focus-visible,
+dialog a:focus-visible {
+  outline-width: 2px;
+  outline-offset: -2px;
+}
+
 /* The journey maps' pins are focusable SVG groups that draw their own ring at
    a constant on-screen size. The ring above would be drawn in SVG user units,
    so it grows with the map's zoom into a huge square. */

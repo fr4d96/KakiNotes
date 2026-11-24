@@ -45,6 +45,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     new URL(destination, request.url),
     303,
   );
+  // A redirect that depends on the cookie must never be reused.
+  response.headers.set("Cache-Control", "no-store");
   response.cookies.set(COUNTRY_COOKIE, parsed.data, {
     path: "/",
     sameSite: "lax",

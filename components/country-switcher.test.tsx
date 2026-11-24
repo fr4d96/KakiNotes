@@ -4,6 +4,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const usePathnameMock = vi.hoisted(() => vi.fn(() => "/"));
 vi.mock("next/navigation", () => ({ usePathname: usePathnameMock }));
 
+const hardNavigateMock = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/story/country-cookie", async (orig) => ({
+  ...(await orig<typeof import("@/lib/story/country-cookie")>()),
+  hardNavigate: hardNavigateMock,
+}));
+
 import { CountrySwitcher } from "./country-switcher";
 
 afterEach(() => {
@@ -41,5 +47,17 @@ describe("CountrySwitcher", () => {
     expect(
       screen.getByRole("button", { name: "Country: China. Change country" }),
     ).toBeInTheDocument();
+  });
+
+  it("switching remembers the country and does a fresh page load of its home", () => {
+    usePathnameMock.mockReturnValue("/cn/stories/some-story");
+    render(<CountrySwitcher />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Country: China. Change country" }),
+    );
+    const sheet = screen.getByRole("dialog", { name: "Choose a country" });
+    fireEvent.click(within(sheet).getByRole("button", { name: /New Zealand/ }));
+    expect(document.cookie).toContain("kakinotes-country=new-zealand");
+    expect(hardNavigateMock).toHaveBeenCalledWith("/");
   });
 });

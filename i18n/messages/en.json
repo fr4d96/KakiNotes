@@ -484,19 +484,60 @@
   "about": {
     "metaTitle": "About",
     "title": "About Kakinotes",
-    "p1": "Kakinotes shares detailed, written first-person stories from Working Holiday Visa travellers in New Zealand, so future travellers can find accounts relevant to their own plans.",
-    "p2": "Kakinotes is an independent platform. It is not Immigration New Zealand and does not provide immigration, legal, employment, tax, or financial advice — every story is one person's personal experience.",
-    "p3": "A fuller description of the project, its founding contributors, and how stories are reviewed is coming soon."
+    "p1": "Kakinotes shares detailed, written first-person stories from real people. Our New Zealand section collects Working Holiday Visa stories; our China section collects first-person travel stories from China. Readers can find accounts relevant to their own plans, filtered by region, trip year, tags and reported cost.",
+    "p2": "Contributors write their stories on Kakinotes, or an editor helps prepare a story a contributor already wrote. Every story is reviewed by a moderator before it is published, and a later edit to a published story stays hidden until it is approved too. Photos have their location and camera metadata removed before anyone else can see them.",
+    "p3": "Kakinotes is an independent platform. It is not Immigration New Zealand or any government body and does not provide immigration, legal, employment, tax, or financial advice. Every story is one person's personal experience, not advice."
   },
   "legal": {
     "privacyTitle": "Privacy",
-    "privacyBody": "Our full privacy policy is being finalised. Kakinotes does not collect passport scans, visa or immigration documents, bank credentials, exact live locations, or medical records.",
+    "privacyBody": "This page explains what Kakinotes collects and why. It applies to both the New Zealand and China sections.",
     "termsTitle": "Terms",
-    "termsBody": "Our full terms of use are being finalised. This page is a placeholder.",
+    "termsBody": "By using Kakinotes you agree to these terms. They cover both the New Zealand and China sections.",
     "guidelinesTitle": "Community Guidelines",
-    "guidelinesBody": "Our full community guidelines are being finalised. In brief: stories must be genuine personal experiences, published with the contributor's permission and rights-cleared images.",
+    "guidelinesBody": "Kakinotes stories are genuine first-person accounts. These guidelines apply to every story in every country section.",
     "copyrightTitle": "Copyright & Removal",
-    "copyrightBody": "If you believe a published story or image infringes your rights, or you are a contributor who wants a story corrected, withdrawn, or deleted, a reporting and removal process is coming soon. This page is a placeholder."
+    "copyrightBody": "Kakinotes publishes stories and photos only with the contributor's recorded permission and confirmation of image rights. This page explains what to do if something should be corrected or removed.",
+    "lastUpdated": "Last updated: 24 November 2026",
+    "privacyS1Title": "What readers see",
+    "privacyS1Body": "You can read published stories without an account. Public pages show only approved, published stories and only the contributor details each contributor chose to make public. Draft, private, rejected and archived content is never shown publicly.",
+    "privacyS2Title": "What we collect from accounts",
+    "privacyS2Body": "If you create an account to contribute, we store your email (and a username if you set one), your sign-in details, the display name and attribution you choose, optional profile fields you decide to make public, and the stories, photos and consent records you submit. Reporting a story needs you to be signed in.",
+    "privacyS3Title": "What we never collect",
+    "privacyS3Body": "Kakinotes does not collect passport scans, visa or immigration documents, bank credentials, exact live locations, or medical records. Please do not put any of these in a story or a photo.",
+    "privacyS4Title": "Photos",
+    "privacyS4Body": "Photos are processed to remove metadata such as GPS location and camera details before they are shown publicly. Depending on the contributor's setup, photos are stored in Kakinotes' own storage or in the contributor's Google Drive, which the contributor connects and can disconnect from their account. Photos in review are visible only to their owner, the editor assigned to the story and the moderator reviewing it. Photos in Google Drive are only ever served through Kakinotes, never through a public Drive link.",
+    "privacyS5Title": "Cookies and device settings",
+    "privacyS5Body": "Kakinotes uses a sign-in session cookie for accounts and remembers your language, theme, story card size and chosen country (New Zealand or China) on your device. These only change how the site looks and where it opens.",
+    "privacyS6Title": "Your choices",
+    "privacyS6Body": "Contributors choose how they are named (full name, first name and initial, a pseudonym, or anonymous) and which profile fields are public. To have a story withdrawn or removed, see Copyright & Removal.",
+    "termsS1Title": "What Kakinotes is",
+    "termsS1Body": "Kakinotes is a public platform of first-person stories. Every story is one person's personal experience, not advice. Kakinotes does not provide immigration, legal, employment, tax, or financial advice, and is not a government body. Check official sources before you make plans.",
+    "termsS2Title": "Contributing a story",
+    "termsS2Body": "You may submit only your own genuine experience, or a story you have been given permission to publish. You confirm that you have the right to share the text and photos, and you give Kakinotes permission to publish them once approved. Stories go through editorial preparation where needed and then moderation. We may approve, reject or ask for changes, and may withdraw a published story that breaks these terms or the Community Guidelines.",
+    "termsS3Title": "Edits and ownership",
+    "termsS3Body": "You keep ownership of your story and photos. An edit to a published story is reviewed separately, and the version already published stays live until the edit is approved.",
+    "termsS4Title": "Using the site",
+    "termsS4Body": "Do not misuse the site, try to access content or accounts that are not yours, or upload content that breaks the Community Guidelines. Stories are provided as they are, and Kakinotes cannot guarantee that any account is accurate for your situation.",
+    "termsS5Title": "Removal",
+    "termsS5Body": "Contributors can withdraw their stories and anyone can report a story or image. See Copyright & Removal.",
+    "guidelinesS1Title": "Be genuine",
+    "guidelinesS1Body": "Write about what really happened to you, as you experienced it. Do not invent, exaggerate or copy someone else's story.",
+    "guidelinesS2Title": "Personal experience, not advice",
+    "guidelinesS2Body": "Describe what you did and what it cost, rather than telling readers what they must do. Do not present visa, legal, tax or employment guidance as fact for others.",
+    "guidelinesS3Title": "Permission and rights",
+    "guidelinesS3Body": "Only share text and photos you have the right to share. Get permission before you publish anything that identifies another person, and avoid showing people's faces or private details without it.",
+    "guidelinesS4Title": "Keep private things private",
+    "guidelinesS4Body": "Do not include passport or visa documents, bank details, medical records, or an exact live location. No ads, harassment, hate or illegal content.",
+    "guidelinesS5Title": "Review and reporting",
+    "guidelinesS5Body": "Every story is reviewed by a moderator before it is published, and edits are reviewed again. Signed-in readers can report a published story or image, and moderators review each report.",
+    "copyrightS1Title": "Report a story or image",
+    "copyrightS1Body": "If you believe a published story or image infringes your rights, or should not be public, use \"Report this story\" on the story page (you need to be signed in). Choose the reason and add details. A moderator reviews each report, and reported content can be taken down while it is reviewed.",
+    "copyrightS2Title": "Contributors: correct, withdraw or delete",
+    "copyrightS2Body": "You can submit a correction at any time; the published version stays live until the correction is approved. You can withdraw your own published story, which removes it from public view. Full deletion of a story and its photos is a slower request that a person reviews, because records are otherwise kept for moderation history.",
+    "copyrightS3Title": "Photos",
+    "copyrightS3Body": "Public photos are processed copies with metadata removed. If a photo of yours was published without your permission, report it using the steps above and say which story it is in.",
+    "copyrightS4Title": "Contact",
+    "copyrightS4Body": "For copyright claims or takedown requests, email <email>kakinotes811@gmail.com</email>. Say which story or photo it is about (a link helps) and why it should be removed. You can also use the report option above."
   },
   "errors": {
     "somethingWentWrong": "Something went wrong",
@@ -731,12 +772,30 @@
         "tripMonth": "Trip month"
       },
       "directions": {
-        "updated": { "asc": "Oldest first", "desc": "Newest first" },
-        "created": { "asc": "Oldest first", "desc": "Newest first" },
-        "title": { "asc": "A–Z", "desc": "Z–A" },
-        "tripDate": { "asc": "Oldest first", "desc": "Newest first" },
-        "tripYear": { "asc": "Oldest first", "desc": "Newest first" },
-        "tripMonth": { "asc": "Jan → Dec", "desc": "Dec → Jan" }
+        "updated": {
+          "asc": "Oldest first",
+          "desc": "Newest first"
+        },
+        "created": {
+          "asc": "Oldest first",
+          "desc": "Newest first"
+        },
+        "title": {
+          "asc": "A–Z",
+          "desc": "Z–A"
+        },
+        "tripDate": {
+          "asc": "Oldest first",
+          "desc": "Newest first"
+        },
+        "tripYear": {
+          "asc": "Oldest first",
+          "desc": "Newest first"
+        },
+        "tripMonth": {
+          "asc": "Jan → Dec",
+          "desc": "Dec → Jan"
+        }
       }
     },
     "sections": {

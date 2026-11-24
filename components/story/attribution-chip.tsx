@@ -39,14 +39,32 @@ export function AttributionChip({
     <span className="font-medium">{name}</span>
   );
 
+  const avatar = (
+    <ContributorAvatar
+      emoji={avatarEmoji}
+      displayName={name}
+      // An emoji avatar reads at full size; a letter initial stays small.
+      className={`h-8 w-8 ${avatarEmoji ? "text-lg" : "text-xs"}`}
+    />
+  );
+
   return (
     <div className="flex items-center gap-2 text-sm">
-      <ContributorAvatar
-        emoji={avatarEmoji}
-        displayName={name}
-        // An emoji avatar reads at full size; a letter initial stays small.
-        className={`h-8 w-8 ${avatarEmoji ? "text-lg" : "text-xs"}`}
-      />
+      {contributorSlug ? (
+        // The avatar links to the same profile as the name beside it. It is
+        // hidden from assistive tech and the tab order so the pair is one
+        // link stop, not two.
+        <Link
+          href={`${contributorBasePath}/${contributorSlug}`}
+          aria-hidden="true"
+          tabIndex={-1}
+          className="rounded-full"
+        >
+          {avatar}
+        </Link>
+      ) : (
+        avatar
+      )}
       <span>
         {nameNode}
         {destination || tripYear ? (

@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import {
   COUNTRY_FLAGS,
   COUNTRY_SLUGS,
   countryMessageSegment,
+  isCountrySlug,
   type CountrySlug,
 } from "@/lib/story/countries";
 import { useCurrentCountry } from "@/lib/story/use-current-country";
+import { hardNavigate, rememberCountry } from "@/lib/story/country-cookie";
 
 /**
  * The country switch in the top bar: the current country's flag, which
@@ -26,6 +28,23 @@ export function CountrySwitcher() {
   const [open, setOpen] = useState(false);
   const name = (slug: CountrySlug) =>
     tCountry(`${countryMessageSegment(slug)}.name`);
+
+  // Why a hard navigation: the switch used to ride the browser's own form
+  // POST -> 303 -> GET, which could leave the previous country's page on
+  // screen when that navigation was served from a cache or the old page was
+  // restored (bfcache / the 5-minute client router cache, staleTimes in
+  // next.config.ts, which can also hold "/" as a redirect to /cn). Writing
+  // the cookie first and then loading the new home as a fresh document
+  // always renders the chosen country. Without JavaScript the plain form
+  // post to /country still works.
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    const value = submitter instanceof HTMLButtonElement ? submitter.value : "";
+    if (!isCountrySlug(value)) return; // let the form post handle it
+    event.preventDefault();
+    setOpen(false);
+    hardNavigate(rememberCountry(value));
+  }
 
   return (
     <>
@@ -56,6 +75,7 @@ export function CountrySwitcher() {
         <form
           method="post"
           action="/country"
+          onSubmit={onSubmit}
           className="flex flex-col gap-1 pb-1"
         >
           {COUNTRY_SLUGS.map((slug) => {

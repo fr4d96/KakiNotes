@@ -1,6 +1,8 @@
 import {
   COUNTRY_COOKIE,
+  COUNTRY_COOKIE_MAX_AGE,
   countryFromCookieValue,
+  countryUrlPrefix,
   type CountrySlug,
 } from "@/lib/story/countries";
 
@@ -19,4 +21,20 @@ export function readRememberedCountry(): CountrySlug | null {
 /** For useSyncExternalStore: the cookie changes only across a navigation. */
 export function subscribeNoop() {
   return () => {};
+}
+
+/**
+ * Remember `country` on this device (same cookie POST /country writes) and
+ * return the home URL to open. Used by the header switcher so the cookie is
+ * in place before a hard navigation to that home -- see CountrySwitcher.
+ */
+export function rememberCountry(country: CountrySlug): string {
+  document.cookie = `${COUNTRY_COOKIE}=${country}; path=/; max-age=${COUNTRY_COOKIE_MAX_AGE}; samesite=lax`;
+  return countryUrlPrefix(country) || "/";
+}
+
+/** A full document load: drops the client router cache and every client
+ * component's state, so nothing of the previous country can stay on screen. */
+export function hardNavigate(url: string): void {
+  window.location.assign(url);
 }

@@ -80,6 +80,34 @@ function prefersReducedMotion(): boolean {
   );
 }
 
+/**
+ * Was the last input a key press? showModal() focuses the dialog's first
+ * focusable control (usually the round close button) and Safari/Chrome then
+ * treat that as keyboard focus and draw a ring around it, even though the
+ * person just tapped or clicked. Only a keyboard opening keeps that
+ * autofocus (and the :focus-visible ring on it); otherwise focus goes to the
+ * dialog itself, which has no ring (see `dialog:focus` in globals.css).
+ */
+let lastInputWasKeyboard = false;
+if (typeof window !== "undefined") {
+  window.addEventListener(
+    "keydown",
+    () => {
+      lastInputWasKeyboard = true;
+    },
+    true,
+  );
+  for (const type of ["pointerdown", "mousedown", "touchstart"]) {
+    window.addEventListener(
+      type,
+      () => {
+        lastInputWasKeyboard = false;
+      },
+      true,
+    );
+  }
+}
+
 /** Not in jsdom (no animate()), and never under reduced motion. */
 export function canAnimateDialog(el: HTMLElement): boolean {
   return typeof el.animate === "function" && !prefersReducedMotion();
@@ -148,6 +176,10 @@ export function useDialogMotion(
       dialog.style.transform = "";
       dialog.style.transition = "";
       dialog.showModal();
+      if (!lastInputWasKeyboard) {
+        dialog.tabIndex = -1;
+        dialog.focus({ preventScroll: true });
+      }
       if (canAnimateDialog(dialog)) {
         const m = motionRef.current();
         dialog.animate(m.enter(), { duration: m.enterMs, easing: m.easing });
