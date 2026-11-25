@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.7.6](https://github.com/fr4d96/KakiNotes/compare/v4.7.5...v4.7.6) (2026-11-25)
+
+
+### Performance Improvements
+
+* keep cached photos when an action changes no photo ([edd8f8e](https://github.com/fr4d96/KakiNotes/commit/edd8f8ec6b88b0e69599e99a168264a99e999b6f))
+
 ## [4.7.5](https://github.com/fr4d96/KakiNotes/compare/v4.7.4...v4.7.5) (2026-11-25)
 
 
