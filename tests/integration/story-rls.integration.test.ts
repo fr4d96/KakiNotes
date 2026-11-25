@@ -338,6 +338,30 @@ describe("the image-processing/promotion trust boundary is service_role only", (
     expect(error).not.toBeNull();
   });
 
+  // 20261125120000: these decide which objects are deleted from the public
+  // bucket. Need that migration applied to the target project.
+  it.each([
+    ["maintenance_list_abandoned_public_copies", { p_limit: 1 }],
+    [
+      "maintenance_claim_abandoned_public_copy",
+      { p_copy_attempt_id: "11111111-1111-4111-8111-111111111111" },
+    ],
+    [
+      "maintenance_record_public_copy_removed",
+      { p_copy_attempt_id: "11111111-1111-4111-8111-111111111111" },
+    ],
+    [
+      "_abandon_publication_attempt",
+      { p_attempt_id: "11111111-1111-4111-8111-111111111111" },
+    ],
+  ])(
+    "%s cannot be called by an admin over the regular client",
+    async (fn, args) => {
+      const { error } = await untypedRpc(admin.client, fn, args);
+      expect(error?.code).toBe("42501");
+    },
+  );
+
   // Raw-original retention (20261003120000_story_media_original_retention).
   // The list function returns private storage paths, and the mark function
   // would let a caller make a raw original unreprocessable -- both are
@@ -1835,6 +1859,120 @@ describe("editor is denied every moderator/publication-attempt action", () => {
   });
 });
 
+// Needs 20261125100000_resume_active_publication_attempt.sql applied to the
+// target project. Without it, every "resumes" assertion below fails with
+// "already has an active publication attempt".
+describe("begin_story_publication_attempt resumes an active attempt (migration 20261125100000)", () => {
+  async function submittedRevision(label: string) {
+    const { data: created } = await owner.client.rpc(
+      "create_self_service_draft",
+      {
+        p_title: slug(label),
+        p_content_json: [{ type: "markdown", text: "Fixture content." }],
+      },
+    );
+    const storyId = created![0].story_id;
+    const revisionId = created![0].revision_id;
+    const { data: draft } = await owner.client.rpc("get_my_story_with_draft", {
+      p_story_id: storyId,
+    });
+    const { error } = await owner.client.rpc("submit_revision_with_consent", {
+      p_revision_id: revisionId,
+      p_expected_version: draft![0].version,
+      p_confirmation_method: "account",
+      p_publication_confirmed: true,
+      p_expected_terms_version: currentTermsVersion,
+    });
+    expect(error).toBeNull();
+    return { storyId, revisionId };
+  }
+
+  const begin = (client: SupabaseClient<Database>, revisionId: string) =>
+    client.rpc("begin_story_publication_attempt", {
+      p_revision_id: revisionId,
+    });
+
+  const finalize = (
+    client: SupabaseClient<Database>,
+    revisionId: string,
+    attemptId: string,
+  ) =>
+    client.rpc("finalize_story_publication", {
+      p_revision_id: revisionId,
+      p_approval_attempt_id: attemptId,
+    });
+
+  it("gives the moderator who started it the same id back, and that id finalizes", async () => {
+    const { revisionId } = await submittedRevision("resume-own");
+    const first = await begin(moderator.client, revisionId);
+    expect(first.error).toBeNull();
+    const second = await begin(moderator.client, revisionId);
+    expect(second.error).toBeNull();
+    expect(second.data).toBe(first.data);
+
+    const { error } = await finalize(
+      moderator.client,
+      revisionId,
+      second.data!,
+    );
+    expect(error).toBeNull();
+
+    // Published: no longer submitted, so there is nothing left to resume.
+    const after = await begin(moderator.client, revisionId);
+    expect(after.error?.message).toContain("is not currently submitted");
+  });
+
+  it("lets an admin resume and finalize an attempt a moderator started", async () => {
+    const { revisionId } = await submittedRevision("resume-admin");
+    const first = await begin(moderator.client, revisionId);
+    expect(first.error).toBeNull();
+    const resumed = await begin(admin.client, revisionId);
+    expect(resumed.error).toBeNull();
+    expect(resumed.data).toBe(first.data);
+
+    const { error } = await finalize(admin.client, revisionId, resumed.data!);
+    expect(error).toBeNull();
+  });
+
+  it("refuses a moderator who did not start it, and everyone without the role", async () => {
+    const { revisionId } = await submittedRevision("resume-denied");
+    const started = await begin(admin.client, revisionId);
+    expect(started.error).toBeNull();
+
+    const second = await begin(moderator.client, revisionId);
+    expect(second.data).toBeNull();
+    expect(second.error?.message).toContain(
+      "already has an active publication attempt",
+    );
+    for (const client of [owner.client, editor.client]) {
+      const denied = await begin(client, revisionId);
+      expect(denied.data).toBeNull();
+      expect(denied.error?.message).toContain("Only a moderator or admin");
+    }
+    const anonymous = await begin(anon, revisionId);
+    expect(anonymous.error?.code).toBe("42501");
+
+    // Leave nothing in the live queue behind.
+    const { error } = await finalize(admin.client, revisionId, started.data!);
+    expect(error).toBeNull();
+  });
+
+  it("refuses to resume once the contributor has withdrawn the revision", async () => {
+    const { storyId, revisionId } = await submittedRevision("resume-withdrawn");
+    const started = await begin(moderator.client, revisionId);
+    expect(started.error).toBeNull();
+    const { error: withdrawError } = await owner.client.rpc(
+      "withdraw_unstarted_submission",
+      { p_story_id: storyId },
+    );
+    expect(withdrawError).toBeNull();
+
+    const resumed = await begin(moderator.client, revisionId);
+    expect(resumed.data).toBeNull();
+    expect(resumed.error?.message).toContain("is not currently submitted");
+  });
+});
+
 describe("archive requires a reason (migration 20260805100500)", () => {
   it("rejects a null/empty reason and succeeds with one, recording an audit row", async () => {
     const story = await publishOwnerStory({ title: slug("archive-reason") });
@@ -2776,6 +2914,86 @@ describe("get_story_for_moderator never returns contributor identity fields (mig
     expect(error).toBeNull();
     expect(data?.[0]?.revision_id).toBe(story.revisionId);
   }, 30000);
+});
+
+// Needs 20261125130000_revise_rejected_first_story.sql applied to the target
+// project. Before it, the copy was refused for any story with a child row:
+// the lifecycle was still rejected/changes_requested when it ran.
+describe("create_next_draft_revision after a moderator's decision on a first publication (20261125130000)", () => {
+  it.each(["reject", "changes_requested"] as const)(
+    "the contributor can revise and resubmit after %s, keeping their tags",
+    async (decision) => {
+      const { data: created } = await owner.client.rpc(
+        "create_self_service_draft",
+        {
+          p_title: slug(`revise-${decision}`),
+          p_content_json: [{ type: "markdown", text: "Fixture content." }],
+        },
+      );
+      const storyId = created![0].story_id;
+      const revisionId = created![0].revision_id;
+      const version = async () => {
+        const { data } = await owner.client.rpc("get_my_story_with_draft", {
+          p_story_id: storyId,
+        });
+        return data![0].version;
+      };
+      const submit = async (id: string) =>
+        owner.client.rpc("submit_revision_with_consent", {
+          p_revision_id: id,
+          p_expected_version: await version(),
+          p_confirmation_method: "account",
+          p_publication_confirmed: true,
+          p_expected_terms_version: currentTermsVersion,
+        });
+
+      const { error: tagError } = await owner.client.rpc("set_revision_tags", {
+        p_revision_id: revisionId,
+        p_expected_version: await version(),
+        p_tags: [{ custom_label: "Ferry to Picton" }],
+      });
+      expect(tagError).toBeNull();
+      expect((await submit(revisionId)).error).toBeNull();
+      const { error: decisionError } = await moderator.client.rpc(
+        "moderate_revision",
+        {
+          p_revision_id: revisionId,
+          p_expected_version: await version(),
+          p_decision: decision,
+          p_user_facing_reason: "Fixture reason.",
+        },
+      );
+      expect(decisionError).toBeNull();
+
+      // Still only the contributor's to revise.
+      const denied = await other.client.rpc("create_next_draft_revision", {
+        p_story_id: storyId,
+      });
+      expect(denied.error?.message).toContain("Only the story owner");
+
+      const { data: nextId, error: nextError } = await owner.client.rpc(
+        "create_next_draft_revision",
+        { p_story_id: storyId },
+      );
+      expect(nextError).toBeNull();
+
+      const { data: selections, error: selectionsError } =
+        await owner.client.rpc("get_revision_selections", {
+          p_revision_id: nextId!,
+        });
+      expect(selectionsError).toBeNull();
+      expect(JSON.stringify(selections)).toContain("Ferry to Picton");
+
+      expect((await submit(nextId!)).error).toBeNull();
+      // Leave nothing in the live queue behind.
+      const { error: withdrawError } = await owner.client.rpc(
+        "withdraw_unstarted_submission",
+        { p_story_id: storyId },
+      );
+      expect(withdrawError).toBeNull();
+    },
+    30000,
+  );
 });
 
 describe("create_next_draft_revision: contributor-authored labels", () => {

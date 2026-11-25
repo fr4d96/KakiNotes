@@ -204,4 +204,105 @@ describe("runApproveOrchestration", () => {
     expect(result.ok).toBe(true);
     expect(copyMedia).not.toHaveBeenCalled();
   });
+
+  // begin_story_publication_attempt() returns the existing active attempt to
+  // the moderator who started it, or to an admin
+  // (20261125100000_resume_active_publication_attempt.sql). These model the
+  // whole retry: what the approve button does after a failure.
+  describe("retrying after a failure", () => {
+    it("resumes the same attempt after a copy failure and publishes", async () => {
+      const beginAttempt = vi.fn().mockResolvedValue("attempt-7");
+      const copyMedia = vi
+        .fn()
+        .mockResolvedValueOnce(undefined) // first try, m-1
+        .mockRejectedValueOnce(new Error("byte verification failed")) // m-2
+        .mockResolvedValue(undefined); // the retry
+      const finalize = vi.fn().mockResolvedValue(undefined);
+      const deps = { beginAttempt, copyMedia, finalize };
+
+      const first = await runApproveOrchestration(
+        {
+          revisionId: "rev-1",
+          media: [
+            media({ mediaId: "m-1" }),
+            media({ mediaId: "m-2" }),
+            media({ mediaId: "m-3" }),
+          ],
+        },
+        deps,
+      );
+      expect(first).toMatchObject({ ok: false, stage: "copy_media" });
+
+      // The retry re-reads media: m-1 and m-2 were flipped by the first try,
+      // m-3 was never reached.
+      const second = await runApproveOrchestration(
+        {
+          revisionId: "rev-1",
+          media: [
+            media({ mediaId: "m-1", processingState: "promotion_pending" }),
+            media({ mediaId: "m-2", processingState: "promotion_pending" }),
+            media({ mediaId: "m-3" }),
+          ],
+        },
+        deps,
+      );
+
+      expect(second).toEqual({ ok: true, approvalAttemptId: "attempt-7" });
+      expect(copyMedia.mock.calls.slice(2)).toEqual([
+        ["m-1", "attempt-7"],
+        ["m-2", "attempt-7"],
+        ["m-3", "attempt-7"],
+      ]);
+      expect(finalize).toHaveBeenCalledTimes(1);
+      expect(finalize).toHaveBeenCalledWith(
+        expect.objectContaining({ approvalAttemptId: "attempt-7" }),
+      );
+    });
+
+    it("resumes the same attempt after a finalize failure and publishes", async () => {
+      const beginAttempt = vi.fn().mockResolvedValue("attempt-8");
+      const copyMedia = vi.fn().mockResolvedValue(undefined);
+      const finalize = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("no currently-valid consent grant"))
+        .mockResolvedValueOnce(undefined);
+      const deps = { beginAttempt, copyMedia, finalize };
+      const params = { revisionId: "rev-1", media: [] };
+
+      expect(await runApproveOrchestration(params, deps)).toMatchObject({
+        ok: false,
+        stage: "finalize",
+        approvalAttemptId: "attempt-8",
+      });
+      expect(await runApproveOrchestration(params, deps)).toEqual({
+        ok: true,
+        approvalAttemptId: "attempt-8",
+      });
+    });
+
+    it("uses whichever id begin returns, so a replaced attempt works too", async () => {
+      // After the cleanup script resolved the old attempt's copies, begin
+      // abandons it and returns a new id instead of the old one.
+      const beginAttempt = vi
+        .fn()
+        .mockResolvedValueOnce("attempt-old")
+        .mockResolvedValueOnce("attempt-new");
+      const copyMedia = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("storage down"))
+        .mockResolvedValue(undefined);
+      const finalize = vi.fn().mockResolvedValue(undefined);
+      const deps = { beginAttempt, copyMedia, finalize };
+      const params = {
+        revisionId: "rev-1",
+        media: [media({ mediaId: "m-1" })],
+      };
+
+      await runApproveOrchestration(params, deps);
+      const second = await runApproveOrchestration(params, deps);
+
+      expect(second).toEqual({ ok: true, approvalAttemptId: "attempt-new" });
+      expect(copyMedia).toHaveBeenLastCalledWith("m-1", "attempt-new");
+    });
+  });
 });

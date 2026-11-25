@@ -1068,6 +1068,8 @@ export type Database = {
           error_code: string | null;
           id: string;
           media_id: string;
+          public_object_claimed_at: string | null;
+          public_object_removed_at: string | null;
           public_path: string;
           resolution: string | null;
           resolved_at: string | null;
@@ -1083,6 +1085,8 @@ export type Database = {
           error_code?: string | null;
           id?: string;
           media_id: string;
+          public_object_claimed_at?: string | null;
+          public_object_removed_at?: string | null;
           public_path: string;
           resolution?: string | null;
           resolved_at?: string | null;
@@ -1098,6 +1102,8 @@ export type Database = {
           error_code?: string | null;
           id?: string;
           media_id?: string;
+          public_object_claimed_at?: string | null;
+          public_object_removed_at?: string | null;
           public_path?: string;
           resolution?: string | null;
           resolved_at?: string | null;
@@ -1878,6 +1884,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      _abandon_publication_attempt: {
+        Args: { p_attempt_id: string };
+        Returns: undefined;
+      };
       _apply_consent_withdrawal: {
         Args: { p_actor: string; p_story_id: string };
         Returns: undefined;
@@ -1945,6 +1955,12 @@ export type Database = {
       _notification_recipient_for_story: {
         Args: { p_story_id: string };
         Returns: string;
+      };
+      _public_copy_is_removable: {
+        Args: {
+          p_copy: Database["public"]["Tables"]["story_media_public_copy_attempts"]["Row"];
+        };
+        Returns: boolean;
       };
       _require_processed_media: {
         Args: { p_revision_id: string };
@@ -3046,6 +3062,22 @@ export type Database = {
       };
       maintenance_cancel_abandoned_reservation: {
         Args: { p_media_id: string };
+        Returns: undefined;
+      };
+      maintenance_claim_abandoned_public_copy: {
+        Args: { p_copy_attempt_id: string };
+        Returns: string;
+      };
+      maintenance_list_abandoned_public_copies: {
+        Args: { p_limit: number };
+        Returns: {
+          copy_attempt_id: string;
+          media_id: string;
+          public_path: string;
+        }[];
+      };
+      maintenance_record_public_copy_removed: {
+        Args: { p_copy_attempt_id: string };
         Returns: undefined;
       };
       maintenance_resolve_orphaned_copy_attempt: {

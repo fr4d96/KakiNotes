@@ -8,6 +8,7 @@
 // since image-pipeline.ts's whole purpose is to be the one server-only
 // module holding the admin client.
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { createHash } from "node:crypto";
 import sharp from "sharp";
 
 vi.mock("server-only", () => ({}));
@@ -23,6 +24,8 @@ let mediaRow: {
   private_storage_path: string;
   processing_state: string;
   original_deleted_at?: string | null;
+  processed_private_storage_path?: string;
+  processed_mime_type?: string;
 } | null = null;
 
 // Raw-original retention: what processStoryMedia removed, and switches to
@@ -30,6 +33,7 @@ let mediaRow: {
 const removedPaths: string[] = [];
 let removeError: { message: string } | null = null;
 const rpcErrors: Record<string, string> = {};
+const rpcData: Record<string, unknown> = {};
 
 function key(bucket: string, path: string) {
   return `${bucket}/${path}`;
@@ -48,8 +52,7 @@ const fakeAdmin = {
   }),
   // download()/upload() live on the raw-storage-http mock below now, not
   // here -- these two are the ones still called through the admin client
-  // directly (by copyStoryMediaToPublic/mintMediaPreviewSignedUrl, neither
-  // exercised by this file's tests, kept for shape-completeness).
+  // directly (by copyStoryMediaToPublic/mintMediaPreviewSignedUrl).
   storage: {
     from: (bucket: string) => ({
       remove: async (paths: string[]) => {
@@ -60,7 +63,11 @@ const fakeAdmin = {
         }
         return { data: [], error: null };
       },
-      list: async () => ({ data: [] }),
+      list: async (prefix: string) => ({
+        data: [...objects.keys()]
+          .filter((stored) => stored.startsWith(`${key(bucket, prefix)}/`))
+          .map((stored) => ({ name: stored.split("/").at(-1)! })),
+      }),
       createSignedUrl: async () => ({
         data: { signedUrl: "https://example.com/signed" },
         error: null,
@@ -70,7 +77,10 @@ const fakeAdmin = {
   rpc: vi.fn(async (name: string, args: Record<string, unknown>) => {
     rpcCalls.push({ name, args });
     const message = rpcErrors[name];
-    return { data: null, error: message ? { message } : null };
+    return {
+      data: message ? null : (rpcData[name] ?? null),
+      error: message ? { message } : null,
+    };
   }),
 };
 
@@ -137,7 +147,8 @@ vi.mock("@/lib/story/raw-storage-http", () => ({
   },
 }));
 
-const { processStoryMedia } = await import("./image-pipeline");
+const { copyStoryMediaToPublic, processStoryMedia } =
+  await import("./image-pipeline");
 const { encodeJpegUnderBudget } = await import("./jpeg-budget");
 
 beforeEach(() => {
@@ -151,6 +162,7 @@ beforeEach(() => {
   removedPaths.length = 0;
   removeError = null;
   for (const name of Object.keys(rpcErrors)) delete rpcErrors[name];
+  for (const name of Object.keys(rpcData)) delete rpcData[name];
 });
 
 async function jpegWithExif(): Promise<Buffer> {
@@ -462,6 +474,74 @@ describe("processStoryMedia raw-original retention", () => {
     expect(failed!.args.p_failure_reason).toMatch(/upload the photo again/);
     expect(callNames()).not.toContain("record_processed_story_media");
     expect(removedPaths).toEqual([]);
+  });
+});
+
+// A retried approval resumes the same publication attempt
+// (20261125100000_resume_active_publication_attempt.sql), so this runs again
+// for photos the first try already copied, or failed on.
+describe("copyStoryMediaToPublic on a resumed attempt", () => {
+  const bytes = Buffer.from([0xff, 0xd8, 0x80, 0x01]);
+  const hash = createHash("sha256").update(bytes).digest("hex");
+  const publicPath = `story-1/media-1/${hash}.jpg`;
+  const publicKey = key("story-images-public", publicPath);
+  const privateKey = key("story-images-private", "story-1/media-1/p.jpg");
+  const args = { p_media_id: "media-1", p_approval_attempt_id: "attempt-1" };
+
+  beforeEach(() => {
+    mediaRow = {
+      story_id: "story-1",
+      private_storage_path: "story-1/media-1/original.jpg",
+      processing_state: "promotion_pending",
+      processed_private_storage_path: "story-1/media-1/p.jpg",
+      processed_mime_type: "image/jpeg",
+    };
+    objects.set(privateKey, bytes);
+    rpcData.begin_story_media_copy_attempt = [
+      { public_path: publicPath, content_hash: hash },
+    ];
+  });
+
+  it("re-checks a photo that was already copied, without uploading it again", async () => {
+    objects.set(publicKey, bytes);
+
+    await copyStoryMediaToPublic("media-1", "attempt-1");
+
+    expect(uploadedPaths).toEqual([]);
+    expect(rpcCalls).toEqual([
+      { name: "begin_story_media_copy_attempt", args },
+      { name: "record_story_media_copy_verified", args },
+    ]);
+  });
+
+  it("copies a photo whose first try never reached the public bucket", async () => {
+    await copyStoryMediaToPublic("media-1", "attempt-1");
+
+    expect(objects.get(publicKey)).toEqual(bytes);
+    expect(rpcCalls.at(-1)).toEqual({
+      name: "record_story_media_copy_verified",
+      args,
+    });
+  });
+
+  it("overwrites a corrupt copy left by the first try", async () => {
+    objects.set(publicKey, Buffer.from("corrupt"));
+
+    await copyStoryMediaToPublic("media-1", "attempt-1");
+
+    expect(objects.get(publicKey)).toEqual(bytes);
+  });
+
+  it("never touches storage when the attempt is no longer active", async () => {
+    rpcErrors.begin_story_media_copy_attempt =
+      "Publication attempt attempt-1 is not active (status abandoned)";
+
+    await expect(
+      copyStoryMediaToPublic("media-1", "attempt-1"),
+    ).rejects.toThrow("is not active");
+
+    expect(uploadedPaths).toEqual([]);
+    expect(rpcCalls).toHaveLength(1);
   });
 });
 

@@ -12350,3 +12350,86 @@ action reported a failure. So the browser never learned version 31 and sent 30 f
   Supabase path's retry: recording overwrites nothing.
 - Diagnosed with the Supabase connector, re-authorized on 2026-11-23 to the organization that
   owns `yzaonhjieupxyrmbienf` (it had only the old org's paused project).
+
+## 2026-11-25 — A failed approval can be retried
+
+**Problem.** Approving is begin → copy photos → finalize. When copy or finalize failed, the moderator
+was told to retry, but `begin_story_publication_attempt()` raised "already has an active publication
+attempt" for that revision, so the story could only be rejected or sent back. Reproduced on a
+throwaway local Postgres 18 with all 160 migrations applied.
+
+**Fix (applied to the live project 2026-11-25 via `supabase db push`).** `20261125100000_resume_active_publication_attempt.sql`: `begin`
+returns the existing active attempt to the moderator who started it or to an admin. The role check,
+`submitted` check, one-active index and grants are unchanged. An attempt whose copy rows the cleanup
+script already resolved can never finalize (resolution is immutable), so it is abandoned and
+replaced. Resuming refreshes `updated_at` on the copy rows, and
+`scripts/cleanup-abandoned-media-uploads.mjs` now goes by `updated_at`, so it does not delete photos
+from an approval in progress. No signature change, so `types/database.ts` is unchanged.
+
+**Verified.** On the local database: same moderator, admin resuming a moderator's attempt after a
+partial copy, refusals (other moderator, editor, owner, no user), withdrawn and published revisions,
+reject after resume, replace after cleanup, six simultaneous begins, and begin racing finalize (no
+deadlocks). Unit tests cover the orchestration retry and `copyStoryMediaToPublic` on a resumed
+attempt. The new `story-rls.integration.test.ts` block has NOT been run: it writes
+fixtures to the linked project, which is production.
+
+**To do.** Run `npm run test:rls`.
+
+## 2026-11-25 — Photos are released when a story leaves review
+
+**Problem.** (1) Withdrawing, reopening for editing, archiving, or withdrawing consent left the
+active attempt and its `promotion_pending` photos behind, so the next revision could never be
+published. Reproduced for all four on a local Postgres. (2) A photo copied to the public bucket
+before a rejection stayed there: the cleanup script only looked at unresolved copy rows.
+
+**Fix (both applied to the live project 2026-11-25 via `supabase db push`).** `20261125110000_abandon_attempt_when_review_ends.sql`: a trigger
+abandons the attempt and releases its photos, and the migration repairs rows already stranded.
+`20261125120000_remove_abandoned_public_copies.sql`: list, claim and record functions
+(service_role only), two columns on `story_media_public_copy_attempts`, and a guard in
+`begin_story_media_copy_attempt()` while a claim is open. The cleanup script resolves before it
+deletes (it used to delete first) and deletes only a claimed path, so a stale copy takes two runs at
+least an hour apart.
+
+**Verified.** Local Postgres: every route before and after, repair of stranded rows then republish,
+cleanup rules (in progress, fresh, newer attempt, published, moved to Drive, expired claim, two
+attempts on one path), function grants, and withdraw racing finalize. Withdraw and finalize can
+deadlock, as they could before (8 of 20 forced races on old code, 10 of 20 on new); Postgres aborts
+one, and the result is now always consistent. `scripts/cleanup-abandoned-media-uploads.test.ts` runs
+the script against a fake server. The new RLS tests have NOT been run.
+
+**Live check after applying.** All function bodies, grants, the trigger and the columns match the
+files; row counts by state were unchanged (nothing was stranded, so the repair changed no rows), and
+no abandoned public copies exist.
+
+**To do.** Run `npm run test:rls`, and dry-run `npm run media:cleanup:pending` with the new script.
+
+**Known gap, not fixed here.** Nothing schedules the cleanup script.
+
+## 2026-11-25 — A rejected or sent-back first story can be revised
+
+**Problem.** After a moderator rejected or sent back a never-published story, the contributor's
+"Edit" failed for any story with a place, tag, work type, photo or expense.
+`create_next_draft_revision()` set the story back to `draft` only after copying those rows, and
+`_protect_revision_child_immutability()` refuses them while the lifecycle is `rejected` or
+`changes_requested`. Published and withdrawn stories were not affected.
+
+**Fix (applied to the live project 2026-11-25 via `supabase db push`).** `20261125130000_revise_rejected_first_story.sql` moves the lifecycle
+update above the copies; the rest of the function is unchanged. `_revision_is_editable()`, the
+trigger, ownership checks and grants are untouched.
+
+**Verified.** Local Postgres, before and after, for both decisions: every child type is copied, other
+users are refused, resubmitting publishes, and published, withdrawn and archived stories behave as
+before. The new RLS test has NOT been run.
+
+**To do.** Run `npm run test:rls`.
+
+## 2026-11-25 — RLS suite not run: its settings point at the old project
+
+`.env.test.local` still targets `ybhydepjaantkngngvuf`, the project used before 2026-11-13, so
+`npm run test:rls` does not test the live database and would not see the migrations above. Its
+`posttest:rls` cleanup, however, runs `supabase db query --linked`, which is now production
+(`yzaonhjieupxyrmbienf`). The deletes are scoped to `rls-test-%` slugs and the five test accounts, and
+production holds no such stories today, but the guard checks one project while the deletes run on
+another. Pointing the suite at production needs a confirm string stating that project is "a
+disposable dev project", which is not true, so it was not done. Until a separate test project or
+branch exists, these fixes rest on the local Postgres runs and the read-only live checks.

@@ -10,20 +10,23 @@ import type { ModeratorMediaItem } from "@/lib/story/moderation";
  * stop, not perform the calls itself.
  *
  * Partial-failure contract (this is the one place that decides it):
- *   - begin fails -> no attempt exists, nothing to clean up, return early.
+ *   - begin fails -> return early. begin returns the revision's existing
+ *     active attempt when the caller started it or is an admin
+ *     (20261125100000_resume_active_publication_attempt.sql), so this means
+ *     the caller may not act on this revision right now, not that a retry
+ *     is stuck.
  *   - ANY media copy fails -> STOP immediately, do NOT call finalize. The
- *     attempt is left in its `active` state (finalize_story_publication()'s
- *     own re-entrant design: a later retry of this whole orchestration, or
+ *     attempt is left in its `active` state (a later retry of this whole
+ *     orchestration resumes the same attempt id, or
  *     an explicit reject/changes_requested via moderate_revision(), can
  *     still resolve it cleanly -- moderate_revision() abandons an active
  *     attempt and reverts any promotion_pending media back to processed).
  *     The failure is returned with the attempt id and the specific media
  *     id that failed, never silently swallowed.
  *   - finalize fails -> also returned with the attempt id (still active,
- *     media already copied/verified) so a retry can call finalize again
- *     without re-copying anything (every already-`promoted`/verified media
- *     item is skipped on a retry, since the `toCopy` filter only re-runs
- *     against the CURRENT processingState).
+ *     media already copied/verified) so a retry resumes it. The copied
+ *     items are still `promotion_pending`, so copyMedia runs for them again,
+ *     but it only re-checks the bytes already in the public bucket.
  *   - Cache invalidation is the caller's job, only after `{ ok: true }`.
  */
 export type ApproveOrchestrationDeps = {
