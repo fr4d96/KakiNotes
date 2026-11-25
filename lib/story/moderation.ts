@@ -299,6 +299,33 @@ export async function getModerationQueue(
   return (data ?? []) as ModerationQueueRow[];
 }
 
+export type ModerationQueueCard = {
+  revision_id: string;
+  country_slug: string | null;
+  currency: string | null;
+  cover_media_id: string | null;
+};
+
+/**
+ * supabase/migrations/20261125090000_moderation_queue_cards.sql -- country
+ * and cover photo (a media id, never a path) for the given queue rows.
+ *
+ * Returns null when the cards can't be read: they only decorate rows the
+ * caller already has, so the queue must work without them.
+ */
+export async function getModerationQueueCards(
+  revisionIds: string[],
+): Promise<Map<string, ModerationQueueCard> | null> {
+  if (revisionIds.length === 0) return new Map();
+  await requireUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_moderation_queue_cards", {
+    p_revision_ids: [...new Set(revisionIds)],
+  });
+  if (error) return null;
+  return new Map((data ?? []).map((row) => [row.revision_id, row]));
+}
+
 /**
  * Only reject/changes_requested remain -- moderate_revision('approve') has
  * raised since Prompt 4 Sub-phase 2 (supabase/migrations/20260804090400_finalize_story_publication.sql),

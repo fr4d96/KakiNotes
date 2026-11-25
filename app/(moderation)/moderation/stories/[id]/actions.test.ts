@@ -51,6 +51,7 @@ const mockInvalidateStoryListingsPublicCache = vi.fn();
 vi.mock("@/lib/story/public-cache", () => ({
   invalidateStoryPublicCache: (...args: unknown[]) =>
     mockInvalidateStoryPublicCache(...args),
+  invalidateStoryPagesOnly: vi.fn(),
   invalidateStoryListingsPublicCache: (...args: unknown[]) =>
     mockInvalidateStoryListingsPublicCache(...args),
 }));

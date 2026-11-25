@@ -237,7 +237,7 @@ test.describe("reports triage workspace (real UI, real hosted project)", () => {
     // why instead of re-showing a status selector.
     await page.reload();
     await expect(
-      page.getByText(/already resolved and cannot be reopened/),
+      page.getByText(/already resolved\. A closed report can.t be reopened/),
     ).toBeVisible();
   });
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BULK_APPROVE_CHUNK } from "@/lib/story/bulk-approve-chunk";
 
 // Staff moderation/editorial-queue search-parameter validation. Mirrors
 // lib/validation/discovery.ts's "every field parses independently, a bad
@@ -199,6 +200,17 @@ export const approveStorySchema = z.object({
 });
 
 export type ApproveStoryInput = z.infer<typeof approveStorySchema>;
+
+/**
+ * One bulk-approve request: revision ids only. Everything else (the story,
+ * its photos, its slug) is re-read server-side. Duplicates are dropped so a
+ * repeated id can't be reported as a failure of its own success.
+ */
+export const bulkApproveSchema = z
+  .array(z.uuid())
+  .min(1, "Choose at least one story.")
+  .max(BULK_APPROVE_CHUNK, "Too many stories in one request.")
+  .transform((ids) => [...new Set(ids)]);
 
 export const archiveStorySchema = z.object({
   storyId: z.uuid(),

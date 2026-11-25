@@ -2953,6 +2953,14 @@ passes after it — the full 37-spec Playwright suite was re-run afterward with 
 
 ### No bulk publication
 
+> **Reversed for the moderation queue on 2026-11-25 (owner decision).** A moderator can select
+> several stories and publish them at once. The client sends revision ids in requests of 4; the
+> Server Action (`app/(moderation)/moderation/stories/actions.ts`) publishes them one at a time
+> through `lib/story/approve-revision.ts` — the same function the single Approve button uses — after
+> `lib/story/bulk-approve.ts` has checked each one. There is still no bulk RPC: every story keeps its
+> own consent check, publication attempt and moderation record. `no-bulk-publication.test.ts` now
+> pins that boundary. The paragraph below is the original rule, kept for history.
+
 Per the brief's own explicit constraint, no bulk-publish/bulk-approve/bulk-moderate function or UI
 was built — every story is still reviewed individually. `lib/story/no-bulk-publication.test.ts` is
 a structural regression test (not a UI assertion): it fails the moment any bulk-shaped

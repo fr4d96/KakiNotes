@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUserRole } from "@/lib/auth/roles";
+import { isReviewOnly } from "@/lib/auth/staff-menu";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { YouView } from "@/app/(contributor)/account/you-view";
 import type { DriveResultStatus } from "@/app/(contributor)/account/drive-tab";
@@ -100,9 +102,11 @@ export default async function AccountPage({
       : null;
 
   const locale = await getLocale();
+  const reviewOnly = isReviewOnly(await getCurrentUserRole());
 
   return (
     <YouView
+      reviewOnly={reviewOnly}
       locale={isLocale(locale) ? locale : "en"}
       accountName={profile?.display_name ?? ""}
       username={usernameRow?.username ?? ""}

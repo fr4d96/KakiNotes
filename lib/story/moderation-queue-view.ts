@@ -244,3 +244,51 @@ export function mediaDescription(item: {
     ? { kind: "no-description", text: "No alt text — marked decorative" }
     : { kind: "missing-alt-text", text: "No alt text or caption" };
 }
+
+/**
+ * Staff screens are English-only, so this is a plain label map rather than
+ * the reader-facing message files. Unknown slugs show as themselves.
+ */
+export const COUNTRY_LABELS: Record<string, string> = {
+  "new-zealand": "New Zealand",
+  china: "China",
+};
+
+/** What the review screen calls a revision's state. */
+export const REVISION_STATUS_LABELS: Record<string, string> = {
+  draft: "Draft",
+  submitted: "Waiting on a decision",
+  approved: "Published",
+  changes_requested: "Changes requested",
+  rejected: "Rejected",
+  withdrawn: "Withdrawn",
+  superseded: "Replaced by a newer version",
+};
+
+/**
+ * The one-line warnings a bulk approval should show before it happens. Only
+ * the two things a moderator cannot take back quietly: overwriting a live
+ * story, and publishing one readers have reported.
+ */
+export function bulkApproveCautions(
+  rows: { is_replacement: boolean; open_report_count: number }[],
+): string[] {
+  const replacing = rows.filter((row) => row.is_replacement).length;
+  const reported = rows.filter((row) => row.open_report_count > 0).length;
+  const cautions: string[] = [];
+  if (replacing > 0) {
+    cautions.push(
+      replacing === 1
+        ? "1 replaces a story that is live now."
+        : `${replacing} replace stories that are live now.`,
+    );
+  }
+  if (reported > 0) {
+    cautions.push(
+      reported === 1
+        ? "1 has an open reader report."
+        : `${reported} have open reader reports.`,
+    );
+  }
+  return cautions;
+}

@@ -48,7 +48,7 @@ export function SectionHeading({
   return (
     <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
       <div>
-        <h2 className="text-base font-extrabold tracking-[-.02em]">{title}</h2>
+        <h2 className="text-lg font-extrabold tracking-[-0.025em]">{title}</h2>
         {description ? (
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         ) : null}
@@ -74,7 +74,7 @@ export function Panel({
 }) {
   return (
     <section
-      className={`rounded-xl border border-border-subtle bg-surface p-4 sm:p-5 ${className}`}
+      className={`rounded-[20px] bg-surface p-4 shadow-sm sm:p-5 ${className}`}
     >
       {children}
     </section>
@@ -103,9 +103,7 @@ export function StatTile({
 
   const body = (
     <>
-      <span className="font-mono text-[0.6875rem] tracking-[0.18em] text-muted-foreground uppercase">
-        {label}
-      </span>
+      <span className="text-sm font-bold text-muted-foreground">{label}</span>
       <span
         className={`mt-2 block text-3xl leading-none font-extrabold tracking-[-.03em] sm:text-4xl ${valueTone}`}
       >
@@ -117,13 +115,12 @@ export function StatTile({
     </>
   );
 
-  const shell =
-    "block rounded-xl border border-border-subtle bg-surface p-4 transition-transform";
+  const shell = "block rounded-[20px] bg-surface p-4 shadow-sm";
 
   return href ? (
     <Link
       href={href}
-      className={`${shell} hover:-translate-y-0.5 hover:shadow-md`}
+      className={`press ${shell} transition-shadow hover:shadow-md`}
     >
       {body}
     </Link>

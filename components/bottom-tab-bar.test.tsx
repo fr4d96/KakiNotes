@@ -636,3 +636,41 @@ describe("BottomTabBar", () => {
     );
   });
 });
+
+describe("a moderator's bar", () => {
+  it.each(["/", "/stories", "/account"])(
+    "is the moderation one on %s, with nothing to write with",
+    (path) => {
+      usePathnameMock.mockReturnValue(path);
+      sessionMock.current = { user: { id: "u1" } };
+      seedViewerIdentity({ avatarEmoji: null, role: "moderator" });
+      render(<BottomTabBar />);
+      expect(screen.getAllByRole("link").map((l) => l.textContent)).toEqual([
+        "Overview",
+        "Stories",
+        "Reports",
+        "Takedowns",
+        "Profile",
+      ]);
+      expect(screen.getByRole("link", { name: "Stories" })).toHaveAttribute(
+        "href",
+        "/moderation/stories",
+      );
+    },
+  );
+
+  it("is not drawn twice on the moderation screens", () => {
+    usePathnameMock.mockReturnValue("/moderation/stories");
+    seedViewerIdentity({ avatarEmoji: null, role: "moderator" });
+    const { container } = render(<BottomTabBar />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("leaves an admin's own bar alone", () => {
+    seedViewerIdentity({ avatarEmoji: null, role: "admin" });
+    render(<BottomTabBar />);
+    expect(
+      screen.getByRole("link", { name: "My Stories" }),
+    ).toBeInTheDocument();
+  });
+});

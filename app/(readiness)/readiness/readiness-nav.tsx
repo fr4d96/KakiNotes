@@ -1,14 +1,17 @@
 import { StaffNav } from "@/components/staff-nav";
+import { isReviewOnly } from "@/lib/auth/staff-menu";
+import { MODERATION_LINKS } from "@/lib/navigation/moderation-links";
+import type { StaffNavLink } from "@/components/staff-nav-links";
 import {
   getCurrentUserAvatarEmoji,
   getCurrentUserTabName,
   getCurrentUserRole,
 } from "@/lib/auth/roles";
 
-const readinessNav = [
-  { href: "/readiness", label: "Dashboard" },
-  { href: "/editorial", label: "Editorial" },
-  { href: "/moderation", label: "Moderation" },
+const readinessNav: StaffNavLink[] = [
+  { href: "/readiness", label: "Dashboard", icon: "readiness" },
+  { href: "/editorial", label: "Editorial", icon: "editorial" },
+  { href: "/moderation", label: "Moderation", icon: "stories" },
 ];
 
 /**
@@ -18,10 +21,9 @@ const readinessNav = [
  * header markup itself (profile icon included) is
  * components/staff-nav.tsx, shared across the staff dashboards.
  *
- * Note this nav links to BOTH /editorial and /moderation, which a plain
- * editor or moderator is not allowed on -- unchanged from before, and
- * harmless: proxy.ts and each layout re-check the role, so the wrong role
- * gets the same flat 404 as anyone else.
+ * Each role gets only links it can open: a moderator has their own
+ * moderation sections (the same tab bar as everywhere else in their app), an
+ * editor has no Moderation and an admin has both.
  */
 export async function ReadinessNav() {
   const [avatarEmoji, role, name] = await Promise.all([
@@ -32,9 +34,15 @@ export async function ReadinessNav() {
 
   return (
     <StaffNav
-      title="Kakinotes — Content Readiness"
       label="Readiness"
-      links={readinessNav}
+      links={
+        isReviewOnly(role)
+          ? MODERATION_LINKS
+          : readinessNav.filter(
+              (link) => role === "admin" || link.href !== "/moderation",
+            )
+      }
+      profileTab={isReviewOnly(role)}
       avatarEmoji={avatarEmoji}
       name={name}
       role={role}

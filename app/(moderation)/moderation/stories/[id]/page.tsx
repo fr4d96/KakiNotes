@@ -1,35 +1,17 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  getModerationQueue,
+  getModerationQueueCards,
   getStoryForModerator,
   getPublishedRevisionSnapshot,
   getStoryModerationHistory,
   getStoryEditorialHistory,
   listReportsForStaff,
-  parseModeratorMedia,
-  type ModeratorMediaItem,
 } from "@/lib/story/moderation";
-import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
 import { getPublishedStoryMedia } from "@/lib/story/public-queries";
-import { getImageUrl } from "@/lib/story/image-url";
-import { imageBlockMediaIds, storyContentText } from "@/lib/validation/story";
-import {
-  ContentBlockRenderer,
-  type ContentBlockMediaMap,
-} from "@/components/story/content-block-renderer";
-import { PreviewContentBody } from "@/components/story/preview-content-body";
-import { PreviewGallery } from "@/components/story/preview-gallery";
-import {
-  SOURCE_KIND_LABELS,
-  CONSENT_METHOD_LABELS,
-  labelFor,
-  relativeTime,
-  absoluteTime,
-  mediaDescription,
-} from "@/lib/story/moderation-queue-view";
-import { AlertCircleIcon, CheckCircleIcon } from "@/components/icons";
-import { ReviewControls } from "./review-controls";
+import { getStoryCountry } from "@/lib/story/contributor-queries";
+import { ReviewView } from "./review-view";
 
 export const metadata: Metadata = {
   title: "Review Story",
@@ -39,148 +21,6 @@ export const metadata: Metadata = {
 // Staff review content -- may reflect draft/pending state -- never
 // cached/pre-rendered.
 export const dynamic = "force-dynamic";
-
-const SECTION_HEADING =
-  "font-mono text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground";
-
-/**
- * States where the image pipeline has finished with a file. Everything else
- * (uploading/processing/failed) is worth calling out per image; "processed"
- * repeated down every row is not -- the sidebar's "Images processed" check
- * already answers that question for the set as a whole.
- */
-const READY_PROCESSING_STATES = new Set([
-  "processed",
-  "promotion_pending",
-  "promoted",
-]);
-
-/**
- * One image in the review page's media list.
- *
- * The old row printed `caption || altText || "(no caption)"`, which on a
- * story whose images carry alt text but no captions -- the common case,
- * since a caption is optional and alt text is not -- rendered a stack of
- * identical "(no caption)" lines: no way to tell one image from another,
- * and no sign of the one thing a moderator actually has to check here.
- *
- * So each row now leads with its position (matching the gallery directly
- * above it) plus a Cover marker, then whatever text the image really has:
- * the caption if there is one, otherwise the alt text labelled as alt text.
- * An image with neither is the interesting case, and gets said out loud.
- *
- * The wording for that case is careful on purpose. `decorative = true` does
- * NOT reliably mean "the contributor decided this image is decorative": it
- * is also the placeholder every freshly uploaded and every PDF-attached
- * image is born with, purely to satisfy the
- * `story_revision_media_alt_text_required` check constraint before anyone
- * has written alt text (see 20260806110100_fix_finalize_upload_alt_text_constraint.sql
- * and lib/story/pdf-page-attachment.ts). So a decorative image with no alt
- * text is reported as exactly what the data supports -- "No alt text --
- * marked decorative" -- and never as the reassuring "no description
- * needed", which would quietly hide undescribed images from the one person
- * whose job is to catch them. A NON-decorative image with no alt text is a
- * straight failure and is flagged red; that is the same condition the
- * readiness metric's `images_missing_alt_text` fires on.
- *
- * The wording itself lives in mediaDescription()
- * (lib/story/moderation-queue-view.ts) so all four cases are unit-tested;
- * this component only turns the returned `kind` into colour and an icon.
- */
-function MediaRow({
-  item,
-  position,
-}: {
-  item: ModeratorMediaItem;
-  position: number;
-}) {
-  const described = mediaDescription(item);
-
-  return (
-    <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-border-subtle px-3 py-2">
-      <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span className="font-mono text-xs text-muted-foreground">
-          Image {position}
-        </span>
-        {item.isCover && (
-          <span className="rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[0.625rem] uppercase tracking-[0.14em] text-muted-foreground">
-            Cover
-          </span>
-        )}
-        {described.kind === "caption" ? (
-          <span className="min-w-0">{described.text}</span>
-        ) : described.kind === "alt-text" ? (
-          <span className="min-w-0">
-            {described.text}{" "}
-            <span className="text-xs text-muted-foreground">(alt text)</span>
-          </span>
-        ) : (
-          <span
-            className={`flex items-center gap-1.5 ${
-              described.kind === "missing-alt-text"
-                ? "text-destructive"
-                : "text-muted-foreground"
-            }`}
-          >
-            <AlertCircleIcon aria-hidden="true" className="h-4 w-4 shrink-0" />
-            {described.text}
-          </span>
-        )}
-      </span>
-      {!READY_PROCESSING_STATES.has(item.processingState) && (
-        <span className="font-mono text-xs text-muted-foreground">
-          {item.processingState}
-        </span>
-      )}
-    </li>
-  );
-}
-
-/**
- * One fact in the review sidebar. `ok` drives an icon and colour, so a
- * moderator can scan the column for red rather than read six sentences;
- * `ok: null` means "informational, there is nothing to pass or fail here".
- */
-function Check({
-  label,
-  value,
-  ok,
-}: {
-  label: string;
-  value: React.ReactNode;
-  ok?: boolean | null;
-}) {
-  return (
-    <div className="flex items-start gap-2.5 py-2">
-      {ok === true && (
-        <CheckCircleIcon
-          aria-hidden="true"
-          className="mt-0.5 h-4 w-4 shrink-0 text-accent"
-        />
-      )}
-      {ok === false && (
-        <AlertCircleIcon
-          aria-hidden="true"
-          className="mt-0.5 h-4 w-4 shrink-0 text-destructive"
-        />
-      )}
-      {(ok === undefined || ok === null) && (
-        <span
-          aria-hidden="true"
-          className="mt-2 h-1 w-1 shrink-0 rounded-full bg-muted-foreground"
-        />
-      )}
-      <div className="min-w-0">
-        <dt className="text-xs text-muted-foreground">{label}</dt>
-        <dd
-          className={`text-sm ${ok === false ? "font-semibold text-destructive" : ""}`}
-        >
-          {value}
-        </dd>
-      </div>
-    </div>
-  );
-}
 
 /**
  * URL param decision: `[id]` is a REVISION id, not a story id.
@@ -213,6 +53,8 @@ export default async function ModerationReviewPage({
     editorialHistory,
     reports,
     publishedMedia,
+    cards,
+    queueFront,
   ] = await Promise.all([
     getPublishedRevisionSnapshot(detail.story_id),
     getStoryModerationHistory(detail.story_id),
@@ -222,409 +64,37 @@ export default async function ModerationReviewPage({
     // 'public' AND lifecycle_status = 'published'): during a replacement
     // review the story stays published throughout, so this is exactly the
     // currently-live media set to compare against -- and it's already
-    // promoted to the public bucket, so unlike `media` below (the
-    // submitted revision's, still private) it needs no signed-URL mint,
-    // just a plain public URL.
+    // promoted to the public bucket, so unlike the submitted revision's
+    // media (still private) it needs no signed-URL mint, just a plain
+    // public URL.
     getPublishedStoryMedia(detail.story_id),
+    getModerationQueueCards([revisionId]).catch(() => null),
+    // Two, because the story on screen may be one of them.
+    getModerationQueue({ status: "submitted", limit: 2 }).catch(() => []),
   ]);
-  const publishedSnapshot = snapshotRows[0] ?? null;
-  const isReplacement = publishedSnapshot !== null;
 
-  const parsedContent = normalizeStoryContentJson(detail.content_json);
-  const parsedPublishedContent = publishedSnapshot
-    ? normalizeStoryContentJson(publishedSnapshot.content_json)
-    : null;
-
-  // Two DIFFERENT failures were previously collapsed into one dead-end
-  // message ("Could not render submitted content."), which is why a
-  // moderator hitting the queue saw it over and over with nothing to do
-  // about it:
-  //
-  //   * The revision genuinely has no content -- content_json is `[]`, the
-  //     shape create_self_service_draft() starts every story with. That is
-  //     not a rendering failure at all; it is a complete, reviewable fact
-  //     about the submission, and the right response is "request changes".
-  //     (submit_revision_with_consent() refuses these as of migration
-  //     20260902090000, but revisions submitted before that migration are
-  //     still sitting in the queue and must remain reviewable.)
-  //   * The revision HAS content that today's storyContentSchema cannot
-  //     read back even after legacy conversion -- a real, rare defect worth
-  //     naming as one.
-  const rawContentIsEmpty =
-    !Array.isArray(detail.content_json) || detail.content_json.length === 0;
-  const contentIsEmpty =
-    rawContentIsEmpty ||
-    (parsedContent !== null && storyContentText(parsedContent).trim() === "");
-  const contentFailedToParse = !contentIsEmpty && parsedContent === null;
-
-  const publishedContentMedia: ContentBlockMediaMap = {};
-  if (parsedPublishedContent) {
-    const inlineIds = new Set(imageBlockMediaIds(parsedPublishedContent));
-    for (const m of publishedMedia) {
-      if (!inlineIds.has(m.media_id)) continue;
-      const url = getImageUrl({
-        id: m.media_id,
-        storage_backend: m.storage_backend ?? "supabase",
-        public_url: m.public_url,
-      });
-      if (url) {
-        publishedContentMedia[m.media_id] = {
-          url,
-          altText: m.alt_text,
-          decorative: m.decorative,
-        };
-      }
-    }
-  }
-
-  const media = parseModeratorMedia(detail.media);
-  // Surfaced on the collapsed <summary> itself: the media panel starts
-  // closed, so undescribed images would otherwise be invisible to a
-  // moderator who never opens it.
-  //
-  // Counts images with NO caption and NO alt text, decorative ones
-  // included, because `decorative` is the placeholder every upload starts
-  // life with rather than a statement about the image (see MediaRow). The
-  // readiness metric's stricter `not decorative` version of this count is
-  // measuring something else -- constraint compliance, not whether a
-  // reader would be told what is in the picture.
-  const undescribedCount = media.filter(
-    (m) => !m.altText?.trim() && !m.caption?.trim(),
-  ).length;
-  const openReports = reports.filter(
-    (r) => r.status === "open" || r.status === "reviewing",
-  );
-  const regionNames = detail.region_names ?? [];
-  const tagNames = detail.tag_names ?? [];
-  const now = new Date();
-  const submittedRelative = relativeTime(detail.submitted_at, now);
-
-  // The body the moderator is actually deciding on, rendered once and
-  // reused by both the single-column and side-by-side layouts below.
-  const submittedBody = contentIsEmpty ? (
-    <div className="rounded-lg border border-destructive/40 bg-destructive/[0.06] p-5">
-      <p className="flex items-center gap-2 text-sm font-semibold text-destructive">
-        <AlertCircleIcon aria-hidden="true" className="h-4 w-4 shrink-0" />
-        This submission has no story content.
-      </p>
-      <p className="mt-2 text-sm text-muted-foreground">
-        The contributor submitted a title without writing the story. Nothing
-        here can be published as-is — request changes with a note asking them to
-        write the story, and it will come back to this queue.
-      </p>
-    </div>
-  ) : contentFailedToParse ? (
-    <div className="rounded-lg border border-destructive/40 bg-destructive/[0.06] p-5">
-      <p className="flex items-center gap-2 text-sm font-semibold text-destructive">
-        <AlertCircleIcon aria-hidden="true" className="h-4 w-4 shrink-0" />
-        This revision&rsquo;s stored content could not be read.
-      </p>
-      <p className="mt-2 text-sm text-muted-foreground">
-        It is not empty, but it does not match any content shape this app can
-        render. Do not approve it — this is a defect worth reporting rather than
-        a contributor mistake.
-      </p>
-    </div>
-  ) : (
-    <PreviewContentBody blocks={parsedContent!} media={media} />
-  );
+  const card = cards?.get(revisionId) ?? null;
+  // get_story_country() answers for an admin but not a plain moderator; it
+  // only fills in when the queue card could not.
+  const countrySlug =
+    card?.country_slug ??
+    (await getStoryCountry(detail.story_id).catch(() => null));
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
-      <Link
-        href="/moderation/stories"
-        className="text-sm underline underline-offset-4 hover:text-accent"
-      >
-        ← Back to the queue
-      </Link>
-
-      <header className="mt-4">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-          <span className="rounded-full border border-border-subtle px-2.5 py-0.5 font-mono text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            {labelFor(SOURCE_KIND_LABELS, detail.source_kind)}
-          </span>
-          <span className="rounded-full border border-border-subtle px-2.5 py-0.5 font-mono text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Revision #{detail.revision_number} · {detail.revision_status}
-          </span>
-          {isReplacement && (
-            <span className="rounded-full bg-tag-background px-2.5 py-0.5 font-mono text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-tag-foreground">
-              Replaces a live story
-            </span>
-          )}
-        </div>
-
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
-          {detail.title}
-        </h1>
-
-        <p className="mt-2 text-sm text-muted-foreground">
-          <span className="text-foreground/80">
-            {detail.contributor_display_name ?? "Unknown contributor"}
-          </span>
-          {submittedRelative && (
-            <>
-              {" · submitted "}
-              <span title={absoluteTime(detail.submitted_at) ?? undefined}>
-                {submittedRelative}
-              </span>
-            </>
-          )}
-        </p>
-        <p className="mt-0.5 font-mono text-xs text-muted-foreground">
-          /{detail.slug}
-        </p>
-      </header>
-
-      {detail.contributor_note && (
-        <section className="mt-6 rounded-xl border border-border-subtle bg-surface-muted p-4 sm:p-5">
-          <h2 className={SECTION_HEADING}>Note from the contributor</h2>
-          <p className="mt-2 whitespace-pre-wrap text-sm">
-            {detail.contributor_note}
-          </p>
-        </section>
-      )}
-
-      {openReports.length > 0 && (
-        <section className="mt-6 rounded-xl border border-destructive/40 bg-destructive/[0.06] p-4 sm:p-5">
-          <h2 className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-destructive">
-            Open reports ({openReports.length})
-          </h2>
-          <ul className="mt-3 space-y-2 text-sm">
-            {openReports.map((r) => (
-              <li
-                key={r.id}
-                className="rounded-lg border border-destructive/30 px-3 py-2"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-semibold">{r.category}</span>
-                  <span className="font-mono text-xs text-muted-foreground">
-                    {r.status} · {absoluteTime(r.created_at)}
-                  </span>
-                </div>
-                {r.details && (
-                  <p className="mt-1 text-muted-foreground">{r.details}</p>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/*
-        Two columns from `lg` (The Two Shapes Rule: one grid, not two
-        layouts) -- the story to read on the left, the facts to check on the
-        right. Below `lg` this is a single column in reading order: story
-        first, checks second, decision last, which is the order a moderator
-        works in on a phone.
-      */}
-      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <main className="min-w-0">
-          <h2 className={SECTION_HEADING}>
-            {isReplacement
-              ? "Submitted revision (replacement)"
-              : "Submitted revision"}
-          </h2>
-
-          {isReplacement ? (
-            <div className="mt-3 grid grid-cols-1 gap-4 xl:grid-cols-2">
-              <div className="rounded-xl border border-border-subtle p-4">
-                <h3 className={SECTION_HEADING}>Currently published</h3>
-                <p className="mt-2 text-lg font-semibold">
-                  {publishedSnapshot?.title}
-                </p>
-                <div className="mt-3">
-                  {parsedPublishedContent ? (
-                    <ContentBlockRenderer
-                      anchorHeadings={false}
-                      blocks={parsedPublishedContent}
-                      media={publishedContentMedia}
-                    />
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      The published revision has no readable content.
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="rounded-xl border border-accent/50 p-4">
-                <h3 className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-accent">
-                  Submitted (under review)
-                </h3>
-                <p className="mt-2 text-lg font-semibold">{detail.title}</p>
-                <div className="mt-3">{submittedBody}</div>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-3 rounded-xl border border-border-subtle p-4 sm:p-6">
-              {submittedBody}
-            </div>
-          )}
-
-          {media.length > 0 && (
-            // Collapsed by default -- a moderator lands here to read the
-            // story first, not to see thumbnails before anything else.
-            <details className="mt-6 rounded-xl border border-border-subtle">
-              <summary
-                className={`cursor-pointer select-none px-4 py-3 ${SECTION_HEADING}`}
-              >
-                Media ({media.length})
-                {undescribedCount > 0 && (
-                  <span className="ml-2 normal-case tracking-normal text-destructive">
-                    — {undescribedCount} with no description
-                  </span>
-                )}
-              </summary>
-              <div className="border-t border-border-subtle p-4">
-                <PreviewGallery media={media} />
-                <ul className="mt-3 space-y-2 text-sm">
-                  {media.map((m, index) => (
-                    <MediaRow key={m.mediaId} item={m} position={index + 1} />
-                  ))}
-                </ul>
-              </div>
-            </details>
-          )}
-
-          <ReviewControls
-            revisionId={detail.revision_id}
-            storyId={detail.story_id}
-            storyVersion={detail.story_version}
-            revisionStatus={detail.revision_status}
-            contentIsEmpty={contentIsEmpty || contentFailedToParse}
-          />
-        </main>
-
-        <aside className="min-w-0 space-y-6 lg:sticky lg:top-6 lg:self-start">
-          <section className="rounded-xl border border-border-subtle p-4">
-            <h2 className={SECTION_HEADING}>Consent &amp; rights</h2>
-            <dl className="mt-2 divide-y divide-border-subtle">
-              <Check
-                label="Consent on file"
-                value={detail.consent_valid ? "Valid" : "Missing or invalid"}
-                ok={detail.consent_valid}
-              />
-              <Check
-                label="Attributed as"
-                value={`${detail.attribution_value ?? "—"} (${detail.attribution_type ?? "unknown"})`}
-              />
-              <Check
-                label="Confirmed by"
-                value={
-                  labelFor(CONSENT_METHOD_LABELS, detail.confirmation_method) ??
-                  "—"
-                }
-              />
-              <Check
-                label="Image rights"
-                value={
-                  detail.image_rights_confirmed_at
-                    ? (absoluteTime(detail.image_rights_confirmed_at) ??
-                      "Confirmed")
-                    : media.length === 0
-                      ? "No images attached"
-                      : "Not confirmed"
-                }
-                ok={
-                  media.length === 0
-                    ? null
-                    : Boolean(detail.image_rights_confirmed_at)
-                }
-              />
-              <Check
-                label="Identifiable people"
-                value={detail.identifiable_people_state ?? "—"}
-                ok={
-                  media.length === 0
-                    ? null
-                    : detail.identifiable_people_state === "confirmed" ||
-                      detail.identifiable_people_state === "not_applicable"
-                }
-              />
-              <Check
-                label="Images processed"
-                value={
-                  media.length === 0
-                    ? "No images attached"
-                    : detail.media_processed
-                      ? "All processed"
-                      : "Some still processing"
-                }
-                ok={media.length === 0 ? null : detail.media_processed}
-              />
-            </dl>
-          </section>
-
-          <section className="rounded-xl border border-border-subtle p-4">
-            <h2 className={SECTION_HEADING}>What this story claims</h2>
-            <dl className="mt-2 divide-y divide-border-subtle">
-              <Check
-                label="Places"
-                value={
-                  regionNames.length > 0 ? regionNames.join(", ") : "None set"
-                }
-                ok={regionNames.length > 0 ? null : false}
-              />
-              <Check
-                label="Tags"
-                value={tagNames.length > 0 ? tagNames.join(", ") : "None set"}
-                ok={tagNames.length > 0 ? null : false}
-              />
-              <Check
-                label="Trip"
-                value={
-                  detail.trip_start_date && detail.trip_end_date
-                    ? `${detail.trip_start_date} → ${detail.trip_end_date}`
-                    : (detail.trip_year?.toString() ?? "Not given")
-                }
-              />
-            </dl>
-          </section>
-
-          <section className="rounded-xl border border-border-subtle p-4">
-            <h2 className={SECTION_HEADING}>Moderation history</h2>
-            {moderationHistory.length === 0 ? (
-              <p className="mt-2 text-sm text-muted-foreground">
-                No prior moderation decisions.
-              </p>
-            ) : (
-              <ul className="mt-2 space-y-3 text-sm">
-                {moderationHistory.map((h) => (
-                  <li key={h.action_id}>
-                    <span className="font-semibold">
-                      {h.previous_status} → {h.new_status}
-                    </span>
-                    <p className="font-mono text-xs text-muted-foreground">
-                      {absoluteTime(h.created_at)}
-                    </p>
-                    {h.user_facing_reason && (
-                      <p className="mt-1 text-muted-foreground">
-                        {h.user_facing_reason}
-                      </p>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {editorialHistory.length > 0 && (
-            <section className="rounded-xl border border-border-subtle p-4">
-              <h2 className={SECTION_HEADING}>Editorial history</h2>
-              <ul className="mt-2 space-y-3 text-sm">
-                {editorialHistory.map((h) => (
-                  <li key={h.id}>
-                    <span className="font-semibold">{h.action_type}</span>
-                    <p className="font-mono text-xs text-muted-foreground">
-                      {absoluteTime(h.created_at)}
-                    </p>
-                    <p className="mt-1 text-muted-foreground">{h.summary}</p>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-        </aside>
-      </div>
-    </div>
+    <ReviewView
+      detail={detail}
+      countrySlug={countrySlug}
+      currency={card?.currency ?? null}
+      publishedSnapshot={snapshotRows[0] ?? null}
+      publishedMedia={publishedMedia}
+      moderationHistory={moderationHistory}
+      editorialHistory={editorialHistory}
+      reports={reports}
+      nextRevisionId={
+        queueFront.find((row) => row.revision_id !== revisionId)?.revision_id ??
+        null
+      }
+      now={new Date()}
+    />
   );
 }

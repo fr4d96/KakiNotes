@@ -2,6 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { listReportsForStaff, getReportNotes } from "@/lib/story/moderation";
+import { ArrowLeftIcon } from "@/components/icons";
+import { absoluteTime, relativeTime } from "@/lib/story/moderation-queue-view";
+import {
+  BUTTON_OUTLINE,
+  CHIP,
+  CHIP_TONE,
+  PAGE,
+  PAGE_INTRO,
+  PAGE_TITLE,
+  PANEL,
+  SECTION_HEADING,
+  TEXT_LINK,
+} from "@/app/(moderation)/moderation/ui";
 import { ResolveReportForm } from "./resolve-form";
 
 export const metadata: Metadata = {
@@ -57,17 +70,15 @@ export default async function ReportDetailPage({
 
   if (!storyId) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
-        <h1 className="text-2xl font-semibold tracking-tight">Report detail</h1>
-        <p className="mt-4 text-sm text-muted-foreground">
+      <div className={PAGE}>
+        <h1 className={PAGE_TITLE}>Report detail</h1>
+        <p className={PAGE_INTRO}>
           This page needs to be reached from the reports queue, which supplies
           the story context this report belongs to.
         </p>
-        <Link
-          href="/moderation/reports"
-          className="mt-4 inline-block text-sm underline underline-offset-2"
-        >
-          Back to reports queue
+        <Link href="/moderation/reports" className={`${TEXT_LINK} mt-3`}>
+          <ArrowLeftIcon aria-hidden="true" className="size-4" />
+          Reports
         </Link>
       </div>
     );
@@ -81,87 +92,98 @@ export default async function ReportDetailPage({
 
   const notes = await getReportNotes(reportId).catch(() => []);
 
+  const open = report.status === "open" || report.status === "reviewing";
+  const statusLabel =
+    report.status.charAt(0).toUpperCase() + report.status.slice(1);
+
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
+    <div className={PAGE}>
       <Link
         href="/moderation/reports"
-        className="text-sm underline underline-offset-2"
+        className={`${TEXT_LINK} gap-1.5 max-md:hidden`}
       >
-        ← Back to reports queue
+        <ArrowLeftIcon aria-hidden="true" className="size-4" />
+        Reports
       </Link>
 
-      <h1 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">
+      <h1 className={`${PAGE_TITLE} mt-2`}>
         {CATEGORY_LABELS[report.category] ?? report.category}
       </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Reported {new Date(report.created_at).toLocaleString("en-NZ")} — status:{" "}
-        {report.status}
-      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <span title={absoluteTime(report.created_at) ?? undefined}>
+          Reported {relativeTime(report.created_at)}
+        </span>
+        <span
+          className={`${CHIP} ${open ? CHIP_TONE.alert : CHIP_TONE.neutral}`}
+        >
+          {statusLabel}
+        </span>
+      </div>
 
       <div className="mt-4">
         <Link
           href={`/moderation/stories/${report.published_revision_id}`}
-          className="text-sm underline underline-offset-2"
+          className={BUTTON_OUTLINE}
         >
           View the reported story
         </Link>
       </div>
 
-      <section className="mt-6 rounded-md border border-border-subtle p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Reporter details
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {report.details || "No additional details were provided."}
-        </p>
-      </section>
-
-      {(report.handled_by || report.handled_at) && (
-        <section className="mt-6 rounded-md border border-border-subtle p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Handled
-          </h2>
+      <div className="mt-6 space-y-4">
+        <section className={PANEL}>
+          <h2 className={SECTION_HEADING}>Reporter details</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            {report.handled_at
-              ? new Date(report.handled_at).toLocaleString("en-NZ")
-              : "—"}
-            {report.handled_by ? ` by staff member ${report.handled_by}` : ""}
+            {report.details || "No additional details were provided."}
           </p>
         </section>
-      )}
 
-      <section className="mt-6 rounded-md border border-border-subtle p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Internal notes (staff only — never shown to the reporter)
-        </h2>
-        {notes.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">
-            No internal notes yet.
-          </p>
-        ) : (
-          <ul className="mt-3 space-y-2 text-sm">
-            {notes.map((n) => (
-              <li key={n.id} className="border-b border-border-subtle pb-2">
-                <p className="text-muted-foreground">{n.internal_note}</p>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(n.created_at).toLocaleString("en-NZ")}
-                </span>
-              </li>
-            ))}
-          </ul>
+        {(report.handled_by || report.handled_at) && (
+          <section className={PANEL}>
+            <h2 className={SECTION_HEADING}>Handled</h2>
+            <p
+              className="mt-2 text-sm text-muted-foreground"
+              title={absoluteTime(report.handled_at) ?? undefined}
+            >
+              {report.handled_at ? relativeTime(report.handled_at) : "—"}
+              {report.handled_by ? ` by staff member ${report.handled_by}` : ""}
+            </p>
+          </section>
         )}
-      </section>
 
-      <section className="mt-6 rounded-md border border-border-subtle p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Resolution
-        </h2>
-        <ResolveReportForm
-          reportId={report.id}
-          category={report.category}
-          currentStatus={report.status}
-        />
-      </section>
+        <section className={PANEL}>
+          <h2 className={SECTION_HEADING}>
+            Internal notes (staff only — never shown to the reporter)
+          </h2>
+          {notes.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              No internal notes yet.
+            </p>
+          ) : (
+            <ul className="mt-2 divide-y divide-border-subtle text-sm">
+              {notes.map((n) => (
+                <li key={n.id} className="py-3 first:pt-1 last:pb-0">
+                  <p className="text-muted-foreground">{n.internal_note}</p>
+                  <span
+                    className="text-xs text-muted-foreground"
+                    title={absoluteTime(n.created_at) ?? undefined}
+                  >
+                    {relativeTime(n.created_at)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className={PANEL}>
+          <h2 className={SECTION_HEADING}>Resolution</h2>
+          <ResolveReportForm
+            reportId={report.id}
+            category={report.category}
+            currentStatus={report.status}
+          />
+        </section>
+      </div>
     </div>
   );
 }

@@ -29,6 +29,7 @@ import {
   StatTile,
   TrendColumns,
 } from "./dashboard-charts";
+import { EMPTY_STATE, PAGE, PAGE_INTRO, PAGE_TITLE } from "./ui";
 
 export const metadata: Metadata = {
   title: "Moderation",
@@ -147,9 +148,9 @@ export default async function ModerationOverviewPage() {
   const openReports = metrics?.open_reports_count ?? 0;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
+    <div className={`${PAGE} lg:max-w-7xl`}>
       <header>
-        <p className="font-mono text-[0.625rem] tracking-[0.18em] text-muted-foreground uppercase">
+        <p className="text-sm text-muted-foreground">
           As of{" "}
           <time dateTime={now.toISOString()}>
             {now.toLocaleString("en-NZ", {
@@ -158,10 +159,8 @@ export default async function ModerationOverviewPage() {
             })}
           </time>
         </p>
-        <h1 className="mt-2 text-2xl font-extrabold tracking-[-.03em] sm:text-3xl">
-          Moderation
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+        <h1 className={PAGE_TITLE}>Overview</h1>
+        <p className={PAGE_INTRO}>
           What is waiting, how long it has been waiting, and what readers are
           reporting. Counts are aggregates only — no per-contributor or
           per-moderator breakdown.
@@ -169,7 +168,7 @@ export default async function ModerationOverviewPage() {
       </header>
 
       {loadError ? (
-        <p className="mt-8 rounded-xl border border-border-subtle bg-surface-muted p-6 text-sm">
+        <p className={`mt-6 ${EMPTY_STATE}`}>
           Could not load moderation figures right now. The{" "}
           <Link
             href="/moderation/stories"
@@ -188,7 +187,7 @@ export default async function ModerationOverviewPage() {
         </p>
       ) : (
         <>
-          <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatTile
               label="Awaiting moderation"
               value={String(awaitingModeration)}
@@ -245,7 +244,7 @@ export default async function ModerationOverviewPage() {
               ) : (
                 <>
                   <div className="mt-5">
-                    <h3 className="font-mono text-[0.625rem] tracking-[0.18em] text-muted-foreground uppercase">
+                    <h3 className="text-sm font-bold text-muted-foreground">
                       How long it has been waiting
                     </h3>
                     <div className="mt-3">
@@ -257,7 +256,7 @@ export default async function ModerationOverviewPage() {
                   </div>
 
                   <div className="mt-6 border-t border-border-subtle pt-5">
-                    <h3 className="font-mono text-[0.625rem] tracking-[0.18em] text-muted-foreground uppercase">
+                    <h3 className="text-sm font-bold text-muted-foreground">
                       What kind of submission
                     </h3>
                     <p className="mt-2 text-sm text-muted-foreground">
@@ -355,7 +354,7 @@ export default async function ModerationOverviewPage() {
               </div>
               {reportStatuses.length > 0 ? (
                 <div className="mt-6 border-t border-border-subtle pt-5">
-                  <h3 className="font-mono text-[0.625rem] tracking-[0.18em] text-muted-foreground uppercase">
+                  <h3 className="text-sm font-bold text-muted-foreground">
                     Where those reports stand
                   </h3>
                   <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2">

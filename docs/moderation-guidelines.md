@@ -140,6 +140,19 @@ exposure risk). Same pattern as employment advice: recounting "I did this and it
 and often the most useful kind of story; presenting the risky choice as a universal recommendation
 is not.
 
+## Approving several stories at once
+
+In the stories queue, tap **Select**, tick stories, then **Approve and publish**. Every ticked story
+goes live straight away and no note is sent. It is the same approval as the one on the review
+screen, so read each story first: ticking a row is your decision on it, not a way to skip the
+reading.
+
+- A story with no text can't be ticked. One with no valid consent, or with a photo that has not
+  finished processing, is refused when you publish. Open those and decide there.
+- The confirmation says how many replace a story that is live now, and how many have an open reader
+  report. Open those before publishing.
+- If one story fails, the others still publish. The ones that didn't are listed with the reason.
+
 ## Request-changes vs. reject
 
 `moderateRevision()` gives you exactly two decisions on a submitted revision, both requiring a

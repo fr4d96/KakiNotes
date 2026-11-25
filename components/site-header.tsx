@@ -14,6 +14,7 @@ import { SignInForm } from "@/components/auth/sign-in-form";
 import { SignUpForm } from "@/components/auth/sign-up-form";
 import { UserAvatarMenu } from "@/components/auth/user-avatar-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { isReviewOnly } from "@/lib/auth/staff-menu";
 import { useViewerIdentity } from "@/lib/auth/viewer-identity";
 import { isAuthPage } from "@/lib/navigation/page-titles";
 import { isContributorArea, showsAppHeader } from "@/lib/navigation/app-chrome";
@@ -161,7 +162,7 @@ export function SiteHeader() {
           {/* In the contributor's own area the desktop links are theirs
               (My Stories, New Story), as ContributorNav's were before this
               one header served every route group. */}
-          {inContributorArea ? (
+          {inContributorArea && !isReviewOnly(role) ? (
             <ContributorNavLinks className="flex" />
           ) : (
             <div className="flex items-center gap-6">

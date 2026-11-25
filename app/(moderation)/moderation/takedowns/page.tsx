@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { listStoryTakedownRequests } from "@/lib/story/moderation";
+import { PAGE, PAGE_INTRO, PAGE_TITLE } from "@/app/(moderation)/moderation/ui";
 import { TakedownQueue, type TakedownRequest } from "./takedown-queue";
 
 export const metadata: Metadata = {
@@ -19,10 +20,10 @@ export default async function TakedownsPage() {
     // it this page had NO horizontal padding at all: the heading and the
     // request cards ran flush to both viewport edges, which is what a
     // moderator saw the first time anyone opened it.
-    <div className="mx-auto max-w-7xl space-y-4 px-4 py-12 sm:px-6 sm:py-16">
+    <div className={`${PAGE} space-y-4`}>
       <div>
-        <h1 className="text-2xl font-semibold">Takedown requests</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className={PAGE_TITLE}>Takedown requests</h1>
+        <p className={PAGE_INTRO}>
           A contributor has asked for their published story to be removed. Until
           one of these is approved the story is still live — oldest first,
           because that is the one that has been public longest against its

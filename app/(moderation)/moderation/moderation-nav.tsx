@@ -1,17 +1,10 @@
 import { StaffNav } from "@/components/staff-nav";
+import { MODERATION_LINKS } from "@/lib/navigation/moderation-links";
 import {
   getCurrentUserAvatarEmoji,
   getCurrentUserTabName,
   getCurrentUserRole,
 } from "@/lib/auth/roles";
-
-const moderationNav = [
-  { href: "/moderation", label: "Overview" },
-  { href: "/moderation/stories", label: "Stories queue" },
-  { href: "/moderation/reports", label: "Reports" },
-  { href: "/moderation/takedowns", label: "Takedowns" },
-  { href: "/readiness", label: "Readiness" },
-];
 
 /**
  * Rendered only inside app/(moderation)/moderation/layout.tsx, after the
@@ -30,9 +23,9 @@ export async function ModerationNav() {
 
   return (
     <StaffNav
-      title="Kakinotes — Moderation"
       label="Moderation"
-      links={moderationNav}
+      links={MODERATION_LINKS}
+      profileTab
       avatarEmoji={avatarEmoji}
       name={name}
       role={role}

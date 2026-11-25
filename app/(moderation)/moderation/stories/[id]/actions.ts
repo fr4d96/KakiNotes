@@ -10,70 +10,16 @@ import {
 } from "@/lib/validation/moderation";
 import {
   moderateRevision,
-  beginStoryPublicationAttempt,
-  finalizeStoryPublication,
   archiveStory,
   getStoryForModerator,
-  parseModeratorMedia,
 } from "@/lib/story/moderation";
-import { copyStoryMediaToPublic } from "@/lib/story/image-pipeline";
-import { runApproveOrchestration } from "@/lib/story/publish-orchestration";
 import {
-  invalidateStoryPublicCache,
-  invalidateStoryListingsPublicCache,
-} from "@/lib/story/public-cache";
+  approveRevision,
+  invalidateListingsCacheSafely,
+  invalidatePublicCacheSafely,
+} from "@/lib/story/approve-revision";
 import { logStaffAction } from "@/lib/log";
 import { getErrorMessage } from "@/lib/errors";
-
-/**
- * Stage 3 hardening: invalidateStoryPublicCache() calls Next's
- * revalidatePath() several times in a row. A successful approve/archive has
- * ALREADY committed in the database by the time this runs -- if
- * revalidatePath() itself ever throws (e.g. called somewhere Next
- * disallows it, a bad path shape, or any other framework-level hiccup),
- * letting that propagate out of the Server Action would surface as an
- * unhandled error to the moderator even though the underlying
- * approve/archive fully succeeded. Swallowed here (logged, never silently
- * dropped) so a cache-invalidation hiccup can never make a successful
- * publish/archive look like a failure; the public pages still self-correct
- * either way -- `/` within its own 60s data window, and `/stories/[id]`,
- * `/contributors/[slug]`, `/stories` and `/contributors` immediately, since
- * all four re-query on every request (see lib/story/public-cache.ts's own
- * header comment).
- */
-function invalidatePublicCacheSafely(slug: string, action: string) {
-  try {
-    invalidateStoryPublicCache(slug);
-  } catch (error) {
-    logStaffAction({
-      actor: null,
-      action: `${action}.cache_invalidation`,
-      target: slug,
-      outcome: "error",
-      detail: getErrorMessage(error, "unknown error"),
-    });
-  }
-}
-
-/**
- * Slug-less variant of the above, for the case where the story's slug could
- * not be re-derived server-side (see archiveStoryAction). Same "an already-
- * committed mutation must never be reported as a failure because
- * revalidatePath() hiccuped" contract, same swallow-but-log behaviour.
- */
-function invalidateListingsCacheSafely(target: string, action: string) {
-  try {
-    invalidateStoryListingsPublicCache();
-  } catch (error) {
-    logStaffAction({
-      actor: null,
-      action: `${action}.cache_invalidation`,
-      target,
-      outcome: "error",
-      detail: getErrorMessage(error, "unknown error"),
-    });
-  }
-}
 
 export type ModerationActionState = { error?: string; success?: string };
 
@@ -94,14 +40,9 @@ async function requireModeratorOrAdmin(): Promise<string | null> {
 }
 
 /**
- * Approve = beginStoryPublicationAttempt() -> copy every not-already-
- * promoted media item -> finalizeStoryPublication(). The looping/partial-
- * failure decision itself lives in lib/story/publish-orchestration.ts
- * (unit-tested there); this action's job is only to gather real,
- * server-derived inputs (never trusting the client for which media needs
- * copying or the story's slug) and wire in the real side-effecting
- * dependencies. invalidateStoryPublicCache() is called ONLY after the
- * orchestration reports success.
+ * Approve = the shared lib/story/approve-revision.ts path (begin -> copy
+ * photos -> finalize -> refresh the public pages). The queue's bulk approve
+ * (../actions.ts) runs the very same function, so the two can't diverge.
  */
 export async function approveStoryAction(
   _prevState: ModerationActionState,
@@ -120,66 +61,16 @@ export async function approveStoryAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  let detail;
-  try {
-    const rows = await getStoryForModerator(parsed.data.revisionId);
-    detail = rows[0];
-  } catch (error) {
-    return {
-      error: getErrorMessage(error, "Could not load this revision."),
-    };
-  }
-  if (!detail || detail.story_id !== parsed.data.storyId) {
-    return { error: "This revision no longer matches the requested story." };
-  }
-
-  const media = parseModeratorMedia(detail.media);
-
-  const result = await runApproveOrchestration(
-    {
-      revisionId: parsed.data.revisionId,
-      media,
-      userFacingReason: parsed.data.userFacingReason || undefined,
-      editorNote: parsed.data.editorNote || undefined,
-    },
-    {
-      beginAttempt: beginStoryPublicationAttempt,
-      copyMedia: copyStoryMediaToPublic,
-      finalize: finalizeStoryPublication,
-    },
-  );
-
-  const actorId = (await getCurrentUser())?.id ?? null;
-
-  if (!result.ok) {
-    const stageLabel =
-      result.stage === "begin"
-        ? "starting the publication attempt"
-        : result.stage === "copy_media"
-          ? `copying media ${result.mediaId ?? "(unknown)"} to public storage`
-          : "finalizing publication";
-    const recoveryNote = result.approvalAttemptId
-      ? " The publication attempt was left active/recoverable — retry approval, or resolve it via reject/changes-requested."
-      : "";
-    logStaffAction({
-      actor: actorId,
-      action: "moderation.approve",
-      target: parsed.data.revisionId,
-      outcome: "error",
-      detail: result.stage,
-    });
-    return {
-      error: `Approval failed while ${stageLabel}: ${result.error}.${recoveryNote}`,
-    };
-  }
-
-  invalidatePublicCacheSafely(detail.slug, "moderation.approve");
-  logStaffAction({
-    actor: actorId,
+  const result = await approveRevision({
+    revisionId: parsed.data.revisionId,
+    expectedStoryId: parsed.data.storyId,
+    userFacingReason: parsed.data.userFacingReason,
+    editorNote: parsed.data.editorNote,
+    actorId: (await getCurrentUser())?.id ?? null,
     action: "moderation.approve",
-    target: parsed.data.revisionId,
-    outcome: "success",
   });
+  if (!result.ok) return { error: result.error };
+
   revalidatePath(`/moderation/stories/${parsed.data.revisionId}`);
   revalidatePath("/moderation/stories");
   return { success: "Story approved and published." };

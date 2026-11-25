@@ -3,22 +3,23 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
 import { UserAvatarMenu } from "@/components/auth/user-avatar-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import {
+  StaffBackLink,
+  StaffNavLinks,
+  type StaffNavLink,
+} from "@/components/staff-nav-links";
+import { StaffTabBar } from "@/components/staff-tab-bar";
 import type { AppRole } from "@/lib/auth/staff-guard";
 
 /**
  * The shared header for every staff dashboard -- moderation, editorial,
- * admin, readiness. Each of those had its own copy of the same markup, and
- * so had four copies of the same mobile bug: the title and a four-link nav
- * competed for one row on a phone, so the links wrapped INTO the title
- * ("Kakinotes — Moderation" with "Overview / Stories queue / Reports"
- * stacked on top of it at 375px). Two of the four didn't wrap at all and
- * simply overflowed sideways.
+ * admin, readiness -- in the same shape as the app's own header
+ * (components/site-header.tsx): a sticky solid bar clear of the status bar.
  *
- * The fix is one row order, expressed once. Below `sm` the nav is forced to
- * its own full-width second row (`order-3 w-full`), leaving row one as
- * title + avatar -- nothing overlaps because nothing shares the row it
- * can't fit in. From `sm` the nav is `w-auto` again and reordered back
- * between them, which is the desktop layout these headers already had.
+ * On a phone it reads like any pushed app screen: a back arrow one level up,
+ * the dashboard's name and the bell on top, and its sections in a floating
+ * tab bar at the bottom (staff-tab-bar.tsx), where the contributor's own tabs
+ * are. From `md` it is one row: logo, name, sections, bell, avatar menu.
  *
  * Presentational only: each route group's own nav component still does its
  * own server-side role check and data fetching before rendering this. The
@@ -26,57 +27,61 @@ import type { AppRole } from "@/lib/auth/staff-guard";
  * never for authorizing anything -- see lib/auth/staff-menu.ts.
  */
 export function StaffNav({
-  title,
   label,
   links,
   avatarEmoji,
   role,
   name,
+  profileTab = false,
 }: {
-  title: string;
-  /** aria-label for the <nav> -- "Moderation", "Editorial", etc. */
+  /** The dashboard's name, shown in the bar and as the nav's aria-label. */
   label: string;
-  links: { href: string; label: string }[];
+  links: StaffNavLink[];
   avatarEmoji: string | null;
   role: AppRole | null;
   /** The viewer's username (else display name), for the Profile tab. */
   name?: string | null;
+  /** End the phone tab bar with the viewer's own Profile tab. */
+  profileTab?: boolean;
 }) {
   return (
-    <header className="border-b border-border-subtle">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 sm:flex-nowrap sm:px-6">
-        {/* The logo sits beside the wordmark here for the same reason it does
-            in site-header, contributor-nav and site-footer: these four staff
-            dashboards were the only place the brand appeared as bare text.
-            alt="" is deliberate -- the wordmark is right beside it, so a
-            screen reader announcing both would just say it twice. */}
-        <Link
-          href="/"
-          className="mr-auto flex items-center gap-2.5 text-lg font-semibold tracking-tight"
-        >
-          <BrandLogo className="border border-border-subtle" />
-          {title}
-        </Link>
-        <nav
-          aria-label={label}
-          className="order-3 flex w-full flex-wrap items-center gap-x-4 gap-y-1 text-sm sm:order-1 sm:w-auto sm:flex-nowrap sm:gap-6"
-        >
-          {links.map((item) => (
-            <Link key={item.href} href={item.href} className="hover:underline">
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="order-2 flex shrink-0 items-center gap-2 sm:order-2">
-          <NotificationBell />
-          <UserAvatarMenu emoji={avatarEmoji} role={role} />
-          <ViewerIdentitySeed
-            avatarEmoji={avatarEmoji}
-            role={role}
-            name={name ?? null}
-          />
+    <>
+      <header
+        data-staff-chrome=""
+        className="journiq-header-solid sticky top-0 z-30 border-b border-border-subtle pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] text-foreground shadow-sm"
+      >
+        <div className="mx-auto flex min-h-15 max-w-7xl items-center gap-2 px-3 md:min-h-[76px] md:gap-5 md:px-6">
+          <StaffBackLink links={links} profileTab={profileTab} />
+          {/* alt="" on the logo is deliberate: the wordmark is beside it. */}
+          <Link
+            href="/"
+            className="flex min-h-11 shrink-0 items-center gap-2.5 text-xl font-black tracking-tight max-md:hidden"
+          >
+            <BrandLogo className="border border-border-subtle" />
+            Kakinotes
+          </Link>
+          <span className="min-w-0 flex-1 truncate text-xl font-black tracking-tight md:flex-none md:text-base md:font-bold md:text-muted-foreground">
+            {label}
+          </span>
+          <div className="ml-auto">
+            <StaffNavLinks label={label} links={links} />
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <NotificationBell />
+            {/* Phones reach the menu's links from the You page instead, as
+                everywhere else in the app. */}
+            <div className="max-md:hidden">
+              <UserAvatarMenu emoji={avatarEmoji} role={role} />
+            </div>
+            <ViewerIdentitySeed
+              avatarEmoji={avatarEmoji}
+              role={role}
+              name={name ?? null}
+            />
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+      <StaffTabBar label={label} links={links} profileTab={profileTab} />
+    </>
   );
 }

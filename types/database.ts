@@ -2358,6 +2358,15 @@ export type Database = {
           total_count: number;
         }[];
       };
+      get_moderation_queue_cards: {
+        Args: { p_revision_ids: string[] };
+        Returns: {
+          country_slug: string;
+          cover_media_id: string;
+          currency: string;
+          revision_id: string;
+        }[];
+      };
       get_my_drive_connection_status: {
         Args: never;
         Returns: {

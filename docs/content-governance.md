@@ -227,6 +227,9 @@ every other editorial-preparation action.
   publishing a new approved revision rather than needing to reconstruct history.
 - Moderators act on submitted (pending) revisions only; they do not have blanket edit rights over all
   contributor content.
+- Several submissions can be approved in one go from the queue (2026-11-25). Each is still its own
+  approval, with its own moderation record, and each is checked again on the server first; a story
+  with no readable text, no valid consent or an unprocessed photo can't be approved this way.
 
 **Implemented as of Prompt 3:** `moderate_revision()` is the only path from `submitted` to
 `approved`/`rejected`/`changes_requested`, structurally — no role, including admin, has a direct
@@ -497,5 +500,6 @@ throughout this document remain the only source of truth for what's actually enf
 [docs/content-inventory-template.md](content-inventory-template.md), and
 [docs/launch-content-checklist.md](launch-content-checklist.md) for the operational process this
 tooling supports, and [docs/architecture.md](architecture.md#content-readiness-operational-metrics-and-launch-tooling-prompt-7)
-for the technical account. Consistent with "Moderation boundaries" above, there is still no bulk
-publication path — every story is reviewed individually, checklist or not.
+for the technical account. A moderator can publish several stories in
+one go (see "Moderation boundaries" above), but each is still read by a person and approved and
+recorded on its own, checklist or not.

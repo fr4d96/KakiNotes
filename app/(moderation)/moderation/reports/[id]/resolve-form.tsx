@@ -2,6 +2,11 @@
 
 import { useActionState, useState } from "react";
 import { reportNoteRequired } from "@/lib/validation/moderation";
+import {
+  BUTTON_PRIMARY,
+  FIELD,
+  FIELD_LABEL,
+} from "@/app/(moderation)/moderation/ui";
 import { resolveReportAction, type ResolveReportActionState } from "./actions";
 
 const initialState: ResolveReportActionState = {};
@@ -58,17 +63,15 @@ export function ResolveReportForm({
           <p
             role={state.error ? "alert" : "status"}
             className={
-              state.error
-                ? "text-sm text-destructive"
-                : "text-sm text-green-800 dark:text-green-400"
+              state.error ? "text-sm text-destructive" : "text-sm text-fern"
             }
           >
             {message}
           </p>
         )}
         <p className="mt-2 text-sm text-muted-foreground">
-          This report is already {currentStatus} and cannot be reopened --
-          resolve_report() rejects any further transition once closed.
+          This report is already {currentStatus}. A closed report can&rsquo;t be
+          reopened.
         </p>
       </>
     );
@@ -77,7 +80,7 @@ export function ResolveReportForm({
   return (
     <form action={formAction} className="mt-3 space-y-3">
       <input type="hidden" name="reportId" value={reportId} />
-      <label className="block text-xs font-medium">
+      <label className={`block ${FIELD_LABEL}`}>
         Status
         <select
           name="status"
@@ -85,15 +88,15 @@ export function ResolveReportForm({
           onChange={(e) =>
             setStatus(e.target.value as "reviewing" | "resolved" | "dismissed")
           }
-          className="mt-1 block rounded-md border border-border-subtle px-2 py-1 text-sm dark:bg-transparent"
+          className={FIELD}
         >
           <option value="reviewing">Mark as reviewing</option>
           <option value="resolved">Resolve</option>
           <option value="dismissed">Dismiss</option>
         </select>
       </label>
-      <label className="block text-xs font-medium">
-        Internal note (staff only -- never shown to the reporter)
+      <label className={`block ${FIELD_LABEL}`}>
+        Internal note (staff only — never shown to the reporter)
         <textarea
           name="internalNote"
           rows={3}
@@ -103,19 +106,15 @@ export function ResolveReportForm({
               ? "Required for this category when closing a report (e.g. what was verified, what action was taken)."
               : "Optional"
           }
-          className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2 text-sm dark:bg-transparent"
+          className={FIELD}
         />
         {noteRequired && (
-          <span className="mt-1 block text-xs text-amber-700 dark:text-amber-400">
+          <span className="mt-1 block text-sm text-destructive">
             A note is required to {status} a report in this category.
           </span>
         )}
       </label>
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground disabled:opacity-60"
-      >
+      <button type="submit" disabled={pending} className={BUTTON_PRIMARY}>
         {pending ? "Saving…" : "Save"}
       </button>
       {state.error && (
@@ -124,7 +123,7 @@ export function ResolveReportForm({
         </p>
       )}
       {state.success && (
-        <p role="status" className="text-sm text-green-800 dark:text-green-400">
+        <p role="status" className="text-sm text-fern">
           {state.success}
         </p>
       )}

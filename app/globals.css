@@ -1233,6 +1233,18 @@ svg g[role="button"]:focus-visible {
   transform: translateY(calc(100% + var(--tab-bar-gap) + 1.5rem));
   pointer-events: none;
 }
+/* Staff dashboards (components/staff-tab-bar.tsx). Their page leaves room for
+   the bar here, because the bar is drawn by the header, above <main>. A
+   selection bar (the moderation queue's select mode) takes the tab bar's
+   place: one bar at the bottom, never two stacked. */
+@media (width < 48rem) {
+  :root:has([data-staff-chrome]) #main-content {
+    padding-bottom: var(--tab-bar-clearance);
+  }
+}
+:root:has([data-selection-bar]) .nf-staff-tab-bar {
+  visibility: hidden;
+}
 /* "Liquid glass": a translucent tint over a blurred, saturated backdrop, a
    bright hairline where light catches the top edge, and a soft lift shadow. */
 .nf-glass {

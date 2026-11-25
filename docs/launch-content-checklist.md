@@ -42,8 +42,9 @@ shows `published` in `/readiness`. This is an operational checklist, **not legal
 
 - Not a substitute for [docs/content-governance.md](content-governance.md)'s consent/rights rules
   — this checklist assumes those were already satisfied earlier in the runbook.
-- Not a bulk-publication tool — every story is still checked individually, by design (this
-  platform deliberately has no bulk-publish action).
+- Not a bulk-publication tool — every story is still checked individually, by design (since
+  2026-11-25 a moderator can publish several reviewed stories at once from the queue, but that
+  replaces the clicking, not this checking).
 - Not legal, immigration, or moderation advice — see
   [docs/moderation-guidelines.md](moderation-guidelines.md) for actual content-review judgment
   calls.

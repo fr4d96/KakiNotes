@@ -1,4 +1,5 @@
 import { StaffNav } from "@/components/staff-nav";
+import type { StaffNavLink } from "@/components/staff-nav-links";
 import {
   getCurrentUserAvatarEmoji,
   getCurrentUserTabName,
@@ -13,12 +14,12 @@ import {
  * would have pointed at raw JSON. The header markup itself is
  * components/staff-nav.tsx, shared across the staff dashboards.
  */
-const adminNav = [
-  { href: "/admin", label: "Overview" },
-  { href: "/admin/users", label: "Users" },
-  { href: "/moderation", label: "Moderation" },
-  { href: "/editorial", label: "Editorial" },
-  { href: "/readiness", label: "Readiness" },
+const adminNav: StaffNavLink[] = [
+  { href: "/admin", label: "Overview", icon: "overview" },
+  { href: "/admin/users", label: "Users", icon: "users" },
+  { href: "/moderation", label: "Moderation", icon: "stories" },
+  { href: "/editorial", label: "Editorial", icon: "editorial" },
+  { href: "/readiness", label: "Readiness", icon: "readiness" },
 ];
 
 export async function AdminNav() {
@@ -30,7 +31,6 @@ export async function AdminNav() {
 
   return (
     <StaffNav
-      title="Kakinotes — Admin"
       label="Admin"
       links={adminNav}
       avatarEmoji={avatarEmoji}

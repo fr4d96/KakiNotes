@@ -3,6 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  BUTTON_DANGER,
+  BUTTON_OUTLINE,
+  EMPTY_STATE,
+  FIELD,
+  FIELD_LABEL,
+  PANEL,
+} from "@/app/(moderation)/moderation/ui";
 import { decideTakedownAction } from "./actions";
 
 export type TakedownRequest = {
@@ -39,7 +47,7 @@ function daysWaiting(requestedAt: string): number {
 export function TakedownQueue({ requests }: { requests: TakedownRequest[] }) {
   if (requests.length === 0) {
     return (
-      <p className="rounded-md border border-dashed border-border-subtle p-6 text-center text-sm text-muted-foreground">
+      <p className={EMPTY_STATE}>
         No takedown requests waiting. Anything a contributor asks to have
         removed lands here.
       </p>
@@ -87,9 +95,9 @@ function TakedownRow({ request }: { request: TakedownRequest }) {
   }
 
   return (
-    <li className="rounded-md border border-border-subtle p-4">
+    <li className={PANEL}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-base font-medium">
+        <h2 className="text-base font-semibold">
           {request.story_slug ? (
             // New tab on purpose: a moderator opens the story to decide,
             // and navigating away would lose the queue and whatever they had
@@ -98,7 +106,7 @@ function TakedownRow({ request }: { request: TakedownRequest }) {
               href={`/stories/${request.story_slug}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="underline underline-offset-2 hover:no-underline"
+              className="underline underline-offset-4 hover:no-underline"
             >
               {request.story_title ?? "Untitled story"}
               <span className="sr-only"> (opens in a new tab)</span>
@@ -107,7 +115,7 @@ function TakedownRow({ request }: { request: TakedownRequest }) {
             (request.story_title ?? "Untitled story")
           )}
         </h2>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {request.requester_display_name ?? "A contributor"} ·{" "}
           <span className={waiting >= 3 ? "font-medium text-destructive" : ""}>
             {waiting === 0
@@ -118,7 +126,7 @@ function TakedownRow({ request }: { request: TakedownRequest }) {
       </div>
 
       {request.contributor_note && (
-        <p className="mt-2 rounded-md bg-surface-muted p-3 text-sm">
+        <p className="mt-3 rounded-[12px] bg-surface-muted p-3 text-sm">
           {request.contributor_note}
         </p>
       )}
@@ -126,7 +134,7 @@ function TakedownRow({ request }: { request: TakedownRequest }) {
       <div className="mt-3">
         <label
           htmlFor={`note-${request.request_id}`}
-          className="block text-sm font-medium"
+          className={`block ${FIELD_LABEL}`}
         >
           Note to the contributor
           <span className="ml-2 font-normal text-muted-foreground">
@@ -144,7 +152,7 @@ function TakedownRow({ request }: { request: TakedownRequest }) {
           maxLength={2000}
           aria-invalid={declining && note.trim() === ""}
           aria-describedby={error ? `error-${request.request_id}` : undefined}
-          className="mt-1 w-full rounded-md border border-border-subtle px-3 py-2 text-sm dark:bg-transparent"
+          className={FIELD}
         />
       </div>
 
@@ -158,12 +166,12 @@ function TakedownRow({ request }: { request: TakedownRequest }) {
         </p>
       )}
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <button
           type="button"
           disabled={pending}
           onClick={() => decide(true)}
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
+          className={BUTTON_DANGER}
         >
           {pending ? "Saving…" : "Take the story down"}
         </button>
@@ -171,7 +179,7 @@ function TakedownRow({ request }: { request: TakedownRequest }) {
           type="button"
           disabled={pending}
           onClick={() => decide(false)}
-          className="rounded-md border border-border-subtle px-4 py-2 text-sm font-medium disabled:opacity-50"
+          className={BUTTON_OUTLINE}
         >
           Decline, and say why
         </button>

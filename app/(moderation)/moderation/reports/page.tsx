@@ -1,6 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { listReportsForStaff } from "@/lib/story/moderation";
+import { absoluteTime, relativeTime } from "@/lib/story/moderation-queue-view";
+import {
+  BUTTON_OUTLINE,
+  BUTTON_PRIMARY,
+  CHIP,
+  CHIP_TONE,
+  EMPTY_STATE,
+  FIELD,
+  FIELD_LABEL,
+  PAGE,
+  PAGE_INTRO,
+  PAGE_TITLE,
+  PANEL,
+  ROW_LIST,
+  TEXT_LINK,
+} from "@/app/(moderation)/moderation/ui";
 import {
   parseReportsQueueSearchParams,
   REPORTS_QUEUE_PAGE_SIZE,
@@ -103,113 +119,126 @@ export default async function ReportsTriagePage({
   const hasNextPage = rows.length === REPORTS_QUEUE_PAGE_SIZE;
   const hasPrevPage = filters.page > 1;
 
+  const activeFilters = [
+    filters.status,
+    filters.category,
+    filters.dateFrom,
+    filters.dateTo,
+  ].filter(Boolean).length;
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-        Reports triage
-      </h1>
-      <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+    <div className={PAGE}>
+      <h1 className={PAGE_TITLE}>Reports triage</h1>
+      <p className={PAGE_INTRO}>
         Every reader-submitted report, across every story. Private internal
         notes and resolution live on each report&rsquo;s own page, never here.
       </p>
 
-      <form
-        method="get"
-        className="mt-6 grid grid-cols-2 gap-3 rounded-md border border-border-subtle p-4 text-sm sm:grid-cols-4"
-      >
-        <label className="flex flex-col gap-1">
-          Status
-          <select
-            name="status"
-            defaultValue={filters.status ?? ""}
-            className="rounded-md border border-border-subtle px-2 py-1 dark:bg-transparent"
-          >
-            <option value="">Any</option>
-            <option value="open">Open</option>
-            <option value="reviewing">Reviewing</option>
-            <option value="resolved">Resolved</option>
-            <option value="dismissed">Dismissed</option>
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          Category
-          <select
-            name="category"
-            defaultValue={filters.category ?? ""}
-            className="rounded-md border border-border-subtle px-2 py-1 dark:bg-transparent"
-          >
-            <option value="">Any</option>
-            {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          From
-          <input
-            type="date"
-            name="dateFrom"
-            defaultValue={filters.dateFrom ?? ""}
-            className="rounded-md border border-border-subtle px-2 py-1 dark:bg-transparent"
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          To
-          <input
-            type="date"
-            name="dateTo"
-            defaultValue={filters.dateTo ?? ""}
-            className="rounded-md border border-border-subtle px-2 py-1 dark:bg-transparent"
-          />
-        </label>
-        <div className="flex items-end">
-          <button
-            type="submit"
-            className="rounded-md bg-accent px-3 py-1.5 font-medium text-accent-foreground"
-          >
-            Apply filters
-          </button>
-        </div>
-      </form>
+      <details className={`${PANEL} mt-6`} open={activeFilters > 0}>
+        <summary className="-my-1 flex min-h-11 cursor-pointer items-center text-sm font-bold">
+          Filters{activeFilters > 0 ? ` · ${activeFilters} on` : ""}
+        </summary>
+        <form
+          method="get"
+          className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+        >
+          <label className={FIELD_LABEL}>
+            Status
+            <select
+              name="status"
+              defaultValue={filters.status ?? ""}
+              className={FIELD}
+            >
+              <option value="">Any</option>
+              <option value="open">Open</option>
+              <option value="reviewing">Reviewing</option>
+              <option value="resolved">Resolved</option>
+              <option value="dismissed">Dismissed</option>
+            </select>
+          </label>
+          <label className={FIELD_LABEL}>
+            Category
+            <select
+              name="category"
+              defaultValue={filters.category ?? ""}
+              className={FIELD}
+            >
+              <option value="">Any</option>
+              {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={FIELD_LABEL}>
+            From
+            <input
+              type="date"
+              name="dateFrom"
+              defaultValue={filters.dateFrom ?? ""}
+              className={FIELD}
+            />
+          </label>
+          <label className={FIELD_LABEL}>
+            To
+            <input
+              type="date"
+              name="dateTo"
+              defaultValue={filters.dateTo ?? ""}
+              className={FIELD}
+            />
+          </label>
+          <div className="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-4">
+            <button type="submit" className={BUTTON_PRIMARY}>
+              Apply filters
+            </button>
+            {activeFilters > 0 && (
+              <Link href="/moderation/reports" className={TEXT_LINK}>
+                Clear filters
+              </Link>
+            )}
+          </div>
+        </form>
+      </details>
 
-      <div className="mt-8" aria-live="polite">
+      <div className="mt-6" aria-live="polite">
         {loadError ? (
-          <p className="rounded-md border border-border-subtle bg-surface-muted p-6 text-sm">
+          <p className={EMPTY_STATE}>
             Could not load reports right now. Please try again.
           </p>
         ) : rows.length === 0 ? (
-          <p className="rounded-md border border-border-subtle bg-surface-muted p-6 text-sm">
-            Nothing matches these filters.
-          </p>
+          <p className={EMPTY_STATE}>Nothing matches these filters.</p>
         ) : (
-          <ul className="divide-y divide-border-subtle">
+          <ul className={ROW_LIST}>
             {rows.map((row) => (
               <li
                 key={row.id}
-                className="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
               >
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">
+                    <span className="text-base font-semibold">
                       {CATEGORY_LABELS[row.category] ?? row.category}
                     </span>
-                    <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs">
+                    <span
+                      className={`${CHIP} ${
+                        row.status === "open" || row.status === "reviewing"
+                          ? CHIP_TONE.alert
+                          : CHIP_TONE.neutral
+                      }`}
+                    >
                       {STATUS_LABELS[row.status] ?? row.status}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Reported {new Date(row.created_at).toLocaleString("en-NZ")}
+                  <p
+                    className="mt-1 text-sm text-muted-foreground"
+                    title={absoluteTime(row.created_at) ?? undefined}
+                  >
+                    Reported {relativeTime(row.created_at)}
                   </p>
                 </div>
-                <div className="flex gap-4 text-sm">
-                  <Link
-                    href={`/moderation/stories/${row.published_revision_id}`}
-                    className="underline underline-offset-2"
-                  >
-                    View story
-                  </Link>
+                <div className="flex flex-wrap items-center gap-3">
                   {/*
                     list_reports_for_staff() has no p_report_id filter (by
                     design -- it only ever scopes by status/category/date
@@ -221,9 +250,15 @@ export default async function ReportsTriagePage({
                   */}
                   <Link
                     href={`/moderation/reports/${row.id}?storyId=${row.story_id}`}
-                    className="underline underline-offset-2"
+                    className={BUTTON_OUTLINE}
                   >
                     Triage
+                  </Link>
+                  <Link
+                    href={`/moderation/stories/${row.published_revision_id}`}
+                    className={TEXT_LINK}
+                  >
+                    View story
                   </Link>
                 </div>
               </li>
@@ -232,31 +267,40 @@ export default async function ReportsTriagePage({
         )}
       </div>
 
-      <div className="mt-8 flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Page {filters.page}</span>
-        <div className="flex gap-3">
-          {hasPrevPage && (
+      {(hasPrevPage || hasNextPage) && (
+        <nav
+          aria-label="Pagination"
+          className="mt-6 flex items-center justify-between gap-3"
+        >
+          {hasPrevPage ? (
             <Link
               href={buildHref("/moderation/reports", rawParams, {
                 page: String(filters.page - 1),
               })}
-              className="underline underline-offset-2"
+              className={BUTTON_OUTLINE}
             >
               Previous
             </Link>
+          ) : (
+            <span />
           )}
-          {hasNextPage && (
+          <span className="text-sm text-muted-foreground">
+            Page {filters.page}
+          </span>
+          {hasNextPage ? (
             <Link
               href={buildHref("/moderation/reports", rawParams, {
                 page: String(filters.page + 1),
               })}
-              className="underline underline-offset-2"
+              className={BUTTON_OUTLINE}
             >
               Next
             </Link>
+          ) : (
+            <span />
           )}
-        </div>
-      </div>
+        </nav>
+      )}
     </div>
   );
 }

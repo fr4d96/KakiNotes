@@ -1,15 +1,16 @@
 import { StaffNav } from "@/components/staff-nav";
+import type { StaffNavLink } from "@/components/staff-nav-links";
 import {
   getCurrentUserAvatarEmoji,
   getCurrentUserTabName,
   getCurrentUserRole,
 } from "@/lib/auth/roles";
 
-const editorialNav = [
-  { href: "/editorial", label: "Dashboard" },
-  { href: "/editorial/new", label: "New Import" },
-  { href: "/editorial/contributors", label: "Contributors" },
-  { href: "/readiness", label: "Readiness" },
+const editorialNav: StaffNavLink[] = [
+  { href: "/editorial", label: "Dashboard", icon: "editorial" },
+  { href: "/editorial/new", label: "New Import", icon: "new" },
+  { href: "/editorial/contributors", label: "Contributors", icon: "users" },
+  { href: "/readiness", label: "Readiness", icon: "readiness" },
 ];
 
 /**
@@ -28,7 +29,6 @@ export async function EditorialNav() {
 
   return (
     <StaffNav
-      title="Kakinotes — Editorial"
       label="Editorial"
       links={editorialNav}
       avatarEmoji={avatarEmoji}

@@ -72,6 +72,7 @@ export function YouView({
   identity,
   avatarEmoji,
   drive,
+  reviewOnly = false,
 }: {
   locale: Locale;
   accountName: string;
@@ -84,6 +85,8 @@ export function YouView({
     resultStatus: DriveResultStatus;
     moveSummary: DriveMoveSummary | null;
   };
+  /** A moderator: no byline, public page or Drive, which are for authors. */
+  reviewOnly?: boolean;
 }) {
   const t = useTranslations("account.you");
   const tC = useTranslations("account.contributor");
@@ -155,11 +158,12 @@ export function YouView({
         avatarEmoji={viewer.avatarEmoji ?? avatarEmoji}
         name={identity?.displayName || accountName}
         username={username}
-        publicPage={publicPage}
+        publicPage={reviewOnly ? null : publicPage}
+        reviewOnly={reviewOnly}
       />
 
       <div className="mt-8 flex flex-col gap-7">
-        {identity ? (
+        {reviewOnly ? null : identity ? (
           <YouGroup heading={t("groupPublic")} footnote={t("groupPublicNote")}>
             {identityRows.map((row) => {
               const [value, muted] = valueOf(row.field);
@@ -222,31 +226,33 @@ export function YouView({
           </DisclosureRow>
         </YouGroup>
 
-        <YouGroup heading={t("groupPhotos")}>
-          <DisclosureRow
-            id="drive"
-            label={t("rowDrive")}
-            value={
-              !drive.configured
-                ? t("driveUnavailable")
-                : drive.connection.connected
-                  ? (drive.connection.googleAccountEmail ?? t("connected"))
-                  : t("notConnected")
-            }
-            valueMuted={!drive.connection.connected}
-          >
-            {() => (
-              <div className="-mt-4">
-                <DriveTab
-                  configured={drive.configured}
-                  connection={drive.connection}
-                  resultStatus={drive.resultStatus}
-                  moveSummary={drive.moveSummary}
-                />
-              </div>
-            )}
-          </DisclosureRow>
-        </YouGroup>
+        {reviewOnly ? null : (
+          <YouGroup heading={t("groupPhotos")}>
+            <DisclosureRow
+              id="drive"
+              label={t("rowDrive")}
+              value={
+                !drive.configured
+                  ? t("driveUnavailable")
+                  : drive.connection.connected
+                    ? (drive.connection.googleAccountEmail ?? t("connected"))
+                    : t("notConnected")
+              }
+              valueMuted={!drive.connection.connected}
+            >
+              {() => (
+                <div className="-mt-4">
+                  <DriveTab
+                    configured={drive.configured}
+                    connection={drive.connection}
+                    resultStatus={drive.resultStatus}
+                    moveSummary={drive.moveSummary}
+                  />
+                </div>
+              )}
+            </DisclosureRow>
+          </YouGroup>
+        )}
 
         {staff.length > 0 ? (
           <YouGroup heading={tNav("staff")}>
@@ -260,6 +266,12 @@ export function YouView({
           {own.map((item) => (
             <LinkRow key={item.href} href={item.href} label={tNav(item.key)} />
           ))}
+          {reviewOnly ? (
+            <LinkRow
+              href={countryUrlPrefix(country) || "/"}
+              label={tNav("home")}
+            />
+          ) : null}
           <LinkRow href="/notifications" label={tNav("notifications")} />
           <LinkRow
             href={`${countryUrlPrefix(country)}/about`}
@@ -334,7 +346,9 @@ function IdentityHeader({
   name,
   username,
   publicPage,
+  reviewOnly,
 }: {
+  reviewOnly: boolean;
   avatarEmoji: string;
   name: string;
   username: string;
@@ -408,7 +422,7 @@ function IdentityHeader({
               {t("viewPublicPage")}
               <ChevronIcon aria-hidden="true" className="h-3.5 w-3.5" />
             </Link>
-          ) : (
+          ) : reviewOnly ? null : (
             <p className="mt-1 text-sm text-muted-foreground">
               {t("noPublicPage")}
             </p>

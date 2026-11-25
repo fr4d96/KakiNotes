@@ -1,7 +1,17 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { AlertCircleIcon } from "@/components/icons";
+import Link from "next/link";
+import { AlertCircleIcon, ChevronIcon } from "@/components/icons";
+import { REVISION_STATUS_LABELS } from "@/lib/story/moderation-queue-view";
+import {
+  BUTTON_DANGER,
+  BUTTON_OUTLINE,
+  BUTTON_PRIMARY,
+  FIELD,
+  FIELD_LABEL,
+  PANEL,
+} from "../../ui";
 import {
   approveStoryAction,
   moderateDecisionAction,
@@ -10,12 +20,6 @@ import {
 } from "./actions";
 
 const initialState: ModerationActionState = {};
-
-const TEXTAREA_CLASSES =
-  "w-full rounded-md border border-border-subtle bg-surface-muted px-3 py-2 text-sm text-foreground transition-colors duration-150 hover:border-foreground/30 focus:border-accent focus:outline-none";
-
-const FIELD_LABEL_CLASSES =
-  "font-mono text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground";
 
 /**
  * Pre-filled into the "reason shown to the contributor" box when the
@@ -33,6 +37,8 @@ export function ReviewControls({
   storyVersion,
   revisionStatus,
   contentIsEmpty = false,
+  isReplacement = false,
+  nextRevisionId = null,
 }: {
   revisionId: string;
   storyId: string;
@@ -46,6 +52,10 @@ export function ReviewControls({
    * it only warns, and pre-fills the request-changes reason.
    */
   contentIsEmpty?: boolean;
+  /** True when approving swaps out a version readers can see now. */
+  isReplacement?: boolean;
+  /** Another submission waiting, offered once this one is decided. */
+  nextRevisionId?: string | null;
 }) {
   const [approveState, approveFormAction, approvePending] = useActionState(
     approveStoryAction,
@@ -91,201 +101,204 @@ export function ReviewControls({
     approveState.error || decisionState.error,
   );
 
+  const decided = Boolean(approveState.success || decisionState.success);
+
   return (
-    <section
-      aria-label="Decision"
-      className="mt-8 space-y-5 border-t border-border-subtle pt-6"
-    >
-      <h2 className="text-lg font-semibold tracking-tight">Decision</h2>
+    <section aria-label="Decision" className="space-y-5">
+      <h2 className="text-xl font-extrabold tracking-[-0.025em]">Decision</h2>
 
       {decisionMessage && (
-        <p
-          role={decisionMessageIsError ? "alert" : "status"}
-          className={
-            decisionMessageIsError
-              ? "text-sm font-semibold text-destructive"
-              : "text-sm font-semibold text-accent"
-          }
-        >
-          {decisionMessage}
-        </p>
+        <div className={PANEL}>
+          <p
+            role={decisionMessageIsError ? "alert" : "status"}
+            className={`text-base font-semibold ${
+              decisionMessageIsError ? "text-destructive" : "text-fern"
+            }`}
+          >
+            {decisionMessage}
+          </p>
+          {decided && (
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              {nextRevisionId && (
+                <Link
+                  href={`/moderation/stories/${nextRevisionId}`}
+                  className={BUTTON_PRIMARY}
+                >
+                  Review the next story
+                </Link>
+              )}
+              <Link href="/moderation/stories" className={BUTTON_OUTLINE}>
+                Back to the queue
+              </Link>
+            </div>
+          )}
+        </div>
       )}
 
       {canDecide ? (
-        <>
-          {/*
-            Request changes comes FIRST when there is nothing to publish.
-            Reading order is the recommendation: the most likely correct
-            action for this submission sits at the top of the column.
-          */}
-          <div
-            className={`space-y-5 ${contentIsEmpty ? "flex flex-col-reverse space-y-reverse" : ""}`}
-          >
-            <div className="rounded-xl border border-border-subtle p-4 sm:p-5">
-              <h3 className="text-sm font-semibold">Approve and publish</h3>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Begins a publication attempt, copies any not-yet-promoted media
-                to public storage, then finalizes publication. If any step
-                fails, nothing is silently lost — the attempt stays active and
-                can be retried.
-              </p>
-              {contentIsEmpty && (
-                <p className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/[0.06] px-3 py-2 text-xs font-semibold text-destructive">
-                  <AlertCircleIcon
-                    aria-hidden="true"
-                    className="mt-px h-3.5 w-3.5 shrink-0"
-                  />
-                  There is nothing readable to publish here. Approving would put
-                  an empty story live.
-                </p>
-              )}
-              <form action={approveFormAction} className="mt-3 space-y-2">
-                <input type="hidden" name="revisionId" value={revisionId} />
-                <input type="hidden" name="storyId" value={storyId} />
-                <label className="block">
-                  <span className={FIELD_LABEL_CLASSES}>
-                    Note to the contributor (optional)
-                  </span>
-                  <textarea
-                    name="userFacingReason"
-                    rows={2}
-                    placeholder="Optional note shown to the contributor"
-                    className={`mt-1 ${TEXTAREA_CLASSES}`}
-                  />
-                </label>
-                <label className="block">
-                  <span className={FIELD_LABEL_CLASSES}>
-                    Internal note (optional, staff only)
-                  </span>
-                  <textarea
-                    name="editorNote"
-                    rows={2}
-                    placeholder="Optional internal note (staff only)"
-                    className={`mt-1 ${TEXTAREA_CLASSES}`}
-                  />
-                </label>
-                <button
-                  type="submit"
-                  disabled={approvePending}
-                  className="rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-accent-foreground transition-opacity duration-150 hover:opacity-90 disabled:opacity-60"
-                >
-                  {approvePending ? "Approving…" : "Approve and publish"}
-                </button>
-              </form>
-            </div>
-
-            <div
-              className={`rounded-xl border p-4 sm:p-5 ${contentIsEmpty ? "border-accent/50" : "border-border-subtle"}`}
-            >
-              <h3 className="text-sm font-semibold">
-                Reject / request changes
-              </h3>
-              {contentIsEmpty && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Suggested for this submission — a reason is pre-filled below
-                  and you can edit it before sending.
-                </p>
-              )}
-              <form action={decisionFormAction} className="mt-3 space-y-2">
-                <input type="hidden" name="revisionId" value={revisionId} />
-                <input
-                  type="hidden"
-                  name="expectedVersion"
-                  value={storyVersion}
+        // Request changes comes FIRST when there is nothing to publish.
+        // Reading order is the recommendation: the most likely correct
+        // action for this submission sits at the top of the column.
+        <div
+          className={`flex gap-5 ${contentIsEmpty ? "flex-col-reverse" : "flex-col"}`}
+        >
+          <div className={PANEL}>
+            <h3 className="text-base font-bold">Publish it</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {isReplacement
+                ? "This version takes the place of the live one straight away."
+                : "The story and its photos go live for everyone straight away."}
+            </p>
+            {contentIsEmpty && (
+              <p className="mt-3 flex items-start gap-2 rounded-2xl bg-destructive/10 px-3 py-2.5 text-sm font-semibold text-destructive">
+                <AlertCircleIcon
+                  aria-hidden="true"
+                  className="mt-0.5 h-4 w-4 shrink-0"
                 />
-                <label className="block">
-                  <span className={FIELD_LABEL_CLASSES}>Decision</span>
-                  <select
-                    name="decision"
-                    className="mt-1 block rounded-md border border-border-subtle bg-surface-muted px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
-                  >
-                    <option value="changes_requested">Request changes</option>
-                    <option value="reject">Reject</option>
-                  </select>
-                </label>
-                <label className="block">
-                  <span className={FIELD_LABEL_CLASSES}>
-                    Reason shown to the contributor (required)
-                  </span>
-                  <textarea
-                    name="userFacingReason"
-                    rows={3}
-                    required
-                    defaultValue={contentIsEmpty ? EMPTY_CONTENT_REASON : ""}
-                    placeholder="Reason shown to the contributor (required)"
-                    className={`mt-1 ${TEXTAREA_CLASSES}`}
+                There is nothing readable to publish here. Approving would put
+                an empty story live.
+              </p>
+            )}
+            <form action={approveFormAction} className="mt-4">
+              <input type="hidden" name="revisionId" value={revisionId} />
+              <input type="hidden" name="storyId" value={storyId} />
+              <button
+                type="submit"
+                disabled={approvePending}
+                className={`${BUTTON_PRIMARY} w-full sm:w-auto`}
+              >
+                {approvePending ? "Approving…" : "Approve and publish"}
+              </button>
+              {/* Closed: most approvals carry no note at all. */}
+              <details className="group/notes mt-2">
+                <summary className="press flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-sm font-bold text-muted-foreground [&::-webkit-details-marker]:hidden">
+                  Add a note
+                  <ChevronIcon
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 transition-transform group-open/notes:rotate-90 motion-reduce:transition-none"
                   />
-                </label>
-                <label className="block">
-                  <span className={FIELD_LABEL_CLASSES}>
-                    Internal note (optional, staff only)
-                  </span>
-                  <textarea
-                    name="editorNote"
-                    rows={2}
-                    placeholder="Optional internal note (staff only)"
-                    className={`mt-1 ${TEXTAREA_CLASSES}`}
-                  />
-                </label>
-                <button
-                  type="submit"
-                  disabled={decisionPending}
-                  className="rounded-full border border-foreground/30 px-5 py-2.5 text-sm font-bold transition-colors duration-150 hover:border-foreground disabled:opacity-60"
-                >
-                  {decisionPending ? "Submitting…" : "Submit decision"}
-                </button>
-              </form>
-            </div>
+                </summary>
+                <div className="space-y-4 pt-1">
+                  <label className="block">
+                    <span className={FIELD_LABEL}>
+                      Note to the contributor (optional)
+                    </span>
+                    <textarea
+                      name="userFacingReason"
+                      rows={2}
+                      className={FIELD}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className={FIELD_LABEL}>
+                      Internal note (optional, staff only)
+                    </span>
+                    <textarea name="editorNote" rows={2} className={FIELD} />
+                  </label>
+                </div>
+              </details>
+            </form>
           </div>
-        </>
+
+          <div className={PANEL}>
+            <h3 className="text-base font-bold">Send it back or reject it</h3>
+            {contentIsEmpty && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Suggested for this submission. A reason is filled in below and
+                you can edit it before sending.
+              </p>
+            )}
+            <form action={decisionFormAction} className="mt-3 space-y-4">
+              <input type="hidden" name="revisionId" value={revisionId} />
+              <input
+                type="hidden"
+                name="expectedVersion"
+                value={storyVersion}
+              />
+              <label className="block">
+                <span className={FIELD_LABEL}>Decision</span>
+                <select name="decision" className={FIELD}>
+                  <option value="changes_requested">Request changes</option>
+                  <option value="reject">Reject</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className={FIELD_LABEL}>
+                  Reason shown to the contributor (required)
+                </span>
+                <textarea
+                  name="userFacingReason"
+                  rows={3}
+                  required
+                  defaultValue={contentIsEmpty ? EMPTY_CONTENT_REASON : ""}
+                  placeholder="Reason shown to the contributor (required)"
+                  className={FIELD}
+                />
+              </label>
+              <label className="block">
+                <span className={FIELD_LABEL}>
+                  Internal note (optional, staff only)
+                </span>
+                <textarea name="editorNote" rows={2} className={FIELD} />
+              </label>
+              <button
+                type="submit"
+                disabled={decisionPending}
+                className={`${BUTTON_OUTLINE} w-full sm:w-auto`}
+              >
+                {decisionPending ? "Submitting…" : "Submit decision"}
+              </button>
+            </form>
+          </div>
+        </div>
       ) : (
-        <p className="text-sm text-muted-foreground">
-          This revision is currently &ldquo;{revisionStatus}&rdquo; — approve /
-          reject / request-changes only apply to a submitted revision.
-        </p>
+        !decided && (
+          <p className={`${PANEL} text-sm text-muted-foreground`}>
+            Nothing to decide here: this version is marked &ldquo;
+            {REVISION_STATUS_LABELS[revisionStatus] ?? revisionStatus}&rdquo;.
+          </p>
+        )
       )}
 
-      <div className="rounded-xl border border-border-subtle p-4 sm:p-5">
+      <div className="rounded-[20px] bg-surface shadow-sm">
         <button
           type="button"
           onClick={() => setShowArchive((v) => !v)}
           aria-expanded={showArchive}
-          className="text-sm font-semibold text-destructive underline underline-offset-4"
+          className="press flex min-h-13 w-full items-center gap-2 px-4 text-left text-base font-medium text-destructive sm:px-5"
         >
-          {showArchive
-            ? "Hide archive/unpublish"
-            : "Archive / unpublish this story"}
+          <span className="flex-1">Archive / unpublish this story</span>
+          <ChevronIcon
+            aria-hidden="true"
+            className={`h-4 w-4 transition-transform motion-reduce:transition-none ${showArchive ? "rotate-90" : ""}`}
+          />
         </button>
         {showArchive && (
-          <form action={archiveFormAction} className="mt-3 space-y-2">
+          <form
+            action={archiveFormAction}
+            className="space-y-4 px-4 pt-1 pb-4 sm:px-5"
+          >
             <input type="hidden" name="storyId" value={storyId} />
             <input type="hidden" name="revisionId" value={revisionId} />
             <input type="hidden" name="expectedVersion" value={storyVersion} />
             <label className="block">
-              <span className={FIELD_LABEL_CLASSES}>Reason (required)</span>
+              <span className={FIELD_LABEL}>Reason (required)</span>
               <textarea
                 name="reason"
                 rows={2}
                 required
                 placeholder="Reason (required)"
-                className={`mt-1 ${TEXTAREA_CLASSES}`}
+                className={FIELD}
               />
             </label>
             <label className="block">
-              <span className={FIELD_LABEL_CLASSES}>
-                Internal note (optional)
-              </span>
-              <textarea
-                name="note"
-                rows={2}
-                placeholder="Optional internal note"
-                className={`mt-1 ${TEXTAREA_CLASSES}`}
-              />
+              <span className={FIELD_LABEL}>Internal note (optional)</span>
+              <textarea name="note" rows={2} className={FIELD} />
             </label>
             <button
               type="submit"
               disabled={archivePending}
-              className="rounded-full bg-destructive px-5 py-2.5 text-sm font-bold text-white transition-opacity duration-150 hover:opacity-90 disabled:opacity-60"
+              className={`${BUTTON_DANGER} w-full sm:w-auto`}
             >
               {archivePending ? "Archiving…" : "Archive story"}
             </button>

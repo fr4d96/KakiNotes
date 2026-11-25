@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { isReviewOnly } from "@/lib/auth/staff-menu";
+import { useViewerIdentity } from "@/lib/auth/viewer-identity";
 import { useSignedIn } from "@/lib/hooks/use-signed-in";
 
 /**
@@ -22,6 +24,9 @@ export function ShareStoryLink({
   children: ReactNode;
 }) {
   const signedIn = useSignedIn();
+  const { role } = useViewerIdentity();
+  // Nothing to offer a moderator: they review, they don't write.
+  if (isReviewOnly(role)) return null;
   return (
     <Link href={signedIn ? newStoryHref : "/sign-up"} className={className}>
       {children}

@@ -435,6 +435,9 @@ shape; the words share the page.
   into the home-indicator area, translucent surface over a 22px blur with 180% saturation, a bright
   top-edge hairline and a soft lift shadow. A darker glass bubble slides behind the active tab, the
   new tab's icon pops once (1 to 1.12 to 1). It slides away on task screens and while a field has focus.
+  Staff dashboards have the same bar with their own sections (a moderator has the moderation one on
+  every screen, ending in Profile, since they don't write); a selection bar (the moderation queue's
+  select mode) takes its place, so there is never more than one bar at the bottom.
 - **Footer:** home pages only, on the surface colour with a top hairline; slim on phones (the
   not-advice disclaimer, one row of legal links, the copyright line), four columns from `md`.
 

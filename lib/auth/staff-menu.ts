@@ -55,3 +55,15 @@ export function staffMenuItemsForRole(role: AppRole | null): StaffMenuItem[] {
   if (!role) return [];
   return STAFF_MENUS[role] ?? [];
 }
+
+/**
+ * Moderators only review: the app shows them no writing features (stories,
+ * folders, photos, affirmation notes, Drive, a public profile), and their
+ * phone tab bar is the moderation one everywhere (owner decision,
+ * 2026-11-25). Admins keep both sides. Like the rest of this file it decides
+ * what is drawn and where a page sends someone, never what the database
+ * allows: that is RLS.
+ */
+export function isReviewOnly(role: AppRole | null): boolean {
+  return role === "moderator";
+}

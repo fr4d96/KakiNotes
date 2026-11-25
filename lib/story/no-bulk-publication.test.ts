@@ -2,12 +2,25 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-// Prompt 7's brief is explicit: "Do not add bulk publication ... every story
-// still requires individual review." This is a structural regression test,
-// not a UI assertion -- it fails the moment any bulk-shaped
-// publish/approve/moderate function name is added anywhere in lib/story/ or
-// the generated database types, regardless of whether it's ever wired into a
-// page.
+// Prompt 7's brief forbade bulk publication outright ("every story still
+// requires individual review"). The owner reversed that for the moderation
+// queue on 2026-11-25: a moderator may select several stories and publish
+// them at once. What this test still holds in place is the boundary around
+// that one exception:
+//   - nothing publishes many stories in one operation. There is still no
+//     bulk RPC, so every story keeps its own consent check, publication
+//     attempt and moderation record;
+//   - the only bulk-named functions in lib/story/ are the check that REFUSES
+//     stories and the wording of the confirmation's warnings. Neither can
+//     publish anything;
+//   - the queue's Server Action publishes solely through approveRevision(),
+//     one story at a time, always with that check.
+
+/** "file: name" -- add to this only by an owner decision. */
+const ALLOWED = new Set([
+  "bulk-approve.ts: bulkApproveBlocker",
+  "moderation-queue-view.ts: bulkApproveCautions",
+]);
 
 const BULK_NAME_PATTERN =
   /\bbulk[_-]?(publish|approve|moderate)|\b(publish|approve|moderate)[_-]?bulk\b/i;
@@ -24,8 +37,8 @@ function readTextFiles(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-describe("no bulk publication path", () => {
-  it("lib/story/ defines no bulk publish/approve/moderate function", () => {
+describe("bulk publication stays one story at a time", () => {
+  it("lib/story/ defines no bulk publish/approve/moderate function beyond the refusal check", () => {
     const root = path.join(__dirname, "..", "..", "lib", "story");
     const files = readTextFiles(root);
     const offenders: string[] = [];
@@ -34,8 +47,9 @@ describe("no bulk publication path", () => {
       const exportedFunctionNames =
         content.match(/export\s+(?:async\s+)?function\s+(\w+)/g) ?? [];
       for (const match of exportedFunctionNames) {
-        if (BULK_NAME_PATTERN.test(match)) {
-          offenders.push(`${file}: ${match}`);
+        const entry = `${path.basename(file)}: ${match.split(/\s+/).pop()}`;
+        if (BULK_NAME_PATTERN.test(match) && !ALLOWED.has(entry)) {
+          offenders.push(entry);
         }
       }
     }
@@ -55,5 +69,30 @@ describe("no bulk publication path", () => {
       BULK_NAME_PATTERN.test(name),
     );
     expect(offenders).toEqual([]);
+  });
+
+  it("the queue's bulk approve publishes only through approveRevision(), with the check", () => {
+    const source = readFileSync(
+      path.join(
+        __dirname,
+        "../../app/(moderation)/moderation/stories/actions.ts",
+      ),
+      "utf8",
+    );
+    expect(source.match(/approveRevision\(/g)).toHaveLength(1);
+    expect(source).toMatch(/blocker: bulkApproveBlocker/);
+    expect(source).not.toMatch(
+      /finalizeStoryPublication|beginStoryPublicationAttempt|\.rpc\(|createAdminClient/,
+    );
+  });
+
+  it("the refusal check itself reaches no database or storage", () => {
+    const source = readFileSync(
+      path.join(__dirname, "bulk-approve.ts"),
+      "utf8",
+    );
+    expect(source).not.toMatch(
+      /^import (?!type)[^;]*(supabase|image-pipeline|publish-orchestration|story\/moderation")/m,
+    );
   });
 });
