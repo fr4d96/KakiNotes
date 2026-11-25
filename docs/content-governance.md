@@ -151,7 +151,9 @@ end-to-end (including a real Storage byte round trip) by `tests/e2e/editorial-up
   `begin_story_publication_attempt()`/`finalize_story_publication()` instead). If an approval fails
   part-way, the moderator who started it, or an admin, can approve again and it continues the same
   attempt; another moderator cannot
-  (`20261125100000_resume_active_publication_attempt.sql`).
+  (`20261125100000_resume_active_publication_attempt.sql`). If the story instead leaves review, the
+  attempt ends and its photos are released; any copy already in the public bucket is removed by the
+  cleanup script (`npm run media:cleanup:pending`), which is run by hand.
 
 Draft images remain private-bucket-only until this pipeline runs and a moderator's approval
 actually promotes them (Engineering Rules 13–14) — nothing here changes that invariant, it's the

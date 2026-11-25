@@ -12370,10 +12370,33 @@ the linked project, which is production.
 **To do.** Apply the migration to the linked project (owner approval needed), then run
 `npm run test:rls`.
 
-**Known gaps, not fixed here.** (1) Withdrawing (or reopening) a submission, archiving, or revoking
-consent leaves an active attempt and its `promotion_pending` photos behind; the next revision reuses
-those photos, its copy step finds no copy row for its own attempt ("no data"), and it cannot be
-published. Reproduced locally for reopen and resubmit. (2) Rejecting after a partial copy marks the
-copy rows resolved, so the cleanup script never finds the photo already in the public bucket. The
-replace path above resolves rows the same way, though the retry that follows normally publishes the
-same photo at the same path.
+## 2026-11-25 — Photos are released when a story leaves review
+
+**Problem.** (1) Withdrawing, reopening for editing, archiving, or withdrawing consent left the
+active attempt and its `promotion_pending` photos behind, so the next revision could never be
+published. Reproduced for all four on a local Postgres. (2) A photo copied to the public bucket
+before a rejection stayed there: the cleanup script only looked at unresolved copy rows.
+
+**Fix (migrations NOT applied).** `20261125110000_abandon_attempt_when_review_ends.sql`: a trigger
+abandons the attempt and releases its photos, and the migration repairs rows already stranded.
+`20261125120000_remove_abandoned_public_copies.sql`: list, claim and record functions
+(service_role only), two columns on `story_media_public_copy_attempts`, and a guard in
+`begin_story_media_copy_attempt()` while a claim is open. The cleanup script resolves before it
+deletes (it used to delete first) and deletes only a claimed path, so a stale copy takes two runs at
+least an hour apart.
+
+**Verified.** Local Postgres: every route before and after, repair of stranded rows then republish,
+cleanup rules (in progress, fresh, newer attempt, published, moved to Drive, expired claim, two
+attempts on one path), function grants, and withdraw racing finalize. Withdraw and finalize can
+deadlock, as they could before (8 of 20 forced races on old code, 10 of 20 on new); Postgres aborts
+one, and the result is now always consistent. `scripts/cleanup-abandoned-media-uploads.test.ts` runs
+the script against a fake server. The new RLS tests have NOT been run.
+
+**To do.** Owner approval, then apply 20261125100000, 110000 and 120000 in order, run
+`npm run supabase:types:linked` and `npm run test:rls`, and dry-run `npm run media:cleanup:pending`.
+The new script must not be run before 120000 is applied (it stops with an error).
+
+**Known gaps, not fixed here.** (1) `create_next_draft_revision()` sets a rejected or sent-back
+first-time story back to `draft` only after copying its photos, tags and places, so
+`_protect_revision_child_immutability()` refuses the copy and the contributor cannot revise the
+story. Reproduced locally with photos. (2) Nothing schedules the cleanup script.

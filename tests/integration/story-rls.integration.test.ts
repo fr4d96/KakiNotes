@@ -338,6 +338,30 @@ describe("the image-processing/promotion trust boundary is service_role only", (
     expect(error).not.toBeNull();
   });
 
+  // 20261125120000: these decide which objects are deleted from the public
+  // bucket. Need that migration applied to the target project.
+  it.each([
+    ["maintenance_list_abandoned_public_copies", { p_limit: 1 }],
+    [
+      "maintenance_claim_abandoned_public_copy",
+      { p_copy_attempt_id: "11111111-1111-4111-8111-111111111111" },
+    ],
+    [
+      "maintenance_record_public_copy_removed",
+      { p_copy_attempt_id: "11111111-1111-4111-8111-111111111111" },
+    ],
+    [
+      "_abandon_publication_attempt",
+      { p_attempt_id: "11111111-1111-4111-8111-111111111111" },
+    ],
+  ])(
+    "%s cannot be called by an admin over the regular client",
+    async (fn, args) => {
+      const { error } = await untypedRpc(admin.client, fn, args);
+      expect(error?.code).toBe("42501");
+    },
+  );
+
   // Raw-original retention (20261003120000_story_media_original_retention).
   // The list function returns private storage paths, and the mark function
   // would let a caller make a raw original unreprocessable -- both are

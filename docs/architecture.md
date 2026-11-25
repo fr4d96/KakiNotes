@@ -1963,6 +1963,24 @@ immutable, so `finalize` could never succeed. `begin` abandons that attempt the 
 never refuses; the caller is authorized at `begin` and again at `finalize`, both on the moderator's
 own client.
 
+**An attempt ends when its revision leaves review**
+(`20261125110000_abandon_attempt_when_review_ends.sql`). A trigger on `story_revisions` abandons the
+active attempt whenever a revision stops being `submitted` for any reason but approval (withdraw,
+reopen for editing, archive, consent withdrawal, takedown, or a route added later): its copy rows
+become `abandoned` and its `promotion_pending` photos go back to `processed`, so the next revision
+can publish them. Each route keeps its own authorization, and `moderate_revision()` still abandons
+first with its ownership check. The migration also repairs attempts stranded before it.
+
+**Photos copied for an approval that did not happen are deletable**
+(`20261125120000_remove_abandoned_public_copies.sql`). The copy step writes to the public bucket
+before `finalize`, so an abandoned attempt can leave an unapproved photo there (Rules 13-14). The
+cleanup script lists copies abandoned over an hour ago, claims each under the photo's row lock
+(`maintenance_claim_abandoned_public_copy()`), deletes only the path the claim returns, then records
+it. A path that is published, was ever promoted, or has an unresolved copy by a newer attempt is
+never claimable; while a claim is open (10 minutes) `begin_story_media_copy_attempt()` refuses that
+photo. Nothing schedules the script: until someone runs it, such a photo stays reachable by its
+content-hash URL.
+
 `story_media_public_copy_attempts` is append-and-update,
 **never-delete** — a row is retained and marked `resolved_at`/`resolution` (`promoted` / `abandoned`
 / `superseded`), giving a permanent, queryable audit trail of every publication attempt.
@@ -2017,10 +2035,11 @@ revision of the same story.
 loaded only via `--env-file=.env.maintenance.local` (never falls back to `.env.local`), a
 project-ref-bound confirm string, dry-run by default (`--execute` required for anything
 destructive), a hard-coded 100-row batch bound. SQL only ever `SELECT`s candidates
-(`pending_upload` reservations older than 24h; unresolved copy-attempts untouched for 1h) — actual
+(`pending_upload` reservations older than 24h; unresolved copy-attempts untouched for 1h, which it only
+marks abandoned; public copies abandoned over 1h ago, see "Publication attempts") — actual
 Storage object deletion always goes through the Storage API, and every database mutation goes
-through one of two new, narrow, `service_role`-only RPCs
-(`maintenance_cancel_abandoned_reservation()` / `maintenance_resolve_orphaned_copy_attempt()`)
+through a narrow, `service_role`-only RPC (`maintenance_cancel_abandoned_reservation()` /
+`maintenance_resolve_orphaned_copy_attempt()` / the claim and record pair)
 rather than raw SQL, so maintenance mutations respect the same transition trigger/state constraints
 as every other path.
 
