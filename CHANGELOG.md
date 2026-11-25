@@ -3,6 +3,34 @@
 ## [4.8.0](https://github.com/fr4d96/KakiNotes/compare/v4.7.6...v4.8.0) (2026-11-25)
 
 
+### Reviewing stories is quicker
+
+#### For moderators
+
+- **Publish several stories at once.** In the Stories queue, tap Select, tick the stories you have read, then Approve and publish. Before anything goes live you see how many replace a live story and how many have an open report.
+- **Nothing slips through.** Each story is checked first. One with no text, no valid consent or an unfinished photo is held back with the reason, and the others still publish.
+- **Moderation looks like the rest of Kakinotes.** The queue, review, reports, takedowns and overview screens have the app's own look, with the sections in a floating bar at the bottom of the phone.
+- **Review the story the way readers will see it.** Photos come first, then the words, then the checks. The story's country and the right currency are shown, and after a decision you can go straight to the next story.
+- **A simpler app for moderators.** Moderators see only what they need: Overview, Stories, Reports, Takedowns and Profile. Writing features are no longer shown to them.
+
+#### For contributors
+
+- **A first story that was sent back or turned down can be revised.** You can start a new version of it and submit it again.
+
+#### For everyone
+
+- **Clearer privacy, terms and copyright pages.** They now say how takedown requests and reports really work, how to ask for full deletion, and what is kept when someone leaves an affirmation note.
+
+#### Fixed
+
+- **An approval that failed partway can be tried again.** Before, the story could only be rejected or sent back.
+- **Photos are freed when a story leaves review.** They no longer stay locked after a story is sent back, rejected or withdrawn.
+- **The photo check on the review screen is right.** It used to show a warning on every first story with photos, even when they were ready.
+
+#### Behind the scenes
+
+- **Lighter on the server.** Publishing several new stories clears the saved photo copies once per batch instead of once per story, and the queue no longer loads every story in advance.
+
 ### Features
 
 * **moderation:** approve several stories at once, in an app-style moderator UI ([0be879d](https://github.com/fr4d96/KakiNotes/commit/0be879d9fdb3205e96b74292f4ff8916b26e3e4e))
