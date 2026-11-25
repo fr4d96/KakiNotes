@@ -1835,6 +1835,120 @@ describe("editor is denied every moderator/publication-attempt action", () => {
   });
 });
 
+// Needs 20261125100000_resume_active_publication_attempt.sql applied to the
+// target project. Without it, every "resumes" assertion below fails with
+// "already has an active publication attempt".
+describe("begin_story_publication_attempt resumes an active attempt (migration 20261125100000)", () => {
+  async function submittedRevision(label: string) {
+    const { data: created } = await owner.client.rpc(
+      "create_self_service_draft",
+      {
+        p_title: slug(label),
+        p_content_json: [{ type: "markdown", text: "Fixture content." }],
+      },
+    );
+    const storyId = created![0].story_id;
+    const revisionId = created![0].revision_id;
+    const { data: draft } = await owner.client.rpc("get_my_story_with_draft", {
+      p_story_id: storyId,
+    });
+    const { error } = await owner.client.rpc("submit_revision_with_consent", {
+      p_revision_id: revisionId,
+      p_expected_version: draft![0].version,
+      p_confirmation_method: "account",
+      p_publication_confirmed: true,
+      p_expected_terms_version: currentTermsVersion,
+    });
+    expect(error).toBeNull();
+    return { storyId, revisionId };
+  }
+
+  const begin = (client: SupabaseClient<Database>, revisionId: string) =>
+    client.rpc("begin_story_publication_attempt", {
+      p_revision_id: revisionId,
+    });
+
+  const finalize = (
+    client: SupabaseClient<Database>,
+    revisionId: string,
+    attemptId: string,
+  ) =>
+    client.rpc("finalize_story_publication", {
+      p_revision_id: revisionId,
+      p_approval_attempt_id: attemptId,
+    });
+
+  it("gives the moderator who started it the same id back, and that id finalizes", async () => {
+    const { revisionId } = await submittedRevision("resume-own");
+    const first = await begin(moderator.client, revisionId);
+    expect(first.error).toBeNull();
+    const second = await begin(moderator.client, revisionId);
+    expect(second.error).toBeNull();
+    expect(second.data).toBe(first.data);
+
+    const { error } = await finalize(
+      moderator.client,
+      revisionId,
+      second.data!,
+    );
+    expect(error).toBeNull();
+
+    // Published: no longer submitted, so there is nothing left to resume.
+    const after = await begin(moderator.client, revisionId);
+    expect(after.error?.message).toContain("is not currently submitted");
+  });
+
+  it("lets an admin resume and finalize an attempt a moderator started", async () => {
+    const { revisionId } = await submittedRevision("resume-admin");
+    const first = await begin(moderator.client, revisionId);
+    expect(first.error).toBeNull();
+    const resumed = await begin(admin.client, revisionId);
+    expect(resumed.error).toBeNull();
+    expect(resumed.data).toBe(first.data);
+
+    const { error } = await finalize(admin.client, revisionId, resumed.data!);
+    expect(error).toBeNull();
+  });
+
+  it("refuses a moderator who did not start it, and everyone without the role", async () => {
+    const { revisionId } = await submittedRevision("resume-denied");
+    const started = await begin(admin.client, revisionId);
+    expect(started.error).toBeNull();
+
+    const second = await begin(moderator.client, revisionId);
+    expect(second.data).toBeNull();
+    expect(second.error?.message).toContain(
+      "already has an active publication attempt",
+    );
+    for (const client of [owner.client, editor.client]) {
+      const denied = await begin(client, revisionId);
+      expect(denied.data).toBeNull();
+      expect(denied.error?.message).toContain("Only a moderator or admin");
+    }
+    const anonymous = await begin(anon, revisionId);
+    expect(anonymous.error?.code).toBe("42501");
+
+    // Leave nothing in the live queue behind.
+    const { error } = await finalize(admin.client, revisionId, started.data!);
+    expect(error).toBeNull();
+  });
+
+  it("refuses to resume once the contributor has withdrawn the revision", async () => {
+    const { storyId, revisionId } = await submittedRevision("resume-withdrawn");
+    const started = await begin(moderator.client, revisionId);
+    expect(started.error).toBeNull();
+    const { error: withdrawError } = await owner.client.rpc(
+      "withdraw_unstarted_submission",
+      { p_story_id: storyId },
+    );
+    expect(withdrawError).toBeNull();
+
+    const resumed = await begin(moderator.client, revisionId);
+    expect(resumed.data).toBeNull();
+    expect(resumed.error?.message).toContain("is not currently submitted");
+  });
+});
+
 describe("archive requires a reason (migration 20260805100500)", () => {
   it("rejects a null/empty reason and succeeds with one, recording an audit row", async () => {
     const story = await publishOwnerStory({ title: slug("archive-reason") });

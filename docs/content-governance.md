@@ -148,7 +148,10 @@ end-to-end (including a real Storage byte round trip) by `tests/e2e/editorial-up
   Engineering Rule 14) and flips the story's published pointer, all in one transaction — replacing
   the old `moderate_revision()` approve path entirely (that function now only handles
   reject/changes-requested; calling it with `'approve'` raises, directing callers to
-  `begin_story_publication_attempt()`/`finalize_story_publication()` instead).
+  `begin_story_publication_attempt()`/`finalize_story_publication()` instead). If an approval fails
+  part-way, the moderator who started it, or an admin, can approve again and it continues the same
+  attempt; another moderator cannot
+  (`20261125100000_resume_active_publication_attempt.sql`).
 
 Draft images remain private-bucket-only until this pipeline runs and a moderator's approval
 actually promotes them (Engineering Rules 13–14) — nothing here changes that invariant, it's the

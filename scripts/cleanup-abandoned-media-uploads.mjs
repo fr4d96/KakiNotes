@@ -9,7 +9,11 @@
 //
 // - story_media rows still `pending_upload` after 24h (far beyond any
 //   realistic single upload duration).
-// - story_media_public_copy_attempts rows still unresolved after 1h.
+// - story_media_public_copy_attempts rows still unresolved and untouched for
+//   1h. updated_at, not created_at: begin_story_publication_attempt()
+//   refreshes it when a failed approval is retried, so an approval in
+//   progress is never mistaken for an orphan
+//   (20261125100000_resume_active_publication_attempt.sql).
 //
 // Dry-run by default. Pass --execute to actually delete anything. Requires
 // dedicated SUPABASE_MAINTENANCE_* env vars, loaded only via an explicit
@@ -122,9 +126,9 @@ async function main() {
   ).toISOString();
   const { data: orphanedCopies, error: copyError } = await admin
     .from("story_media_public_copy_attempts")
-    .select("id, media_id, public_path, status, created_at")
+    .select("id, media_id, public_path, status, created_at, updated_at")
     .is("resolved_at", null)
-    .lt("created_at", copyCutoff)
+    .lt("updated_at", copyCutoff)
     .limit(BATCH_SIZE);
   if (copyError) {
     console.error("Failed to query orphaned copy attempts:", copyError.message);

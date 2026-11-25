@@ -1948,7 +1948,22 @@ accepts a client-generated attempt id as the _origin_ of a new attempt, though t
 legitimately passed back and used as a reference by every later call, each of which independently
 re-verifies it (exists, `active`, matches revision/media, caller is `initiated_by` or an admin).
 Only one attempt may be `active` per revision at a time, enforced by a partial unique index, not
-merely an application check. `story_media_public_copy_attempts` is append-and-update,
+merely an application check.
+
+**Retrying a failed approval resumes the attempt**
+(`20261125100000_resume_active_publication_attempt.sql`). Every approval starts with
+`begin_story_publication_attempt()`, so for a revision that already has an active attempt it returns
+that attempt's id to the moderator who started it or to an admin, and refuses any other moderator
+(the same ownership rule the later calls apply). `initiated_by` does not change; the
+`moderation_actions` row records whoever finalized. The exception is an attempt with resolved copy
+rows: the cleanup script resolves stale copies but leaves the attempt `active`, and a resolution is
+immutable, so `finalize` could never succeed. `begin` abandons that attempt the way
+`moderate_revision()` does and mints a new one. The copy step runs as `service_role`, where
+`auth.uid()` is null, so `begin_story_media_copy_attempt()`'s ownership check evaluates to null and
+never refuses; the caller is authorized at `begin` and again at `finalize`, both on the moderator's
+own client.
+
+`story_media_public_copy_attempts` is append-and-update,
 **never-delete** — a row is retained and marked `resolved_at`/`resolution` (`promoted` / `abandoned`
 / `superseded`), giving a permanent, queryable audit trail of every publication attempt.
 
@@ -2002,7 +2017,7 @@ revision of the same story.
 loaded only via `--env-file=.env.maintenance.local` (never falls back to `.env.local`), a
 project-ref-bound confirm string, dry-run by default (`--execute` required for anything
 destructive), a hard-coded 100-row batch bound. SQL only ever `SELECT`s candidates
-(`pending_upload` reservations older than 24h; unresolved copy-attempts older than 1h) — actual
+(`pending_upload` reservations older than 24h; unresolved copy-attempts untouched for 1h) — actual
 Storage object deletion always goes through the Storage API, and every database mutation goes
 through one of two new, narrow, `service_role`-only RPCs
 (`maintenance_cancel_abandoned_reservation()` / `maintenance_resolve_orphaned_copy_attempt()`)
@@ -2606,8 +2621,8 @@ side-effecting operations (`beginStoryPublicationAttempt`, `copyStoryMediaToPubl
 whose `processingState !== 'promoted'` is copied (this also naturally retries a `promotion_pending`
 item, which `begin_story_media_copy_attempt()`'s own idempotent branch handles); if ANY copy fails,
 the loop stops immediately and `finalizeStoryPublication()` is never called — the attempt is left in
-its recoverable `active` state (this matches `finalize_story_publication()`'s own re-entrant design:
-a later retry of the whole orchestration, or an explicit reject/changes-requested via
+its recoverable `active` state (a later retry of the whole orchestration resumes the same attempt,
+see "Publication attempts" above, or an explicit reject/changes-requested via
 `moderateRevision()`, can still resolve it cleanly, since `moderate_revision()` already abandons an
 active attempt and reverts any `promotion_pending` media back to `processed`). A `finalize` failure
 is reported the same way (attempt id surfaced, nothing silently swallowed). `invalidateStoryPublicCache(slug)`
@@ -2775,8 +2790,10 @@ Reviewed against the brief's own list of recovery scenarios:
   stop-and-leave-`active` contract (see "Approve-flow orchestration" above) is sufficient as-is — a
   moderator re-clicking "Approve and publish" on the same review page naturally retries the whole
   begin→copy→finalize loop, and `begin_story_publication_attempt()`/`finalize_story_publication()`
-  are both re-entrant by design (a fresh attempt id is minted each time; already-`promoted` media is
-  skipped by the copy loop's own `processingState !== 'promoted'` filter). No new UI was added for
+  are both re-entrant by design (already-`promoted` media is skipped by the copy loop's own
+  `processingState !== 'promoted'` filter). **Corrected 2026-11-25:** this was not true until
+  `20261125100000_resume_active_publication_attempt.sql`. `begin` raised "already has an active
+  publication attempt" on every retry; it now returns the active attempt instead. No new UI was added for
   this — the brief's own framing ("versus just re-clicking Approve") already anticipated that this
   is likely sufficient, and confirming that by re-reading `publish-orchestration.ts` and its test
   file was this session's actual verification step, not new code.

@@ -12344,3 +12344,36 @@ action reported a failure. So the browser never learned version 31 and sent 30 f
   Supabase path's retry: recording overwrites nothing.
 - Diagnosed with the Supabase connector, re-authorized on 2026-11-23 to the organization that
   owns `yzaonhjieupxyrmbienf` (it had only the old org's paused project).
+
+## 2026-11-25 — A failed approval can be retried
+
+**Problem.** Approving is begin → copy photos → finalize. When copy or finalize failed, the moderator
+was told to retry, but `begin_story_publication_attempt()` raised "already has an active publication
+attempt" for that revision, so the story could only be rejected or sent back. Reproduced on a
+throwaway local Postgres 18 with all 160 migrations applied.
+
+**Fix (migration NOT applied).** `20261125100000_resume_active_publication_attempt.sql`: `begin`
+returns the existing active attempt to the moderator who started it or to an admin. The role check,
+`submitted` check, one-active index and grants are unchanged. An attempt whose copy rows the cleanup
+script already resolved can never finalize (resolution is immutable), so it is abandoned and
+replaced. Resuming refreshes `updated_at` on the copy rows, and
+`scripts/cleanup-abandoned-media-uploads.mjs` now goes by `updated_at`, so it does not delete photos
+from an approval in progress. No signature change, so `types/database.ts` is unchanged.
+
+**Verified.** On the local database: same moderator, admin resuming a moderator's attempt after a
+partial copy, refusals (other moderator, editor, owner, no user), withdrawn and published revisions,
+reject after resume, replace after cleanup, six simultaneous begins, and begin racing finalize (no
+deadlocks). Unit tests cover the orchestration retry and `copyStoryMediaToPublic` on a resumed
+attempt. The new `story-rls.integration.test.ts` block has NOT been run: it needs the migration on
+the linked project, which is production.
+
+**To do.** Apply the migration to the linked project (owner approval needed), then run
+`npm run test:rls`.
+
+**Known gaps, not fixed here.** (1) Withdrawing (or reopening) a submission, archiving, or revoking
+consent leaves an active attempt and its `promotion_pending` photos behind; the next revision reuses
+those photos, its copy step finds no copy row for its own attempt ("no data"), and it cannot be
+published. Reproduced locally for reopen and resubmit. (2) Rejecting after a partial copy marks the
+copy rows resolved, so the cleanup script never finds the photo already in the public bucket. The
+replace path above resolves rows the same way, though the retry that follows normally publishes the
+same photo at the same path.
