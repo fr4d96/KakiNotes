@@ -9,5 +9,5 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function PrivacyPage() {
   const t = await getTranslations("legal");
-  return <LegalPage title={t("privacyTitle")} prefix="privacy" sections={6} />;
+  return <LegalPage title={t("privacyTitle")} prefix="privacy" sections={7} />;
 }
