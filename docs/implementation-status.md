@@ -12352,7 +12352,7 @@ was told to retry, but `begin_story_publication_attempt()` raised "already has a
 attempt" for that revision, so the story could only be rejected or sent back. Reproduced on a
 throwaway local Postgres 18 with all 160 migrations applied.
 
-**Fix (migration NOT applied).** `20261125100000_resume_active_publication_attempt.sql`: `begin`
+**Fix (applied to the live project 2026-11-25 via `supabase db push`).** `20261125100000_resume_active_publication_attempt.sql`: `begin`
 returns the existing active attempt to the moderator who started it or to an admin. The role check,
 `submitted` check, one-active index and grants are unchanged. An attempt whose copy rows the cleanup
 script already resolved can never finalize (resolution is immutable), so it is abandoned and
@@ -12364,11 +12364,10 @@ from an approval in progress. No signature change, so `types/database.ts` is unc
 partial copy, refusals (other moderator, editor, owner, no user), withdrawn and published revisions,
 reject after resume, replace after cleanup, six simultaneous begins, and begin racing finalize (no
 deadlocks). Unit tests cover the orchestration retry and `copyStoryMediaToPublic` on a resumed
-attempt. The new `story-rls.integration.test.ts` block has NOT been run: it needs the migration on
-the linked project, which is production.
+attempt. The new `story-rls.integration.test.ts` block has NOT been run: it writes
+fixtures to the linked project, which is production.
 
-**To do.** Apply the migration to the linked project (owner approval needed), then run
-`npm run test:rls`.
+**To do.** Run `npm run test:rls`.
 
 ## 2026-11-25 — Photos are released when a story leaves review
 
@@ -12377,7 +12376,7 @@ active attempt and its `promotion_pending` photos behind, so the next revision c
 published. Reproduced for all four on a local Postgres. (2) A photo copied to the public bucket
 before a rejection stayed there: the cleanup script only looked at unresolved copy rows.
 
-**Fix (migrations NOT applied).** `20261125110000_abandon_attempt_when_review_ends.sql`: a trigger
+**Fix (both applied to the live project 2026-11-25 via `supabase db push`).** `20261125110000_abandon_attempt_when_review_ends.sql`: a trigger
 abandons the attempt and releases its photos, and the migration repairs rows already stranded.
 `20261125120000_remove_abandoned_public_copies.sql`: list, claim and record functions
 (service_role only), two columns on `story_media_public_copy_attempts`, and a guard in
@@ -12392,9 +12391,11 @@ deadlock, as they could before (8 of 20 forced races on old code, 10 of 20 on ne
 one, and the result is now always consistent. `scripts/cleanup-abandoned-media-uploads.test.ts` runs
 the script against a fake server. The new RLS tests have NOT been run.
 
-**To do.** Owner approval, then apply 20261125100000, 110000 and 120000 in order, run
-`npm run supabase:types:linked` and `npm run test:rls`, and dry-run `npm run media:cleanup:pending`.
-The new script must not be run before 120000 is applied (it stops with an error).
+**Live check after applying.** All function bodies, grants, the trigger and the columns match the
+files; row counts by state were unchanged (nothing was stranded, so the repair changed no rows), and
+no abandoned public copies exist.
+
+**To do.** Run `npm run test:rls`, and dry-run `npm run media:cleanup:pending` with the new script.
 
 **Known gap, not fixed here.** Nothing schedules the cleanup script.
 
@@ -12406,7 +12407,7 @@ The new script must not be run before 120000 is applied (it stops with an error)
 `_protect_revision_child_immutability()` refuses them while the lifecycle is `rejected` or
 `changes_requested`. Published and withdrawn stories were not affected.
 
-**Fix (migration NOT applied).** `20261125130000_revise_rejected_first_story.sql` moves the lifecycle
+**Fix (applied to the live project 2026-11-25 via `supabase db push`).** `20261125130000_revise_rejected_first_story.sql` moves the lifecycle
 update above the copies; the rest of the function is unchanged. `_revision_is_editable()`, the
 trigger, ownership checks and grants are untouched.
 
@@ -12414,4 +12415,4 @@ trigger, ownership checks and grants are untouched.
 users are refused, resubmitting publishes, and published, withdrawn and archived stories behave as
 before. The new RLS test has NOT been run.
 
-**To do.** Apply with the three migrations above (owner approval needed), then `npm run test:rls`.
+**To do.** Run `npm run test:rls`.
