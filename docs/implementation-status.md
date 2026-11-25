@@ -12416,3 +12416,14 @@ users are refused, resubmitting publishes, and published, withdrawn and archived
 before. The new RLS test has NOT been run.
 
 **To do.** Run `npm run test:rls`.
+
+## 2026-11-25 — RLS suite not run: its settings point at the old project
+
+`.env.test.local` still targets `ybhydepjaantkngngvuf`, the project used before 2026-11-13, so
+`npm run test:rls` does not test the live database and would not see the migrations above. Its
+`posttest:rls` cleanup, however, runs `supabase db query --linked`, which is now production
+(`yzaonhjieupxyrmbienf`). The deletes are scoped to `rls-test-%` slugs and the five test accounts, and
+production holds no such stories today, but the guard checks one project while the deletes run on
+another. Pointing the suite at production needs a confirm string stating that project is "a
+disposable dev project", which is not true, so it was not done. Until a separate test project or
+branch exists, these fixes rest on the local Postgres runs and the read-only live checks.
