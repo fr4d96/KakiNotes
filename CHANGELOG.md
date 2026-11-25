@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.8.0](https://github.com/fr4d96/KakiNotes/compare/v4.7.6...v4.8.0) (2026-11-25)
+
+
+### Features
+
+* **moderation:** approve several stories at once, in an app-style moderator UI ([0be879d](https://github.com/fr4d96/KakiNotes/commit/0be879d9fdb3205e96b74292f4ff8916b26e3e4e))
+
+
+### Bug Fixes
+
+* **legal:** say how takedowns, reports and affirmation notes really work ([fe9982c](https://github.com/fr4d96/KakiNotes/commit/fe9982c4905a30a224758389f4c36378cb5bea36))
+* **moderation:** a failed approval can be retried ([218b614](https://github.com/fr4d96/KakiNotes/commit/218b6142694cdde97ba4eeb34e8ce9de8ac2826d))
+* **moderation:** release photos when a story leaves review ([1e6496e](https://github.com/fr4d96/KakiNotes/commit/1e6496ed707cb48be6d5b191284b7aaffb7d2a49))
+* **stories:** a rejected or sent-back first story can be revised ([0663492](https://github.com/fr4d96/KakiNotes/commit/06634927af7f498a26c4e4b9edd5f314b05d15c0))
+
 ## [4.7.6](https://github.com/fr4d96/KakiNotes/compare/v4.7.5...v4.7.6) (2026-11-25)
 
 
