@@ -2916,6 +2916,86 @@ describe("get_story_for_moderator never returns contributor identity fields (mig
   }, 30000);
 });
 
+// Needs 20261125130000_revise_rejected_first_story.sql applied to the target
+// project. Before it, the copy was refused for any story with a child row:
+// the lifecycle was still rejected/changes_requested when it ran.
+describe("create_next_draft_revision after a moderator's decision on a first publication (20261125130000)", () => {
+  it.each(["reject", "changes_requested"] as const)(
+    "the contributor can revise and resubmit after %s, keeping their tags",
+    async (decision) => {
+      const { data: created } = await owner.client.rpc(
+        "create_self_service_draft",
+        {
+          p_title: slug(`revise-${decision}`),
+          p_content_json: [{ type: "markdown", text: "Fixture content." }],
+        },
+      );
+      const storyId = created![0].story_id;
+      const revisionId = created![0].revision_id;
+      const version = async () => {
+        const { data } = await owner.client.rpc("get_my_story_with_draft", {
+          p_story_id: storyId,
+        });
+        return data![0].version;
+      };
+      const submit = async (id: string) =>
+        owner.client.rpc("submit_revision_with_consent", {
+          p_revision_id: id,
+          p_expected_version: await version(),
+          p_confirmation_method: "account",
+          p_publication_confirmed: true,
+          p_expected_terms_version: currentTermsVersion,
+        });
+
+      const { error: tagError } = await owner.client.rpc("set_revision_tags", {
+        p_revision_id: revisionId,
+        p_expected_version: await version(),
+        p_tags: [{ custom_label: "Ferry to Picton" }],
+      });
+      expect(tagError).toBeNull();
+      expect((await submit(revisionId)).error).toBeNull();
+      const { error: decisionError } = await moderator.client.rpc(
+        "moderate_revision",
+        {
+          p_revision_id: revisionId,
+          p_expected_version: await version(),
+          p_decision: decision,
+          p_user_facing_reason: "Fixture reason.",
+        },
+      );
+      expect(decisionError).toBeNull();
+
+      // Still only the contributor's to revise.
+      const denied = await other.client.rpc("create_next_draft_revision", {
+        p_story_id: storyId,
+      });
+      expect(denied.error?.message).toContain("Only the story owner");
+
+      const { data: nextId, error: nextError } = await owner.client.rpc(
+        "create_next_draft_revision",
+        { p_story_id: storyId },
+      );
+      expect(nextError).toBeNull();
+
+      const { data: selections, error: selectionsError } =
+        await owner.client.rpc("get_revision_selections", {
+          p_revision_id: nextId!,
+        });
+      expect(selectionsError).toBeNull();
+      expect(JSON.stringify(selections)).toContain("Ferry to Picton");
+
+      expect((await submit(nextId!)).error).toBeNull();
+      // Leave nothing in the live queue behind.
+      const { error: withdrawError } = await owner.client.rpc(
+        "withdraw_unstarted_submission",
+        { p_story_id: storyId },
+      );
+      expect(withdrawError).toBeNull();
+    },
+    30000,
+  );
+});
+
 describe("create_next_draft_revision: contributor-authored labels", () => {
   /**
    * Regression for 20260902100000. 20260812110000 gave story_revision_tags

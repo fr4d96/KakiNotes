@@ -12396,7 +12396,22 @@ the script against a fake server. The new RLS tests have NOT been run.
 `npm run supabase:types:linked` and `npm run test:rls`, and dry-run `npm run media:cleanup:pending`.
 The new script must not be run before 120000 is applied (it stops with an error).
 
-**Known gaps, not fixed here.** (1) `create_next_draft_revision()` sets a rejected or sent-back
-first-time story back to `draft` only after copying its photos, tags and places, so
-`_protect_revision_child_immutability()` refuses the copy and the contributor cannot revise the
-story. Reproduced locally with photos. (2) Nothing schedules the cleanup script.
+**Known gap, not fixed here.** Nothing schedules the cleanup script.
+
+## 2026-11-25 — A rejected or sent-back first story can be revised
+
+**Problem.** After a moderator rejected or sent back a never-published story, the contributor's
+"Edit" failed for any story with a place, tag, work type, photo or expense.
+`create_next_draft_revision()` set the story back to `draft` only after copying those rows, and
+`_protect_revision_child_immutability()` refuses them while the lifecycle is `rejected` or
+`changes_requested`. Published and withdrawn stories were not affected.
+
+**Fix (migration NOT applied).** `20261125130000_revise_rejected_first_story.sql` moves the lifecycle
+update above the copies; the rest of the function is unchanged. `_revision_is_editable()`, the
+trigger, ownership checks and grants are untouched.
+
+**Verified.** Local Postgres, before and after, for both decisions: every child type is copied, other
+users are refused, resubmitting publishes, and published, withdrawn and archived stories behave as
+before. The new RLS test has NOT been run.
+
+**To do.** Apply with the three migrations above (owner approval needed), then `npm run test:rls`.
