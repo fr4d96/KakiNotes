@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.7.5](https://github.com/fr4d96/KakiNotes/compare/v4.7.4...v4.7.5) (2026-11-25)
+
+
+### Bug Fixes
+
+* use less server time on photos and deployments ([8e8b917](https://github.com/fr4d96/KakiNotes/commit/8e8b917b23aa1443ba05c76809815742da880a4b))
+
 ## [4.7.4](https://github.com/fr4d96/KakiNotes/compare/v4.7.3...v4.7.4) (2026-11-24)
 
 
