@@ -3,6 +3,17 @@
 ## [4.7.6](https://github.com/fr4d96/KakiNotes/compare/v4.7.5...v4.7.6) (2026-11-25)
 
 
+### Photos stay quick to load
+
+#### For everyone
+
+- **Photos are cleared from fast storage less often.** Copies of story photos are kept closer to readers so they load quickly. Adding a pin to a journey, filing a story in a folder, changing a profile or picture, or moving photos to Google Drive used to clear every copy on the site, and the next readers had to wait for them again. Those changes now leave the copies alone, and the pages they affect still update straight away.
+- **Removing a story works as before.** When a story is taken down or archived, the saved copies of its photos are still cleared at once. Publishing a story or an update still clears them too.
+
+#### Behind the scenes
+
+- **New checks guard photo removal.** They fail if a takedown stops clearing photos, or if the rule for who can see a photo starts to depend on something these changes touch.
+
 ### Performance Improvements
 
 * keep cached photos when an action changes no photo ([edd8f8e](https://github.com/fr4d96/KakiNotes/commit/edd8f8ec6b88b0e69599e99a168264a99e999b6f))
