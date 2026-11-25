@@ -1,6 +1,7 @@
 # Card photo plan: fewer cache misses, then cheaper ones
 
-Status (2026-11-25): **design only. Nothing here is built or approved.**
+Status (2026-11-25): **Option A is approved and built. B and C are not approved; nothing of them is
+built, and Rule 14 is unchanged.**
 
 ## What we know, and what we do not
 
@@ -46,9 +47,10 @@ reader that depends on: the story's `visibility`, `lifecycle_status`, `published
 - **Move to Drive:** before the switch `/media/<id>` is a 404 sent with `private, no-store`, so there
   is no cached copy to go stale.
 
-How: the three existing helpers keep purging by default, so a future caller that forgets to think
-about it over-purges. New page-only helpers (no photo purge) are used by the four "remove" rows.
-Page and data invalidation stays exactly as it is.
+How: the two story helpers keep purging by default, so a future caller that forgets to think about
+it over-purges. Journey, filing and Drive moves use new page-only helpers. The contributor helper
+simply loses its purge, since no caller of it can change a photo. Page and data invalidation stays
+exactly as it is.
 
 Rules 11-14: 11, 12 and 13 hold because every action that changes the proxy's answer still purges
 everything; 14 is untouched.

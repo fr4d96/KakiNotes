@@ -98,11 +98,30 @@ import {
  * rather than repeating the path list.
  */
 export function invalidateStoryListingsPublicCache() {
+  invalidateStoryListingPagesOnly();
+  purgePublicMediaCache();
+}
+
+/**
+ * The listings WITHOUT the photo purge, for an action that cannot change
+ * which photos the /media proxy will serve (2026-11-25). A purge drops every
+ * cached photo on the site and each one then costs a Supabase check and a
+ * Drive download to bring back, so it must not run on, say, a map pin.
+ *
+ * Only safe when the action leaves the public answer of
+ * get_drive_media_for_proxy() unchanged for every photo that is public
+ * now. That answer depends on the story's visibility, lifecycle_status,
+ * published_revision_id and consent_revoked_at, the published revision's
+ * photo list and consent row, and the photo's storage_backend, Drive file id
+ * and mime type -- nothing else (guarded by a test in public-cache.test.ts).
+ * When in doubt, use the purging helper: over-purging costs speed, while
+ * under-purging can leave a withdrawn photo public for days.
+ */
+export function invalidateStoryListingPagesOnly() {
   revalidatePath("/stories");
   revalidatePath("/");
   revalidatePath("/sitemap.xml");
   revalidateTag(PUBLIC_STORIES_TAG, { expire: 0 });
-  purgePublicMediaCache();
 }
 
 /**
@@ -110,7 +129,7 @@ export function invalidateStoryListingsPublicCache() {
  * (all tagged PUBLIC_MEDIA_TAG, see lib/story/public-media-cache.ts), so a
  * photo that just stopped being public is never served from cache again --
  * it is cached for days precisely because this runs on every visibility
- * change. Called by both helpers that every such action already goes
+ * change. Called by both story helpers that every such action already goes
  * through.
  *
  * Two calls on purpose. revalidateTag(tag, { expire: 0 }) is Next's own
@@ -143,6 +162,18 @@ export function invalidateStoryPublicCache(slug: string) {
   invalidateStoryListingsPublicCache();
 }
 
+/** The same without the photo purge; see invalidateStoryListingPagesOnly(). */
+export function invalidateStoryPagesOnly(slug: string) {
+  revalidatePath(`/stories/${slug}`);
+  invalidateStoryListingPagesOnly();
+}
+
+/**
+ * A contributor's own pages. No photo purge: the /media proxy never reads
+ * the contributors table, so a profile or avatar change cannot make a photo
+ * stop (or start) being public. Taking a contributor's stories out of view
+ * goes through the story helpers above, which do purge.
+ */
 export function invalidateContributorPublicCache(contributorSlug: string) {
   revalidatePath(`/contributors/${contributorSlug}`);
   revalidatePath("/contributors");
@@ -150,6 +181,4 @@ export function invalidateContributorPublicCache(contributorSlug: string) {
   revalidatePath("/cn/contributors");
   revalidatePath("/sitemap.xml");
   revalidateTag(PUBLIC_CONTRIBUTORS_TAG, { expire: 0 });
-  // A contributor leaving public view can take their photos with them.
-  purgePublicMediaCache();
 }

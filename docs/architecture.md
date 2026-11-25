@@ -2365,7 +2365,10 @@ carry no `revalidate` — they are already fresh on every request and need no in
 "cookie-free public client" section above) and `revalidate = 3600` on
 `/sitemap.xml`. Every future Server Action that calls `finalize_story_publication()`, `archiveStory()`,
 or `revokePublicationConsent()` successfully must call the matching helper immediately after — see
-the doc comment in `lib/story/public-cache.ts` for the exact call sites.
+the doc comment in `lib/story/public-cache.ts` for the exact call sites. Since 2026-11-25 the two
+story helpers purge the CDN's photos and `invalidateStoryPagesOnly()` /
+`invalidateStoryListingPagesOnly()` / `invalidateContributorPublicCache()` do not; a visibility
+change must use the purging ones (docs/google-drive-integration.md, "Caching for published media").
 
 ### Reporting UI
 

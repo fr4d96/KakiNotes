@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const revalidatePath = vi.fn();
@@ -26,6 +28,8 @@ import {
   invalidateStoryPublicCache,
   invalidateStoryListingsPublicCache,
   invalidateContributorPublicCache,
+  invalidateStoryListingPagesOnly,
+  invalidateStoryPagesOnly,
 } from "./public-cache";
 
 function paths() {
@@ -59,7 +63,7 @@ describe("data-cache tags", () => {
 
   it("expires the contributors tag immediately on a profile change", () => {
     invalidateContributorPublicCache("kaki");
-    expect(tags()).toEqual(["public-contributors", "public-media"]);
+    expect(tags()).toEqual(["public-contributors"]);
     expect(revalidateTag).toHaveBeenCalledWith("public-contributors", {
       expire: 0,
     });
@@ -126,7 +130,6 @@ describe("public photo cache purge", () => {
   it.each([
     ["a story's visibility change", () => invalidateStoryPublicCache("s")],
     ["a listings-only change", () => invalidateStoryListingsPublicCache()],
-    ["a contributor change", () => invalidateContributorPublicCache("c")],
   ])("hard-deletes every cached public photo on %s", (_label, run) => {
     run();
     expect(revalidateTag).toHaveBeenCalledWith("public-media", { expire: 0 });
@@ -143,5 +146,101 @@ describe("public photo cache purge", () => {
       error: "429",
     });
     error.mockRestore();
+  });
+});
+
+// A purge empties the whole photo cache, so actions that cannot change which
+// photos are public refresh their pages without it (2026-11-25).
+describe("page-only invalidation", () => {
+  it.each([
+    ["a story's pages", () => invalidateStoryPagesOnly("s")],
+    ["the listings", () => invalidateStoryListingPagesOnly()],
+    ["a contributor's pages", () => invalidateContributorPublicCache("c")],
+  ])("leaves every cached photo alone for %s", (_label, run) => {
+    run();
+    expect(tags()).not.toContain("public-media");
+    expect(dangerouslyDeleteByTag).not.toHaveBeenCalled();
+    expect(waitUntil).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      "story",
+      () => invalidateStoryPublicCache("s"),
+      () => invalidateStoryPagesOnly("s"),
+    ],
+    [
+      "listings",
+      () => invalidateStoryListingsPublicCache(),
+      () => invalidateStoryListingPagesOnly(),
+    ],
+  ])(
+    "refreshes the same pages and data as the purging %s helper",
+    (_label, purging, pagesOnly) => {
+      purging();
+      const fullPaths = paths();
+      const fullTags = tags().filter((t) => t !== "public-media");
+      revalidatePath.mockClear();
+      revalidateTag.mockClear();
+      pagesOnly();
+      expect(paths()).toEqual(fullPaths);
+      expect(tags()).toEqual(fullTags);
+      expect(revalidateTag).toHaveBeenCalledWith("public-stories", {
+        expire: 0,
+      });
+    },
+  );
+});
+
+// The page-only helpers are only safe while a reader's access to a photo
+// depends on nothing their callers write. If this fails, the proxy's rule
+// has started to depend on one of those things: give the matching callers
+// their photo purge back.
+describe("what decides whether a photo is public", () => {
+  const dir = path.join(process.cwd(), "supabase/migrations");
+  /** The newest definition of a function, or "" when there is none. */
+  function latestDefinition(name: string): string {
+    const start = new RegExp(
+      `create\\s+(?:or\\s+replace\\s+)?function\\s+public\\.${name}\\s*\\(`,
+      "gi",
+    );
+    let latest = "";
+    for (const file of readdirSync(dir).sort()) {
+      if (!file.endsWith(".sql")) continue;
+      const sql = readFileSync(path.join(dir, file), "utf8");
+      for (const match of sql.matchAll(start)) {
+        const rest = sql.slice(match.index);
+        const quote = /\$\w*\$/.exec(rest);
+        if (!quote) continue;
+        const bodyStart = quote.index + quote[0].length;
+        latest = rest.slice(bodyStart, rest.indexOf(quote[0], bodyStart));
+      }
+    }
+    return latest;
+  }
+
+  it.each(["get_drive_media_for_proxy", "_latest_valid_consent_for_revision"])(
+    "%s reads no contributor, profile, folder or journey data",
+    (name) => {
+      const body = latestDefinition(name);
+      expect(body).not.toBe("");
+      expect(body).not.toMatch(
+        /contributors|profiles|parent_story_id|journey_/i,
+      );
+    },
+  );
+
+  // Every helper get_drive_media_for_proxy() calls: a new one would need
+  // checking here too. _can_access_story_media() only decides the private,
+  // never-cached branch.
+  it("get_drive_media_for_proxy calls only the helpers checked here", () => {
+    const body = latestDefinition("get_drive_media_for_proxy");
+    const called = [...body.matchAll(/public\.(\w+)\s*\(/g)].map((m) => m[1]);
+    expect(new Set(called)).toEqual(
+      new Set([
+        "_latest_valid_consent_for_revision",
+        "_can_access_story_media",
+      ]),
+    );
   });
 });
