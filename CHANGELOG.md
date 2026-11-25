@@ -1,5 +1,24 @@
 # Changelog
 
+## [4.7.5](https://github.com/fr4d96/KakiNotes/compare/v4.7.4...v4.7.5) (2026-11-25)
+
+
+### Lighter on the server
+
+#### For everyone
+
+- **Story cards use two photo sizes instead of three.** Cards now load either a small or a large version of each photo. On some tablets and computers the photo may be slightly sharper and a little larger to download.
+- **If a photo looks missing on a page you left open,** refresh the page once.
+
+#### Behind the scenes
+
+- **Search engines and other bots are asked to skip the resized card photos.** Full story photos and link previews can still be found.
+- **Updates that only change notes or the version number no longer need to rebuild the site.** This should keep photos saved closer to readers for longer.
+
+### Bug Fixes
+
+* use less server time on photos and deployments ([8e8b917](https://github.com/fr4d96/KakiNotes/commit/8e8b917b23aa1443ba05c76809815742da880a4b))
+
 ## [4.7.4](https://github.com/fr4d96/KakiNotes/compare/v4.7.3...v4.7.4) (2026-11-24)
 
 
