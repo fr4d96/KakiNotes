@@ -792,8 +792,8 @@ cached for **7 days** (`public, s-maxage=604800, stale-while-revalidate=86400`,
 `lib/story/public-media-cache.ts`) and every such response carries the
 `Vercel-Cache-Tag: public-media` header. Every action that changes what is
 public already goes through `invalidateStoryListingsPublicCache()` /
-`invalidateStoryPublicCache()` / `invalidateContributorPublicCache()`
-(`lib/story/public-cache.ts`); those now also purge that tag, with both
+`invalidateStoryPublicCache()` (`lib/story/public-cache.ts`); those now also
+purge that tag, with both
 `revalidateTag("public-media", { expire: 0 })` and Vercel's hard
 `dangerouslyDeleteByTag("public-media")` (never `invalidateByTag`, which would
 serve the stale copy once more). So an unpublished/archived/rejected/taken-down
@@ -812,6 +812,20 @@ the matching helper (the rule already stated in `lib/story/public-cache.ts`).
 One tag covers every photo: the purge sites do not all know which photos
 changed, and over-purging only costs speed (the next viewers go back to
 Drive once), never correctness.
+
+**Purge only when a photo's public answer can change (2026-11-25).** Approve,
+archive and takedown still purge everything. Journey pins, story filing, moving
+a photo to Drive, and avatar/profile edits no longer do: they refresh the same
+pages through `invalidateStoryPagesOnly()` / `invalidateStoryListingPagesOnly()`
+/ `invalidateContributorPublicCache()`. A purge there could not remove anything:
+`get_drive_media_for_proxy()` reads only the story's `visibility`,
+`lifecycle_status`, `published_revision_id` and `consent_revoked_at`, the
+published revision's photos and consent, and the photo's backend, Drive file id
+and mime type -- never the contributor, so a re-request was authorized and cached
+again. A moved photo's `/media` URL was a `no-store` 404 until the switch, so
+nothing stale can be cached. `lib/story/public-cache.test.ts` fails if that
+function starts reading what those actions write. If a future change makes a
+contributor's privacy decide photo access, restore the purge there.
 
 **Card sizes (2026-11-15).** `?w=640` and `?w=1080` on the same route (a third, `?w=828`, was
 dropped 2026-11-25 to cut Vercel CPU) return a

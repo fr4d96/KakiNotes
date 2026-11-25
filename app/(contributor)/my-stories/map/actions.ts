@@ -8,8 +8,8 @@ import { setStoryParent } from "@/lib/story/mutations";
 import { storyFolderErrorKey } from "@/lib/story/rpc-errors";
 import { listMyStories } from "@/lib/story/contributor-queries";
 import {
-  invalidateStoryPublicCache,
-  invalidateStoryListingsPublicCache,
+  invalidateStoryPagesOnly,
+  invalidateStoryListingPagesOnly,
 } from "@/lib/story/public-cache";
 import { getErrorMessage } from "@/lib/errors";
 import { logAppEvent } from "@/lib/log";
@@ -29,7 +29,7 @@ const parentIdSchema = z.uuid().nullable();
  * its new parent (if any), and its OLD parent (if it was re-filed away from
  * one) -- a folder link is public immediately, same as every earlier
  * design, so a reader hitting any of these pages right after must see the
- * change too.
+ * change too. No photo purge: filing a story changes no photo.
  */
 async function invalidateFolderPublicCache(storyIds: Array<string | null>) {
   const ids = storyIds.filter((id): id is string => id !== null);
@@ -39,14 +39,14 @@ async function invalidateFolderPublicCache(storyIds: Array<string | null>) {
     const bySlug = new Map(mine.map((s) => [s.id, s.slug]));
     const slugs = ids.map((id) => bySlug.get(id));
     for (const slug of slugs) {
-      if (slug) invalidateStoryPublicCache(slug);
+      if (slug) invalidateStoryPagesOnly(slug);
     }
-    if (slugs.some((s) => !s)) invalidateStoryListingsPublicCache();
+    if (slugs.some((s) => !s)) invalidateStoryListingPagesOnly();
   } catch {
     // Same "never let a cache hiccup look like a failed mutation" contract
     // as public-cache.ts's own callers -- the write already committed by
     // the time this runs.
-    invalidateStoryListingsPublicCache();
+    invalidateStoryListingPagesOnly();
   }
 }
 

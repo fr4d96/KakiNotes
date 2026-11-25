@@ -11,7 +11,7 @@ import {
   finishDriveMoveRun,
   moveNextPhotoToDrive,
 } from "@/lib/story/media-move";
-import { invalidateStoryListingsPublicCache } from "@/lib/story/public-cache";
+import { invalidateStoryListingPagesOnly } from "@/lib/story/public-cache";
 import { driveMoveRunIdSchema } from "@/lib/validation/drive";
 
 /**
@@ -89,9 +89,10 @@ export async function moveNextDrivePhotoAction(
         // A published photo's URL just changed from the public bucket to
         // /media/<id>. Story pages aren't cached, but `/` caches its story
         // list (covers included) -- refresh it now, well inside the 5
-        // minutes the old copy is kept for.
+        // minutes the old copy is kept for. Pages only, no photo purge: until
+        // the switch /media/<id> was a 404 sent no-store, so nothing is cached.
         try {
-          invalidateStoryListingsPublicCache();
+          invalidateStoryListingPagesOnly();
         } catch (cacheErr) {
           console.error("Cache invalidation after a move failed", cacheErr);
         }

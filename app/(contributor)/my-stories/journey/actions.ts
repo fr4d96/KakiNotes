@@ -14,8 +14,8 @@ import {
   type ResolveLinkResult,
 } from "@/lib/journey/resolve-google-maps-link";
 import {
-  invalidateStoryPublicCache,
-  invalidateStoryListingsPublicCache,
+  invalidateStoryPagesOnly,
+  invalidateStoryListingPagesOnly,
 } from "@/lib/story/public-cache";
 import { firstIssueMessage } from "@/lib/validation/issue-messages";
 import { getErrorMessage } from "@/lib/errors";
@@ -36,7 +36,7 @@ const storyIdSchema = z.uuid();
  * story page (its "See this on ... journey" link), and the contributor's
  * profile and journey pages. The contributor's own slug is not known here, so
  * the dynamic route patterns are revalidated; both pages are uncached
- * Server Components, so this is cheap.
+ * Server Components, so this is cheap. No photo purge: a pin changes no photo.
  */
 async function invalidateJourneyPublicCache(storyId: string) {
   revalidatePath("/contributors/[slug]", "page");
@@ -44,12 +44,12 @@ async function invalidateJourneyPublicCache(storyId: string) {
   try {
     const mine = await getMyJourney();
     const slug = mine.find((s) => s.id === storyId)?.slug;
-    if (slug) invalidateStoryPublicCache(slug);
-    else invalidateStoryListingsPublicCache();
+    if (slug) invalidateStoryPagesOnly(slug);
+    else invalidateStoryListingPagesOnly();
   } catch {
     // The write already committed; a cache hiccup must not look like a
     // failed save (same contract as the story folders action).
-    invalidateStoryListingsPublicCache();
+    invalidateStoryListingPagesOnly();
   }
 }
 
