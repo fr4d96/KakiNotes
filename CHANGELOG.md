@@ -3,6 +3,12 @@
 ## [4.9.1](https://github.com/fr4d96/KakiNotes/compare/v4.9.0...v4.9.1) (2026-11-26)
 
 
+### A small fix for the Stories page
+
+#### For readers
+
+- **"Load more stories" works again.** On a Stories page with more than 20 stories, the button at the bottom used to reload the same first 20 stories. It now shows the next ones. You'd have noticed this in the China section, which is the first one with that many stories.
+
 ### Bug Fixes
 
 * **stories:** Load more opens the next page of stories ([852fb88](https://github.com/fr4d96/KakiNotes/commit/852fb88cb833b76e0178b007167705507f229b74))
