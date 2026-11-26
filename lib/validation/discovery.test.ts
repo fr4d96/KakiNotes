@@ -57,6 +57,17 @@ describe("parseStorySearchParams", () => {
     expect(result).toEqual({ region: "11111111-1111-4111-8111-111111111111" });
   });
 
+  it("keeps a cursor timestamp in Postgres's +00:00 form (the Load more link)", () => {
+    const result = parseStorySearchParams({
+      cursorPublishedAt: "2026-10-01T12:34:56.123456+00:00",
+      cursorId: "55555555-5555-4555-8555-555555555555",
+    });
+    expect(result).toEqual({
+      cursorPublishedAt: "2026-10-01T12:34:56.123456+00:00",
+      cursorId: "55555555-5555-4555-8555-555555555555",
+    });
+  });
+
   it("takes the first value when a param is duplicated", () => {
     const result = parseStorySearchParams({
       q: ["apples", "pears"],

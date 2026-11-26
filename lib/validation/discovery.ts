@@ -19,7 +19,10 @@ const fieldSchemas = {
   costBand: z.enum(costBands),
   hasReportedExpense: z.enum(["true", "false"]).transform((v) => v === "true"),
   q: z.string().trim().min(1).max(200),
-  cursorPublishedAt: z.iso.datetime(),
+  // offset: true -- Postgres hands published_at back as "...+00:00", not
+  // "...Z"; without it every real Load more cursor was silently dropped and
+  // the link re-rendered page one.
+  cursorPublishedAt: z.iso.datetime({ offset: true }),
   cursorId: z.uuid(),
 };
 
