@@ -4,7 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { BrandLogo } from "@/components/brand-logo";
-import { countryFromPathname, countryUrlPrefix } from "@/lib/story/countries";
+import {
+  countryFromPathname,
+  countryMessageSegment,
+  countryUrlPrefix,
+} from "@/lib/story/countries";
 
 // A link in the phone row: inline, with a 44px tap height (min-h-11) because
 // the row is touch-first; a plain stacked link from md up.
@@ -14,7 +18,7 @@ const footerLink = "inline-flex min-h-11 items-center md:block md:min-h-0";
 // (public) layout, so the URL is the one place it can learn which country
 // section it is under -- and whether this is a home page at all.
 //
-// Home pages only (/ and /cn). Everywhere else the bottom tab bar and the
+// Home pages only (/, /cn and /my). Everywhere else the bottom tab bar and the
 // header carry the navigation, and a full footer under every list, form and
 // story was a long scroll of links nobody came for. Rendered from the
 // (public) layout rather than the home page itself so it stays outside
@@ -23,10 +27,15 @@ const footerLink = "inline-flex min-h-11 items-center md:block md:min-h-0";
 export function SiteFooter() {
   const t = useTranslations("footer");
   const tNav = useTranslations("nav");
-  const tChina = useTranslations("countryContent.china");
+  const tCountry = useTranslations("countryContent");
   const pathname = usePathname() ?? "/";
-  const isChina = countryFromPathname(pathname) === "china";
-  const prefix = isChina ? countryUrlPrefix("china") : "";
+  const country = countryFromPathname(pathname);
+  // New Zealand's footer copy is the shared `footer.*`; every other country
+  // has its own tagline and "made for" line (never WHV wording).
+  const isDefaultCopy = country === "new-zealand";
+  // Only read when not New Zealand: China's or Malaysia's own copy.
+  const segment = countryMessageSegment(country) as "china" | "malaysia";
+  const prefix = countryUrlPrefix(country);
   const rest = pathname.slice(prefix.length).replace(/\/+$/, "");
   if (rest !== "") return null;
   return (
@@ -72,7 +81,7 @@ export function SiteFooter() {
               Kakinotes
             </Link>
             <p className="mt-4 hidden max-w-md text-sm text-muted-foreground md:block">
-              {isChina ? tChina("tagline") : t("tagline")}
+              {isDefaultCopy ? t("tagline") : tCountry(`${segment}.tagline`)}
             </p>
             <p className="max-w-lg text-xs leading-5 text-foreground/65 md:mt-5">
               {t("disclaimer")}
@@ -128,7 +137,7 @@ export function SiteFooter() {
         <div className="mt-2 flex flex-col gap-2 text-xs text-foreground/65 md:mt-10 md:flex-row md:justify-between md:border-t md:border-border-subtle md:pt-5">
           <span>{t("copyrightLine", { year: 2026 })}</span>
           <span className="hidden md:inline">
-            {isChina ? tChina("madeFor") : t("madeFor")}
+            {isDefaultCopy ? t("madeFor") : tCountry(`${segment}.madeFor`)}
           </span>
         </div>
       </div>

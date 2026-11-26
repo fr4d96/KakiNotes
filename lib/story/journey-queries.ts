@@ -10,6 +10,7 @@ import {
   type PublishedJourneyRow,
 } from "@/lib/journey/contributor-journey";
 import type { JourneyStopView } from "@/lib/journey/schema";
+import type { JourneyCountrySlug } from "@/lib/story/countries";
 
 // Contributor journey (supabase/migrations/20261029091942_contributor_journey.sql).
 //
@@ -23,16 +24,19 @@ import type { JourneyStopView } from "@/lib/journey/schema";
 
 /**
  * The pins of a contributor's journey for anonymous readers, in trip order.
- * The RPC itself returns only publicly visible New Zealand stories (Rules
+ * The RPC itself returns only publicly visible stories of `country` (Rules
  * 10-12); there is no way to ask it for a draft or private story.
  */
 async function fetchPublishedContributorJourney(
   contributorId: string,
+  country: JourneyCountrySlug = "new-zealand",
 ): Promise<PublishedJourneyRow[]> {
   try {
+    // One country at a time (20261126090000_malaysia.sql): an NZ profile
+    // never draws a Malaysia pin and the reverse (Rules 10, 12).
     const { data, error } = await createPublicClient().rpc(
       "get_published_contributor_journey",
-      { p_contributor_id: contributorId },
+      { p_contributor_id: contributorId, p_country_slug: country },
     );
     if (error) return [];
     return parsePublishedJourneyRows(data);
@@ -49,8 +53,12 @@ export const getPublishedContributorJourney = cache(
 /** The same pins as the stop list the map draws. */
 export async function getPublishedContributorJourneyStops(
   contributorId: string,
+  country: JourneyCountrySlug = "new-zealand",
 ): Promise<JourneyStopView[]> {
-  return buildJourneyStops(await getPublishedContributorJourney(contributorId));
+  return buildJourneyStops(
+    await getPublishedContributorJourney(contributorId, country),
+    country,
+  );
 }
 
 const numeric = z
@@ -65,6 +73,9 @@ const myJourneyRowSchema = z.object({
   lifecycle_status: z.string(),
   pinnable: z.boolean(),
   is_new_zealand: z.boolean(),
+  // Appended by 20261126090000_malaysia.sql; optional so a row from before
+  // that migration still parses.
+  country_slug: z.string().nullable().optional(),
   parent_story_id: z.string().nullable(),
   journey_label: z.string().nullable(),
   journey_latitude: numeric.nullable(),
@@ -92,6 +103,7 @@ export async function getMyJourney(): Promise<MyJourneyEntry[]> {
       lifecycleStatus: r.lifecycle_status,
       pinnable: r.pinnable,
       isNewZealand: r.is_new_zealand,
+      countrySlug: r.country_slug ?? null,
       parentStoryId: r.parent_story_id,
       place:
         r.journey_label !== null &&

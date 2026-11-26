@@ -22,11 +22,14 @@ export function StoryShelf({
   stories,
   photos,
   locale,
+  basePath = "/stories",
 }: {
   stories: StoryCardData[];
   /** Published photo URLs per story slug, cover first. */
   photos: Record<string, string[]>;
   locale: Locale;
+  /** The country's story pages ("/stories" NZ, "/my/stories" Malaysia). */
+  basePath?: string;
 }) {
   const t = useTranslations("common");
 
@@ -53,7 +56,7 @@ export function StoryShelf({
                 {storyPhotos.length > 0 ? (
                   <CardPhotos
                     urls={storyPhotos}
-                    href={`/stories/${story.slug}`}
+                    href={`${basePath}/${story.slug}`}
                     eager={index < 2}
                     sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
                   />
@@ -69,7 +72,7 @@ export function StoryShelf({
                 ) : null}
                 <h3 className="line-clamp-2 text-lg leading-[1.2] font-extrabold tracking-[-.02em] text-balance text-foreground">
                   <Link
-                    href={`/stories/${story.slug}`}
+                    href={`${basePath}/${story.slug}`}
                     className="outline-none after:absolute after:inset-0 after:rounded-[20px] focus-visible:after:ring-2 focus-visible:after:ring-accent"
                   >
                     {story.title}

@@ -23,14 +23,21 @@ export type PlaceTile = {
  * latest batch, so a count read off it would be a claim about the whole
  * catalogue that the data does not support.
  */
-export function PlaceTiles({ places }: { places: PlaceTile[] }) {
+export function PlaceTiles({
+  places,
+  basePath = "/stories",
+}: {
+  places: PlaceTile[];
+  /** The country's Stories tab ("/stories" NZ, "/my/stories" Malaysia). */
+  basePath?: string;
+}) {
   const tImages = useTranslations("editor.images");
   return (
     <ul className="nf-scroll-x -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-6">
       {places.map((place) => (
         <li key={place.id} className="w-[132px] shrink-0 snap-start sm:w-auto">
           <Link
-            href={`/stories?region=${place.id}`}
+            href={`${basePath}?region=${place.id}`}
             className="press press-hover-only group block rounded-2xl focus-visible:outline-offset-4"
           >
             <span className="block aspect-[4/3] overflow-hidden rounded-2xl bg-surface-muted shadow-sm transition-shadow group-hover:shadow-md">

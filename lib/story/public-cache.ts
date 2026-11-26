@@ -1,5 +1,6 @@
 import "server-only";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { COUNTRY_SLUGS, countryUrlPrefix } from "@/lib/story/countries";
 import { dangerouslyDeleteByTag, waitUntil } from "@vercel/functions";
 import { PUBLIC_MEDIA_TAG } from "@/lib/story/public-media-cache";
 import {
@@ -175,10 +176,11 @@ export function invalidateStoryPagesOnly(slug: string) {
  * goes through the story helpers above, which do purge.
  */
 export function invalidateContributorPublicCache(contributorSlug: string) {
-  revalidatePath(`/contributors/${contributorSlug}`);
-  revalidatePath("/contributors");
-  revalidatePath(`/cn/contributors/${contributorSlug}`);
-  revalidatePath("/cn/contributors");
+  for (const country of COUNTRY_SLUGS) {
+    const prefix = countryUrlPrefix(country);
+    revalidatePath(`${prefix}/contributors/${contributorSlug}`);
+    revalidatePath(`${prefix}/contributors`);
+  }
   revalidatePath("/sitemap.xml");
   revalidateTag(PUBLIC_CONTRIBUTORS_TAG, { expire: 0 });
 }

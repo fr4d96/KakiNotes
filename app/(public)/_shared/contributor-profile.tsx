@@ -14,15 +14,20 @@ import { countryName } from "@/lib/countries";
 import { formatCountryName } from "@/lib/i18n/format";
 import { vocabName } from "@/lib/i18n/vocab";
 import type { Locale } from "@/i18n/locales";
-import { countryUrlPrefix, type CountrySlug } from "@/lib/story/countries";
+import {
+  countryUrlPrefix,
+  hasJourneyMap,
+  type CountrySlug,
+} from "@/lib/story/countries";
 
 /**
  * One contributor's public profile within one country -- /contributors/<slug>
  * (NZ) and /cn/contributors/<slug> (China) both render this. Each country is
  * its own catalogue (Rule 10/12): the facts, the story count and the story
  * list come only from that country's published stories, and a contributor
- * with none there 404s. The journey map is New Zealand only, so the
- * Stories | Journey tabs appear on the NZ profile alone.
+ * with none there 404s. Countries with a journey map (New Zealand,
+ * Malaysia) show Stories | Journey tabs, each tab reading that country's
+ * pins only.
  */
 
 // No `export const revalidate` any more (it was 60) -- and deliberately no
@@ -125,9 +130,9 @@ export async function ContributorProfile({
       countrySlug: country,
     }),
     // [] when the RPC is unavailable: the profile renders without the tab.
-    // The map is New Zealand only, so no other country asks for it.
-    country === "new-zealand"
-      ? getPublishedContributorJourney(contributor.contributor_id)
+    // Only countries with a journey map ask for it, and only for their own pins.
+    hasJourneyMap(country)
+      ? getPublishedContributorJourney(contributor.contributor_id, country)
       : Promise.resolve([]),
   ]);
 
@@ -158,6 +163,7 @@ export async function ContributorProfile({
         slug={contributor.public_slug ?? slug}
         active="stories"
         showJourney={journey.length > 0}
+        prefix={countryUrlPrefix(country)}
       />
 
       {contributor.bio ? (

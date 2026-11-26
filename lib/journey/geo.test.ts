@@ -10,6 +10,10 @@ import {
   pointToLatLng,
   roundCoordinate,
 } from "@/lib/journey/geo";
+import {
+  getJourneyGeography,
+  isInsideCountry,
+} from "@/lib/journey/geographies";
 
 const auckland = { latitude: -36.85, longitude: 174.76 };
 const wellington = { latitude: -41.29, longitude: 174.78 };
@@ -108,5 +112,62 @@ describe("islandOf / Cook Strait", () => {
     ).toEqual([false, true, false, false]);
     expect(cookStraitLegs([auckland])).toEqual([]);
     expect(cookStraitLegs([])).toEqual([]);
+  });
+});
+
+describe("Malaysia inset geography", () => {
+  const KL = { latitude: 3.15, longitude: 101.71 };
+  const KK = { latitude: 5.98, longitude: 116.07 };
+  const panels = getJourneyGeography("malaysia").panels;
+
+  it("draws Kuala Lumpur in the Peninsular panel and Kota Kinabalu in the Borneo panel", () => {
+    const kl = latLngToPoint(KL, "malaysia");
+    const kk = latLngToPoint(KK, "malaysia");
+    expect(kl.x).toBeGreaterThanOrEqual(panels[0].x);
+    expect(kl.x).toBeLessThanOrEqual(panels[0].x + panels[0].width);
+    expect(kl.y).toBeGreaterThanOrEqual(panels[0].y);
+    expect(kl.y).toBeLessThanOrEqual(panels[0].y + panels[0].height);
+    expect(kk.y).toBeGreaterThanOrEqual(panels[1].y);
+    expect(kk.y).toBeLessThanOrEqual(panels[1].y + panels[1].height);
+    expect(kk.y).toBeGreaterThan(kl.y);
+  });
+
+  it("round-trips through pointToLatLng within 0.01 degrees", () => {
+    for (const ll of [KL, KK]) {
+      const back = pointToLatLng(latLngToPoint(ll, "malaysia"), "malaysia");
+      expect(Math.abs(back.latitude - ll.latitude)).toBeLessThanOrEqual(0.01);
+      expect(Math.abs(back.longitude - ll.longitude)).toBeLessThanOrEqual(0.01);
+    }
+  });
+
+  it("snaps a point between the panels to the nearer one", () => {
+    const gapY = panels[0].y + panels[0].height + 1;
+    const back = pointToLatLng({ x: 50, y: gapY }, "malaysia");
+    expect(back.latitude).toBeCloseTo(0.8, 1);
+    expect(back.longitude).toBeLessThan(104.9);
+  });
+
+  it("isInsideCountry means inside one of the two panels", () => {
+    expect(isInsideCountry("malaysia", KL)).toBe(true);
+    expect(isInsideCountry("malaysia", KK)).toBe(true);
+    expect(isInsideCountry("malaysia", { latitude: 3, longitude: 107 })).toBe(
+      false,
+    );
+    expect(
+      isInsideCountry("malaysia", { latitude: -36.85, longitude: 174.76 }),
+    ).toBe(false);
+    expect(
+      isInsideCountry("new-zealand", { latitude: -36.85, longitude: 174.76 }),
+    ).toBe(true);
+    expect(isInsideCountry("new-zealand", KL)).toBe(false);
+  });
+
+  it("tells Peninsular from Borneo for crossing legs", () => {
+    expect(crossesCookStrait(KL, KK, "malaysia")).toBe(true);
+    expect(
+      crossesCookStrait(KL, { latitude: 5.41, longitude: 100.34 }, "malaysia"),
+    ).toBe(false);
+    expect(getJourneyGeography("malaysia").crossingVehicle).toBe("plane");
+    expect(getJourneyGeography("new-zealand").crossingVehicle).toBe("ferry");
   });
 });

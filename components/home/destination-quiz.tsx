@@ -184,14 +184,194 @@ const DESTINATION_INFO: Record<
 
 const DEFAULT_DESTINATION = "Auckland";
 
-export function DestinationQuiz() {
+// ---------------------------------------------------------------------------
+// Malaysia (2026-11-26): the same fun scoring quiz, general-travel framed
+// (never WHV). Its copy lives in home.quizMalaysia; the shared chrome
+// (progress, back, try again) stays in home.quiz. Scoring names are again
+// its own fixed vocabulary, not database regions.
+// ---------------------------------------------------------------------------
+type MalaysiaQuizMessages = Messages["home"]["quizMalaysia"];
+type MalaysiaQuestion = {
+  promptKey: keyof MalaysiaQuizMessages["questions"];
+  answers: {
+    labelKey: keyof MalaysiaQuizMessages["answers"];
+    scores: Record<string, number>;
+  }[];
+};
+
+export const MALAYSIA_QUESTIONS: MalaysiaQuestion[] = [
+  {
+    promptKey: "home",
+    answers: [
+      { labelKey: "bigCity", scores: { KualaLumpur: 5 } },
+      { labelKey: "heritageTown", scores: { Melaka: 4, Penang: 3 } },
+      { labelKey: "islandBeach", scores: { Langkawi: 5, Sabah: 2 } },
+      { labelKey: "coolHighlands", scores: { CameronHighlands: 6 } },
+      { labelKey: "rainforest", scores: { Sabah: 5 } },
+    ],
+  },
+  {
+    promptKey: "doing",
+    answers: [
+      { labelKey: "streetFood", scores: { Penang: 5, KualaLumpur: 2 } },
+      { labelKey: "diving", scores: { Sabah: 5, Langkawi: 2 } },
+      { labelKey: "hiking", scores: { CameronHighlands: 4, Sabah: 3 } },
+      { labelKey: "cafesWalks", scores: { Melaka: 4, Penang: 3 } },
+      { labelKey: "shoppingNightlife", scores: { KualaLumpur: 5 } },
+    ],
+  },
+  {
+    promptKey: "matters",
+    answers: [
+      { labelKey: "budget", scores: { Penang: 3, Melaka: 3 } },
+      { labelKey: "meetingPeople", scores: { KualaLumpur: 4, Langkawi: 2 } },
+      { labelKey: "timeOutdoors", scores: { Sabah: 4, CameronHighlands: 3 } },
+      { labelKey: "cultureHistory", scores: { Melaka: 5, Penang: 3 } },
+      { labelKey: "slowRest", scores: { Langkawi: 4, CameronHighlands: 3 } },
+    ],
+  },
+  {
+    promptKey: "pace",
+    answers: [
+      { labelKey: "busySocial", scores: { KualaLumpur: 4, Penang: 2 } },
+      {
+        labelKey: "relaxedScenic",
+        scores: { Langkawi: 4, CameronHighlands: 3 },
+      },
+      { labelKey: "activePhysical", scores: { Sabah: 5 } },
+      { labelKey: "independentFlexible", scores: { Penang: 3, Melaka: 3 } },
+    ],
+  },
+  {
+    promptKey: "timing",
+    answers: [
+      { labelKey: "marToOct", scores: { Sabah: 3, KualaLumpur: 1 } },
+      { labelKey: "novToFeb", scores: { Langkawi: 3, Penang: 3 } },
+      {
+        labelKey: "festiveSeason",
+        scores: { Penang: 3, KualaLumpur: 3, Melaka: 2 },
+      },
+      {
+        labelKey: "flexible",
+        scores: {
+          KualaLumpur: 1,
+          Penang: 1,
+          Melaka: 1,
+          Langkawi: 1,
+          CameronHighlands: 1,
+          Sabah: 1,
+        },
+      },
+    ],
+  },
+];
+
+export const MALAYSIA_DESTINATION_INFO: Record<
+  string,
+  {
+    nameKey: keyof MalaysiaQuizMessages["destinations"];
+    seasonKey: keyof MalaysiaQuizMessages["seasons"];
+    workKey: keyof MalaysiaQuizMessages["info"];
+    noteKey: keyof MalaysiaQuizMessages["info"];
+  }
+> = {
+  KualaLumpur: {
+    nameKey: "kualaLumpur",
+    seasonKey: "yearRound",
+    workKey: "kualaLumpurKnownFor",
+    noteKey: "kualaLumpurNote",
+  },
+  Penang: {
+    nameKey: "penang",
+    seasonKey: "decToApr",
+    workKey: "penangKnownFor",
+    noteKey: "penangNote",
+  },
+  Melaka: {
+    nameKey: "melaka",
+    seasonKey: "yearRound",
+    workKey: "melakaKnownFor",
+    noteKey: "melakaNote",
+  },
+  Langkawi: {
+    nameKey: "langkawi",
+    seasonKey: "novToApr",
+    workKey: "langkawiKnownFor",
+    noteKey: "langkawiNote",
+  },
+  CameronHighlands: {
+    nameKey: "cameronHighlands",
+    seasonKey: "yearRound",
+    workKey: "cameronHighlandsKnownFor",
+    noteKey: "cameronHighlandsNote",
+  },
+  Sabah: {
+    nameKey: "sabah",
+    seasonKey: "marToSep",
+    workKey: "sabahKnownFor",
+    noteKey: "sabahNote",
+  },
+};
+
+type QuizVariant = "new-zealand" | "malaysia";
+
+/** One shape for both quizzes; keys are checked by their typed tables above. */
+type LooseQuestion = {
+  promptKey: string;
+  answers: { labelKey: string; scores: Record<string, number> }[];
+};
+type LooseInfo = Record<
+  string,
+  { nameKey: string; seasonKey: string; workKey: string; noteKey: string }
+>;
+
+const VARIANTS: Record<
+  QuizVariant,
+  {
+    questions: LooseQuestion[];
+    info: LooseInfo;
+    fallback: string;
+    contentNamespace: "home.quiz" | "home.quizMalaysia";
+  }
+> = {
+  "new-zealand": {
+    questions: QUESTIONS,
+    info: DESTINATION_INFO,
+    fallback: DEFAULT_DESTINATION,
+    contentNamespace: "home.quiz",
+  },
+  malaysia: {
+    questions: MALAYSIA_QUESTIONS,
+    info: MALAYSIA_DESTINATION_INFO,
+    fallback: "KualaLumpur",
+    contentNamespace: "home.quizMalaysia",
+  },
+};
+
+export function DestinationQuiz({
+  country = "new-zealand",
+  exploreHref = "/stories",
+}: {
+  /** Which country's quiz. New Zealand's is the original WHV one. */
+  country?: QuizVariant;
+  /** Where "Explore stories" goes: that country's Stories tab. */
+  exploreHref?: string;
+} = {}) {
   const t = useTranslations("home.quiz");
+  const variant = VARIANTS[country];
+  // The content namespace differs per country; its keys are pinned by the
+  // typed tables above and by destination-quiz.test.tsx, so a loose lookup
+  // here cannot drift silently.
+  const tc = useTranslations(variant.contentNamespace) as unknown as (
+    key: string,
+  ) => string;
+  const QUESTIONS_ = variant.questions;
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<(number | undefined)[]>([]);
 
-  const isResult = step === QUESTIONS.length;
+  const isResult = step === QUESTIONS_.length;
   const progress = Math.round(
-    ((isResult ? QUESTIONS.length : step + 1) / QUESTIONS.length) * 100,
+    ((isResult ? QUESTIONS_.length : step + 1) / QUESTIONS_.length) * 100,
   );
 
   function choose(answerIndex: number) {
@@ -210,20 +390,21 @@ export function DestinationQuiz() {
     const totals: Record<string, number> = {};
     answers.forEach((answerIndex, questionIndex) => {
       if (answerIndex === undefined) return;
-      const scores = QUESTIONS[questionIndex].answers[answerIndex].scores;
+      const scores = QUESTIONS_[questionIndex].answers[answerIndex].scores;
       for (const [destination, points] of Object.entries(scores)) {
         totals[destination] = (totals[destination] ?? 0) + points;
       }
     });
     const ranked = Object.entries(totals).sort((a, b) => b[1] - a[1]);
-    return ranked[0]?.[0] ?? DEFAULT_DESTINATION;
+    return ranked[0]?.[0] ?? variant.fallback;
   }
 
   const destination = isResult ? computeDestination() : null;
-  const facts = destination ? DESTINATION_INFO[destination] : null;
+  const facts = destination ? variant.info[destination] : null;
   const destinationLabel = facts
-    ? t(`destinations.${facts.nameKey}`)
+    ? tc(`destinations.${facts.nameKey}`)
     : destination;
+  const isMalaysia = country === "malaysia";
 
   return (
     <div className="rounded-2xl border border-border-subtle bg-surface p-6 sm:p-8">
@@ -237,17 +418,17 @@ export function DestinationQuiz() {
         <span className="text-sm font-medium text-foreground/60">
           {isResult
             ? t("yourMatch")
-            : t("progress", { step: step + 1, total: QUESTIONS.length })}
+            : t("progress", { step: step + 1, total: QUESTIONS_.length })}
         </span>
       </div>
 
       {!isResult ? (
         <div>
           <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            {t(`questions.${QUESTIONS[step].promptKey}`)}
+            {tc(`questions.${QUESTIONS_[step].promptKey}`)}
           </h3>
           <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            {QUESTIONS[step].answers.map((answer, index) => (
+            {QUESTIONS_[step].answers.map((answer, index) => (
               <button
                 key={answer.labelKey}
                 type="button"
@@ -255,7 +436,7 @@ export function DestinationQuiz() {
                 onClick={() => choose(index)}
                 className="min-h-[72px] rounded-xl border border-border-subtle bg-surface p-4 text-left font-medium shadow-sm transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:border-accent hover:shadow-md dark:bg-surface-muted dark:shadow-none dark:hover:bg-surface"
               >
-                {t(`answers.${answer.labelKey}`)}
+                {tc(`answers.${answer.labelKey}`)}
               </button>
             ))}
           </div>
@@ -272,7 +453,7 @@ export function DestinationQuiz() {
       ) : (
         <div>
           <span className="text-xs font-semibold tracking-wide text-accent uppercase">
-            {t("resultKicker")}
+            {tc("resultKicker")}
           </span>
           <h3 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
             {destinationLabel}
@@ -281,18 +462,18 @@ export function DestinationQuiz() {
             <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div className="rounded-lg bg-surface-muted p-3">
                 <span className="block text-xs text-foreground/60">
-                  {t("bestSeason")}
+                  {isMalaysia ? tc("bestTime") : t("bestSeason")}
                 </span>
                 <strong className="text-sm">
-                  {t(`seasons.${facts.seasonKey}`)}
+                  {tc(`seasons.${facts.seasonKey}`)}
                 </strong>
               </div>
               <div className="rounded-lg bg-surface-muted p-3">
                 <span className="block text-xs text-foreground/60">
-                  {t("work")}
+                  {isMalaysia ? tc("knownFor") : t("work")}
                 </span>
                 <strong className="text-sm">
-                  {t(`info.${facts.workKey}`)}
+                  {tc(`info.${facts.workKey}`)}
                 </strong>
               </div>
               <div className="rounded-lg bg-surface-muted p-3">
@@ -300,14 +481,14 @@ export function DestinationQuiz() {
                   {t("practicalNote")}
                 </span>
                 <strong className="text-sm">
-                  {t(`info.${facts.noteKey}`)}
+                  {tc(`info.${facts.noteKey}`)}
                 </strong>
               </div>
             </div>
           ) : null}
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
-              href="#index"
+              href={exploreHref}
               className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground hover:opacity-90"
             >
               {t("exploreStories")}

@@ -87,10 +87,9 @@ describe("DestinationQuiz", () => {
     expect(screen.getByText("1 / 5")).toBeInTheDocument();
   });
 
-  it("links the result's 'Explore stories' CTA to the in-page index anchor", () => {
-    // The landing page's separate "discover" filter-grid section was folded
-    // into the catalogue index (#index), which is now the page's only browse
-    // surface -- see app/(public)/page.tsx.
+  it("links the result's 'Explore stories' CTA to the country's Stories tab", () => {
+    // It used to point at an in-page #index anchor that no longer exists on
+    // the home page; it now opens the country's own Stories tab.
     render(<DestinationQuiz />);
     answerAll([
       /Open countryside/,
@@ -102,7 +101,7 @@ describe("DestinationQuiz", () => {
 
     expect(
       screen.getByRole("link", { name: "Explore stories" }),
-    ).toHaveAttribute("href", "#index");
+    ).toHaveAttribute("href", "/stories");
   });
 
   it("restarts the quiz from the result screen", () => {
@@ -119,5 +118,58 @@ describe("DestinationQuiz", () => {
     expect(
       screen.getByText("Where would you feel most at home?"),
     ).toBeInTheDocument();
+  });
+});
+
+describe("DestinationQuiz (Malaysia)", () => {
+  it("asks Malaysia's own questions and links into Malaysia's stories", () => {
+    render(<DestinationQuiz country="malaysia" exploreHref="/my/stories" />);
+    expect(
+      screen.getByRole("heading", {
+        name: "Where would you feel most at home?",
+      }),
+    ).toBeInTheDocument();
+    // Never the New Zealand WHV answers.
+    expect(screen.queryByText(/Fruit picking/)).not.toBeInTheDocument();
+    for (const answer of [
+      /Cool highlands/,
+      /Hiking/,
+      /Time outdoors/,
+      /Relaxed and scenic/,
+      /Flexible/,
+    ]) {
+      fireEvent.click(screen.getByRole("button", { name: answer }));
+    }
+    expect(
+      screen.getByRole("heading", { name: "Cameron Highlands" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Your Malaysia match")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Explore stories" }),
+    ).toHaveAttribute("href", "/my/stories");
+  });
+
+  it("has every Malaysia quiz message in both languages", async () => {
+    const { MALAYSIA_QUESTIONS, MALAYSIA_DESTINATION_INFO } =
+      await import("./destination-quiz");
+    for (const locale of ["en", "zh-CN"]) {
+      const messages = (await import(`@/i18n/messages/${locale}.json`)).default
+        .home.quizMalaysia;
+      for (const q of MALAYSIA_QUESTIONS) {
+        expect(messages.questions[q.promptKey]).toBeTruthy();
+        for (const a of q.answers) {
+          expect(messages.answers[a.labelKey]).toBeTruthy();
+          for (const name of Object.keys(a.scores)) {
+            expect(MALAYSIA_DESTINATION_INFO[name]).toBeDefined();
+          }
+        }
+      }
+      for (const info of Object.values(MALAYSIA_DESTINATION_INFO)) {
+        expect(messages.destinations[info.nameKey]).toBeTruthy();
+        expect(messages.seasons[info.seasonKey]).toBeTruthy();
+        expect(messages.info[info.workKey]).toBeTruthy();
+        expect(messages.info[info.noteKey]).toBeTruthy();
+      }
+    }
   });
 });

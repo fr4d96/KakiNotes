@@ -94,7 +94,7 @@ describe("JourneyPlacePicker", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Use link" }));
     expect(
-      await screen.findByText("That place is outside New Zealand."),
+      await screen.findByText("That place is outside this map."),
     ).toBeInTheDocument();
     expect(onChange).not.toHaveBeenCalled();
   });

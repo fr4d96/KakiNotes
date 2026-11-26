@@ -94,6 +94,70 @@ export const CITIES: readonly City[] = [
   },
 ];
 
+/** Malaysia (the inset picture: Peninsular on top, Borneo below). */
+export const MY_CITIES: readonly City[] = [
+  {
+    name: "Kuala Lumpur",
+    latitude: 3.15,
+    longitude: 101.71,
+    tier: 1,
+    side: "left",
+  },
+  {
+    name: "George Town",
+    latitude: 5.41,
+    longitude: 100.34,
+    tier: 1,
+    side: "right",
+  },
+  {
+    name: "Johor Bahru",
+    latitude: 1.49,
+    longitude: 103.74,
+    tier: 1,
+    side: "left",
+  },
+  { name: "Ipoh", latitude: 4.6, longitude: 101.08, tier: 2, side: "right" },
+  { name: "Melaka", latitude: 2.2, longitude: 102.25, tier: 2, side: "left" },
+  {
+    name: "Kota Bharu",
+    latitude: 6.13,
+    longitude: 102.24,
+    tier: 2,
+    side: "right",
+  },
+  {
+    name: "Kuantan",
+    latitude: 3.81,
+    longitude: 103.33,
+    tier: 2,
+    side: "right",
+  },
+  { name: "Langkawi", latitude: 6.35, longitude: 99.8, tier: 2, side: "right" },
+  {
+    name: "Kuching",
+    latitude: 1.55,
+    longitude: 110.34,
+    tier: 1,
+    side: "right",
+  },
+  {
+    name: "Kota Kinabalu",
+    latitude: 5.98,
+    longitude: 116.07,
+    tier: 1,
+    side: "left",
+  },
+  { name: "Miri", latitude: 4.4, longitude: 113.99, tier: 2, side: "left" },
+  {
+    name: "Sandakan",
+    latitude: 5.84,
+    longitude: 118.12,
+    tier: 2,
+    side: "right",
+  },
+];
+
 /** Tier-2 labels are fully visible from this zoom (1 = the whole of NZ)... */
 export const TIER2_MIN_ZOOM = 1.6;
 /** ...fading in over this much zoom before that. */

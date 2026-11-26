@@ -14,6 +14,7 @@ import {
   type PickedPoint,
 } from "@/components/story/journey-place-picker";
 import { MAX_JOURNEY_LABEL_LENGTH } from "@/lib/journey/geo";
+import type { JourneyCountrySlug } from "@/lib/story/countries";
 import {
   buildMyJourneyStops,
   type MyJourneyEntry,
@@ -27,16 +28,20 @@ type Draft = { storyId: string; point: PickedPoint | null; label: string };
  * published sub stories, opened from its folder's journey icon (Story folders).
  * Its map comes first -- the same map readers see, limited to this journey
  * and redrawn as a pin is edited -- then each story with "Pin on map",
- * "Move pin" or "Remove pin". Only a New Zealand story can be pinned; a
- * published one elsewhere is greyed out with the reason (drafts never reach
- * this page). A pin is public the moment it is saved.
+ * "Move pin" or "Remove pin". Only a story in a country with a journey map
+ * (New Zealand, Malaysia) can be pinned, on that country's map; any other
+ * published one is greyed out with the reason (drafts never reach this
+ * page). A pin is public the moment it is saved.
  */
 export function JourneyStoryView({
   main,
   subs,
+  country = "new-zealand",
 }: {
   main: MyJourneyEntry;
   subs: MyJourneyEntry[];
+  /** The main story's country: which map is drawn and picked on. */
+  country?: JourneyCountrySlug;
 }) {
   const t = useTranslations("myJourney");
   const router = useRouter();
@@ -69,8 +74,8 @@ export function JourneyStoryView({
           }
         : s,
     );
-    return buildMyJourneyStops(withDraft);
-  }, [stories, draft]);
+    return buildMyJourneyStops(withDraft, country);
+  }, [stories, draft, country]);
   const previewKey = `${previewStops.length}:${previewStops
     .map((s) => (s.parentIndex === null ? "m" : "s"))
     .join("")}`;
@@ -208,6 +213,7 @@ export function JourneyStoryView({
             </p>
             <div className="mt-3">
               <JourneyPlacePicker
+                country={country}
                 value={draft.point}
                 onChange={(point, placeName) =>
                   setDraft((d) =>
@@ -300,7 +306,7 @@ export function JourneyStoryView({
           {t("mapTitle")}
         </h2>
         {previewStops.length > 0 ? (
-          <JourneyMap key={previewKey} stops={previewStops} />
+          <JourneyMap key={previewKey} stops={previewStops} country={country} />
         ) : (
           <p className="rounded-lg border border-dashed border-border-subtle p-4 text-sm text-muted-foreground">
             {t("mapEmpty")}

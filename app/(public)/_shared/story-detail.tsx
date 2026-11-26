@@ -37,7 +37,11 @@ import {
 } from "@/components/story/public-expenses";
 import { revisionCurrency } from "@/lib/story/currency";
 import { ShareStoryButton } from "@/components/story/share-story-button";
-import { countryUrlPrefix, type CountrySlug } from "@/lib/story/countries";
+import {
+  countryUrlPrefix,
+  hasJourneyMap,
+  type CountrySlug,
+} from "@/lib/story/countries";
 
 // Shared by /stories/[id] (NZ) and /cn/stories/[id] (China), parameterized
 // by `country` -- every data read below is scoped to it (Rule 10/12: a /cn
@@ -189,8 +193,7 @@ export async function StoryDetail({
     getPublishedStoryMediaDeduped(story.story_id),
     getPublishedStoryFamilyDeduped(story.story_id),
     // The contributor's public profile, for the sub story cards and the
-    // "See this on ... journey" link. The journey map is New Zealand only,
-    // so other countries' story pages never ask for it.
+    // "See this on ... journey" link (countries with a journey map only).
     story.contributor_slug
       ? getPublicContributorDeduped(story.contributor_slug, country)
       : Promise.resolve(null),
@@ -200,9 +203,10 @@ export async function StoryDetail({
   // (Rules 10-12); [] when the RPC is unavailable, so the story itself
   // always renders.
   let journeyContributor: typeof profileContributor = null;
-  if (country === "new-zealand" && profileContributor) {
+  if (hasJourneyMap(country) && profileContributor) {
     const pins = await getPublishedContributorJourney(
       profileContributor.contributor_id,
+      country,
     );
     if (pins.some((pin) => pin.slug === story.slug)) {
       journeyContributor = profileContributor;
@@ -407,7 +411,7 @@ export async function StoryDetail({
       {journeyContributor ? (
         <p className="mt-8">
           <Link
-            href={`/contributors/${journeyContributor.public_slug}/journey`}
+            href={`${countryUrlPrefix(country)}/contributors/${journeyContributor.public_slug}/journey`}
             className="inline-flex min-h-[44px] items-center text-sm font-medium text-accent underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {t("seeOnJourney", { name: journeyContributor.display_name })}

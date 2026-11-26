@@ -129,6 +129,7 @@ describe("groupMyJourney", () => {
   const base = {
     pinnable: true,
     isNewZealand: true,
+    countrySlug: "new-zealand",
     place: null,
   } as const;
   const e = (

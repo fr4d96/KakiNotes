@@ -1,4 +1,9 @@
 import { JOURNEY_VIEWBOX, type Point } from "@/lib/journey/geo";
+import {
+  resolveGeography,
+  type GeographyArg,
+  type JourneyCountry,
+} from "@/lib/journey/geographies";
 import { getMainIslands } from "@/lib/journey/map-paths";
 import { distToPolygon, pointInPolygon } from "@/lib/journey/polygon";
 
@@ -7,15 +12,18 @@ export const PIN_OUTER_RADIUS = 9.8;
 /** Furthest a pin is moved inland to keep Cook Strait visible. */
 export const MAX_STRAIT_PULL = 12;
 
-let strait: number | null = null;
-/** Narrowest gap (SVG units) between the two main islands' outlines. */
-export function straitWidth(): number {
-  if (strait === null) {
-    const { north, south } = getMainIslands();
-    strait = Infinity;
-    for (const p of north) strait = Math.min(strait, distToPolygon(p, south));
+const straits = new Map<JourneyCountry, number>();
+/** Narrowest gap (SVG units) between the two main land masses' outlines. */
+export function straitWidth(geography?: GeographyArg): number {
+  const geo = resolveGeography(geography);
+  let width = straits.get(geo.country);
+  if (width === undefined) {
+    const { north, south } = getMainIslands(geo);
+    width = Infinity;
+    for (const p of north) width = Math.min(width, distToPolygon(p, south));
+    straits.set(geo.country, width);
   }
-  return strait;
+  return width;
 }
 
 /**
@@ -28,9 +36,13 @@ export function straitWidth(): number {
 export function pullInlandFromStrait(
   points: readonly Point[],
   radius: number = PIN_OUTER_RADIUS,
+  geography?: GeographyArg,
 ): Point[] {
-  const { north, south } = getMainIslands();
-  const gap = straitWidth();
+  const geo = resolveGeography(geography);
+  // Only New Zealand has a narrow strait worth keeping visible.
+  if (!geo.pullFromStrait) return points.map((p) => ({ ...p }));
+  const { north, south } = getMainIslands(geo);
+  const gap = straitWidth(geo);
   // Half the strait plus a little air, so open water shows between circles.
   const need = radius + gap / 2 + 5;
 
@@ -87,14 +99,15 @@ export function spreadPins(
   minDistance: number,
   bounds: { width: number; height: number } = JOURNEY_VIEWBOX,
   pinRadius: number = PIN_OUTER_RADIUS,
+  geography?: GeographyArg,
 ): Point[] {
   // Strait pull first, then overlap spreading; repeat so they settle together.
-  let out = pullInlandFromStrait(points, pinRadius);
+  let out = pullInlandFromStrait(points, pinRadius, geography);
   const margin = minDistance / 2;
 
   for (let round = 0; round < 3; round += 1) {
     out = separate(out, minDistance, bounds, margin);
-    const pulled = pullInlandFromStrait(out, pinRadius);
+    const pulled = pullInlandFromStrait(out, pinRadius, geography);
     const same = pulled.every(
       (p, i) => Math.hypot(p.x - out[i].x, p.y - out[i].y) < 1e-6,
     );

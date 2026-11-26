@@ -1,4 +1,7 @@
-import { isInsideNz } from "@/lib/journey/geo";
+import {
+  isInsideCountry,
+  type JourneyCountry,
+} from "@/lib/journey/geographies";
 import {
   hasPlainHttpsOrigin,
   isGoogleHost,
@@ -45,17 +48,23 @@ function isFetchable(url: URL): boolean {
   );
 }
 
-function finish(place: {
-  latitude: number;
-  longitude: number;
-  placeName: string | null;
-}): ResolveLinkResult {
-  if (!isInsideNz(place)) return { ok: false, reason: "outside_nz" };
+function finish(
+  place: {
+    latitude: number;
+    longitude: number;
+    placeName: string | null;
+  },
+  country: JourneyCountry,
+): ResolveLinkResult {
+  // "outside_nz" is the historical reason string; it means "outside the country".
+  if (!isInsideCountry(country, place))
+    return { ok: false, reason: "outside_nz" };
   return { ok: true, ...place };
 }
 
 export async function resolveGoogleMapsLink(
   input: string,
+  country: JourneyCountry = "new-zealand",
 ): Promise<ResolveLinkResult> {
   if (input.length > MAX_LINK_LENGTH) return { ok: false, reason: "invalid" };
 
@@ -67,7 +76,7 @@ export async function resolveGoogleMapsLink(
   }
 
   const direct = parseGoogleMapsUrl(url.href);
-  if (direct) return finish(direct);
+  if (direct) return finish(direct, country);
   if (isGoogleMapsUrl(url)) return { ok: false, reason: "not_found" };
   if (!isShortLink(url)) return { ok: false, reason: "invalid" };
 
@@ -100,7 +109,7 @@ export async function resolveGoogleMapsLink(
     if (!isFetchable(next)) return { ok: false, reason: "invalid" };
 
     const parsed = parseGoogleMapsUrl(next.href);
-    if (parsed) return finish(parsed);
+    if (parsed) return finish(parsed, country);
     url = next;
   }
   return { ok: false, reason: "not_found" };

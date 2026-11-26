@@ -252,6 +252,7 @@ export function mediaDescription(item: {
 export const COUNTRY_LABELS: Record<string, string> = {
   "new-zealand": "New Zealand",
   china: "China",
+  malaysia: "Malaysia",
 };
 
 /** What the review screen calls a revision's state. */

@@ -9,7 +9,7 @@
 // hard-coded UI strings -- this module never contains display copy, only
 // slugs and routing shape.
 
-export const COUNTRY_SLUGS = ["new-zealand", "china"] as const;
+export const COUNTRY_SLUGS = ["new-zealand", "china", "malaysia"] as const;
 
 export type CountrySlug = (typeof COUNTRY_SLUGS)[number];
 
@@ -21,11 +21,31 @@ export function isCountrySlug(value: string): value is CountrySlug {
 
 /**
  * NZ keeps its existing, unprefixed URLs (product decision: "NZ URLs stay
- * unchanged"). China lives under /cn. Every public route builder in app/
- * goes through this so the prefix is never typed twice.
+ * unchanged"). China lives under /cn, Malaysia under /my (2026-11-26). Every
+ * public route builder in app/ goes through this so the prefix is never
+ * typed twice. Only "/my" and "/my/..." are Malaysia: "/my-stories" and
+ * "/my-photos" are the contributor's own screens, not a country.
  */
+const COUNTRY_URL_PREFIXES: Record<CountrySlug, string> = {
+  "new-zealand": "",
+  china: "/cn",
+  malaysia: "/my",
+};
+
 export function countryUrlPrefix(country: CountrySlug): string {
-  return country === "china" ? "/cn" : "";
+  return COUNTRY_URL_PREFIXES[country];
+}
+
+/** The prefixed country whose section `pathname` is in, or null. */
+function prefixedCountryOf(pathname: string | null): CountrySlug | null {
+  if (!pathname) return null;
+  for (const country of COUNTRY_SLUGS) {
+    const prefix = COUNTRY_URL_PREFIXES[country];
+    if (prefix && (pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+      return country;
+    }
+  }
+  return null;
 }
 
 /**
@@ -34,23 +54,52 @@ export function countryUrlPrefix(country: CountrySlug): string {
  * the country by a page.
  */
 export function countryFromPathname(pathname: string | null): CountrySlug {
-  return pathname === "/cn" || pathname?.startsWith("/cn/")
-    ? "china"
-    : "new-zealand";
+  return prefixedCountryOf(pathname) ?? "new-zealand";
+}
+
+/**
+ * New Zealand is framed as Working Holiday Visa stories; every other country
+ * is general first-person travel and living, and no page of theirs may say
+ * "Working Holiday" (product decision 2, 2026-10-14; Malaysia 2026-11-26).
+ */
+export function isWorkingHolidayCountry(country: CountrySlug): boolean {
+  return country === "new-zealand";
+}
+
+/**
+ * Countries with a contributor journey map. Must match the countries that
+ * carry journey bounds in the database (countries.journey_*,
+ * 20261126090000_malaysia.sql) and lib/journey/geographies.ts.
+ */
+export const JOURNEY_COUNTRY_SLUGS = ["new-zealand", "malaysia"] as const;
+export type JourneyCountrySlug = (typeof JOURNEY_COUNTRY_SLUGS)[number];
+
+export function hasJourneyMap(
+  country: CountrySlug,
+): country is JourneyCountrySlug {
+  return (JOURNEY_COUNTRY_SLUGS as readonly string[]).includes(country);
 }
 
 /**
  * The i18n message namespace segment for this country's copy variants
  * (messages/<locale>.json's `countryContent.<segment>` object) -- see
- * countryContent.newZealand / countryContent.china in i18n/messages/en.json
+ * countryContent.newZealand / .china / .malaysia in i18n/messages/en.json
  * and zh-CN.json for the keys every country must carry (siteDescription,
  * tagline, storiesIntro, storiesMetaDescription, costsFraming, aboutText,
  * personalExperienceLabel, locationNoMatch, name).
  */
+export type CountryMessageSegment = "newZealand" | "china" | "malaysia";
+
+const COUNTRY_MESSAGE_SEGMENTS: Record<CountrySlug, CountryMessageSegment> = {
+  "new-zealand": "newZealand",
+  china: "china",
+  malaysia: "malaysia",
+};
+
 export function countryMessageSegment(
   country: CountrySlug,
-): "newZealand" | "china" {
-  return country === "china" ? "china" : "newZealand";
+): CountryMessageSegment {
+  return COUNTRY_MESSAGE_SEGMENTS[country];
 }
 
 /**
@@ -62,6 +111,7 @@ export function countryMessageSegment(
 export const COUNTRY_FLAGS: Record<CountrySlug, string> = {
   "new-zealand": "🇳🇿",
   china: "🇨🇳",
+  malaysia: "🇲🇾",
 };
 
 /**
@@ -97,7 +147,7 @@ export function countryFromCookieValue(
   return value && isCountrySlug(value) ? value : null;
 }
 
-/** The public pages that belong to a country (NZ unprefixed, China /cn). */
+/** The public pages that belong to a country (NZ unprefixed, China /cn, Malaysia /my). */
 const COUNTRY_PAGE_ROOTS = ["/stories", "/contributors", "/costs", "/about"];
 
 /**
@@ -111,7 +161,8 @@ export function countryForPath(
   pathname: string | null,
   remembered: CountrySlug | null,
 ): CountrySlug {
-  if (pathname === "/cn" || pathname?.startsWith("/cn/")) return "china";
+  const prefixed = prefixedCountryOf(pathname);
+  if (prefixed) return prefixed;
   const path = pathname ?? "";
   const isAuthorScreen =
     path === "/stories/new" ||

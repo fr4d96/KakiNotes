@@ -35,6 +35,7 @@ const main: MyJourneyEntry = {
   lifecycleStatus: "published",
   pinnable: true,
   isNewZealand: true,
+  countrySlug: "new-zealand",
   parentStoryId: null,
   place: { label: "Queenstown", latitude: -45.03, longitude: 168.66 },
 };
@@ -45,6 +46,7 @@ const sub: MyJourneyEntry = {
   lifecycleStatus: "published",
   pinnable: true,
   isNewZealand: true,
+  countrySlug: "new-zealand",
   parentStoryId: main.id,
   place: null,
 };
@@ -55,6 +57,7 @@ const draft: MyJourneyEntry = {
   lifecycleStatus: "draft",
   pinnable: false,
   isNewZealand: true,
+  countrySlug: "new-zealand",
   parentStoryId: null,
   place: null,
 };
@@ -65,6 +68,7 @@ const china: MyJourneyEntry = {
   lifecycleStatus: "published",
   pinnable: false,
   isNewZealand: false,
+  countrySlug: "china",
   parentStoryId: null,
   place: null,
 };
@@ -118,10 +122,10 @@ describe("JourneyStoryView", () => {
     expect(screen.getByText("Pinned at Queenstown")).toBeInTheDocument();
   });
 
-  it("greys out a story outside New Zealand and says why", () => {
+  it("greys out a story in a country without a journey map and says why", () => {
     renderView(china);
     expect(
-      screen.getByText(/only new zealand stories can be pinned/i),
+      screen.getByText(/this country doesn't have a journey map yet/i),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /on the map$/i })).toBeNull();
     expect(screen.getByTestId("journey-main-row")).toHaveAttribute(

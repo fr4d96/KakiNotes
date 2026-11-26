@@ -218,7 +218,7 @@
       "changeNoteRequired": "Describe what needs to change.",
       "journeyLabelRequired": "Give this place a name.",
       "journeyLabelTooLong": "Place names must be {max} characters or fewer.",
-      "journeyOutOfBounds": "Places must be inside New Zealand.",
+      "journeyOutOfBounds": "Choose a place inside the country on the map.",
       "invalidCountry": "Choose a valid country."
     },
     "pdf": {
@@ -275,6 +275,12 @@
         "5k_15k": "NZ$5k – 15k",
         "15k_30k": "NZ$15k – 30k",
         "30k_plus": "NZ$30k+"
+      },
+      "costBandsMyr": {
+        "under_5k": "Under RM5k",
+        "5k_15k": "RM5k – 15k",
+        "15k_30k": "RM15k – 30k",
+        "30k_plus": "RM30k+"
       }
     }
   },
@@ -479,7 +485,72 @@
         "centralOtagoNote": "Line up your next seasonal move."
       }
     },
-    "hero": "Real stories from across <accent>Aotearoa</accent>."
+    "hero": "Real stories from across <accent>Aotearoa</accent>.",
+    "quizMalaysia": {
+      "resultKicker": "Your Malaysia match",
+      "bestTime": "Best time",
+      "knownFor": "Known for",
+      "destinations": {
+        "kualaLumpur": "Kuala Lumpur",
+        "penang": "Penang",
+        "melaka": "Melaka",
+        "langkawi": "Langkawi",
+        "cameronHighlands": "Cameron Highlands",
+        "sabah": "Sabah"
+      },
+      "questions": {
+        "home": "Where would you feel most at home?",
+        "doing": "What would you most like to do?",
+        "matters": "What matters most?",
+        "pace": "Choose your ideal pace.",
+        "timing": "When are you going?"
+      },
+      "answers": {
+        "bigCity": "A big, busy city",
+        "heritageTown": "A heritage town",
+        "islandBeach": "An island by the beach",
+        "coolHighlands": "Cool highlands",
+        "rainforest": "Rainforest and wildlife",
+        "streetFood": "Hunting down street food",
+        "diving": "Diving and snorkelling",
+        "hiking": "Hiking",
+        "cafesWalks": "Cafés and heritage walks",
+        "shoppingNightlife": "Shopping and nightlife",
+        "budget": "Keeping it cheap",
+        "meetingPeople": "Meeting people",
+        "timeOutdoors": "Time outdoors",
+        "cultureHistory": "Culture and history",
+        "slowRest": "Slowing down",
+        "busySocial": "Busy and social",
+        "relaxedScenic": "Relaxed and scenic",
+        "activePhysical": "Active and physical",
+        "independentFlexible": "Independent and flexible",
+        "marToOct": "March to October",
+        "novToFeb": "November to February",
+        "festiveSeason": "Around a festival",
+        "flexible": "Flexible"
+      },
+      "seasons": {
+        "yearRound": "Year-round",
+        "decToApr": "December to April",
+        "novToApr": "November to April",
+        "marToSep": "March to September"
+      },
+      "info": {
+        "kualaLumpurKnownFor": "Food · City life",
+        "kualaLumpurNote": "Rain usually comes as a short afternoon storm.",
+        "penangKnownFor": "Street food · Heritage murals",
+        "penangNote": "George Town is easiest on foot or by bike.",
+        "melakaKnownFor": "Heritage · Nyonya food",
+        "melakaNote": "Weekends get crowded; weekdays are calmer.",
+        "langkawiKnownFor": "Beaches · Island hopping",
+        "langkawiNote": "Most people rent a car or scooter to get around.",
+        "cameronHighlandsKnownFor": "Tea farms · Cool weather",
+        "cameronHighlandsNote": "Evenings are cold, so pack a jacket.",
+        "sabahKnownFor": "Diving · Mount Kinabalu",
+        "sabahNote": "Kinabalu climbs are booked well in advance."
+      }
+    }
   },
   "about": {
     "metaTitle": "About",
@@ -1389,8 +1460,8 @@
     "subStoryNotPublished": "Only published stories can be filed into a folder.",
     "journeyStoryNotFound": "That story wasn't found, or it isn't yours.",
     "journeyNotPublished": "Only published stories can be pinned on your journey map.",
-    "journeyNotNewZealand": "Only New Zealand stories can be pinned on your journey map.",
-    "journeyBadPlace": "Give this place a name and choose a spot inside New Zealand."
+    "journeyNotNewZealand": "This story's country doesn't have a journey map yet.",
+    "journeyBadPlace": "Give this place a name and choose a spot inside the story's country."
   },
   "takedown": {
     "alreadyDown": "This story has already been taken down.",
@@ -1474,13 +1545,13 @@
     "storyIntro": "Pin each story where it happened. Pins go public as soon as you save them.",
     "mapTitle": "This journey on the map",
     "mapEmpty": "Nothing from this journey is on the map yet. Pin a story below to start.",
-    "empty": "Publish a New Zealand story to start your journey map.",
+    "empty": "Publish a story to start your journey map.",
     "listLabel": "Your stories",
     "subStoriesOf": "Sub stories of {story}",
     "rows": {
       "placeLabel": "Pinned at {place}",
       "noPlace": "Not on the map yet",
-      "notNewZealand": "Not on the map: only New Zealand stories can be pinned.",
+      "notNewZealand": "Not on the map: this country doesn't have a journey map yet.",
       "add": "Pin on map",
       "change": "Move pin",
       "remove": "Remove pin",
@@ -1517,7 +1588,7 @@
   "journey": {
     "title": "The journey",
     "note": "An illustration on a simplified map, not for navigation — places are approximate and chosen by the author.",
-    "mapLabel": "Illustrated route through New Zealand with {count} stops",
+    "mapLabel": "Illustrated route with {count} stops",
     "pinLabel": "Stop {n}: {label}",
     "play": "Play the journey",
     "pause": "Pause",
@@ -1539,7 +1610,7 @@
       }
     },
     "picker": {
-      "mapLabel": "New Zealand. Tap to choose the place.",
+      "mapLabel": "Map. Tap to choose the place.",
       "mapHelp": "Interactive map. Tap a spot to choose the place. Drag to pan, hold Ctrl or Cmd and scroll or pinch to zoom, or use the plus and minus buttons. When the map has focus, arrow keys pan and plus and minus zoom. When the pin has focus, arrow keys move it.",
       "pinLabel": "Chosen place",
       "useCentre": "Choose the middle of the map",
@@ -1555,7 +1626,7 @@
         "empty": "Paste a Google Maps link first.",
         "invalid": "That doesn't look like a Google Maps link.",
         "notFound": "We couldn't find a place in that link. Try the Share link for a specific place.",
-        "outsideNz": "That place is outside New Zealand.",
+        "outsideNz": "That place is outside this map.",
         "unreachable": "Couldn't open that link right now. Please try again.",
         "unauthenticated": "Please sign in to use short links."
       }
@@ -1567,7 +1638,8 @@
     "insideList": "Places inside {label}",
     "insideStatus": "Exploring {label}: {count, plural, one {# place} other {# places}}",
     "readThisStory": "Read this story",
-    "singlePlace": "One place on the map so far."
+    "singlePlace": "One place on the map so far.",
+    "onTheFlight": "Flying to {label}…"
   },
   "countryContent": {
     "newZealand": {
@@ -1601,6 +1673,26 @@
       "costsTitle": "What a trip to China cost",
       "newStoryTitlePlaceholder": "A year teaching English in Guangzhou",
       "pdfColophon": "Your copy of \"{title}\" ({status}), exported from Kakinotes on {date}. This is one person's personal account of their time in China, not advice. {siteUrl}"
+    },
+    "malaysia": {
+      "name": "Malaysia",
+      "tagline": "First-person travel and living stories from Malaysia.",
+      "siteDescription": "Kakinotes' Malaysia section is a public archive of detailed, written first-person stories from people who travelled or lived in Malaysia.",
+      "storiesIntro": "Real accounts from people who've been there — filter by state, tag, trip year or reported cost to find one like yours.",
+      "storiesMetaDescription": "Browse real, first-person travel and living stories from Malaysia, filterable by state, tag, trip year and reported cost.",
+      "costsFraming": "What people actually spent travelling or living in Malaysia, built from the budgets contributors chose to share. These are a record of what happened to those people, not an estimate, a budget, or a prediction for your own trip.",
+      "aboutText": "Kakinotes' Malaysia section collects and verifies real, detailed first-person stories from people who travelled or lived in Malaysia, so the next person can read what it actually involved.",
+      "personalExperienceLabel": "One person's experience, not advice.",
+      "madeFor": "Made for people exploring Malaysia",
+      "placeExample": "George Town",
+      "contributorsIntro": "People who've shared their own stories from Malaysia — showing only the fields each contributor has chosen to make public.",
+      "contributorsMetaDescription": "Contributors who've published a first-person story from Malaysia on Kakinotes.",
+      "costsTitle": "What a trip to Malaysia cost",
+      "newStoryTitlePlaceholder": "Three weeks eating my way around Penang",
+      "pdfColophon": "Your copy of \"{title}\" ({status}), exported from Kakinotes on {date}. This is one person's personal account of their time in Malaysia, not advice. {siteUrl}",
+      "homeHero": "Real stories from across <accent>Malaysia</accent>.",
+      "homeHeroSub": "Travel and living stories, written by the people who lived them.",
+      "journeyMetaDescription": "The places {name} wrote about in Malaysia, mapped. Open a place to read the story."
     }
   },
   "affirmations": {

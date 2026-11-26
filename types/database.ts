@@ -217,6 +217,10 @@ export type Database = {
           created_at: string;
           currency_code: string;
           id: string;
+          journey_max_latitude: number | null;
+          journey_max_longitude: number | null;
+          journey_min_latitude: number | null;
+          journey_min_longitude: number | null;
           name: string;
           name_zh_cn: string | null;
           slug: string;
@@ -228,6 +232,10 @@ export type Database = {
           created_at?: string;
           currency_code: string;
           id?: string;
+          journey_max_latitude?: number | null;
+          journey_max_longitude?: number | null;
+          journey_min_latitude?: number | null;
+          journey_min_longitude?: number | null;
           name: string;
           name_zh_cn?: string | null;
           slug: string;
@@ -239,6 +247,10 @@ export type Database = {
           created_at?: string;
           currency_code?: string;
           id?: string;
+          journey_max_latitude?: number | null;
+          journey_max_longitude?: number | null;
+          journey_min_latitude?: number | null;
+          journey_min_longitude?: number | null;
           name?: string;
           name_zh_cn?: string | null;
           slug?: string;
@@ -2327,7 +2339,7 @@ export type Database = {
         }[];
       };
       get_expense_aggregates: {
-        Args: never;
+        Args: { p_country_slug?: string };
         Returns: {
           by_category: Json;
           by_region: Json;
@@ -2402,6 +2414,7 @@ export type Database = {
       get_my_journey: {
         Args: never;
         Returns: {
+          country_slug: string;
           id: string;
           is_new_zealand: boolean;
           journey_label: string;
@@ -2488,7 +2501,7 @@ export type Database = {
         }[];
       };
       get_published_contributor_journey: {
-        Args: { p_contributor_id: string };
+        Args: { p_contributor_id: string; p_country_slug?: string };
         Returns: {
           excerpt: string;
           journey_label: string;

@@ -74,6 +74,42 @@ describe("JourneyMap", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it("renders a Malaysia journey with its own cities and a crossing leg", () => {
+    const KL: JourneyStopView = {
+      latitude: 3.15,
+      longitude: 101.71,
+      label: "Kuala Lumpur",
+      storyTitle: "Arriving in KL",
+      href: "/my/stories/arriving-in-kl",
+      parentIndex: null,
+    };
+    const KK: JourneyStopView = {
+      latitude: 5.98,
+      longitude: 116.07,
+      label: "Kota Kinabalu",
+      storyTitle: "Sabah at last",
+      href: "/my/stories/sabah",
+      parentIndex: null,
+    };
+    const { container } = render(
+      <JourneyMap stops={[KL, KK]} country="malaysia" />,
+    );
+    const items = within(
+      screen.getByRole("list", { name: "Stops" }),
+    ).getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    expect(
+      screen.getByRole("link", { name: /Arriving in KL/ }),
+    ).toHaveAttribute("href", "/my/stories/arriving-in-kl");
+    expect(screen.getAllByTestId("journey-panel")).toHaveLength(2);
+    expect(screen.getByTestId("journey-cities")).toHaveTextContent("Kuching");
+    expect(screen.getByTestId("journey-cities")).not.toHaveTextContent(
+      "Auckland",
+    );
+    // Peninsular -> Borneo is a flight, not a ferry.
+    expect(container.querySelector("[data-ferry='true']")).not.toBeNull();
+  });
+
   it("renders a single pin without a route, van or play button", () => {
     render(<JourneyMap stops={[AUCKLAND]} />);
     const items = within(
@@ -95,7 +131,7 @@ describe("JourneyMap", () => {
     expect(screen.queryByTestId("journey-campervan")).toBeNull();
     // The whole of New Zealand stays in view (no zoom onto the lone pin).
     const svg = screen.getByRole("group", {
-      name: /route through new zealand/i,
+      name: /illustrated route/i,
     });
     expect(
       svg.getAttribute("viewBox")!.split(" ").map(Number).slice(2),
@@ -129,7 +165,7 @@ describe("JourneyMap", () => {
   it("labels the picture and never prints coordinates", () => {
     const { container } = render(<JourneyMap stops={STOPS} />);
     expect(
-      screen.getByRole("group", { name: /route through new zealand with 3/i }),
+      screen.getByRole("group", { name: /illustrated route with 3/i }),
     ).toBeInTheDocument();
     expect(container.textContent).not.toMatch(/-36\.85|174\.76/);
   });

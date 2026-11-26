@@ -36,8 +36,9 @@ describe("countryCurrency", () => {
 });
 
 describe("costBandsOffered", () => {
-  it("offers the NZ$ bands only for NZD", () => {
+  it("offers bands only where they are labelled in that currency", () => {
     expect(costBandsOffered("NZD")).toBe(true);
+    expect(costBandsOffered("MYR")).toBe(true);
     expect(costBandsOffered("CNY")).toBe(false);
   });
 });

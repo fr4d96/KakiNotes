@@ -11,14 +11,17 @@ import {
 } from "react";
 import { useTranslations } from "next-intl";
 import {
-  JOURNEY_VIEWBOX,
   MAX_JOURNEY_LABEL_LENGTH,
-  NZ_BOUNDS,
-  isInsideNz,
+  isInsidePanels,
   latLngToPoint,
   pointToLatLng,
   roundCoordinate,
 } from "@/lib/journey/geo";
+import {
+  getJourneyGeography,
+  isInsideCountry,
+  type JourneyCountry,
+} from "@/lib/journey/geographies";
 import { parseGoogleMapsUrl } from "@/lib/journey/google-maps-link";
 import type { ResolveLinkResult } from "@/lib/journey/resolve-google-maps-link";
 import { FULL_BOX, type CameraBox } from "@/lib/journey/camera";
@@ -49,6 +52,7 @@ export type PickedPoint = { latitude: number; longitude: number };
 
 export type ResolveLink = (
   input: string,
+  country?: JourneyCountry,
 ) => Promise<ResolveLinkResult | { ok: false; reason: "unauthenticated" }>;
 
 type LinkStatus = { kind: "error" | "success"; message: string } | null;
@@ -72,26 +76,30 @@ export function JourneyPlacePicker({
   value,
   onChange,
   resolveLink = resolveGoogleMapsLinkAction,
+  country = "new-zealand",
 }: {
   value: PickedPoint | null;
   /** `placeName` is set only when a pasted link carried one. */
   onChange: (point: PickedPoint, placeName?: string) => void;
   /** Resolves a short Google Maps link on the server. Overridable for tests. */
   resolveLink?: ResolveLink;
+  /** Which country's picture to draw and accept places in. */
+  country?: JourneyCountry;
 }) {
+  const geo = getJourneyGeography(country);
   const t = useTranslations("journey.picker");
   const tc = useTranslations("journey.controls");
   const baseId = useId();
   const svgRef = useRef<SVGSVGElement | null>(null);
   const cam = useRef<CameraBox>({ ...FULL_BOX });
-  const point = value ? latLngToPoint(value) : null;
+  const point = value ? latLngToPoint(value, geo) : null;
   const pointRef = useRef(point);
 
   const applyCamera = useCallback(() => {
     const svg = svgRef.current;
     if (!svg) return;
     const c = cam.current;
-    const k = fmt(c.w / JOURNEY_VIEWBOX.width);
+    const k = fmt(c.w / geo.viewBox.width);
     svg.setAttribute("viewBox", boxAttr(c));
     svg.querySelectorAll<SVGGElement>("[data-pin]").forEach((g) => {
       g.setAttribute(
@@ -100,7 +108,7 @@ export function JourneyPlacePicker({
       );
     });
     applyMapDetail(svg, k, pointRef.current ? [pointRef.current] : []);
-  }, []);
+  }, [geo.viewBox.width]);
   const getBase = useCallback((): CameraBox => cam.current, []);
   const setView = useCallback(
     (next: CameraBox) => {
@@ -136,27 +144,23 @@ export function JourneyPlacePicker({
     if (rect.width === 0 || rect.height === 0) return;
     // Through the CURRENT viewBox (zoom, pan, letterboxing) back to lat/lng.
     const at = gestures.toSvgPoint(event.clientX, event.clientY, cam.current);
-    // The sea margin around the picture is not part of New Zealand.
-    if (
-      at.x < 0 ||
-      at.y < 0 ||
-      at.x > JOURNEY_VIEWBOX.width ||
-      at.y > JOURNEY_VIEWBOX.height
-    ) {
-      return;
-    }
-    const picked = pointToLatLng(at);
-    if (!isInsideNz(picked)) return;
+    // The sea margin around the picture (and the sea between Malaysia's two
+    // panels) is not part of the country.
+    if (!isInsidePanels(at, geo)) return;
+    const picked = pointToLatLng(at, geo);
+    if (!isInsideCountry(geo, picked)) return;
     onChange(picked);
   }
 
   function pickViewCentre() {
     const c = cam.current;
-    const picked = pointToLatLng({ x: c.x + c.w / 2, y: c.y + c.h / 2 });
+    const centre = { x: c.x + c.w / 2, y: c.y + c.h / 2 };
+    const picked = pointToLatLng(centre, geo);
+    const first = geo.panels[0].bounds;
     onChange(
-      isInsideNz(picked)
+      isInsidePanels(centre, geo) && isInsideCountry(geo, picked)
         ? picked
-        : { latitude: NZ_BOUNDS.maxLat, longitude: NZ_BOUNDS.minLng },
+        : { latitude: first.maxLat, longitude: first.minLng },
     );
   }
 
@@ -171,20 +175,20 @@ export function JourneyPlacePicker({
     const d = delta[event.key];
     if (!d) return;
     event.preventDefault();
-    onChange({
+    const { bounds } = geo;
+    const next = {
       latitude: roundCoordinate(
-        Math.min(
-          NZ_BOUNDS.maxLat,
-          Math.max(NZ_BOUNDS.minLat, value.latitude + d[0]),
-        ),
+        Math.min(bounds.maxLat, Math.max(bounds.minLat, value.latitude + d[0])),
       ),
       longitude: roundCoordinate(
         Math.min(
-          NZ_BOUNDS.maxLng,
-          Math.max(NZ_BOUNDS.minLng, value.longitude + d[1]),
+          bounds.maxLng,
+          Math.max(bounds.minLng, value.longitude + d[1]),
         ),
       ),
-    });
+    };
+    // Malaysia: the sea between the two panels is not part of the picture.
+    if (isInsideCountry(geo, next)) onChange(next);
   }
 
   function failureMessage(reason: string): string {
@@ -223,7 +227,7 @@ export function JourneyPlacePicker({
     } else {
       setResolving(true);
       try {
-        const result = await resolveLink(input);
+        const result = await resolveLink(input, country);
         if (!result.ok) {
           setLinkStatus({
             kind: "error",
@@ -240,7 +244,7 @@ export function JourneyPlacePicker({
       }
     }
 
-    if (!isInsideNz(place)) {
+    if (!isInsideCountry(geo, place)) {
       setLinkStatus({ kind: "error", message: t("linkErrors.outsideNz") });
       return;
     }
@@ -261,7 +265,7 @@ export function JourneyPlacePicker({
       <div className="relative">
         <svg
           ref={svgRef}
-          viewBox={`0 0 ${JOURNEY_VIEWBOX.width} ${JOURNEY_VIEWBOX.height}`}
+          viewBox={`0 0 ${geo.viewBox.width} ${geo.viewBox.height}`}
           role="group"
           aria-label={t("mapLabel")}
           aria-describedby={`${baseId}-help`}
@@ -278,8 +282,8 @@ export function JourneyPlacePicker({
           className="block h-auto max-h-[min(70vh,640px)] w-full cursor-crosshair select-none rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:h-[min(70vh,640px)]"
           data-testid="journey-picker-map"
         >
-          <JourneyBackdrop />
-          <JourneyCities />
+          <JourneyBackdrop country={country} />
+          <JourneyCities country={country} />
           {point && value ? (
             <g
               data-pin=""
