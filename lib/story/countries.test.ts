@@ -9,6 +9,9 @@ import {
   countryForPath,
   countryFromCookieValue,
   newStoryCountry,
+  COUNTRY_FLAGS,
+  hasJourneyMap,
+  isWorkingHolidayCountry,
 } from "./countries";
 
 describe("lib/story/countries", () => {
@@ -16,8 +19,30 @@ describe("lib/story/countries", () => {
     expect(DEFAULT_COUNTRY_SLUG).toBe("new-zealand");
   });
 
-  it("lists exactly new-zealand and china", () => {
-    expect(COUNTRY_SLUGS).toEqual(["new-zealand", "china"]);
+  it("lists exactly new-zealand, china and malaysia", () => {
+    expect(COUNTRY_SLUGS).toEqual(["new-zealand", "china", "malaysia"]);
+  });
+
+  it("puts Malaysia under /my without claiming /my-stories or /my-photos", () => {
+    expect(countryUrlPrefix("malaysia")).toBe("/my");
+    expect(countryFromPathname("/my")).toBe("malaysia");
+    expect(countryFromPathname("/my/stories/a-trip")).toBe("malaysia");
+    expect(countryFromPathname("/my-stories")).toBe("new-zealand");
+    expect(countryFromPathname("/my-photos")).toBe("new-zealand");
+    expect(countryForPath("/my/costs", "china")).toBe("malaysia");
+    // The author's own screens follow the remembered choice.
+    expect(countryForPath("/my-stories", "malaysia")).toBe("malaysia");
+    expect(countryForPath("/my-stories/map", null)).toBe("new-zealand");
+  });
+
+  it("gives Malaysia its own copy, flag and a journey map, never WHV framing", () => {
+    expect(countryMessageSegment("malaysia")).toBe("malaysia");
+    expect(COUNTRY_FLAGS.malaysia).toBe("🇲🇾");
+    expect(hasJourneyMap("malaysia")).toBe(true);
+    expect(hasJourneyMap("new-zealand")).toBe(true);
+    expect(hasJourneyMap("china")).toBe(false);
+    expect(isWorkingHolidayCountry("malaysia")).toBe(false);
+    expect(isWorkingHolidayCountry("new-zealand")).toBe(true);
   });
 
   it("isCountrySlug recognizes only the known slugs", () => {

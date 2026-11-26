@@ -68,10 +68,13 @@ export function PhotoWall({
   tiles,
   pauseLabel,
   playLabel,
+  basePath = "/stories",
 }: {
   tiles: WallTile[];
   pauseLabel: string;
   playLabel: string;
+  /** The country's story pages ("/stories" NZ, "/my/stories" Malaysia). */
+  basePath?: string;
 }) {
   const reduced = usePrefersReducedMotion();
   const [paused, setPaused] = useState(false);
@@ -112,7 +115,7 @@ export function PhotoWall({
                 column.map((tile, i) => (
                   <Link
                     key={`${copy}-${i}-${tile.slug}`}
-                    href={`/stories/${tile.slug}`}
+                    href={`${basePath}/${tile.slug}`}
                     tabIndex={-1}
                     draggable={false}
                     className={`photo-wall-tile group relative block overflow-hidden rounded-2xl bg-surface-muted ${

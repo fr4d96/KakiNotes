@@ -1,5 +1,7 @@
 import { z } from "zod";
+import type { JourneyCountry } from "@/lib/journey/geographies";
 import type { JourneyStopView } from "@/lib/journey/schema";
+import { countryUrlPrefix } from "@/lib/story/countries";
 
 // A contributor's journey: one pin per PUBLISHED New Zealand story
 // (supabase/migrations/20261029091942_contributor_journey.sql). Pure: rows
@@ -38,9 +40,16 @@ export function parsePublishedJourneyRows(
   return out;
 }
 
-/** The public URL of a pinned story (app/(public)/stories/[id], keyed by slug). */
-export function storyHref(slug: string): string {
-  return `/stories/${encodeURIComponent(slug)}`;
+/**
+ * The public URL of a pinned story (keyed by slug). New Zealand keeps the
+ * unprefixed /stories/<slug>; other countries live under their prefix
+ * (Malaysia: /my/stories/<slug>).
+ */
+export function storyHref(
+  slug: string,
+  country: JourneyCountry = "new-zealand",
+): string {
+  return `${countryUrlPrefix(country)}/stories/${encodeURIComponent(slug)}`;
 }
 
 /**
@@ -55,6 +64,7 @@ export function storyHref(slug: string): string {
  */
 export function buildJourneyStops(
   rows: readonly PublishedJourneyRow[],
+  country: JourneyCountry = "new-zealand",
 ): JourneyStopView[] {
   const byId = new Map(rows.map((r) => [r.story_id, r]));
   const isSub = (r: PublishedJourneyRow) => {
@@ -82,7 +92,7 @@ export function buildJourneyStops(
     longitude: r.journey_longitude,
     label: r.journey_label,
     storyTitle: r.title,
-    href: storyHref(r.slug),
+    href: storyHref(r.slug, country),
     parentIndex,
   });
 
@@ -106,6 +116,8 @@ export type MyJourneyEntry = {
   /** True only when published and in New Zealand -- the RPC enforces it again. */
   pinnable: boolean;
   isNewZealand: boolean;
+  /** The story's country slug (journey RPC country_slug); null when unknown. */
+  countrySlug: string | null;
   parentStoryId: string | null;
   place: { label: string; latitude: number; longitude: number } | null;
 };
@@ -117,6 +129,7 @@ export type MyJourneyEntry = {
  */
 export function buildMyJourneyStops(
   entries: readonly MyJourneyEntry[],
+  country: JourneyCountry = "new-zealand",
 ): JourneyStopView[] {
   const rows: PublishedJourneyRow[] = [];
   const pinned = new Set(
@@ -137,7 +150,7 @@ export function buildMyJourneyStops(
       trip_start_date: null,
     });
   }
-  return buildJourneyStops(rows);
+  return buildJourneyStops(rows, country);
 }
 
 export type MyJourneyGroup = {

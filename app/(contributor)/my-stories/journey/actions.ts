@@ -7,7 +7,12 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { setStoryJourneyPlace } from "@/lib/story/mutations";
 import { storyJourneyErrorKey } from "@/lib/story/rpc-errors";
 import { getMyJourney } from "@/lib/story/journey-queries";
-import { journeyPlaceSchema } from "@/lib/journey/schema";
+import { journeyPlaceSchemaFor } from "@/lib/journey/schema";
+import {
+  JOURNEY_COUNTRY_SLUGS,
+  hasJourneyMap,
+  isCountrySlug,
+} from "@/lib/story/countries";
 import {
   MAX_LINK_LENGTH,
   resolveGoogleMapsLink,
@@ -41,6 +46,8 @@ const storyIdSchema = z.uuid();
 async function invalidateJourneyPublicCache(storyId: string) {
   revalidatePath("/contributors/[slug]", "page");
   revalidatePath("/contributors/[slug]/journey", "page");
+  revalidatePath("/my/contributors/[slug]", "page");
+  revalidatePath("/my/contributors/[slug]/journey", "page");
   try {
     const mine = await getMyJourney();
     const slug = mine.find((s) => s.id === storyId)?.slug;
@@ -54,14 +61,16 @@ async function invalidateJourneyPublicCache(storyId: string) {
 }
 
 /**
- * Pins one of the caller's published New Zealand stories on their journey
- * map, or (place === null) removes the pin. Public immediately, not
- * moderated -- the same documented exception as story folders. Only the
- * SHAPE of the input is checked here (Zod: label 1-60, coordinates inside New
- * Zealand); who owns the story, that it is published and in New Zealand, is
- * re-derived by set_story_journey_place() from the database, never taken
- * from the client (Engineering Rule 2). Its refusals map to translated
- * messages via storyJourneyErrorKey.
+ * Pins one of the caller's published stories on their journey map for the
+ * story's own country (New Zealand or Malaysia), or (place === null) removes
+ * the pin. Public immediately, not moderated -- the same documented exception
+ * as story folders. The story's country comes from the OWNER-scoped
+ * get_my_journey(), never the client; the SHAPE of the input is checked
+ * against that country's map here (Zod: label 1-60, coordinates inside it).
+ * Who owns the story, that it is published and that the pin is inside its
+ * country are re-derived by set_story_journey_place() and the
+ * stories_validate_journey_place trigger (Engineering Rule 2). Refusals map
+ * to translated messages via storyJourneyErrorKey.
  */
 export async function setStoryJourneyPlaceAction(
   storyId: unknown,
@@ -80,9 +89,21 @@ export async function setStoryJourneyPlaceAction(
     return { ok: false, error: tErr("invalidStory") };
   }
 
-  let parsedPlace: z.infer<typeof journeyPlaceSchema> | null = null;
+  let parsedPlace: z.infer<ReturnType<typeof journeyPlaceSchemaFor>> | null =
+    null;
   if (place !== null) {
-    const result = journeyPlaceSchema.safeParse(place);
+    // A friendly early check only; the database is the authority. A story
+    // not in the caller's list (or in a country with no map) is left to the
+    // RPC, which refuses it with WHV11 / WHV17.
+    const mine = await getMyJourney().catch(() => []);
+    const storyCountry = mine.find(
+      (s) => s.id === parsedStory.data,
+    )?.countrySlug;
+    const country =
+      storyCountry && isCountrySlug(storyCountry) && hasJourneyMap(storyCountry)
+        ? storyCountry
+        : "new-zealand";
+    const result = journeyPlaceSchemaFor(country).safeParse(place);
     if (!result.success) {
       return {
         ok: false,
@@ -126,8 +147,11 @@ const mapsLinkInputSchema = z.string().trim().min(1).max(MAX_LINK_LENGTH);
  * lib/journey/resolve-google-maps-link.ts for the SSRF guard). The link is
  * never stored or logged; at most the failure reason is.
  */
+const journeyCountrySchema = z.enum(JOURNEY_COUNTRY_SLUGS).catch("new-zealand");
+
 export async function resolveGoogleMapsLinkAction(
   input: unknown,
+  country?: unknown,
 ): Promise<ResolveLinkResult | { ok: false; reason: "unauthenticated" }> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, reason: "unauthenticated" };
@@ -135,7 +159,12 @@ export async function resolveGoogleMapsLinkAction(
   const parsed = mapsLinkInputSchema.safeParse(input);
   if (!parsed.success) return { ok: false, reason: "invalid" };
 
-  const result = await resolveGoogleMapsLink(parsed.data);
+  // Which country's map the place must fall inside. Only a convenience for
+  // the picker (nothing is stored here), so a client-supplied value is fine.
+  const result = await resolveGoogleMapsLink(
+    parsed.data,
+    journeyCountrySchema.parse(country),
+  );
   if (!result.ok && result.reason === "unreachable") {
     console.warn("[journey] maps link resolve failed: unreachable");
   }

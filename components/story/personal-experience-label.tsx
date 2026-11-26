@@ -1,5 +1,10 @@
 import { useTranslations } from "next-intl";
 import { PersonalExperienceIcon } from "@/components/icons";
+import {
+  countryMessageSegment,
+  isCountrySlug,
+  isWorkingHolidayCountry,
+} from "@/lib/story/countries";
 
 /**
  * Product spec / Engineering Rule 17: every public story must visibly carry
@@ -26,9 +31,14 @@ export function PersonalExperienceLabel({
 }) {
   const t = useTranslations("common");
   const tCountry = useTranslations("countryContent");
+  // Every country but New Zealand is general travel, with its own label.
   const label =
-    countrySlug === "china"
-      ? tCountry("china.personalExperienceLabel")
+    countrySlug &&
+    isCountrySlug(countrySlug) &&
+    !isWorkingHolidayCountry(countrySlug)
+      ? tCountry(
+          `${countryMessageSegment(countrySlug)}.personalExperienceLabel`,
+        )
       : t("personalExperienceLabel");
   const toneClasses =
     tone === "onPhoto"

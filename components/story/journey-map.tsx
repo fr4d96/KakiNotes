@@ -29,6 +29,10 @@ import {
   segmentToPath,
   type BezierSegment,
 } from "@/lib/journey/path";
+import {
+  getJourneyGeography,
+  type JourneyCountry,
+} from "@/lib/journey/geographies";
 import { spreadPins } from "@/lib/journey/pins";
 import type { JourneyStopView } from "@/lib/journey/schema";
 import { JourneyBackdrop } from "@/components/story/journey-backdrop";
@@ -43,7 +47,7 @@ import {
   RecentreIcon,
   ZoomIcon,
 } from "@/components/story/map-control-icons";
-import { Campervan, Ferry } from "@/components/story/journey-vehicles";
+import { Campervan, Ferry, Plane } from "@/components/story/journey-vehicles";
 
 /**
  * The reader-facing "story journey" picture: a stylised illustration
@@ -247,7 +251,16 @@ function CountBadge({ n, x, y }: { n: number; x: number; y: number }) {
   );
 }
 
-export function JourneyMap({ stops: allStops }: { stops: JourneyStopView[] }) {
+export function JourneyMap({
+  stops: allStops,
+  country = "new-zealand",
+}: {
+  stops: JourneyStopView[];
+  /** Which country's picture to draw (default New Zealand). */
+  country?: JourneyCountry;
+}) {
+  const geo = getJourneyGeography(country);
+  const crossingIsPlane = geo.crossingVehicle === "plane";
   const t = useTranslations("journey");
   const headingId = useId();
   const helpId = useId();
@@ -264,16 +277,17 @@ export function JourneyMap({ stops: allStops }: { stops: JourneyStopView[] }) {
   const points = useMemo(
     () =>
       spreadPins(
-        stops.map(latLngToPoint),
+        stops.map((s) => latLngToPoint(s, geo)),
         PIN_MIN_DISTANCE,
         JOURNEY_VIEWBOX,
         PIN_LAYOUT_RADIUS,
+        geo,
       ),
-    [stops],
+    [stops, geo],
   );
   const segments = useMemo(() => catmullRomSegments(points), [points]);
   const legPaths = useMemo(() => segments.map(segmentToPath), [segments]);
-  const ferryLegs = useMemo(() => cookStraitLegs(stops), [stops]);
+  const ferryLegs = useMemo(() => cookStraitLegs(stops, geo), [stops, geo]);
   const driveDurations = useMemo(
     () =>
       segments.map((s) =>
@@ -588,17 +602,18 @@ export function JourneyMap({ stops: allStops }: { stops: JourneyStopView[] }) {
     if (openMain === null) return [] as Point[];
     const subs = subsByMain[openMain] ?? [];
     if (subs.length === 0) return [] as Point[];
-    const main = latLngToPoint(stops[openMain]);
+    const main = latLngToPoint(stops[openMain], geo);
     const spread = spreadPins(
-      [main, ...subs.map((sub) => latLngToPoint(sub.stop))],
+      [main, ...subs.map((sub) => latLngToPoint(sub.stop, geo))],
       SUB_MIN_DISTANCE,
       JOURNEY_VIEWBOX,
       SUB_LAYOUT_RADIUS,
+      geo,
     );
     const dx = points[openMain].x - spread[0].x;
     const dy = points[openMain].y - spread[0].y;
     return spread.slice(1).map((p) => ({ x: p.x + dx, y: p.y + dy }));
-  }, [openMain, subsByMain, stops, points]);
+  }, [openMain, subsByMain, stops, points, geo]);
 
   const box = useMemo(() => {
     if (openMain !== null && subPoints.length > 0) {
@@ -802,9 +817,16 @@ export function JourneyMap({ stops: allStops }: { stops: JourneyStopView[] }) {
           count: subsByMain[openMain].length,
         })
       : travel
-        ? t(travel.ferry ? "onTheFerry" : "onTheRoad", {
-            label: stops[travel.to].label,
-          })
+        ? t(
+            travel.ferry
+              ? crossingIsPlane
+                ? "onTheFlight"
+                : "onTheFerry"
+              : "onTheRoad",
+            {
+              label: stops[travel.to].label,
+            },
+          )
         : count === 1
           ? t("singlePlace")
           : t("stopOf", { n: current + 1, total: count });
@@ -827,7 +849,7 @@ export function JourneyMap({ stops: allStops }: { stops: JourneyStopView[] }) {
         <div className="relative mx-auto w-full md:mx-0 md:w-fit md:max-w-full">
           <svg
             ref={svgRef}
-            viewBox={`0 0 ${JOURNEY_VIEWBOX.width} ${JOURNEY_VIEWBOX.height}`}
+            viewBox={`0 0 ${geo.viewBox.width} ${geo.viewBox.height}`}
             role="group"
             aria-label={t("mapLabel", { count })}
             aria-describedby={helpId}
@@ -838,8 +860,8 @@ export function JourneyMap({ stops: allStops }: { stops: JourneyStopView[] }) {
             {...gestures.handlers}
             className="block h-auto w-full cursor-grab select-none rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:h-[clamp(30rem,78vh,40rem)] md:w-auto md:max-w-full"
           >
-            <JourneyBackdrop />
-            <JourneyCities />
+            <JourneyBackdrop country={country} />
+            <JourneyCities country={country} />
             <g
               ref={routeRef}
               fill="none"
@@ -1147,7 +1169,15 @@ export function JourneyMap({ stops: allStops }: { stops: JourneyStopView[] }) {
                 // picture's top-left corner before the first frame.
                 transform={`translate(${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)})`}
               >
-                {travel?.ferry ? <Ferry /> : <Campervan />}
+                {travel?.ferry ? (
+                  crossingIsPlane ? (
+                    <Plane />
+                  ) : (
+                    <Ferry />
+                  )
+                ) : (
+                  <Campervan />
+                )}
               </g>
             ) : null}
           </svg>
@@ -1295,7 +1325,11 @@ export function JourneyMap({ stops: allStops }: { stops: JourneyStopView[] }) {
                           >
                             <svg viewBox="-12 -12 24 24" className="h-5 w-5">
                               {travel.ferry ? (
-                                <Ferry testId={null} />
+                                crossingIsPlane ? (
+                                  <Plane testId={null} />
+                                ) : (
+                                  <Ferry testId={null} />
+                                )
                               ) : (
                                 <Campervan testId={null} />
                               )}

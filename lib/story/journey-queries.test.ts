@@ -42,6 +42,7 @@ describe("journey queries", () => {
     const rows = await getPublishedContributorJourney(CONTRIBUTOR);
     expect(mockRpc).toHaveBeenCalledWith("get_published_contributor_journey", {
       p_contributor_id: CONTRIBUTOR,
+      p_country_slug: "new-zealand",
     });
     expect(rows).toHaveLength(1);
     expect(rows[0].journey_latitude).toBe(-36.85);

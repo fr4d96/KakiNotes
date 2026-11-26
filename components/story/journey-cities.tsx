@@ -1,6 +1,9 @@
 import { latLngToPoint } from "@/lib/journey/geo";
 import {
-  CITIES,
+  getJourneyGeography,
+  type JourneyCountry,
+} from "@/lib/journey/geographies";
+import {
   CITY_DOT_R,
   CITY_FONT,
   cityLabelRect,
@@ -15,11 +18,18 @@ import {
  * stop or the name chip would cover; `data-*` carries what it needs.
  * With `revealAll` (the editor, which never zooms) every tier is drawn.
  */
-export function JourneyCities({ revealAll = false }: { revealAll?: boolean }) {
+export function JourneyCities({
+  revealAll = false,
+  country = "new-zealand",
+}: {
+  revealAll?: boolean;
+  country?: JourneyCountry;
+}) {
+  const geo = getJourneyGeography(country);
   return (
     <g aria-hidden="true" pointerEvents="none" data-testid="journey-cities">
-      {CITIES.map((city) => {
-        const p = latLngToPoint(city);
+      {geo.cities.map((city) => {
+        const p = latLngToPoint(city, geo);
         const rect = cityLabelRect(city);
         const font = CITY_FONT[city.tier];
         return (

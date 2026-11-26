@@ -117,6 +117,8 @@ describe("invalidateContributorPublicCache", () => {
       "/contributors",
       "/cn/contributors/mei-ling",
       "/cn/contributors",
+      "/my/contributors/mei-ling",
+      "/my/contributors",
       "/sitemap.xml",
     ]);
   });

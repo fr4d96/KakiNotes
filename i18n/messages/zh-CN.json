@@ -218,7 +218,7 @@
       "changeNoteRequired": "请说明需要修改什么。",
       "journeyLabelRequired": "请为这个地点填写名称。",
       "journeyLabelTooLong": "地名不能超过 {max} 个字符。",
-      "journeyOutOfBounds": "地点必须位于新西兰境内。",
+      "journeyOutOfBounds": "请在地图上的国家境内选择地点。",
       "invalidCountry": "请选择一个有效的国家。"
     },
     "pdf": {
@@ -275,6 +275,12 @@
         "5k_15k": "5000 – 15000 新西兰元",
         "15k_30k": "15000 – 30000 新西兰元",
         "30k_plus": "30000 新西兰元以上"
+      },
+      "costBandsMyr": {
+        "under_5k": "低于 5000 马币",
+        "5k_15k": "5000 – 15000 马币",
+        "15k_30k": "15000 – 30000 马币",
+        "30k_plus": "30000 马币以上"
       }
     }
   },
@@ -479,7 +485,72 @@
         "centralOtagoNote": "提前安排好下一段季节性工作。"
       }
     },
-    "hero": "来自新西兰各地的<accent>真实故事</accent>。"
+    "hero": "来自新西兰各地的<accent>真实故事</accent>。",
+    "quizMalaysia": {
+      "resultKicker": "你的马来西亚之选",
+      "bestTime": "最佳时间",
+      "knownFor": "特色",
+      "destinations": {
+        "kualaLumpur": "吉隆坡",
+        "penang": "槟城",
+        "melaka": "马六甲",
+        "langkawi": "兰卡威",
+        "cameronHighlands": "金马伦高原",
+        "sabah": "沙巴"
+      },
+      "questions": {
+        "home": "你在哪里最自在？",
+        "doing": "你最想做什么？",
+        "matters": "什么对你最重要？",
+        "pace": "选择你理想的节奏。",
+        "timing": "你打算什么时候去？"
+      },
+      "answers": {
+        "bigCity": "热闹的大城市",
+        "heritageTown": "古迹小镇",
+        "islandBeach": "海边的小岛",
+        "coolHighlands": "凉爽的高原",
+        "rainforest": "雨林与野生动物",
+        "streetFood": "寻找街头美食",
+        "diving": "潜水与浮潜",
+        "hiking": "徒步",
+        "cafesWalks": "咖啡馆与古迹散步",
+        "shoppingNightlife": "购物与夜生活",
+        "budget": "省钱",
+        "meetingPeople": "结识新朋友",
+        "timeOutdoors": "户外时光",
+        "cultureHistory": "文化与历史",
+        "slowRest": "慢下来",
+        "busySocial": "热闹、爱社交",
+        "relaxedScenic": "轻松、看风景",
+        "activePhysical": "积极、爱运动",
+        "independentFlexible": "独立、灵活",
+        "marToOct": "三月至十月",
+        "novToFeb": "十一月至二月",
+        "festiveSeason": "赶上节庆",
+        "flexible": "都可以"
+      },
+      "seasons": {
+        "yearRound": "全年",
+        "decToApr": "十二月至四月",
+        "novToApr": "十一月至四月",
+        "marToSep": "三月至九月"
+      },
+      "info": {
+        "kualaLumpurKnownFor": "美食 · 都市生活",
+        "kualaLumpurNote": "雨通常是午后短暂的阵雨。",
+        "penangKnownFor": "街头美食 · 壁画",
+        "penangNote": "乔治市最适合步行或骑车游览。",
+        "melakaKnownFor": "古迹 · 娘惹美食",
+        "melakaNote": "周末人多，平日更清静。",
+        "langkawiKnownFor": "海滩 · 跳岛",
+        "langkawiNote": "多数人会租车或摩托车代步。",
+        "cameronHighlandsKnownFor": "茶园 · 凉爽天气",
+        "cameronHighlandsNote": "晚上很冷，记得带外套。",
+        "sabahKnownFor": "潜水 · 京那巴鲁山",
+        "sabahNote": "登京那巴鲁山需要提早很久预订。"
+      }
+    }
   },
   "about": {
     "metaTitle": "关于",
@@ -1389,8 +1460,8 @@
     "subStoryNotPublished": "只有已发布的故事才能归入文件夹。",
     "journeyStoryNotFound": "找不到这个故事，或它不属于你。",
     "journeyNotPublished": "只有已发布的故事才能固定到旅程地图上。",
-    "journeyNotNewZealand": "只有新西兰的故事才能固定到旅程地图上。",
-    "journeyBadPlace": "请为这个地点填写名称，并在新西兰境内选择位置。"
+    "journeyNotNewZealand": "这篇故事所在的国家还没有旅程地图。",
+    "journeyBadPlace": "请为这个地点填写名称，并在故事所在国家境内选择位置。"
   },
   "takedown": {
     "alreadyDown": "这篇故事已经被撤下了。",
@@ -1474,13 +1545,13 @@
     "storyIntro": "把每篇故事钉在发生的地方。保存后图钉立即公开。",
     "mapTitle": "这段旅程的地图",
     "mapEmpty": "这段旅程还没有故事在地图上。在下面钉上一篇故事就能开始。",
-    "empty": "发布一篇新西兰的故事，就可以开始绘制你的旅程地图。",
+    "empty": "发布一篇故事，就可以开始绘制你的旅程地图。",
     "listLabel": "你的故事",
     "subStoriesOf": "{story} 的子故事",
     "rows": {
       "placeLabel": "已固定在 {place}",
       "noPlace": "尚未加入地图",
-      "notNewZealand": "无法加入地图：只有新西兰的故事才能固定。",
+      "notNewZealand": "无法加入地图：这个国家还没有旅程地图。",
       "add": "钉到地图上",
       "change": "移动图钉",
       "remove": "移除图钉",
@@ -1517,7 +1588,7 @@
   "journey": {
     "title": "旅程",
     "note": "这是基于简化地图的示意插图，不可用于导航——地点为大致位置，由作者自行标注。",
-    "mapLabel": "新西兰旅程示意图，共 {count} 站",
+    "mapLabel": "旅程示意图，共 {count} 站",
     "pinLabel": "第 {n} 站：{label}",
     "play": "播放旅程",
     "pause": "暂停",
@@ -1539,7 +1610,7 @@
       }
     },
     "picker": {
-      "mapLabel": "新西兰地图。点一下选择地点。",
+      "mapLabel": "地图。点一下选择地点。",
       "mapHelp": "交互式地图。点一下地图选择地点。拖动可平移，按住 Ctrl 或 Cmd 并滚动或双指捏合可缩放，也可使用加号和减号按钮。地图获得焦点时，方向键平移，加减号缩放；图钉获得焦点时，方向键移动图钉。",
       "pinLabel": "已选择的地点",
       "useCentre": "选择地图中心",
@@ -1555,7 +1626,7 @@
         "empty": "请先粘贴 Google 地图链接。",
         "invalid": "这看起来不是 Google 地图链接。",
         "notFound": "在这个链接里找不到地点。请试试具体地点的“分享”链接。",
-        "outsideNz": "这个地点不在新西兰境内。",
+        "outsideNz": "这个地点不在这张地图范围内。",
         "unreachable": "暂时无法打开这个链接，请稍后再试。",
         "unauthenticated": "请登录后再使用短链接。"
       }
@@ -1567,7 +1638,8 @@
     "insideList": "{label} 内的地点",
     "insideStatus": "正在浏览 {label}：{count} 个地点",
     "readThisStory": "阅读这篇故事",
-    "singlePlace": "地图上目前只有一个地点。"
+    "singlePlace": "地图上目前只有一个地点。",
+    "onTheFlight": "正飞往 {label}…"
   },
   "countryContent": {
     "newZealand": {
@@ -1601,6 +1673,26 @@
       "costsTitle": "去中国旅行花了多少",
       "newStoryTitlePlaceholder": "在广州教英语的一年",
       "pdfColophon": "这是你的《{title}》副本（{status}），于 {date} 从 Kakinotes 导出。这是一个人在中国经历的个人记录，并非建议。{siteUrl}"
+    },
+    "malaysia": {
+      "name": "马来西亚",
+      "tagline": "来自马来西亚的第一人称旅行与生活故事。",
+      "siteDescription": "Kakinotes 的马来西亚板块是一个公开档案库，收录在马来西亚旅行或生活过的人所撰写的详细第一人称故事。",
+      "storiesIntro": "来自亲历者的真实记录 — 按州属、标签、出行年份或记录的花费筛选，找到与你相似的那一篇。",
+      "storiesMetaDescription": "浏览来自马来西亚的真实第一人称旅行与生活故事，可按州属、标签、出行年份和记录的花费筛选。",
+      "costsFraming": "人们在马来西亚旅行或生活的真实花费，基于贡献者自愿分享的预算整理而成。这些是那些人真实经历的记录，并非估算、预算，也不是对你行程的预测。",
+      "aboutText": "Kakinotes 的马来西亚板块收集并核实在马来西亚旅行或生活过的人所写的真实详细第一人称故事，让下一个人能读到这段经历的真实样貌。",
+      "personalExperienceLabel": "个人经历分享，非专业建议。",
+      "madeFor": "为探索马来西亚的人而建",
+      "placeExample": "乔治市",
+      "contributorsIntro": "分享了自己马来西亚故事的人 — 这里只显示每位投稿人自己选择公开的信息。",
+      "contributorsMetaDescription": "在 Kakinotes 发表过马来西亚第一人称故事的投稿人。",
+      "costsTitle": "去马来西亚花了多少",
+      "newStoryTitlePlaceholder": "在槟城吃遍街头的三个星期",
+      "pdfColophon": "这是你的《{title}》副本（{status}），于 {date} 从 Kakinotes 导出。这是一个人在马来西亚经历的个人记录，并非建议。{siteUrl}",
+      "homeHero": "来自<accent>马来西亚</accent>各地的真实故事。",
+      "homeHeroSub": "旅行与生活故事，由亲历者亲手写下。",
+      "journeyMetaDescription": "{name} 在马来西亚写到的地点，标在地图上。点开一个地点即可阅读对应的故事。"
     }
   },
   "affirmations": {

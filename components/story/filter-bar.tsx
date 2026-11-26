@@ -66,6 +66,7 @@ export function FilterBar({
   current,
   trailing,
   showCostBands = true,
+  costBandCurrency = "NZD",
 }: {
   regions: Option[];
   destinations: DestinationOption[];
@@ -83,6 +84,8 @@ export function FilterBar({
    * amounts in another.
    */
   showCostBands?: boolean;
+  /** Which currency the bands are labelled in (NZ$ or RM). */
+  costBandCurrency?: "NZD" | "MYR";
 }) {
   const t = useTranslations("stories.filters");
   const [selectedRegion, setSelectedRegion] = useState(current.region ?? "");
@@ -185,7 +188,9 @@ export function FilterBar({
             <option value="">{t("anyCost")}</option>
             {costBands.map((band) => (
               <option key={band} value={band}>
-                {t(`costBands.${band}`)}
+                {costBandCurrency === "MYR"
+                  ? t(`costBandsMyr.${band}`)
+                  : t(`costBands.${band}`)}
               </option>
             ))}
           </select>

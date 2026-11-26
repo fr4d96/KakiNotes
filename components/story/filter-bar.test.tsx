@@ -31,6 +31,23 @@ describe("FilterBar", () => {
     expect(screen.getByLabelText(/cost availability/i)).toBeInTheDocument();
   });
 
+  it("labels Malaysia's cost bands in ringgit, never NZ$", () => {
+    render(
+      <FilterBar
+        regions={regions}
+        destinations={destinations}
+        tags={tags}
+        current={{}}
+        costBandCurrency="MYR"
+      />,
+    );
+    const select = screen.getByLabelText(/reported cost/i);
+    expect(
+      within(select).getByRole("option", { name: "Under RM5k" }),
+    ).toBeInTheDocument();
+    expect(within(select).queryByText(/NZ\$/)).not.toBeInTheDocument();
+  });
+
   it("renders every filter field with its options", () => {
     render(
       <FilterBar

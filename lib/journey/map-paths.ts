@@ -1,5 +1,10 @@
 import { latLngToPoint, type Point } from "@/lib/journey/geo";
-import { NZ_LAKES, NZ_LAND, NZ_ROADS } from "@/lib/journey/nz-map-data";
+import {
+  resolveGeography,
+  type GeographyArg,
+  type JourneyCountry,
+  type JourneyGeography,
+} from "@/lib/journey/geographies";
 
 /**
  * Turns the generated Natural Earth data (lib/journey/nz-map-data.ts, public
@@ -15,12 +20,13 @@ import { NZ_LAKES, NZ_LAND, NZ_ROADS } from "@/lib/journey/nz-map-data";
 
 type LngLat = readonly [number, number];
 
-function project([lng, lat]: LngLat): Point {
-  return latLngToPoint({ latitude: lat, longitude: lng });
-}
-
-export function projectLine(line: readonly LngLat[]): Point[] {
-  return line.map(project);
+export function projectLine(
+  line: readonly LngLat[],
+  geography?: GeographyArg,
+): Point[] {
+  return line.map(([lng, lat]) =>
+    latLngToPoint({ latitude: lat, longitude: lng }, geography),
+  );
 }
 
 /** Two decimals, no trailing zeros: ~0.02 SVG units, far below a pixel. */
@@ -52,51 +58,77 @@ export type MapPaths = {
   secondaryRoads: string;
 };
 
-let paths: MapPaths | null = null;
+const paths = new Map<JourneyCountry, MapPaths>();
 
-export function getMapPaths(): MapPaths {
-  paths ??= {
-    land: NZ_LAND.map((l) => pointsToPath(projectLine(l.ring), true)).join(""),
-    lakes: NZ_LAKES.map((l) => pointsToPath(projectLine(l.ring), true)).join(
-      "",
-    ),
-    majorRoads: NZ_ROADS.filter((r) => r.kind === "major")
-      .map((r) => pointsToPath(projectLine(r.line)))
-      .join(""),
-    secondaryRoads: NZ_ROADS.filter((r) => r.kind === "secondary")
-      .map((r) => pointsToPath(projectLine(r.line)))
-      .join(""),
-  };
-  return paths;
+export function getMapPaths(geography?: GeographyArg): MapPaths {
+  const geo = resolveGeography(geography);
+  let cached = paths.get(geo.country);
+  if (!cached) {
+    const ring = (l: { ring: readonly LngLat[] }) =>
+      pointsToPath(projectLine(l.ring, geo), true);
+    const road = (kind: "major" | "secondary") =>
+      geo.roads
+        .filter((r) => r.kind === kind)
+        .map((r) => pointsToPath(projectLine(r.line, geo)))
+        .join("");
+    cached = {
+      land: geo.land.map(ring).join(""),
+      lakes: geo.lakes.map(ring).join(""),
+      majorRoads: road("major"),
+      secondaryRoads: road("secondary"),
+    };
+    paths.set(geo.country, cached);
+  }
+  return cached;
 }
 
-let islands: { north: Point[]; south: Point[] } | null = null;
+const islands = new Map<JourneyCountry, { north: Point[]; south: Point[] }>();
+
+function panelPolygon(geo: JourneyGeography, index: number): Point[] {
+  const p = geo.panels[Math.min(index, geo.panels.length - 1)];
+  return [
+    { x: p.x, y: p.y },
+    { x: p.x + p.width, y: p.y },
+    { x: p.x + p.width, y: p.y + p.height },
+    { x: p.x, y: p.y + p.height },
+  ];
+}
 
 /**
- * The outlines of the North and South Islands (the largest ring of each
+ * The outlines of the two main land masses (the largest ring of each
  * name; the data also holds small offshore islands under the same names),
- * as projected polygons for the display-only pin layout.
+ * as projected polygons for the display-only pin layout. New Zealand: North
+ * and South Island. Malaysia: Peninsular and Borneo (named "north"/"south").
  */
-export function getMainIslands(): { north: Point[]; south: Point[] } {
-  if (!islands) {
-    const biggest = (name: string): Point[] => {
+export function getMainIslands(geography?: GeographyArg): {
+  north: Point[];
+  south: Point[];
+} {
+  const geo = resolveGeography(geography);
+  let cached = islands.get(geo.country);
+  if (!cached) {
+    const biggest = (name: string, fallback: number): Point[] => {
       let best: Point[] = [];
       let bestArea = -1;
-      for (const land of NZ_LAND) {
+      for (const land of geo.land) {
         if (land.name !== name) continue;
-        const poly = projectLine(land.ring);
+        const poly = projectLine(land.ring, geo);
         const a = area(poly);
         if (a > bestArea) {
           best = poly;
           bestArea = a;
         }
       }
-      return best;
+      return best.length > 0 ? best : panelPolygon(geo, fallback);
     };
-    islands = {
-      north: biggest("North Island"),
-      south: biggest("South Island"),
+    cached = {
+      north: biggest(geo.mainLandNames.north, 0),
+      south: biggest(geo.mainLandNames.south, 1),
     };
+    islands.set(geo.country, cached);
   }
-  return islands;
+  return cached;
 }
+
+/** Generic name for getMainIslands. */
+export const getMainLandMasses = getMainIslands;

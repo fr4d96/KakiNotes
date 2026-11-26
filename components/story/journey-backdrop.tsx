@@ -1,9 +1,12 @@
 import { useId } from "react";
-import { JOURNEY_VIEWBOX } from "@/lib/journey/geo";
+import {
+  getJourneyGeography,
+  type JourneyCountry,
+} from "@/lib/journey/geographies";
 import { getMapPaths } from "@/lib/journey/map-paths";
 
 /**
- * The shared New Zealand base map (sea, land, lakes, roads) that the
+ * The shared base map (New Zealand or Malaysia) (sea, land, lakes, roads) that the
  * reader's journey map and the contributor's stop editor draw on. The
  * geometry is real (Natural Earth 1:10m, public domain; see
  * lib/journey/nz-map-data.ts), the look is "Google Maps"-style, and it is
@@ -22,9 +25,14 @@ const line = {
   strokeLinejoin: "round",
 } as const;
 
-export function JourneyBackdrop() {
+export function JourneyBackdrop({
+  country = "new-zealand",
+}: {
+  country?: JourneyCountry;
+}) {
   const clipId = useId();
-  const paths = getMapPaths();
+  const geo = getJourneyGeography(country);
+  const paths = getMapPaths(geo);
   return (
     <g aria-hidden="true">
       <defs>
@@ -35,11 +43,31 @@ export function JourneyBackdrop() {
       <rect
         x="0"
         y="0"
-        width={JOURNEY_VIEWBOX.width}
-        height={JOURNEY_VIEWBOX.height}
+        width={geo.viewBox.width}
+        height={geo.viewBox.height}
         rx="14"
         style={{ fill: "var(--map-sea)" }}
       />
+      {/* Inset geographies (Malaysia): frame each panel so it reads as its own picture. */}
+      {geo.panels.length > 1
+        ? geo.panels.map((p) => (
+            <rect
+              key={`${p.x}-${p.y}`}
+              data-testid="journey-panel"
+              x={p.x}
+              y={p.y}
+              width={p.width}
+              height={p.height}
+              rx="6"
+              style={{
+                fill: "var(--map-sea)",
+                stroke: "var(--map-land-stroke)",
+                strokeWidth: 1,
+                vectorEffect: "non-scaling-stroke",
+              }}
+            />
+          ))
+        : null}
       <path
         d={paths.land}
         data-testid="journey-land"

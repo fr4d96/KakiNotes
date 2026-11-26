@@ -1,5 +1,5 @@
 /**
- * The two little vehicles that drive the route. Each is drawn around
+ * The little vehicles (campervan, ferry, plane) that drive the route. Each is drawn around
  * (0, 0), about 18 units wide, facing right; the map flips/rotates the
  * wrapping <g>. Decorative only (aria-hidden by the caller's wrapper).
  */
@@ -56,6 +56,35 @@ export function Ferry({
         strokeWidth="1"
         strokeLinecap="round"
       />
+    </g>
+  );
+}
+
+/** A small airliner for crossings that are flights (Peninsular <-> Borneo). */
+export function Plane({
+  testId = "journey-plane",
+}: {
+  testId?: string | null;
+}) {
+  return (
+    <g data-testid={testId ?? undefined}>
+      {/* far wing */}
+      <path d="M-1.5 -1.2l-4.5 -6.2h2.6l5.2 6.2z" fill="#b9dff2" />
+      {/* tail fin */}
+      <path d="M-9.5 -1.2l-1.2 -5.6h2.6l2.6 5.6z" fill="#ff9aa8" />
+      {/* fuselage */}
+      <path
+        d="M-10 -0.5q0 -2.4 2.6 -2.4h12.4q4.6 0 5.4 2.4q-0.8 2.4 -5.4 2.4h-12.4q-2.6 0 -2.6 -2.4z"
+        fill="#fff4d6"
+      />
+      <path d="M-9 0.6h17.6" stroke="#5fa8d3" strokeWidth="0.9" />
+      {/* windows and cockpit */}
+      <circle cx="-4.5" cy="-1.1" r="0.7" fill="#8fc7e8" />
+      <circle cx="-1.8" cy="-1.1" r="0.7" fill="#8fc7e8" />
+      <circle cx="0.9" cy="-1.1" r="0.7" fill="#8fc7e8" />
+      <path d="M5.2 -2.4q2.2 0 3.2 1.4h-3.2z" fill="#8fc7e8" />
+      {/* near wing */}
+      <path d="M-1.5 0.6l-5 7h2.8l6.2 -7z" fill="#8fd3c2" />
     </g>
   );
 }

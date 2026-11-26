@@ -54,6 +54,7 @@ const COUNTRY_PAGE_TITLE_KEYS: Partial<
   Record<CountrySlug, Record<string, string>>
 > = {
   china: { "/costs": "countryContent.china.costsTitle" },
+  malaysia: { "/costs": "countryContent.malaysia.costsTitle" },
 };
 
 /**
@@ -72,6 +73,7 @@ const COUNTRY_PAGE_TITLE_KEYS: Partial<
 const BAR_TITLE_KEYS: Record<string, string> = {
   "costs.title": "barTitles.costs",
   "countryContent.china.costsTitle": "barTitles.costs",
+  "countryContent.malaysia.costsTitle": "barTitles.costs",
   "about.title": "barTitles.about",
   "legal.guidelinesTitle": "barTitles.guidelines",
   "legal.copyrightTitle": "barTitles.copyright",

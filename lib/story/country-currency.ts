@@ -24,11 +24,18 @@ export async function countryCurrency(countrySlug: string): Promise<string> {
 }
 
 /**
- * The stories filter's cost bands (under NZ$5k ... NZ$30k+, applied by
- * list_published_stories() to the raw amounts) only mean something in New
- * Zealand dollars: a ¥5,000 trip is not "under NZ$5k". So they are offered
- * only where the country records NZD.
+ * The stories filter's cost bands are applied by list_published_stories() to
+ * the raw amounts (under 5k ... 30k+, in whatever currency the story
+ * records). They are offered only where they are labelled in that currency:
+ * NZD ("Under NZ$5k") and, since 2026-11-26, MYR ("Under RM5k", the same
+ * thresholds read in ringgit). A ¥5,000 trip is never called "under NZ$5k":
+ * China keeps no bands.
  */
-export function costBandsOffered(currency: string): boolean {
-  return currency === "NZD";
+export const COST_BAND_CURRENCIES = ["NZD", "MYR"] as const;
+export type CostBandCurrency = (typeof COST_BAND_CURRENCIES)[number];
+
+export function costBandsOffered(
+  currency: string,
+): currency is CostBandCurrency {
+  return (COST_BAND_CURRENCIES as readonly string[]).includes(currency);
 }

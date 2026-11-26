@@ -66,9 +66,9 @@ export async function StoriesIndex({
     listPublicTags(country),
     countryCurrency(country),
   ]);
-  // NZ$ cost bands only where amounts are NZD; a hand-typed ?costBand= on
-  // another country is dropped rather than applied to amounts it can't
-  // describe.
+  // Cost bands only where they are labelled in the country's own currency
+  // (NZ$, RM); a hand-typed ?costBand= elsewhere is dropped rather than
+  // applied to amounts it can't describe.
   const showCostBands = costBandsOffered(currency);
   // Destinations scoped to the regions this country actually has, the same
   // "no direct country_id, inherit through region_id" shape as
@@ -151,6 +151,7 @@ export async function StoriesIndex({
           tags={tags}
           current={filters}
           showCostBands={showCostBands}
+          costBandCurrency={currency === "MYR" ? "MYR" : "NZD"}
           trailing={
             stories.length > 0 ? <CardSizeSwitch size={cardSize} /> : null
           }

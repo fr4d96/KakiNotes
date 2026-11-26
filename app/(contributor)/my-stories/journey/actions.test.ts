@@ -157,8 +157,11 @@ describe("setStoryJourneyPlaceAction", () => {
   it.each([
     ["WHV11", "That story wasn't found, or it isn't yours."],
     ["WHV15", "Only published stories can be pinned on your journey map."],
-    ["WHV17", "Only New Zealand stories can be pinned on your journey map."],
-    ["WHV18", "Give this place a name and choose a spot inside New Zealand."],
+    ["WHV17", "This story's country doesn't have a journey map yet."],
+    [
+      "WHV18",
+      "Give this place a name and choose a spot inside the story's country.",
+    ],
   ])("maps %s to its translated message", async (code, message) => {
     mockGetCurrentUser.mockResolvedValue(user);
     mockSetStoryJourneyPlace.mockRejectedValue({ code, message: "x" });
@@ -168,6 +171,32 @@ describe("setStoryJourneyPlaceAction", () => {
     expect(result).toEqual({ ok: false, error: message });
     expect(mockInvalidateStoryPublicCache).not.toHaveBeenCalled();
     expect(mockLogAppEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe("setStoryJourneyPlaceAction (Malaysia)", () => {
+  it("checks a Malaysia story's place against Malaysia's map, from the server's own list", async () => {
+    mockGetCurrentUser.mockResolvedValue(user);
+    mockGetMyJourney.mockResolvedValue([
+      { id: STORY_A, slug: "story-a", countrySlug: "malaysia" },
+    ]);
+    // Kuala Lumpur: accepted for a Malaysia story.
+    const kl = await setStoryJourneyPlaceAction(STORY_A, {
+      label: "Kuala Lumpur",
+      latitude: 3.15,
+      longitude: 101.71,
+    });
+    expect(kl.ok).toBe(true);
+
+    // Auckland on the same story is refused before the database is asked.
+    mockSetStoryJourneyPlace.mockClear();
+    const akl = await setStoryJourneyPlaceAction(STORY_A, {
+      label: "Auckland",
+      latitude: -36.85,
+      longitude: 174.76,
+    });
+    expect(akl.ok).toBe(false);
+    expect(mockSetStoryJourneyPlace).not.toHaveBeenCalled();
   });
 });
 

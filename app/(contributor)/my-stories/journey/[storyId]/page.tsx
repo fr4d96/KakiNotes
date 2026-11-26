@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { getMyJourney } from "@/lib/story/journey-queries";
 import { groupMyJourney } from "@/lib/journey/contributor-journey";
 import { JourneyStoryView } from "../journey-view";
+import { hasJourneyMap, isCountrySlug } from "@/lib/story/countries";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("myJourney");
@@ -27,5 +28,15 @@ export default async function MyJourneyStoryPage({
   const stories = await getMyJourney();
   const group = groupMyJourney(stories).find((g) => g.main.id === storyId);
   if (!group) notFound();
-  return <JourneyStoryView main={group.main} subs={group.subs} />;
+  // The journey is drawn on its main story's country's map; a sub story
+  // filed under it from another country stays off this map (Rules 10, 12).
+  const mainCountry = group.main.countrySlug;
+  const country =
+    mainCountry && isCountrySlug(mainCountry) && hasJourneyMap(mainCountry)
+      ? mainCountry
+      : "new-zealand";
+  const subs = group.subs.filter(
+    (s) => (s.countrySlug ?? "new-zealand") === (mainCountry ?? "new-zealand"),
+  );
+  return <JourneyStoryView main={group.main} subs={subs} country={country} />;
 }
