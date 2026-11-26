@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.9.1](https://github.com/fr4d96/KakiNotes/compare/v4.9.0...v4.9.1) (2026-11-26)
+
+
+### Bug Fixes
+
+* **stories:** Load more opens the next page of stories ([852fb88](https://github.com/fr4d96/KakiNotes/commit/852fb88cb833b76e0178b007167705507f229b74))
+
 ## [4.9.0](https://github.com/fr4d96/KakiNotes/compare/v4.8.0...v4.9.0) (2026-11-26)
 
 
