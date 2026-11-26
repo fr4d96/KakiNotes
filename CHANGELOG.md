@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.9.0](https://github.com/fr4d96/KakiNotes/compare/v4.8.0...v4.9.0) (2026-11-26)
+
+
+### Features
+
+* **country:** Malaysia, a third country with every New Zealand feature ([027d365](https://github.com/fr4d96/KakiNotes/commit/027d36587f2885118232f15a124ba155298f3e6e))
+
 ## [4.8.0](https://github.com/fr4d96/KakiNotes/compare/v4.7.6...v4.8.0) (2026-11-25)
 
 
