@@ -3,6 +3,26 @@
 ## [4.9.0](https://github.com/fr4d96/KakiNotes/compare/v4.8.0...v4.9.0) (2026-11-26)
 
 
+### Malaysia joins Kakinotes
+
+#### For readers
+
+- **A new Malaysia section.** Pick 🇲🇾 Malaysia in the country picker, the flag in the top bar or Settings, and Kakinotes opens on Malaysia's own home page at `/my`.
+- **Everything New Zealand has.** Malaysia gets the same home page (photo wall, browse by place, latest stories, search), the same Stories filters, contributor pages, journey maps, a costs page and an About page.
+- **Only Malaysia, nothing else.** While you're in Malaysia you only see Malaysia's stories, places, tags, contributors and costs. New Zealand and China stay in their own sections.
+- **Travel and living stories.** Malaysia is about travelling or living there, not Working Holiday Visas, in English and Chinese.
+- **Its own places, tags and money.** All 13 states and 3 federal territories with 37 towns, Malaysia-specific tags (street food, heritage towns, balik kampung…), and amounts in ringgit. The Stories filter has cost ranges in RM.
+- **A Malaysia quiz.** "Not sure where to start?" asks Malaysia's own questions and suggests somewhere like Penang, Langkawi or the Cameron Highlands.
+
+#### For contributors
+
+- **Write about Malaysia.** Choose Malaysia in the top bar, then start a new story. It's filed under Malaysia, with Malaysia's places and tags.
+- **A journey map of Malaysia.** Pin your published Malaysia stories on a map of the peninsula and Borneo. Trips between the two fly instead of taking the ferry. Your New Zealand map and your Malaysia map are kept separate.
+
+#### Fixed
+
+- **"Explore stories" after the quiz works again.** It used to point at a part of the home page that no longer exists. It now opens the Stories page.
+
 ### Features
 
 * **country:** Malaysia, a third country with every New Zealand feature ([027d365](https://github.com/fr4d96/KakiNotes/commit/027d36587f2885118232f15a124ba155298f3e6e))
