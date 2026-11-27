@@ -3,6 +3,17 @@
 ## [4.10.0](https://github.com/fr4d96/KakiNotes/compare/v4.9.1...v4.10.0) (2026-11-27)
 
 
+### Older notifications, and lighter story-card photos
+
+#### For contributors
+
+- **You can now reach all your notifications.** The Notifications page used to show only your newest 50, and anything older was gone from view. It now shows 20 at a time, with a "See more" button at the bottom that loads the next 20 until you reach the end.
+- **Two small copies of each photo go into your Google Drive.** Kakinotes now keeps two smaller versions of every story photo (for story cards) in a "Card sizes" folder inside that story's folder. New photos get them when you add them, and photos you'd already added have been given theirs too. They're made from the same cleaned-up copy that's already shown publicly, with photo location and camera details removed, never from your original. Deleting the story's folder in Drive still removes everything.
+
+#### For readers
+
+- **Story-card photos are lighter.** Cards now load a ready-made small photo instead of the site shrinking the full-size one each time it's viewed. Nothing looks different; it keeps the site within its free hosting limits.
+
 ### Features
 
 * **media:** store the two card sizes of Drive photos ([7e8ac4a](https://github.com/fr4d96/KakiNotes/commit/7e8ac4a2fccd5d3b6fb70500467e130eda524d38))
