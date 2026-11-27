@@ -1437,7 +1437,13 @@ admin.ts`; DB writes go through the RPCs above on the caller's normal session cl
 - `app/media/[mediaId]/route.ts` (Node runtime) — the proxy. Validates the id as a UUID, calls
   `get_drive_media_for_proxy` on the caller's own session client, 404s identically for "not found"
   and for a `supabase`-backend row, fetches bytes from the owning contributor's Drive via
-  `lib/drive/drive-client.ts`, and streams them back. The owning contributor's token is looked up by
+  `lib/drive/drive-client.ts`, and streams them back. For `?w=640|1080` it calls
+  `get_drive_card_for_proxy` instead (which calls `get_drive_media_for_proxy` and adds the stored
+  card-size copy from `story_media_card_sizes`), serves that small WebP after a SHA-256 check, and
+  falls back to download-and-resize on no row, a Drive error or a hash mismatch; the copies are
+  written by `lib/story/drive-sync.ts` into the story folder's `Card sizes` subfolder
+  (`docs/photo-card-sizes-plan.md`, Option B; backfill: `scripts/drive-backfill-card-sizes.mjs`).
+  The owning contributor's token is looked up by
   `token-store.ts`/`drive-client.ts` keyed on the `owner_user_id` (really `uploaded_by`) the RPC
   itself returns — never by anything the client sends — and the RPC only ever returns that column
   for a row it has already authorized, so an anonymous reader can never cause an arbitrary

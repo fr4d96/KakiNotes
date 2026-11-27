@@ -81,6 +81,13 @@ vi.mock("@/lib/story/image-pipeline", () => ({
   processFullResolutionBytesInMemory,
 }));
 
+// The real resize is sharp (covered in card-photo-resize.test.ts); here it
+// just labels its output with the width so a test can see what it was fed.
+const resizeForCard = vi.hoisted(() =>
+  vi.fn(async (_bytes: Buffer, width: number) => Buffer.from(`card-${width}`)),
+);
+vi.mock("@/lib/story/card-photo-resize", () => ({ resizeForCard }));
+
 // drive-folders.ts owns story-folder creation/renumbering -- exercised on
 // its own in lib/story/drive-folders.test.ts. Here it's mocked so these
 // tests stay focused on finalizeDriveMediaUpload's own verify/pipeline/
@@ -92,7 +99,11 @@ const syncStoryFolder = vi.hoisted(() => vi.fn(async () => {}));
 const ensureFullQualityFolder = vi.hoisted(() =>
   vi.fn(async () => "full-folder-id"),
 );
+const ensureCardSizesFolder = vi.hoisted(() =>
+  vi.fn(async () => "card-folder-id"),
+);
 vi.mock("@/lib/story/drive-folders", () => ({
+  ensureCardSizesFolder,
   ensureStoryFolder,
   syncStoryFolder,
   ensureFullQualityFolder,
@@ -141,6 +152,9 @@ beforeEach(() => {
   syncStoryFolder.mockClear();
   processFullResolutionBytesInMemory.mockClear();
   ensureFullQualityFolder.mockClear();
+  ensureCardSizesFolder.mockReset();
+  ensureCardSizesFolder.mockResolvedValue("card-folder-id");
+  resizeForCard.mockClear();
   getFileMetadata.mockResolvedValue({ ...VALID_METADATA });
 });
 
@@ -371,6 +385,7 @@ describe("finalizeDriveMediaUpload", () => {
         order.push("record-full");
         return { error: null };
       }
+      if (name === "record_drive_card_size") return { error: null };
       throw new Error(`unexpected rpc ${name}`);
     });
 
@@ -454,6 +469,8 @@ describe("finalizeDriveMediaUpload", () => {
       "full-pipeline",
       "upload",
       "record-full",
+      "upload", // card size 640
+      "upload", // card size 1080
       "delete",
     ]);
     expect(processFullResolutionBytesInMemory).toHaveBeenCalledWith(
@@ -465,7 +482,8 @@ describe("finalizeDriveMediaUpload", () => {
       "user-1",
     );
     // Same number as the display copy, inside "Full quality".
-    expect(uploadDerivativeFile).toHaveBeenLastCalledWith(
+    expect(uploadDerivativeFile).toHaveBeenNthCalledWith(
+      2,
       "access-token",
       "full-folder-id",
       "01.jpg",
@@ -607,6 +625,7 @@ describe("finalizeDriveMediaUpload -- the full-quality copy is best effort", () 
       }
       if (name === "finalize_drive_media_upload") return { error: null };
       if (name === "record_drive_media_full_copy") return recordFull;
+      if (name === "record_drive_card_size") return { error: null };
       throw new Error(`unexpected rpc ${name}`);
     });
   }
@@ -683,6 +702,7 @@ describe("attachServerBytesAsDriveMedia (server-held bytes, no staging file)", (
       }
       if (name === "finalize_drive_media_upload") return { error: null };
       if (name === "record_drive_media_full_copy") return { error: null };
+      if (name === "record_drive_card_size") return { error: null };
       throw new Error(`unexpected rpc ${name}`);
     });
   }
@@ -776,6 +796,139 @@ describe("scheduleStoryFolderSync", () => {
     expect(syncStoryFolder).not.toHaveBeenCalled();
     await runScheduled();
     expect(syncStoryFolder).toHaveBeenCalledTimes(1);
+    expect(syncStoryFolder).toHaveBeenCalledWith("user-1", "story-1");
+  });
+});
+
+describe("finalizeDriveMediaUpload -- stored card sizes are best effort", () => {
+  function rpcWith(recordCard: { error: { message: string } | null }) {
+    rpcMock.mockImplementation(async (name: string) => {
+      if (name === "authorize_drive_media_finalize_v2") {
+        return { error: null, data: "story-1" };
+      }
+      if (name === "list_story_drive_media_for_sync") {
+        return { data: [], error: null };
+      }
+      if (name === "finalize_drive_media_upload") return { error: null };
+      if (name === "record_drive_media_full_copy") return { error: null };
+      if (name === "record_drive_card_size") return recordCard;
+      throw new Error(`unexpected rpc ${name}`);
+    });
+  }
+
+  it("makes 640 and 1080 from the processed bytes (never the raw ones) and records each", async () => {
+    rpcWith({ error: null });
+    uploadDerivativeFile
+      .mockResolvedValueOnce("display-file-id")
+      .mockResolvedValueOnce("full-file-id")
+      .mockResolvedValueOnce("card-640-id")
+      .mockResolvedValueOnce("card-1080-id");
+
+    await finalizeDriveMediaUpload("media-1", 1, "drive-file-1");
+    await runScheduled();
+
+    expect(resizeForCard).toHaveBeenCalledTimes(2);
+    for (const call of resizeForCard.mock.calls) {
+      expect(call[0]).toEqual(Buffer.from("processed-bytes"));
+      expect(call[0]).not.toEqual(Buffer.from("raw-bytes"));
+    }
+    expect(resizeForCard.mock.calls.map((c) => c[1])).toEqual([640, 1080]);
+    expect(ensureCardSizesFolder).toHaveBeenCalledWith(
+      "access-token",
+      "story-folder-id",
+      "user-1",
+    );
+    expect(uploadDerivativeFile).toHaveBeenCalledWith(
+      "access-token",
+      "card-folder-id",
+      "media-1-640.webp",
+      Buffer.from("card-640"),
+      "image/webp",
+      "user-1",
+    );
+    expect(uploadDerivativeFile).toHaveBeenCalledWith(
+      "access-token",
+      "card-folder-id",
+      "media-1-1080.webp",
+      Buffer.from("card-1080"),
+      "image/webp",
+      "user-1",
+    );
+    const recorded = rpcMock.mock.calls.filter(
+      ([n]) => n === "record_drive_card_size",
+    );
+    expect(recorded).toHaveLength(2);
+    expect(recorded[0][1]).toMatchObject({
+      p_media_id: "media-1",
+      p_width: 640,
+      p_drive_file_id: "card-640-id",
+      p_source_drive_file_id: "display-file-id",
+      p_file_size_bytes: Buffer.from("card-640").byteLength,
+    });
+    expect(recorded[0][1].p_sha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(recorded[1][1]).toMatchObject({
+      p_width: 1080,
+      p_drive_file_id: "card-1080-id",
+    });
+  });
+
+  it("deletes the Drive file of a size whose recording fails, and the upload still succeeds", async () => {
+    rpcWith({ error: { message: "db down" } });
+    uploadDerivativeFile
+      .mockResolvedValueOnce("display-file-id")
+      .mockResolvedValueOnce("full-file-id")
+      .mockResolvedValueOnce("card-640-id")
+      .mockResolvedValueOnce("card-1080-id");
+
+    await expect(
+      finalizeDriveMediaUpload("media-1", 1, "drive-file-1"),
+    ).resolves.toBeUndefined();
+    await runScheduled();
+
+    const deleted = deleteFilePermanently.mock.calls.map(
+      (c) => (c as unknown[])[1],
+    );
+    expect(deleted).toContain("card-640-id");
+    expect(deleted).toContain("card-1080-id");
+    expect(deleted).not.toContain("display-file-id");
+    // The raw staging file is still removed and the folder still synced.
+    expect(deleted).toContain("drive-file-1");
+    expect(syncStoryFolder).toHaveBeenCalledWith("user-1", "story-1");
+  });
+
+  it("does not fail, and still cleans up, when making a size throws", async () => {
+    rpcWith({ error: null });
+    resizeForCard.mockRejectedValue(new Error("sharp exploded"));
+
+    await expect(
+      finalizeDriveMediaUpload("media-1", 1, "drive-file-1"),
+    ).resolves.toBeUndefined();
+    await runScheduled();
+
+    expect(
+      rpcMock.mock.calls.some(([n]) => n === "record_drive_card_size"),
+    ).toBe(false);
+    expect(deleteFilePermanently).toHaveBeenCalledWith(
+      "access-token",
+      "drive-file-1",
+      "user-1",
+    );
+    expect(syncStoryFolder).toHaveBeenCalledWith("user-1", "story-1");
+    resizeForCard.mockImplementation(async (_b: Buffer, width: number) =>
+      Buffer.from(`card-${width}`),
+    );
+  });
+
+  it("does not fail when the Card sizes folder cannot be made", async () => {
+    rpcWith({ error: null });
+    ensureCardSizesFolder.mockRejectedValue(new Error("drive 500"));
+
+    await expect(
+      finalizeDriveMediaUpload("media-1", 1, "drive-file-1"),
+    ).resolves.toBeUndefined();
+    await runScheduled();
+
+    expect(resizeForCard).not.toHaveBeenCalled();
     expect(syncStoryFolder).toHaveBeenCalledWith("user-1", "story-1");
   });
 });

@@ -302,6 +302,8 @@ type DriveSyncMediaRow = {
 
 /** The subfolder of a story's folder that holds its full-quality copies. */
 export const FULL_QUALITY_FOLDER_NAME = "Full quality";
+/** The story folder's subfolder of stored card-size copies (docs/photo-card-sizes-plan.md). */
+export const CARD_SIZES_FOLDER_NAME = "Card sizes";
 
 /**
  * Runs `fn` over `items` with at most `limit` in flight at once, preserving
@@ -546,6 +548,31 @@ export async function ensureFullQualityFolder(
   return createFolder(
     accessToken,
     FULL_QUALITY_FOLDER_NAME,
+    storyFolderId,
+    userId,
+  );
+}
+
+/**
+ * Finds (or creates) the story folder's "Card sizes" subfolder. THROWS on
+ * failure: lib/story/drive-sync.ts treats missing card sizes as a logged,
+ * best-effort miss (the proxy then resizes on demand), never a failed upload.
+ */
+export async function ensureCardSizesFolder(
+  accessToken: string,
+  storyFolderId: string,
+  userId: string,
+): Promise<string> {
+  const existing = await findFolder(
+    accessToken,
+    CARD_SIZES_FOLDER_NAME,
+    storyFolderId,
+    userId,
+  );
+  if (existing) return existing;
+  return createFolder(
+    accessToken,
+    CARD_SIZES_FOLDER_NAME,
     storyFolderId,
     userId,
   );

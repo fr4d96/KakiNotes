@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { createHash } from "node:crypto";
 import { NextRequest } from "next/server";
 
 vi.mock("server-only", () => ({}));
@@ -375,5 +376,185 @@ describe("GET /media/[mediaId]", () => {
       expect(response.headers.get("Cache-Control")).toBe("private, no-store");
       expect(response.headers.get("Vercel-Cache-Tag")).toBeNull();
     });
+  });
+});
+
+// Stored card sizes (docs/photo-card-sizes-plan.md, Option B): ?w= asks
+// get_drive_card_for_proxy(), serves the stored WebP when its hash matches,
+// and otherwise behaves exactly as before (download + resize).
+describe("GET /media/[mediaId]?w= stored card sizes", () => {
+  const MEDIA = "00000000-0000-4000-8000-000000000020";
+  const STORED = Buffer.from("stored-card-webp");
+  const storedHash = createHash("sha256").update(STORED).digest("hex");
+  const baseRow = {
+    media_id: MEDIA,
+    drive_processed_file_id: "drive-file-1",
+    processed_mime_type: "image/jpeg",
+    owner_user_id: "owner-1",
+    is_published: true,
+    story_id: "story-1",
+    card_drive_file_id: "card-file-1",
+    card_sha256: storedHash,
+    card_file_size_bytes: STORED.byteLength,
+  };
+
+  function rpcFor(row: Record<string, unknown> | null) {
+    rpcMock.mockImplementation(async (name: string) => {
+      if (name === "get_drive_card_for_proxy") {
+        return { data: row ? [row] : [], error: null };
+      }
+      throw new Error(`unexpected rpc ${name}`);
+    });
+  }
+
+  beforeEach(() => {
+    downloadFileBytes.mockReset();
+    downloadFileBytes.mockResolvedValue(Buffer.from("image-bytes"));
+  });
+
+  it("serves the stored file with today's cache headers, without resizing", async () => {
+    rpcFor(baseRow);
+    downloadFileBytes.mockResolvedValueOnce(STORED);
+    const { request, context } = requestFor(MEDIA, "?w=640");
+    const response = await GET(request, context);
+    expect(response.status).toBe(200);
+    expect(rpcMock).toHaveBeenCalledWith("get_drive_card_for_proxy", {
+      p_media_id: MEDIA,
+      p_width: 640,
+    });
+    expect(downloadFileBytes).toHaveBeenCalledTimes(1);
+    expect(downloadFileBytes).toHaveBeenCalledWith(
+      "access-token",
+      "card-file-1",
+    );
+    expect(resizeForCard).not.toHaveBeenCalled();
+    expect(response.headers.get("Content-Type")).toBe("image/webp");
+    expect(Buffer.from(await response.arrayBuffer())).toEqual(STORED);
+    expect(response.headers.get("Cache-Control")).toBe(
+      "public, s-maxage=604800, stale-while-revalidate=86400",
+    );
+    expect(response.headers.get("Vercel-Cache-Tag")).toBe("public-media");
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+  });
+
+  it("falls back to download + resize when there is no stored row", async () => {
+    rpcFor({ ...baseRow, card_drive_file_id: null, card_sha256: null });
+    const { request, context } = requestFor(MEDIA, "?w=1080");
+    const response = await GET(request, context);
+    expect(response.status).toBe(200);
+    expect(downloadFileBytes).toHaveBeenCalledWith(
+      "access-token",
+      "drive-file-1",
+    );
+    expect(resizeForCard).toHaveBeenCalledWith(
+      Buffer.from("image-bytes"),
+      1080,
+    );
+    expect(Buffer.from(await response.arrayBuffer()).toString()).toBe(
+      "card-bytes",
+    );
+  });
+
+  it("falls back to resizing when the stored file's hash differs", async () => {
+    rpcFor(baseRow);
+    downloadFileBytes
+      .mockResolvedValueOnce(Buffer.from("tampered"))
+      .mockResolvedValueOnce(Buffer.from("image-bytes"));
+    const { request, context } = requestFor(MEDIA, "?w=640");
+    const response = await GET(request, context);
+    expect(response.status).toBe(200);
+    expect(downloadFileBytes).toHaveBeenNthCalledWith(
+      2,
+      "access-token",
+      "drive-file-1",
+    );
+    expect(resizeForCard).toHaveBeenCalledTimes(1);
+    expect(Buffer.from(await response.arrayBuffer()).toString()).toBe(
+      "card-bytes",
+    );
+  });
+
+  it("falls back to resizing when Drive fails on the stored file", async () => {
+    rpcFor(baseRow);
+    downloadFileBytes
+      .mockRejectedValueOnce(new Error("drive 404"))
+      .mockResolvedValueOnce(Buffer.from("image-bytes"));
+    const { request, context } = requestFor(MEDIA, "?w=640");
+    const response = await GET(request, context);
+    expect(response.status).toBe(200);
+    expect(resizeForCard).toHaveBeenCalledTimes(1);
+  });
+
+  it("still 502s when Drive fails on the fallback too", async () => {
+    rpcFor(baseRow);
+    downloadFileBytes.mockRejectedValue(new Error("drive down"));
+    const { request, context } = requestFor(MEDIA, "?w=640");
+    const response = await GET(request, context);
+    expect(response.status).toBe(502);
+  });
+
+  it("404s exactly as before when the lookup returns no row (unauthorized)", async () => {
+    rpcFor(null);
+    const { request, context } = requestFor(MEDIA, "?w=640");
+    const response = await GET(request, context);
+    expect(response.status).toBe(404);
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(getAccessToken).not.toHaveBeenCalled();
+    expect(downloadFileBytes).not.toHaveBeenCalled();
+  });
+
+  it("keeps a preview private even when a stored copy exists", async () => {
+    rpcFor({ ...baseRow, is_published: false });
+    downloadFileBytes.mockResolvedValueOnce(STORED);
+    const { request, context } = requestFor(MEDIA, "?w=640");
+    const response = await GET(request, context);
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(response.headers.get("Vercel-Cache-Tag")).toBeNull();
+  });
+
+  it("uses the plain lookup, never the stored copy, for ?download=1", async () => {
+    rpcMock.mockImplementation(async (name: string) => {
+      if (name === "get_drive_media_for_proxy") {
+        return { data: [baseRow], error: null };
+      }
+      throw new Error(`unexpected rpc ${name}`);
+    });
+    const { request, context } = requestFor(MEDIA, "?w=640&download=1");
+    const response = await GET(request, context);
+    expect(response.status).toBe(200);
+    expect(downloadFileBytes).toHaveBeenCalledWith(
+      "access-token",
+      "drive-file-1",
+    );
+    expect(resizeForCard).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the plain lookup when the card lookup errors", async () => {
+    rpcMock.mockImplementation(async (name: string) => {
+      if (name === "get_drive_card_for_proxy") {
+        return { data: null, error: { message: "function does not exist" } };
+      }
+      return { data: [baseRow], error: null };
+    });
+    const { request, context } = requestFor(MEDIA, "?w=640");
+    const response = await GET(request, context);
+    expect(response.status).toBe(200);
+    expect(resizeForCard).toHaveBeenCalledTimes(1);
+  });
+
+  it("never uses the card lookup without ?w=", async () => {
+    rpcMock.mockImplementation(async (name: string) => {
+      if (name === "get_drive_media_for_proxy") {
+        return { data: [baseRow], error: null };
+      }
+      throw new Error(`unexpected rpc ${name}`);
+    });
+    const { request, context } = requestFor(MEDIA);
+    const response = await GET(request, context);
+    expect(response.status).toBe(200);
+    expect(downloadFileBytes).toHaveBeenCalledWith(
+      "access-token",
+      "drive-file-1",
+    );
   });
 });
