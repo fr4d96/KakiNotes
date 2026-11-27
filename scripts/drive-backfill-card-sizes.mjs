@@ -147,13 +147,22 @@ const DRIVE_FILES = "https://www.googleapis.com/drive/v3/files";
 const DRIVE_UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
 
 async function driveFetch(accessToken, url, init) {
-  const res = await fetch(url, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      ...(init?.headers ?? {}),
-    },
-  });
+  // `accessToken` is { value, refresh }: Google access tokens last an hour
+  // and a full run takes longer, so a 401 gets one fresh token and a retry.
+  const send = () =>
+    fetch(url, {
+      ...init,
+      headers: {
+        Authorization: `Bearer ${accessToken.value}`,
+        ...(init?.headers ?? {}),
+      },
+    });
+  let res = await send();
+  if (res.status === 401) {
+    await res.body?.cancel();
+    accessToken.value = await accessToken.refresh();
+    res = await send();
+  }
   if (!res.ok) {
     throw new Error(`Drive call failed (${res.status}): ${await res.text()}`);
   }
@@ -310,13 +319,13 @@ async function run() {
         );
         continue;
       }
-      accessToken = await getAccessToken(
-        decryptRefreshToken({
-          ciphertext: connection.encrypted_refresh_token,
-          iv: connection.token_iv,
-          authTag: connection.token_auth_tag,
-        }),
-      );
+      const refreshToken = decryptRefreshToken({
+        ciphertext: connection.encrypted_refresh_token,
+        iv: connection.token_iv,
+        authTag: connection.token_auth_tag,
+      });
+      const refresh = () => getAccessToken(refreshToken);
+      accessToken = { value: await refresh(), refresh };
     } catch (err) {
       console.error(
         `  owner ${ownerUserId}  FAILED to get a token: ${err.message}`,
