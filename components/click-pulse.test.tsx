@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ClickPulse, pulseTarget } from "./click-pulse";
+import { ClickPulse, cardTarget, pulseTarget } from "./click-pulse";
 
 // jsdom has no Web Animations API.
 const animate = vi.fn(() => ({ cancel: vi.fn() }));
@@ -52,6 +52,21 @@ describe("ClickPulse", () => {
     expect(animate).not.toHaveBeenCalled();
   });
 
+  it("bounces a tapped story card, from anywhere inside it", async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <ClickPulse />
+        <article data-testid="card" data-card-bounce>
+          <a href="#story">A story</a>
+        </article>
+      </>,
+    );
+    await user.click(screen.getByRole("link", { name: "A story" }));
+    expect(animate).toHaveBeenCalledTimes(1);
+    expect(animate.mock.contexts[0]).toBe(screen.getByTestId("card"));
+  });
+
   it("removes its listener on unmount", async () => {
     const user = userEvent.setup();
     const { unmount } = render(<ClickPulse />);
@@ -83,5 +98,23 @@ describe("pulseTarget", () => {
     expect(pulseTarget(card)).toBeNull();
     disabled.remove();
     card.remove();
+  });
+});
+
+describe("cardTarget", () => {
+  it("finds the card, and honours data-no-pulse around it", () => {
+    const card = document.createElement("article");
+    card.dataset.cardBounce = "";
+    const inner = document.createElement("span");
+    card.append(inner);
+    const quiet = document.createElement("div");
+    quiet.dataset.noPulse = "";
+    const quietCard = card.cloneNode(true) as HTMLElement;
+    quiet.append(quietCard);
+    document.body.append(card, quiet);
+    expect(cardTarget(inner)).toBe(card);
+    expect(cardTarget(quietCard.firstElementChild)).toBeNull();
+    card.remove();
+    quiet.remove();
   });
 });

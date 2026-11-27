@@ -93,7 +93,12 @@ export function StoryCard({
   return (
     // A pin, not a boxed card (2026-11-17 redesign): the photo is the card,
     // rounded on its own, and the words sit underneath on the page ground.
-    <article className="press press-hover-only group relative flex flex-col">
+    // data-card-bounce: a tap plays a small spring on the whole card
+    // (components/click-pulse.tsx) -- on click, so a scroll never triggers it.
+    <article
+      data-card-bounce
+      className="press press-hover-only group relative flex flex-col"
+    >
       <div
         className={`relative w-full overflow-hidden rounded-2xl bg-surface-muted shadow-sm transition-shadow group-hover:shadow-md ${
           small ? "aspect-[4/5]" : "aspect-[4/3]"

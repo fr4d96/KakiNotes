@@ -15,8 +15,10 @@ import { useEffect } from "react";
  * whatever the finger does next.
  *
  * Skipped on purpose:
- * - tall targets (cards, photos -- anything over MAX_PULSE_HEIGHT): a whole
- *   card bouncing reads as a glitch, and those navigate away anyway;
+ * - tall targets (photos -- anything over MAX_PULSE_HEIGHT): a big surface
+ *   dipping as hard as a button reads as a glitch. Story cards are the one
+ *   exception: they opt in with `data-card-bounce` and get their own, softer
+ *   bounce (CARD_BOUNCE) -- a gentle dip, a hair of overshoot, settle;
  * - `.press-hover-only` surfaces and the photo-viewer trigger, for the same
  *   reason; and anything inside `[data-no-pulse]`, the explicit opt-out.
  *
@@ -53,6 +55,22 @@ const MAX_PULSE_HEIGHT = 120;
 
 const EASE_OUT = "cubic-bezier(0.16, 0.84, 0.28, 1)";
 
+/** Softer than a button's pulse: a card is big, so a small scale reads big. */
+const CARD_BOUNCE: Keyframe[] = [
+  { transform: "scale(1)" },
+  { transform: "scale(0.965)", offset: 0.35 },
+  { transform: "scale(1.012)", offset: 0.7 },
+  { transform: "scale(1)" },
+];
+
+/** A tapped story card (`data-card-bounce`), unless it sits in an opt-out. */
+export function cardTarget(start: EventTarget | null): HTMLElement | null {
+  if (!(start instanceof Element)) return null;
+  const card = start.closest<HTMLElement>("[data-card-bounce]");
+  if (!card || card.closest("[data-no-pulse]")) return null;
+  return card;
+}
+
 export function pulseTarget(start: EventTarget | null): HTMLElement | null {
   if (!(start instanceof Element)) return null;
   const el = start.closest<HTMLElement>(TAPPABLE);
@@ -70,7 +88,10 @@ export function ClickPulse() {
     );
 
     function onClick(event: MouseEvent) {
-      const el = pulseTarget(event.target);
+      // A small control inside a card (a photo dot) keeps its own pulse;
+      // anywhere else on a card bounces the whole card.
+      const control = pulseTarget(event.target);
+      const el = control ?? cardTarget(event.target);
       if (!el || typeof el.animate !== "function") return;
       // A double tap restarts the pulse rather than stacking two.
       running.get(el)?.cancel();
@@ -82,10 +103,16 @@ export function ClickPulse() {
             ],
             { duration: 260, easing: EASE_OUT },
           )
-        : el.animate(
-            [{ transform: "scale(0.94)" }, { transform: "scale(1)" }],
-            { duration: 280, easing: EASE_OUT, composite: "add" },
-          );
+        : control
+          ? el.animate(
+              [{ transform: "scale(0.94)" }, { transform: "scale(1)" }],
+              { duration: 280, easing: EASE_OUT, composite: "add" },
+            )
+          : el.animate(CARD_BOUNCE, {
+              duration: 420,
+              easing: "ease-out",
+              composite: "add",
+            });
       running.set(el, animation);
     }
 
