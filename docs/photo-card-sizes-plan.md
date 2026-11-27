@@ -1,8 +1,8 @@
 # Card photo plan: fewer cache misses, then cheaper ones
 
 Status (2026-11-27): **Option A is approved and built. Option B is approved and built on
-`feat/stored-card-sizes` but NOT deployed: migration `20261127090000_story_media_card_sizes.sql` is
-written and NOT applied, and the backfill script has not been run.** The Rule 14 change (wording
+`feat/stored-card-sizes` but NOT deployed: migration `20261127091319_story_media_card_sizes.sql` is
+APPLIED to the live project (2026-11-27), and the backfill script has not been run.** The Rule 14 change (wording
 below) is approved and applied to CLAUDE.md. Option C is not approved and not built. The "photo
 file deleted" row below is an accepted trade-off. Vercel (Oct 28 - Nov 27): Active CPU 4h 8m of
 4h; `/media` used 41 s of about 70 s of function CPU in 12 hours. The migration must be applied

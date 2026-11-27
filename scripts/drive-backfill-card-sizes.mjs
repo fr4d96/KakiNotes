@@ -13,7 +13,7 @@
 //
 // IT WRITES TO CONTRIBUTORS' GOOGLE DRIVES. Run it on the Mac, with the
 // service-role key, only on the owner's say-so, and only after migration
-// 20261127090000_story_media_card_sizes.sql has been applied. Never import it
+// 20261127091319_story_media_card_sizes.sql has been applied. Never import it
 // from app code and never run it on Vercel.
 //
 // Like drive-backfill-story-folders.mjs (read its header for why): this is a
