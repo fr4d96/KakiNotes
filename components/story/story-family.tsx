@@ -39,10 +39,14 @@ export function PartOfStory({
 }
 
 /**
- * The sub stories filed under this main story, shown at the end of it as
- * small cards: title on the left, cover photo on the right. Card rows (see
- * matchStoryFamilyCards()) supply the cover; sub stories without one get
- * the usual placeholder image. Renders nothing when empty.
+ * The sub stories filed under this main story, at the end of it: a row of
+ * small rounded photo tiles with the title underneath -- the same boxless
+ * shape as a story pin and a place tile, one size down. On a phone the row
+ * swipes sideways and bleeds to the screen edges (the Edge-Bleed Rule: the
+ * cut-off tile is the swipe hint), so nineteen sub stories cost one row of
+ * height instead of nineteen; from `sm` it wraps into a grid. Card rows
+ * (see matchStoryFamilyCards()) supply the cover; sub stories without one
+ * get the usual placeholder image. Renders nothing when empty.
  */
 export function SubStoryList({
   cards = [],
@@ -73,16 +77,27 @@ export function SubStoryList({
   ];
   if (items.length === 0) return null;
   return (
-    <section className="mt-10" aria-labelledby="sub-stories-heading">
+    <section
+      id="sub-stories"
+      className="mt-10 scroll-mt-14"
+      aria-labelledby="sub-stories-heading"
+    >
       <h2
         id="sub-stories-heading"
-        className="text-lg font-semibold tracking-tight"
+        className="flex items-baseline gap-2 text-xl font-semibold tracking-tight"
       >
         {t("subStoriesHeading")}
+        {/* Visual count only: the list itself announces how many. */}
+        <span
+          aria-hidden="true"
+          className="text-sm font-medium text-muted-foreground tabular-nums"
+        >
+          {items.length}
+        </span>
       </h2>
-      <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="nf-scroll-x -mx-4 mt-3 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-4">
         {items.map((item) => (
-          <li key={item.slug}>
+          <li key={item.slug} className="w-36 shrink-0 snap-start sm:w-auto">
             <SubStoryCard {...item} basePath={basePath} />
           </li>
         ))}
@@ -104,32 +119,34 @@ function SubStoryCard({
 }) {
   const tImages = useTranslations("editor.images");
   return (
-    <article className="group relative flex items-center gap-2 rounded-lg border border-border-subtle bg-surface p-2 transition-shadow hover:shadow-md">
-      <h3 className="min-w-0 flex-1 text-sm font-medium leading-snug">
-        <Link
-          href={`${basePath}/${slug}`}
-          className="line-clamp-2 group-hover:underline underline-offset-2"
-        >
-          {/* Stretched link: the whole card is one click target. */}
-          <span className="absolute inset-0" aria-hidden="true" />
-          {title}
-        </Link>
-      </h3>
-      <div className="relative h-10 w-14 shrink-0 overflow-hidden rounded-md bg-surface-muted">
+    // Boxless, like a story pin: the photo carries the shape and the title
+    // sits on the page ground underneath.
+    <article className="press press-hover-only group relative flex flex-col">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-surface-muted shadow-sm transition-shadow group-hover:shadow-md">
         {coverUrl ? (
           <ResolvingImage
-            // A 56x40 thumbnail: the smallest card version is plenty.
+            // A ~144px tile: the smallest card version is plenty.
             src={cardPhotoSrc(coverUrl, 640)}
             alt=""
             loading="lazy"
             loadingLabel={tImages("loading")}
             wrapperClassName="relative block h-full w-full"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (
-          <StoryCoverFallback sizes="56px" />
+          <StoryCoverFallback sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 144px" />
         )}
       </div>
+      <h3 className="mt-1.5 px-0.5 text-sm leading-snug font-semibold tracking-tight">
+        <Link
+          href={`${basePath}/${slug}`}
+          className="line-clamp-2 underline-offset-2 group-hover:underline"
+        >
+          {/* Stretched link: the whole tile is one tap and one tab stop. */}
+          <span className="absolute inset-0" aria-hidden="true" />
+          {title}
+        </Link>
+      </h3>
     </article>
   );
 }

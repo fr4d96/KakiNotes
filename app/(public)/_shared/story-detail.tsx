@@ -10,7 +10,7 @@ import {
   listPublishedStories,
 } from "@/lib/story/public-queries";
 import { getImageUrl } from "@/lib/story/image-url";
-import { imageBlockMediaIds } from "@/lib/validation/story";
+import { imageBlockMediaIds, storyContentText } from "@/lib/validation/story";
 import { normalizeStoryContentJson } from "@/lib/story/legacy-content";
 import { prefixedVocabName, vocabName } from "@/lib/i18n/vocab";
 import type { Locale } from "@/i18n/locales";
@@ -36,6 +36,22 @@ import {
   type PublicExpense,
 } from "@/components/story/public-expenses";
 import { revisionCurrency } from "@/lib/story/currency";
+import {
+  combineFamilyExpenses,
+  storyTotal,
+  type FamilyExpenseStory,
+} from "@/lib/story/family-expenses";
+import {
+  formatTripRange,
+  readingMinutes,
+  tripDays,
+} from "@/lib/story/story-glance";
+import { formatMoneyCents } from "@/lib/i18n/format";
+import { StoryGlance } from "@/components/story/story-glance";
+import {
+  StorySectionNav,
+  type StorySectionId,
+} from "@/components/story/story-section-nav";
 import { ShareStoryButton } from "@/components/story/share-story-button";
 import {
   countryUrlPrefix,
@@ -181,10 +197,11 @@ export async function StoryDetail({
   country: CountrySlug;
   slug: string;
 }) {
-  const [story, t, tCommon, locale] = await Promise.all([
+  const [story, t, tCommon, tSections, locale] = await Promise.all([
     getPublishedStoryBySlugDeduped(slug, country),
     getTranslations("story"),
     getTranslations("common"),
+    getTranslations("story.sections"),
     getLocale(),
   ]);
   if (!story) notFound();
@@ -249,6 +266,51 @@ export async function StoryDetail({
     }),
   );
 
+  // The "Total Trip Cost" view: each sub story's own published row,
+  // through the same published-only reader as this page (Rules 10-12) --
+  // deduped per request, so the unmatched sub stories above cost nothing
+  // extra. A sub story that fails to load is left out of the sum rather
+  // than taking the page down.
+  const mainExpenseStory: FamilyExpenseStory = {
+    title: story.title,
+    slug: story.slug,
+    totalCents: story.total_expense_nzd_cents,
+    tripStartDate: story.trip_start_date,
+    tripEndDate: story.trip_end_date,
+    expenses: localizedExpenses(story.expenses, locale),
+    currency: revisionCurrency(story),
+  };
+  const subExpenseStories = (
+    await Promise.all(
+      family.subStories.map(
+        async (link): Promise<FamilyExpenseStory | null> => {
+          try {
+            const sub = await getPublishedStoryBySlugDeduped(
+              link.slug,
+              country,
+            );
+            if (!sub) return null;
+            return {
+              title: sub.title,
+              slug: sub.slug,
+              totalCents: sub.total_expense_nzd_cents,
+              tripStartDate: sub.trip_start_date,
+              tripEndDate: sub.trip_end_date,
+              expenses: localizedExpenses(sub.expenses, locale),
+              currency: revisionCurrency(sub),
+            };
+          } catch {
+            return null;
+          }
+        },
+      ),
+    )
+  ).filter((s): s is FamilyExpenseStory => s !== null);
+  const familyExpenses = combineFamilyExpenses(
+    mainExpenseStory,
+    subExpenseStories,
+  );
+
   // Related stories: the country's newest published stories, ranked by
   // shared places and tags (lib/story/related-stories.ts) -- the story
   // itself and its sub stories (already shown as cards above) are left out
@@ -263,13 +325,6 @@ export async function StoryDetail({
       limit: 50,
     }),
     { limit: 3, excludeIds: new Set([story.story_id, ...subStoryIds]) },
-  );
-  // Related cards swipe through their published photos, like every other
-  // story card. One cached read per card; a failed read keeps the cover.
-  const relatedPhotos = await Promise.all(
-    relatedWithoutSubStories.map((s) =>
-      listCardPhotoUrlsCached(s.story_id).catch(() => [] as string[]),
-    ),
   );
 
   const parsedContent = normalizeStoryContentJson(story.content_json);
@@ -313,12 +368,24 @@ export async function StoryDetail({
         public_url: shareCover.public_url,
       })
     : null;
-  const tripLabel =
-    story.trip_start_date && story.trip_end_date
-      ? `${story.trip_start_date} – ${story.trip_end_date}`
-      : story.trip_year
-        ? String(story.trip_year)
-        : null;
+  // The "at a glance" facts (components/story/story-glance.tsx).
+  const tripRange = formatTripRange(
+    story.trip_start_date,
+    story.trip_end_date,
+    locale,
+  );
+  const ownCostCents = storyTotal(mainExpenseStory);
+  const glanceCostCents = ownCostCents ?? familyExpenses?.totalCents ?? null;
+  const subStoryCount = subStoryCards.cards.length + unmatchedSubStories.length;
+
+  // The section bar lists only what this page actually has, in page order.
+  const sections: StorySectionId[] = [
+    ...(galleryMedia.length > 0 ? (["photos"] as const) : []),
+    "story",
+    ...(glanceCostCents != null ? (["costs"] as const) : []),
+    ...(subStoryCount > 0 ? (["sub-stories"] as const) : []),
+    ...(relatedWithoutSubStories.length > 0 ? (["related"] as const) : []),
+  ];
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -356,21 +423,17 @@ export async function StoryDetail({
         <p className="mt-3 text-lg text-foreground/70">{story.excerpt}</p>
       ) : null}
 
-      <div className="mt-6 flex flex-wrap items-center gap-6">
+      {/* Byline and Share on one row: who wrote it, and the one action. */}
+      <div className="mt-5 flex items-center justify-between gap-4">
         <AttributionChip
           name={story.attribution_value ?? tCommon("anonymous")}
           contributorSlug={story.contributor_slug}
           contributorBasePath={`${countryUrlPrefix(country)}/contributors`}
           avatarEmoji={story.contributor_avatar_emoji}
-          tripYear={tripLabel ? undefined : story.trip_year}
+          tripYear={tripRange ? undefined : story.trip_year}
           destination={regions[0] ?? null}
         />
-        {tripLabel ? (
-          <span className="text-sm text-foreground/60">
-            {t("trip", { range: tripLabel })}
-          </span>
-        ) : null}
-        <div className="sm:ml-auto">
+        <div className="shrink-0">
           <ShareStoryButton
             title={story.title}
             subtitle={[
@@ -385,22 +448,57 @@ export async function StoryDetail({
         </div>
       </div>
 
+      <StoryGlance
+        tripRange={tripRange}
+        tripDays={tripDays(story.trip_start_date, story.trip_end_date)}
+        readingMinutes={
+          parsedContent ? readingMinutes(storyContentText(parsedContent)) : null
+        }
+        cost={
+          glanceCostCents != null
+            ? formatMoneyCents(
+                glanceCostCents,
+                mainExpenseStory.currency,
+                locale,
+              )
+            : null
+        }
+        photoCount={galleryMedia.length}
+        subStoryCount={subStoryCount}
+      />
+
+      {/* Places and tags on one line that swipes on a phone, instead of
+          wrapping into a block of pills above the story. */}
       {(regions.length > 0 || stringList(story.tags).length > 0) && (
-        <div className="mt-4 flex flex-wrap gap-1.5">
+        <ul className="nf-scroll-x -mx-4 mt-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
           {Array.from(new Set([...regions, ...stringList(story.tags)])).map(
             (label) => (
-              <span
+              <li
                 key={label}
-                className="rounded-full bg-tag-background px-2 py-0.5 text-xs text-tag-foreground"
+                className="shrink-0 rounded-full bg-tag-background px-2 py-0.5 text-xs whitespace-nowrap text-tag-foreground"
               >
                 {label}
-              </span>
+              </li>
             ),
           )}
-        </div>
+        </ul>
       )}
 
-      <div className="mt-8">
+      <StorySectionNav sections={sections} />
+
+      {/* Photos lead (photo-first): the swipeable carousel right under the
+          section bar, before the words. */}
+      {galleryMedia.length > 0 ? (
+        <section
+          id="photos"
+          aria-label={tSections("photos")}
+          className="mt-6 scroll-mt-14"
+        >
+          <StoryGallery images={galleryMedia} />
+        </section>
+      ) : null}
+
+      <div id="story" className="mt-8 scroll-mt-14">
         {parsedContent ? (
           <ContentBlockRenderer blocks={parsedContent} media={contentMedia} />
         ) : (
@@ -419,18 +517,14 @@ export async function StoryDetail({
         </p>
       ) : null}
 
-      {galleryMedia.length > 0 ? (
-        <div className="mt-10">
-          <StoryGallery images={galleryMedia} />
-        </div>
-      ) : null}
-
       <PublicExpenses
-        totalCents={story.total_expense_nzd_cents}
-        tripStartDate={story.trip_start_date}
-        tripEndDate={story.trip_end_date}
-        expenses={localizedExpenses(story.expenses, locale)}
-        currency={revisionCurrency(story)}
+        totalCents={mainExpenseStory.totalCents}
+        tripStartDate={mainExpenseStory.tripStartDate}
+        tripEndDate={mainExpenseStory.tripEndDate}
+        expenses={mainExpenseStory.expenses}
+        currency={mainExpenseStory.currency}
+        combined={familyExpenses}
+        basePath={`${countryUrlPrefix(country)}/stories`}
       />
 
       <SubStoryList
@@ -453,25 +547,35 @@ export async function StoryDetail({
       </div>
 
       {relatedWithoutSubStories.length > 0 ? (
-        <div className="mt-6 border-t border-border-subtle pt-8">
-          <h2 className="text-xl font-semibold tracking-tight">
+        <section
+          id="related"
+          aria-labelledby="related-heading"
+          className="mt-6 scroll-mt-14 border-t border-border-subtle pt-8"
+        >
+          <h2
+            id="related-heading"
+            className="text-xl font-semibold tracking-tight"
+          >
             {t("relatedStories")}
           </h2>
-          {/* Small cards, two to a row on a phone (the Stories tab's
-              compact size): a glance at what's next, not a second feed of
-              full-width photos (2026-11-18). */}
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-            {relatedWithoutSubStories.map((s, index) => (
-              <StoryCard
+          {/* Small cards in a row that swipes on a phone (edge to edge, the
+              cut-off card is the hint), a grid from sm. One cover each, no
+              photo swiping inside a swiping row. */}
+          <ul className="nf-scroll-x -mx-4 mt-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0">
+            {relatedWithoutSubStories.map((s) => (
+              <li
                 key={s.story_id}
-                size="small"
-                story={s}
-                basePath={`${countryUrlPrefix(country)}/stories`}
-                photos={relatedPhotos[index]}
-              />
+                className="w-40 shrink-0 snap-start sm:w-auto"
+              >
+                <StoryCard
+                  size="small"
+                  story={s}
+                  basePath={`${countryUrlPrefix(country)}/stories`}
+                />
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </section>
       ) : null}
     </div>
   );

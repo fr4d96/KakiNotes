@@ -303,7 +303,16 @@
       "heading": "What this trip cost",
       "reportedForWholeTrip": "reported for the whole trip",
       "perMonth": "About <amount>{amountValue}</amount> a month across {months} months.",
-      "disclaimer": "These are the figures one traveller recorded for their own trip. They are a personal account, not a budget or an estimate — costs vary a lot by region, season, and how you travel."
+      "disclaimer": "These are the figures one traveller recorded for their own trip. They are a personal account, not a budget or an estimate — costs vary a lot by region, season, and how you travel.",
+      "noOwnCosts": "This story doesn’t record any costs of its own — its sub stories do.",
+      "scopeLabel": "Show costs for",
+      "scopeThisStory": "This story",
+      "scopeWithSubStories": "Total Trip Cost",
+      "reportedAcrossStories": "reported across {count, plural, one {# story} other {# stories}}",
+      "perStoryHeading": "Adds up from",
+      "skippedOtherCurrency": "{count, plural, one {# sub story recorded in another currency is not included.} other {# sub stories recorded in another currency are not included.}}",
+      "seeBreakdown": "See full breakdown",
+      "hideBreakdown": "Hide breakdown"
     },
     "report": {
       "open": "Report this story",
@@ -332,7 +341,23 @@
       "partOf": "Main story:",
       "subStoriesHeading": "Sub stories"
     },
-    "seeOnJourney": "See this on {name}’s journey"
+    "seeOnJourney": "See this on {name}’s journey",
+    "glance": {
+      "tripRangeDays": "{range} · {count, plural, one {# day} other {# days}}",
+      "minRead": "{count} min read",
+      "cost": "{amount} trip cost",
+      "photos": "{count, plural, one {# photo} other {# photos}}",
+      "subStories": "{count, plural, one {# sub story} other {# sub stories}}",
+      "jumpLabel": "Jump to"
+    },
+    "sections": {
+      "label": "Story sections",
+      "story": "Story",
+      "photos": "Photos",
+      "costs": "Costs",
+      "subStories": "Sub stories",
+      "related": "More stories"
+    }
   },
   "expenses": {
     "donut": {

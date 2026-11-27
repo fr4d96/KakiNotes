@@ -303,7 +303,16 @@
       "heading": "这趟行程花了多少",
       "reportedForWholeTrip": "为整趟行程记录的花费",
       "perMonth": "在 {months} 个月里，平均每月约 <amount>{amountValue}</amount>。",
-      "disclaimer": "这是一位旅行者为自己的行程记录的数字。它是个人经历，不是预算也不是估算 — 花费会因地区、季节和旅行方式相差很大。"
+      "disclaimer": "这是一位旅行者为自己的行程记录的数字。它是个人经历，不是预算也不是估算 — 花费会因地区、季节和旅行方式相差很大。",
+      "noOwnCosts": "本篇没有单独记录花费，花费记录在子故事里。",
+      "scopeLabel": "显示哪些花费",
+      "scopeThisStory": "仅本篇",
+      "scopeWithSubStories": "整趟行程总花费",
+      "reportedAcrossStories": "{count} 篇故事合计记录的花费",
+      "perStoryHeading": "分篇明细",
+      "skippedOtherCurrency": "有 {count} 篇子故事使用其他货币记录，未计入合计。",
+      "seeBreakdown": "查看完整明细",
+      "hideBreakdown": "收起明细"
     },
     "report": {
       "open": "举报这篇故事",
@@ -332,7 +341,23 @@
       "partOf": "主故事：",
       "subStoriesHeading": "子故事"
     },
-    "seeOnJourney": "在 {name} 的旅程地图上查看"
+    "seeOnJourney": "在 {name} 的旅程地图上查看",
+    "glance": {
+      "tripRangeDays": "{range} · {count} 天",
+      "minRead": "约 {count} 分钟读完",
+      "cost": "行程花费 {amount}",
+      "photos": "{count} 张照片",
+      "subStories": "{count} 篇子故事",
+      "jumpLabel": "跳转到"
+    },
+    "sections": {
+      "label": "故事目录",
+      "story": "故事",
+      "photos": "照片",
+      "costs": "花费",
+      "subStories": "子故事",
+      "related": "更多故事"
+    }
   },
   "expenses": {
     "donut": {

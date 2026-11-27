@@ -499,3 +499,14 @@ export function SettingsIcon(props: IconProps) {
     </svg>
   );
 }
+
+/** Money a traveller recorded -- the cost fact on a story page. */
+export function WalletIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H17a1.5 1.5 0 0 1 1.5 1.5V8" />
+      <path d="M4 7.5v9A2.5 2.5 0 0 0 6.5 19h12a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 18.5 8h-12A2.5 2.5 0 0 1 4 7.5Z" />
+      <path d="M16.25 13.5h.5" />
+    </svg>
+  );
+}

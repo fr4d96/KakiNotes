@@ -197,8 +197,8 @@ back, and do not swap in another costume world; film prints and crate labels wer
 the same reason.
 
 This is stage 1 of an app-wide redesign. The home screen, the story pins, the place tiles, the
-footer and the filter bar have had the dedicated pass. Story pages, My Stories, the editor and the
-staff tools inherit the tokens below automatically but have not been redesigned yet; where this
+footer, the filter bar and the public story page (2026-11-27) have had the dedicated pass. My
+Stories, the editor and the staff tools inherit the tokens below automatically but have not been redesigned yet; where this
 file says nothing specific about them, it is because no rule has been decided, not because the old
 one still holds.
 
@@ -462,6 +462,26 @@ shape; the words share the page.
 
 **The Place-Is-Not-A-Story Rule.** A place is shown as a small rounded photo tile with its name underneath, never as a round, ringed photo in a row: that shape is Instagram's "story" row, and a place is not a story (owner decision 2026-11-17).
 
+### Story Page (2026-11-27, owner-approved "story-first")
+
+One long page, never tabs: every part stays readable, searchable and crawlable, and is one tap away.
+
+- **Order:** breadcrumb, title, sub-title; byline with Share on the same row; the glance row; places
+  and tags on one swiping line; the section bar; photos (the carousel leads, photo-first); the story;
+  costs; sub stories; the not-advice label with Report; related stories.
+- **Glance row:** plain facts as muted text with an icon (trip range with its day count, reading
+  time); facts that have a section of their own (trip cost, photos, sub stories) as surface pills
+  that jump there. A pill is only ever something you can press.
+- **Section bar:** sticks under the header, lists only the sections the page has, marks the current
+  one with the Kingfisher Wash pill (`aria-current="location"`); plain `#` links, so it works without
+  JavaScript. Sections carry `scroll-mt-14` to land clear of it.
+- **Costs:** the total, the per-month line, one slim bar in the donut's own colours and the three
+  biggest categories in words; the donut, its full legend and the per-story list wait behind a native
+  `<details>` ("See full breakdown"). The not-advice disclaimer is never folded away.
+- **Rows:** sub stories (4:3 tiles, 144px) and related stories (small pins, 160px) swipe sideways on a
+  phone under the Edge-Bleed Rule and become grids from `sm`. Cards inside a swiping row show one
+  cover, never their own photo swiper.
+
 ### Loading
 
 - Placeholders are shaped skeletons that mirror the component they stand in for, tinted with 7% of
@@ -509,5 +529,5 @@ transform and opacity only.
 - **Don't** add star ratings, review scores, "Book Now"/"Explore Now" CTAs, traveller-count badges
   or avatar-stack social proof (PRODUCT.md anti-patterns).
 - **Don't** use emoji or Unicode glyphs as icons; icons are drawn SVG from `components/icons.tsx`.
-- **Don't** invent new rules for story pages, My Stories or the editor from this file; they have not
-  had their redesign pass yet.
+- **Don't** invent new rules for My Stories or the editor from this file; they have not had their
+  redesign pass yet.

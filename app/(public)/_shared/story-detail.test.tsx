@@ -81,23 +81,22 @@ import { StoryDetail } from "./story-detail";
 function relatedSection() {
   return screen
     .getByRole("heading", { level: 2, name: "Related stories" })
-    .closest("div")!;
+    .closest("section")!;
 }
 
 describe("Story page card lists", () => {
-  it("lets related story cards swipe through their published photos", async () => {
+  // 2026-11-27 story page redesign: related stories became a row that
+  // swipes sideways on a phone, so a card inside it shows one cover and
+  // never a photo swiper of its own (two sideways swipes fight each other).
+  it("shows related stories as one-cover cards in a swiping row", async () => {
     render(await StoryDetail({ country: "new-zealand", slug: main.slug }));
 
     const related = relatedSection();
-    const photoLinks = [
-      ...related.querySelectorAll<HTMLAnchorElement>('a[tabindex="-1"]'),
-    ];
+    expect(related).toHaveAttribute("id", "related");
+    expect(related.querySelectorAll('a[tabindex="-1"]')).toHaveLength(0);
     expect(
-      photoLinks.map((a) => a.querySelector("img")?.getAttribute("src")),
-    ).toEqual(["https://cdn.test/w1.jpg", "https://cdn.test/w2.jpg"]);
-    for (const a of photoLinks) {
-      expect(a).toHaveAttribute("href", "/stories/wanaka-tree");
-    }
+      within(related).getByRole("link", { name: "Wanaka Tree" }),
+    ).toHaveAttribute("href", "/stories/wanaka-tree");
   });
 
   it("never repeats a sub story found by slug under Related stories", async () => {
