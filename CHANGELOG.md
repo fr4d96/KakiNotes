@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.10.0](https://github.com/fr4d96/KakiNotes/compare/v4.9.1...v4.10.0) (2026-11-27)
+
+
+### Features
+
+* **media:** store the two card sizes of Drive photos ([7e8ac4a](https://github.com/fr4d96/KakiNotes/commit/7e8ac4a2fccd5d3b6fb70500467e130eda524d38))
+* **notifications:** load the inbox 20 at a time with "See more" ([d29fa70](https://github.com/fr4d96/KakiNotes/commit/d29fa70dd0bcb20d6334984ce246a2d2b93ffd40))
+
 ## [4.9.1](https://github.com/fr4d96/KakiNotes/compare/v4.9.0...v4.9.1) (2026-11-26)
 
 
