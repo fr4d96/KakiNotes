@@ -956,6 +956,50 @@ export type Database = {
           },
         ];
       };
+      story_media_card_sizes: {
+        Row: {
+          created_at: string;
+          drive_file_id: string;
+          file_size_bytes: number;
+          id: string;
+          media_id: string;
+          sha256: string;
+          source_drive_file_id: string;
+          updated_at: string;
+          width: number;
+        };
+        Insert: {
+          created_at?: string;
+          drive_file_id: string;
+          file_size_bytes: number;
+          id?: string;
+          media_id: string;
+          sha256: string;
+          source_drive_file_id: string;
+          updated_at?: string;
+          width: number;
+        };
+        Update: {
+          created_at?: string;
+          drive_file_id?: string;
+          file_size_bytes?: number;
+          id?: string;
+          media_id?: string;
+          sha256?: string;
+          source_drive_file_id?: string;
+          updated_at?: string;
+          width?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "story_media_card_sizes_media_id_fkey";
+            columns: ["media_id"];
+            isOneToOne: false;
+            referencedRelation: "story_media";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       story_media_move_jobs: {
         Row: {
           created_at: string;
@@ -2310,6 +2354,20 @@ export type Database = {
           work_types_selected: boolean;
         }[];
       };
+      get_drive_card_for_proxy: {
+        Args: { p_media_id: string; p_width: number };
+        Returns: {
+          card_drive_file_id: string;
+          card_file_size_bytes: number;
+          card_sha256: string;
+          drive_processed_file_id: string;
+          is_published: boolean;
+          media_id: string;
+          owner_user_id: string;
+          processed_mime_type: string;
+          story_id: string;
+        }[];
+      };
       get_drive_full_copy_for_owner: {
         Args: { p_media_id: string };
         Returns: {
@@ -3147,6 +3205,17 @@ export type Database = {
           p_expected_version?: number;
           p_note?: string;
           p_story_id: string;
+        };
+        Returns: undefined;
+      };
+      record_drive_card_size: {
+        Args: {
+          p_drive_file_id: string;
+          p_file_size_bytes: number;
+          p_media_id: string;
+          p_sha256: string;
+          p_source_drive_file_id: string;
+          p_width: number;
         };
         Returns: undefined;
       };

@@ -832,10 +832,34 @@ dropped 2026-11-25 to cut Vercel CPU) return a
 4:3, centre-cropped WebP of the same approved, metadata-stripped derivative,
 for story cards (`lib/story/card-photo-size.ts`, `lib/story/card-photo-resize.ts`).
 Same authorization check, same `Cache-Control` and `public-media` purge tag.
-Made in memory on each cache miss and never stored, so Drive still holds
-exactly one public derivative per photo (Engineering Rule 14). Any other `w`
-is a 404 before any database or Drive work, so the cache can't be filled with
-arbitrary sizes. Measured: 65/50/14 KB at 640px against 482/328/127 KB.
+Any other `w` is a 404 before any database or Drive work, so the cache can't
+be filled with arbitrary sizes. Measured: 65/50/14 KB at 640px against
+482/328/127 KB.
+
+**Stored card sizes (2026-11-27, Option B of `docs/photo-card-sizes-plan.md`;
+built, migration not yet applied).** Originally the sizes were made in memory on
+each cache miss and never stored. That resize was the biggest share of function
+CPU, so each Drive photo now also has its two sizes stored in Drive: after an
+upload, `lib/story/drive-sync.ts` makes 640 and 1080 wide 4:3 WebP files from
+the **processed, EXIF-stripped** bytes (never the raw upload), with the same
+`resizeForCard()` the proxy uses, into a `Card sizes` subfolder of the story
+folder, named `<mediaId>-640.webp` / `<mediaId>-1080.webp`, and records them in
+`story_media_card_sizes` (`record_drive_card_size()`: the story's own owner
+only, refuses a source file id that is not the photo's current display file;
+the Drive file is deleted if recording fails). Best effort: a failure is logged
+and never fails the upload. `?w=` calls `get_drive_card_for_proxy()`, which
+SELECTs FROM `get_drive_media_for_proxy()` (authorization is called, never
+copied: no row there means no row here, so the 404 is identical for every
+state) and left-joins the stored copy. The proxy downloads the small file,
+checks its SHA-256, and serves it with the same `Cache-Control` and
+`public-media` tag; no row, a Drive error or a hash mismatch falls back to
+download-and-resize, and `?download=1` and full size are unchanged. Photos
+uploaded before this existed use the fallback until
+`scripts/drive-backfill-card-sizes.mjs` (dry run by default, owner's say-so)
+makes theirs. **Accepted trade-off (owner decision 2026-11-27):** if the
+contributor deletes the photo's own file in Drive, cards keep working until the
+small copies go too; there is no extra Drive existence check. Deleting the
+story's Drive folder removes the photo and all its copies.
 
 _Original design (2026-10-03, superseded):_ `s-maxage=300` as a bounded
 window, with an active purge described but not yet built.
@@ -1215,6 +1239,13 @@ of this doc). Section 12, Decisions, Q1 records this as resolved.
 > one-time processing run finishes. The proxy route is the only path a
 > reader's request can take to reach the derivative, and it never serves
 > the staging file."
+>
+> **Amended 2026-11-27 (owner-approved, applied to CLAUDE.md):** "the one derivative file this
+> platform ever writes for public use" became "the one display derivative plus its two fixed
+> card-size copies (640 and 1080 wide, 4:3 WebP), each made only from that already-stripped
+> derivative, never from the raw original. These three files are the only ones this platform
+> ever writes for public use", and the proxy sentence now ends "reach the derivative or a
+> card-size copy".
 
 Walking the other rules this design touches:
 

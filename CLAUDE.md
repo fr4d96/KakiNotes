@@ -46,11 +46,13 @@ who completed or are completing a Working Holiday Visa (WHV) experience in New Z
     become a second, unaudited path into the private bucket.
 14. Only a processed, approved derivative with stripped metadata (EXIF/GPS etc.) is ever shown to
     a public reader. For a Supabase-backed image, this is the public bucket, unchanged. For a
-    Drive-backed image, this is the one derivative file this platform ever writes for public use
+    Drive-backed image, this is the one display derivative plus its two fixed card-size copies
+    (640 and 1080 wide, 4:3 WebP), each made only from that already-stripped derivative, never from
+    the raw original. These three files are the only ones this platform ever writes for public use
     — the raw, unprocessed original, if it reaches Drive at all, exists there only as a transient
     staging file, never shared or linked, permanently deleted (not trashed) as soon as its
     one-time processing run finishes. The proxy route is the only path a reader's request can
-    take to reach the derivative, and it never serves the staging file.
+    take to reach the derivative or a card-size copy, and it never serves the staging file.
     See [docs/google-drive-integration.md](docs/google-drive-integration.md).
 15. Do not collect or store passport scans, visa documents, bank credentials, exact live location, or
     medical records — ever, in any form, seed data included.

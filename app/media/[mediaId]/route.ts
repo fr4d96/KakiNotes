@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { driveMediaIdSchema } from "@/lib/validation/drive";
@@ -57,6 +58,13 @@ type ProxyLookupRow = {
   is_published: boolean;
 };
 
+// get_drive_card_for_proxy(): the same row plus the stored card-size copy
+// (the card_* columns are null when there is none to use).
+type CardLookupRow = ProxyLookupRow & {
+  card_drive_file_id?: string | null;
+  card_sha256?: string | null;
+};
+
 // SMALL 3 (round A review): the only two MIME types lib/story/
 // image-pipeline.ts#processImageBytesInMemory ever produces (see that
 // function: processedMimeType is 'image/png' when the source sniffed as
@@ -98,9 +106,33 @@ export async function GET(
     return notFound();
   }
 
-  const { data, error } = await supabase.rpc("get_drive_media_for_proxy", {
-    p_media_id: parsedId.data,
-  });
+  const isDownload = request.nextUrl.searchParams.get("download") === "1";
+  const wantsCard = cardWidth !== null && !isDownload;
+
+  // A card size asks get_drive_card_for_proxy(), which CALLS
+  // get_drive_media_for_proxy() for the authorization and only adds the
+  // stored copy -- zero rows means the same 404. If it errors (say the
+  // migration isn't there), fall back to the plain lookup: same
+  // authorization, resize on demand.
+  let data: unknown = null;
+  let error: { message: string } | null = null;
+  if (wantsCard) {
+    ({ data, error } = await supabase.rpc("get_drive_card_for_proxy", {
+      p_media_id: parsedId.data,
+      p_width: cardWidth,
+    }));
+    if (error) {
+      console.error("get_drive_card_for_proxy failed; resizing instead", {
+        mediaId: parsedId.data,
+        error: error.message,
+      });
+    }
+  }
+  if (!wantsCard || error) {
+    ({ data, error } = await supabase.rpc("get_drive_media_for_proxy", {
+      p_media_id: parsedId.data,
+    }));
+  }
 
   if (error) {
     // A DB-level error here is an infrastructure problem, not proof the
@@ -113,7 +145,7 @@ export async function GET(
     return notFound();
   }
 
-  const rows = (data ?? []) as unknown as ProxyLookupRow[];
+  const rows = (data ?? []) as unknown as CardLookupRow[];
   const row = rows[0];
   // Zero rows: no such media, a supabase-backend row, or an unauthorized
   // google_drive row — all answered identically (Rule 12/13).
@@ -134,34 +166,62 @@ export async function GET(
     return notFound();
   }
 
-  let bytes: Buffer;
-  try {
-    const accessToken = await getAccessToken(row.owner_user_id);
-    bytes = await downloadFileBytes(accessToken, row.drive_processed_file_id);
-  } catch (err) {
-    console.error("Drive proxy fetch failed", {
-      mediaId: parsedId.data,
-      error: err instanceof Error ? err.message : err,
-    });
-    return driveFailure();
+  let bytes: Buffer | null = null;
+  let contentType = row.processed_mime_type;
+  let accessToken: string | null = null;
+
+  // The stored card size, when there is one: a small WebP made at upload
+  // from the stripped derivative. Anything wrong with it (Drive error, hash
+  // differs) falls through to the download-and-resize path below.
+  if (wantsCard && row.card_drive_file_id && row.card_sha256) {
+    try {
+      accessToken = await getAccessToken(row.owner_user_id);
+      const stored = await downloadFileBytes(
+        accessToken,
+        row.card_drive_file_id,
+      );
+      const hash = createHash("sha256").update(stored).digest("hex");
+      if (hash === row.card_sha256) {
+        bytes = stored;
+        contentType = "image/webp";
+      } else {
+        console.error("Stored card size hash mismatch; resizing instead", {
+          mediaId: parsedId.data,
+        });
+      }
+    } catch (err) {
+      console.error("Stored card size fetch failed; resizing instead", {
+        mediaId: parsedId.data,
+        error: err instanceof Error ? err.message : err,
+      });
+    }
   }
 
-  // The card size: same authorization and caching as the full photo, only
-  // smaller bytes. A download always gets the full photo.
-  let contentType = row.processed_mime_type;
-  if (
-    cardWidth !== null &&
-    request.nextUrl.searchParams.get("download") !== "1"
-  ) {
+  if (!bytes) {
     try {
-      bytes = await resizeForCard(bytes, cardWidth);
-      contentType = "image/webp";
+      accessToken ??= await getAccessToken(row.owner_user_id);
+      bytes = await downloadFileBytes(accessToken, row.drive_processed_file_id);
     } catch (err) {
-      console.error("Card photo resize failed", {
+      console.error("Drive proxy fetch failed", {
         mediaId: parsedId.data,
         error: err instanceof Error ? err.message : err,
       });
       return driveFailure();
+    }
+
+    // The card size, made on demand: same authorization and caching as the
+    // full photo, only smaller bytes. A download always gets the full photo.
+    if (wantsCard) {
+      try {
+        bytes = await resizeForCard(bytes, cardWidth);
+        contentType = "image/webp";
+      } catch (err) {
+        console.error("Card photo resize failed", {
+          mediaId: parsedId.data,
+          error: err instanceof Error ? err.message : err,
+        });
+        return driveFailure();
+      }
     }
   }
 
@@ -174,7 +234,6 @@ export async function GET(
   // ?download=1 (My Photos, section 7): the same bytes and the same
   // authorization, but saved as a file instead of shown -- and never put in
   // a shared cache, whatever the photo's status.
-  const isDownload = request.nextUrl.searchParams.get("download") === "1";
   const sharedCache = row.is_published && !isDownload;
   const cacheControl = sharedCache
     ? PUBLIC_MEDIA_CACHE_CONTROL

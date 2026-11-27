@@ -1,4 +1,5 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
@@ -20,11 +21,14 @@ import {
   MAX_HEIC_UPLOAD_BYTES,
 } from "@/lib/story/image-validation";
 import {
+  ensureCardSizesFolder,
   ensureFullQualityFolder,
   ensureStoryFolder,
   syncStoryFolder,
   extensionForMimeType,
 } from "@/lib/story/drive-folders";
+import { resizeForCard } from "@/lib/story/card-photo-resize";
+import { CARD_PHOTO_WIDTHS } from "@/lib/story/card-photo-size";
 import { isStaleVersionConflict } from "@/lib/story/mutation-queue";
 
 /**
@@ -535,6 +539,26 @@ async function processAndRecordDriveMedia(input: {
       });
     }
 
+    // Card sizes, from the PROCESSED (metadata-stripped) bytes only -- never
+    // rawBytes. Best effort, like the full copy: without them the proxy just
+    // resizes on demand, as before.
+    try {
+      await writeCardSizes({
+        supabase,
+        accessToken,
+        userId: user.id,
+        mediaId,
+        storyFolderId,
+        sourceDriveFileId: driveProcessedFileId,
+        processedBytes: processed.bytes,
+      });
+    } catch (err) {
+      console.error("Card sizes failed (the proxy will resize instead)", {
+        mediaId,
+        error: err instanceof Error ? err.message : err,
+      });
+    }
+
     if (stagingFileId) {
       await deleteFilePermanently(accessToken, stagingFileId, user.id).catch(
         (err) => {
@@ -605,5 +629,76 @@ async function writeFullQualityCopy(input: {
       },
     );
     throw new Error(`record_drive_media_full_copy failed: ${error.message}`);
+  }
+}
+
+/**
+ * The two stored card sizes of a just-uploaded Drive photo
+ * (docs/photo-card-sizes-plan.md, Option B): 640 and 1080 wide, 4:3 WebP,
+ * made by the same resizeForCard() the proxy uses for its on-demand
+ * fallback, from the already-stripped display derivative. Files go in the
+ * story folder's "Card sizes" subfolder as `<mediaId>-<width>.webp`. A size
+ * that fails is skipped (logged); a size whose recording fails has its Drive
+ * file deleted so nothing is left unaccounted for. Never throws for one
+ * size's failure, so one bad width cannot cost the other.
+ */
+async function writeCardSizes(input: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  accessToken: string;
+  userId: string;
+  mediaId: string;
+  storyFolderId: string;
+  sourceDriveFileId: string;
+  processedBytes: Buffer;
+}): Promise<void> {
+  const folderId = await ensureCardSizesFolder(
+    input.accessToken,
+    input.storyFolderId,
+    input.userId,
+  );
+  for (const width of CARD_PHOTO_WIDTHS) {
+    let fileId: string | null = null;
+    try {
+      const bytes = await resizeForCard(input.processedBytes, width);
+      fileId = await uploadDerivativeFile(
+        input.accessToken,
+        folderId,
+        `${input.mediaId}-${width}.webp`,
+        bytes,
+        "image/webp",
+        input.userId,
+      );
+      const { error } = await input.supabase.rpc("record_drive_card_size", {
+        p_media_id: input.mediaId,
+        p_width: width,
+        p_drive_file_id: fileId,
+        p_source_drive_file_id: input.sourceDriveFileId,
+        p_sha256: createHash("sha256").update(bytes).digest("hex"),
+        p_file_size_bytes: bytes.byteLength,
+      });
+      if (error) {
+        throw new Error(`record_drive_card_size failed: ${error.message}`);
+      }
+    } catch (err) {
+      console.error("Card size failed", {
+        mediaId: input.mediaId,
+        width,
+        error: err instanceof Error ? err.message : err,
+      });
+      if (fileId) {
+        const orphan = fileId;
+        await deleteFilePermanently(
+          input.accessToken,
+          orphan,
+          input.userId,
+        ).catch((deleteErr) => {
+          console.error("Failed to delete an unrecorded card size", {
+            mediaId: input.mediaId,
+            fileId: orphan,
+            error: deleteErr instanceof Error ? deleteErr.message : deleteErr,
+          });
+        });
+      }
+    }
   }
 }
