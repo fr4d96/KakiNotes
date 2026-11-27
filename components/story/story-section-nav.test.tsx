@@ -23,8 +23,8 @@ describe("StorySectionNav", () => {
       "aria-current",
       "location",
     );
-    fireEvent.click(screen.getByRole("link", { name: "More stories" }));
-    expect(screen.getByRole("link", { name: "More stories" })).toHaveAttribute(
+    fireEvent.click(screen.getByRole("link", { name: "Related" }));
+    expect(screen.getByRole("link", { name: "Related" })).toHaveAttribute(
       "aria-current",
       "location",
     );

@@ -9,7 +9,7 @@ export type StorySectionId =
 /**
  * The story page's section bar: Story · Photos · Costs · Sub stories ·
  * More stories, sticking under the header once the reader reaches it, with
- * the section they are in marked. Long stories with many sub stories run to
+ * the section they are in marked by a sliding thumb. Long stories with many sub stories run to
  * several phone screens; this keeps every part of the page one tap away
  * without hiding any of it behind tabs (the content stays one readable,
  * searchable, crawlable page).
@@ -31,7 +31,6 @@ export function StorySectionNav({ sections }: { sections: StorySectionId[] }) {
   const t = useTranslations("story.sections");
   const [active, setActive] = useState<StorySectionId>(sections[0]);
   const barRef = useRef<HTMLDivElement>(null);
-  const linkRefs = useRef(new Map<StorySectionId, HTMLAnchorElement>());
 
   useEffect(() => {
     let frame = 0;
@@ -68,50 +67,48 @@ export function StorySectionNav({ sections }: { sections: StorySectionId[] }) {
     };
   }, [sections]);
 
-  // Keep the current pill in view inside the (sideways-scrolling) bar.
-  // scrollTo on the bar itself, never scrollIntoView, which would also
-  // move the page.
-  useEffect(() => {
-    const bar = barRef.current;
-    const link = linkRefs.current.get(active);
-    if (!bar || !link) return;
-    const left = link.offsetLeft - 16;
-    const right = link.offsetLeft + link.offsetWidth + 16 - bar.clientWidth;
-    if (bar.scrollLeft > left) bar.scrollTo?.({ left, behavior: "smooth" });
-    else if (bar.scrollLeft < right)
-      bar.scrollTo?.({ left: right, behavior: "smooth" });
-  }, [active]);
-
   if (sections.length < 2) return null;
+
+  const index = Math.max(0, sections.indexOf(active));
 
   return (
     <nav
       aria-label={t("label")}
-      className="sticky top-[calc(76px+env(safe-area-inset-top))] z-30 -mx-4 mt-6 border-b border-border-subtle bg-background sm:-mx-6"
+      className="sticky top-[calc(76px+env(safe-area-inset-top))] z-30 -mx-4 mt-6 border-b border-border-subtle bg-background px-4 py-2 sm:-mx-6 sm:px-6"
     >
+      {/* Equal columns, like a segmented switch: every section fits the
+          screen at once (owner, 2026-11-27: no sideways swiping), and one
+          recess thumb slides to the section being read. */}
       <div
         ref={barRef}
-        className="nf-scroll-x flex gap-1 overflow-x-auto px-4 py-2 sm:px-6"
+        className="relative isolate grid rounded-full border border-border-subtle p-0.5"
+        style={{
+          gridTemplateColumns: `repeat(${sections.length}, minmax(0, 1fr))`,
+        }}
       >
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-0.5 left-0.5 -z-10 rounded-full bg-surface-muted transition-transform duration-300 ease-out motion-reduce:transition-none"
+          style={{
+            width: `calc((100% - 0.25rem) / ${sections.length})`,
+            transform: `translateX(${index * 100}%)`,
+          }}
+        />
         {sections.map((id) => {
           const current = id === active;
           return (
             <a
               key={id}
-              ref={(el) => {
-                if (el) linkRefs.current.set(id, el);
-                else linkRefs.current.delete(id);
-              }}
               href={`#${id}`}
               aria-current={current ? "location" : undefined}
               onClick={() => setActive(id)}
-              className={`press relative inline-flex min-h-9 shrink-0 items-center rounded-full px-3.5 text-sm font-semibold whitespace-nowrap transition-colors duration-200 after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] ${
+              className={`press relative flex min-h-9 min-w-0 items-center justify-center rounded-full px-1 text-sm leading-tight font-semibold transition-colors duration-200 after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] ${
                 current
-                  ? "bg-tag-background text-tag-foreground"
+                  ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t(LABEL_KEY[id])}
+              <span className="truncate">{t(LABEL_KEY[id])}</span>
             </a>
           );
         })}

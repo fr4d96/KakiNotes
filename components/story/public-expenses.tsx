@@ -94,7 +94,7 @@ export function PublicExpenses({
     <section
       id="costs"
       aria-labelledby="story-expenses-heading"
-      className="mt-10 scroll-mt-14 border-t border-border-subtle pt-6"
+      className="mt-10 scroll-mt-18 border-t border-border-subtle pt-6"
     >
       <h2
         id="story-expenses-heading"

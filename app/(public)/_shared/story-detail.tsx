@@ -84,6 +84,9 @@ function regionLabels(regions: unknown, locale: Locale): string[] {
     .filter((v): v is string => v !== null);
 }
 
+/** Tags shown before the "+N" pill; a single extra tag is just shown. */
+const TAGS_SHOWN = 5;
+
 function stringList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((v): v is string => typeof v === "string");
@@ -378,9 +381,14 @@ export async function StoryDetail({
   const glanceCostCents = ownCostCents ?? familyExpenses?.totalCents ?? null;
   const subStoryCount = subStoryCards.cards.length + unmatchedSubStories.length;
 
+  const tagLabels = Array.from(
+    new Set([...regions, ...stringList(story.tags)]),
+  );
+
   // The section bar lists only what this page actually has, in page order.
+  // No Photos tab: the photos sit directly under the bar, and the glance
+  // strip's photo count jumps there; four tabs fit a 375px screen whole.
   const sections: StorySectionId[] = [
-    ...(galleryMedia.length > 0 ? (["photos"] as const) : []),
     "story",
     ...(glanceCostCents != null ? (["costs"] as const) : []),
     ...(subStoryCount > 0 ? (["sub-stories"] as const) : []),
@@ -467,19 +475,42 @@ export async function StoryDetail({
         subStoryCount={subStoryCount}
       />
 
-      {/* Places and tags on one line that swipes on a phone, instead of
-          wrapping into a block of pills above the story. */}
-      {(regions.length > 0 || stringList(story.tags).length > 0) && (
-        <ul className="nf-scroll-x -mx-4 mt-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
-          {Array.from(new Set([...regions, ...stringList(story.tags)])).map(
-            (label) => (
-              <li
-                key={label}
-                className="shrink-0 rounded-full bg-tag-background px-2 py-0.5 text-xs whitespace-nowrap text-tag-foreground"
-              >
-                {label}
-              </li>
-            ),
+      {/* Places and tags wrap: none hides off-screen behind a swipe
+          (owner, 2026-11-27). Past TAGS_SHOWN, the rest wait behind a "+N"
+          pill -- a native <details>, so no script -- and appear in place,
+          in the same row, when it is opened. */}
+      {tagLabels.length > 0 && (
+        <ul className="group/tags mt-4 flex flex-wrap gap-1.5">
+          {tagLabels.map((label, i) => (
+            <li
+              key={label}
+              className={`rounded-full bg-tag-background px-2 py-0.5 text-xs text-tag-foreground ${
+                i >= TAGS_SHOWN && tagLabels.length > TAGS_SHOWN + 1
+                  ? "hidden group-has-[details[open]]/tags:block"
+                  : ""
+              }`}
+            >
+              {label}
+            </li>
+          ))}
+          {tagLabels.length > TAGS_SHOWN + 1 && (
+            <li className="order-last">
+              <details>
+                <summary
+                  aria-label={t("moreTagsLabel", {
+                    count: tagLabels.length - TAGS_SHOWN,
+                  })}
+                  className="press relative cursor-pointer list-none rounded-full border border-border-subtle px-2 py-0.5 text-xs font-semibold text-muted-foreground after:absolute after:-inset-2.5 after:content-[''] [&::-webkit-details-marker]:hidden"
+                >
+                  <span className="group-has-[details[open]]/tags:hidden">
+                    {t("moreTags", { count: tagLabels.length - TAGS_SHOWN })}
+                  </span>
+                  <span className="hidden group-has-[details[open]]/tags:inline">
+                    {t("fewerTags")}
+                  </span>
+                </summary>
+              </details>
+            </li>
           )}
         </ul>
       )}
@@ -492,13 +523,13 @@ export async function StoryDetail({
         <section
           id="photos"
           aria-label={tSections("photos")}
-          className="mt-6 scroll-mt-14"
+          className="mt-6 scroll-mt-18"
         >
           <StoryGallery images={galleryMedia} />
         </section>
       ) : null}
 
-      <div id="story" className="mt-8 scroll-mt-14">
+      <div id="story" className="mt-8 scroll-mt-18">
         {parsedContent ? (
           <ContentBlockRenderer blocks={parsedContent} media={contentMedia} />
         ) : (
@@ -550,7 +581,7 @@ export async function StoryDetail({
         <section
           id="related"
           aria-labelledby="related-heading"
-          className="mt-6 scroll-mt-14 border-t border-border-subtle pt-8"
+          className="mt-6 scroll-mt-18 border-t border-border-subtle pt-8"
         >
           <h2
             id="related-heading"

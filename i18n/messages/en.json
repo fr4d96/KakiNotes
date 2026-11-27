@@ -345,10 +345,10 @@
     "glance": {
       "tripRangeDays": "{range} · {count, plural, one {# day} other {# days}}",
       "minRead": "{count} min read",
-      "cost": "{amount} trip cost",
-      "photos": "{count, plural, one {# photo} other {# photos}}",
-      "subStories": "{count, plural, one {# sub story} other {# sub stories}}",
-      "jumpLabel": "Jump to"
+      "jumpLabel": "Jump to",
+      "costLabel": "trip cost",
+      "photosLabel": "{count, plural, one {photo} other {photos}}",
+      "subStoriesLabel": "{count, plural, one {sub story} other {sub stories}}"
     },
     "sections": {
       "label": "Story sections",
@@ -356,8 +356,11 @@
       "photos": "Photos",
       "costs": "Costs",
       "subStories": "Sub stories",
-      "related": "More stories"
-    }
+      "related": "Related"
+    },
+    "moreTags": "+{count}",
+    "fewerTags": "Less",
+    "moreTagsLabel": "{count, plural, one {Show # more tag} other {Show # more tags}}"
   },
   "expenses": {
     "donut": {

@@ -345,10 +345,10 @@
     "glance": {
       "tripRangeDays": "{range} · {count} 天",
       "minRead": "约 {count} 分钟读完",
-      "cost": "行程花费 {amount}",
-      "photos": "{count} 张照片",
-      "subStories": "{count} 篇子故事",
-      "jumpLabel": "跳转到"
+      "jumpLabel": "跳转到",
+      "costLabel": "行程花费",
+      "photosLabel": "{count, plural, other {张照片}}",
+      "subStoriesLabel": "{count, plural, other {篇子故事}}"
     },
     "sections": {
       "label": "故事目录",
@@ -356,8 +356,11 @@
       "photos": "照片",
       "costs": "花费",
       "subStories": "子故事",
-      "related": "更多故事"
-    }
+      "related": "相关"
+    },
+    "moreTags": "+{count}",
+    "fewerTags": "收起",
+    "moreTagsLabel": "{count, plural, other {显示另外 # 个标签}}"
   },
   "expenses": {
     "donut": {

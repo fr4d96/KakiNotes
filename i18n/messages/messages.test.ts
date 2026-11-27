@@ -22,8 +22,11 @@ function flatten(tree: Tree, prefix = ""): Map<string, string> {
  */
 function icuArguments(message: string): Set<string> {
   const names = new Set<string>();
+  // A brace that opens a plural branch body ("one {photo}") is not an
+  // argument: it comes right after a plural keyword, which itself follows
+  // the "," before the first branch or the "}" of the previous one.
   for (const match of message.matchAll(
-    /\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*[,}]/g,
+    /(?<![,}]\s*(?:zero|one|two|few|many|other|=\d+)\s*)\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*[,}]/g,
   )) {
     names.add(match[1]);
   }
@@ -73,6 +76,9 @@ describe("messages", () => {
       "footer.copyrightLine",
       // Two numerals and a slash ("3 / 5"); identical in both languages.
       "home.quiz.progress",
+      // A plus and a number ("+3", the folded-tags pill); its spoken label,
+      // story.moreTagsLabel, is translated.
+      "story.moreTags",
       // Example values for fields the schema restricts to lowercase ASCII
       // (usernameSchema, publicSlugSchema) -- a Chinese example would be
       // an example of something the field rejects.

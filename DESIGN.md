@@ -467,20 +467,24 @@ shape; the words share the page.
 One long page, never tabs: every part stays readable, searchable and crawlable, and is one tap away.
 
 - **Order:** breadcrumb, title, sub-title; byline with Share on the same row; the glance row; places
-  and tags on one swiping line; the section bar; photos (the carousel leads, photo-first); the story;
-  costs; sub stories; the not-advice label with Report; related stories.
+  and tags; the section bar; photos (the carousel leads, photo-first); the story; costs; sub stories;
+  the not-advice label with Report; related stories.
+- **Nothing above the story swipes sideways** (owner, 2026-11-27): every option is visible at once.
 - **Glance row:** plain facts as muted text with an icon (trip range with its day count, reading
-  time); facts that have a section of their own (trip cost, photos, sub stories) as surface pills
-  that jump there. A pill is only ever something you can press.
-- **Section bar:** sticks under the header, lists only the sections the page has, marks the current
-  one with the Kingfisher Wash pill (`aria-current="location"`); plain `#` links, so it works without
-  JavaScript. Sections carry `scroll-mt-14` to land clear of it.
+  time), then an info strip: equal columns between hairlines, value above (icon + amount or count),
+  label below, each cell a jump to its section (trip cost, photos, sub stories).
+- **Tags:** wrap. Past five, a "+N" outline pill (a native `<details>`) reveals the rest in place and
+  becomes "Less".
+- **Section bar:** sticks under the header; a segmented switch of equal columns (Story · Costs · Sub
+  stories · Related, only those present) whose recess thumb slides to the section being read
+  (`aria-current="location"`); plain `#` links, so it works without JavaScript. No Photos tab: the
+  photos sit right under it. Sections carry `scroll-mt-18` to land clear of it.
 - **Costs:** the total, the per-month line, one slim bar in the donut's own colours and the three
   biggest categories in words; the donut, its full legend and the per-story list wait behind a native
   `<details>` ("See full breakdown"). The not-advice disclaimer is never folded away.
 - **Rows:** sub stories (4:3 tiles, 144px) and related stories (small pins, 160px) swipe sideways on a
   phone under the Edge-Bleed Rule and become grids from `sm`. Cards inside a swiping row show one
-  cover, never their own photo swiper.
+  cover, never their own photo swiper. Both bounce on tap (`data-card-bounce`).
 
 ### Loading
 

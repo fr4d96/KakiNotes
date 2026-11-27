@@ -1,9 +1,9 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-// The story page's card lists: related stories swipe through their
-// published photos like every other story card, and a sub story -- however
-// it was found -- is never repeated under "Related stories". Data readers
+// The story page's lists: related stories are one-cover cards in a swiping
+// row, a sub story -- however it was found -- is never repeated under
+// "Related stories", and tags past five fold behind a "+N" pill. Data readers
 // are stubbed; heavy children that don't matter here render nothing.
 
 function storyRow(id: string, slug: string, title: string) {
@@ -24,7 +24,7 @@ function storyRow(id: string, slug: string, title: string) {
     cover_image_path: null,
     content_json: [],
     regions: [{ region_name: "Otago", destination_name: "Queenstown" }],
-    tags: [],
+    tags: [] as string[],
   };
 }
 
@@ -130,5 +130,24 @@ describe("Story page card lists", () => {
     expect(
       title.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  // 2026-11-27: nothing above the story swipes sideways. Tags wrap, and
+  // past five the rest wait behind a "+N" pill.
+  it("folds tags past five behind a +N pill", async () => {
+    main.tags = ["a", "b", "c", "d", "e", "f", "g"];
+    try {
+      render(await StoryDetail({ country: "new-zealand", slug: main.slug }));
+      const pill = screen.getByText("+3");
+      expect(pill.closest("summary")).toHaveAttribute(
+        "aria-label",
+        "Show 3 more tags",
+      );
+      // Region label + a..d shown; e, f, g hidden until it opens.
+      expect(screen.getByText("d").closest("li")).not.toHaveClass("hidden");
+      expect(screen.getByText("e").closest("li")).toHaveClass("hidden");
+    } finally {
+      main.tags = [];
+    }
   });
 });

@@ -12,12 +12,13 @@ import {
  * A story page's facts at a glance, right under the byline: when the trip
  * was and how long, the reported cost, how many photos and sub stories, and
  * how long it takes to read. Every fact that has a section of its own is a
- * pill that jumps there, so a reader who came for the money (the most
- * common question) is one tap from it instead of four screens.
+ * cell of an info strip that jumps there, so a reader who came for the
+ * money (the most common question) is one tap from it instead of four
+ * screens.
  *
- * Plain facts are text; only jumps are pills (the Pill Control Rule: a pill
- * is something you can press). On a phone the row scrolls sideways and
- * bleeds to the screen edges, so the cut-off pill is the swipe hint.
+ * The strip is equal columns between hairlines -- value above, label
+ * below, like an app store's info row -- so all of it fits a 375px screen
+ * at once (owner, 2026-11-27: no sideways swiping to find the options).
  *
  * Server Component: every value arrives already formatted.
  */
@@ -48,26 +49,36 @@ export function StoryGlance({
     ? t("minRead", { count: readingMinutes })
     : null;
 
-  const jumps: { href: string; icon: ReactNode; label: string }[] = [];
+  // Value above, label below: the strip reads like an app's info row, and
+  // every cell fits the screen, so nothing needs a sideways swipe.
+  const jumps: {
+    href: string;
+    icon: ReactNode;
+    value: string;
+    label: string;
+  }[] = [];
   if (cost) {
     jumps.push({
       href: "#costs",
       icon: <WalletIcon className="h-4 w-4" />,
-      label: t("cost", { amount: cost }),
+      value: cost,
+      label: t("costLabel"),
     });
   }
   if (photoCount > 0) {
     jumps.push({
       href: "#photos",
       icon: <GalleryIcon className="h-4 w-4" />,
-      label: t("photos", { count: photoCount }),
+      value: String(photoCount),
+      label: t("photosLabel", { count: photoCount }),
     });
   }
   if (subStoryCount > 0) {
     jumps.push({
       href: "#sub-stories",
       icon: <FolderIcon className="h-4 w-4" />,
-      label: t("subStories", { count: subStoryCount }),
+      value: String(subStoryCount),
+      label: t("subStoriesLabel", { count: subStoryCount }),
     });
   }
 
@@ -94,16 +105,24 @@ export function StoryGlance({
       {jumps.length > 0 && (
         <ul
           aria-label={t("jumpLabel")}
-          className="nf-scroll-x -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0"
+          className="mt-4 grid divide-x divide-border-subtle border-y border-border-subtle"
+          style={{
+            gridTemplateColumns: `repeat(${jumps.length}, minmax(0, 1fr))`,
+          }}
         >
           {jumps.map((jump) => (
-            <li key={jump.href} className="shrink-0">
+            <li key={jump.href} className="min-w-0">
               <a
                 href={jump.href}
-                className="press inline-flex min-h-10 items-center gap-1.5 rounded-full border border-border-subtle bg-surface px-3.5 text-sm font-semibold whitespace-nowrap shadow-xs relative after:absolute after:-inset-y-0.5 after:inset-x-0 after:content-['']"
+                className="press flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 py-2 text-center"
               >
-                <span className="text-accent">{jump.icon}</span>
-                {jump.label}
+                <span className="flex max-w-full items-center gap-1.5 text-base font-semibold tabular-nums text-foreground">
+                  <span className="shrink-0 text-accent">{jump.icon}</span>
+                  <span className="truncate">{jump.value}</span>
+                </span>{" "}
+                <span className="text-xs text-muted-foreground">
+                  {jump.label}
+                </span>
               </a>
             </li>
           ))}

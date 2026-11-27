@@ -79,7 +79,7 @@ export function SubStoryList({
   return (
     <section
       id="sub-stories"
-      className="mt-10 scroll-mt-14"
+      className="mt-10 scroll-mt-18"
       aria-labelledby="sub-stories-heading"
     >
       <h2
