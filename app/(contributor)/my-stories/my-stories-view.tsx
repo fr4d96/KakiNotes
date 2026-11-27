@@ -346,9 +346,25 @@ function storyStatusFlags(story: MyStoryWithCover) {
  */
 function UpdateChip({ inReview }: { inReview: boolean }) {
   const t = useTranslations("myStories");
+  // "Update in review" is the one SOLID pill on the row. In plain grey it
+  // was lost beside the Published badge, and a contributor who had just
+  // submitted an edit read the row as "published, not under review". A
+  // colour alone can't fix that: every status tint here derives from the
+  // reader's one accent (--fern and --tag-* are both --accent), so Published
+  // and a tinted chip come out the same blue. Filled vs tinted is the
+  // difference that survives any accent. An update still being written stays
+  // quiet grey: nothing is waiting on anyone yet.
+  if (inReview) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-foreground">
+        <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
+        {t("updateInReview")}
+      </span>
+    );
+  }
   return (
     <span className="inline-flex items-center rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-bold text-foreground/65">
-      {inReview ? t("updateInReview") : t("updateInProgress")}
+      {t("updateInProgress")}
     </span>
   );
 }

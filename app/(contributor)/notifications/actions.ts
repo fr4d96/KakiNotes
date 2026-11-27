@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getErrorMessage } from "@/lib/errors";
+import { listMyNotificationsPage } from "@/lib/notifications/queries";
+import type { NotificationsPage } from "@/lib/notifications/notification-view";
+import { notificationsCursorSchema } from "@/lib/validation/notifications";
 
 export type MarkReadState = {
   error?: string;
@@ -15,6 +18,12 @@ export type MarkReadState = {
    * from the initial state.
    */
   markedAt?: string;
+  /**
+   * The ids that last successful action marked; empty means "all of mine".
+   * The list uses it to update rows from older pages, which the
+   * revalidated first page does not carry.
+   */
+  markedIds?: string[];
 };
 
 /**
@@ -54,5 +63,34 @@ export async function markNotificationsReadAction(
   }
 
   revalidatePath("/notifications");
-  return { markedAt: new Date().toISOString() };
+  return { markedAt: new Date().toISOString(), markedIds: ids };
+}
+
+export type LoadMoreResult = NotificationsPage | { error: string };
+
+/**
+ * The next page of the caller's inbox, after `cursor`. Called from the
+ * "See more" button rather than a form: it appends to client state, and
+ * a form round-trip would re-render page one instead.
+ *
+ * The cursor is untrusted input (Engineering Rule 2), so it is parsed
+ * here, but it grants nothing: list_my_notifications_page() filters on
+ * auth.uid() before the cursor narrows anything, so a forged cursor can
+ * only select the caller's own rows. Parsing is about refusing garbage
+ * cleanly, not about authorization.
+ */
+export async function loadMoreNotificationsAction(
+  cursor: unknown,
+): Promise<LoadMoreResult> {
+  const parsed = notificationsCursorSchema.safeParse(cursor);
+  if (!parsed.success) return { error: "Could not load more notifications." };
+  const user = await getCurrentUser();
+  if (!user) return { error: "You must be signed in." };
+  try {
+    return await listMyNotificationsPage(parsed.data);
+  } catch (error) {
+    return {
+      error: getErrorMessage(error, "Could not load more notifications."),
+    };
+  }
 }

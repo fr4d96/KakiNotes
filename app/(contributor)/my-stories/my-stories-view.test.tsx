@@ -1044,7 +1044,12 @@ describe("MyStoriesView", () => {
     // so an unscoped getByText matches twice.
     const row = screen.getByRole("listitem");
     expect(within(row).getByText("Published")).toBeInTheDocument();
-    expect(screen.getByText("Update in review")).toBeInTheDocument();
+    // Solid accent, not grey: next to the Published badge a grey chip read
+    // as "not under review".
+    expect(screen.getByText("Update in review")).toHaveClass(
+      "bg-accent",
+      "text-accent-foreground",
+    );
     // A plain Edit link/button would save straight into a frozen revision, so
     // neither is offered...
     expect(

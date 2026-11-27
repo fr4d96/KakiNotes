@@ -3,6 +3,7 @@ import {
   describeNotification,
   formatNotificationAge,
   formatUnreadBadge,
+  mergeNotificationRows,
   type NotificationRow,
 } from "./notification-view";
 
@@ -100,5 +101,43 @@ describe("formatUnreadBadge", () => {
     expect(formatUnreadBadge(9)).toBe("9");
     expect(formatUnreadBadge(10)).toBe("9+");
     expect(formatUnreadBadge(250)).toBe("9+");
+  });
+});
+
+describe("mergeNotificationRows", () => {
+  const base: NotificationRow = {
+    id: "00000000-0000-4000-8000-000000000001",
+    kind: "story_published",
+    story_id: "s",
+    revision_id: "r",
+    story_title: "T",
+    story_slug: "t",
+    reason: null,
+    read_at: null,
+    created_at: "2026-09-12T10:00:00+00:00",
+  };
+  const at = (id: string, created_at: string, read_at: string | null = null) =>
+    ({ ...base, id, created_at, read_at }) as NotificationRow;
+
+  it("orders newest first, breaking created_at ties by id descending like the RPC", () => {
+    const tie = "2026-09-12T10:00:00+00:00";
+    const merged = mergeNotificationRows(
+      [at("00000000-0000-4000-8000-00000000000a", tie)],
+      [
+        at("00000000-0000-4000-8000-00000000000f", tie),
+        at("00000000-0000-4000-8000-000000000003", "2026-09-12T11:00:00Z"),
+      ],
+    );
+    expect(merged.map((r) => r.id.slice(-1))).toEqual(["3", "f", "a"]);
+  });
+
+  it("keeps one copy per id, preferring the fresh one", () => {
+    const id = "00000000-0000-4000-8000-000000000002";
+    const merged = mergeNotificationRows(
+      [at(id, "2026-09-12T10:00:00+00:00", "2026-09-12T12:00:00+00:00")],
+      [at(id, "2026-09-12T10:00:00+00:00", null)],
+    );
+    expect(merged).toHaveLength(1);
+    expect(merged[0].read_at).toBe("2026-09-12T12:00:00+00:00");
   });
 });

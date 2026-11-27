@@ -12435,3 +12435,45 @@ production holds no such stories today, but the guard checks one project while t
 another. Pointing the suite at production needs a confirm string stating that project is "a
 disposable dev project", which is not true, so it was not done. Until a separate test project or
 branch exists, these fixes rest on the local Postgres runs and the read-only live checks.
+
+## 2026-11-26 — Notifications page loads 20 at a time from the server, with "See more"
+
+`/notifications` used to render the newest 50 rows at once, and nothing older was reachable anywhere
+(`list_my_notifications()` clamps to 50 and takes no cursor). It now shows 20, and "See more" fetches
+the next 20 from the server until the inbox runs out.
+
+**Migration `20261126100000_list_my_notifications_page.sql` (applied to the live project 2026-11-26 via `supabase db push`; types regenerated).**
+Adds `list_my_notifications_page(p_limit, p_cursor_created_at, p_cursor_id)`: the same SECURITY
+DEFINER, `auth.uid()`-keyed read as `list_my_notifications()`, plus a `(created_at, id)` keyset cursor
+(both halves or neither). Additive: `list_my_notifications(integer)` is untouched because the header
+bell and the deployed release still call it. It also replaces `notifications_recipient_created_idx`
+with `(recipient_user_id, created_at desc, id desc)` so the cursor comparison and sort come off the
+index, ties included. `types/database.ts` must be regenerated (`npm run supabase:types:linked`) after
+it is applied; until then `typecheck` fails on the new RPC name.
+
+**Verified on local Postgres 18** (full migration chain, stubbed auth/storage): paging 45 rows (with
+tied `created_at`s) 20 at a time gives 20/20/5 and exactly the full list in order, no duplicates; a
+half cursor returns nothing; the limit clamps; another user's cursor returns only the caller's own
+rows; `authenticated` still cannot read the table directly; `anon` cannot execute the function; the old
+function still works; the planner uses the new index.
+
+**App side.**
+
+- `lib/notifications/queries.ts`: `listMyNotificationsPage(cursor)` asks for 21 rows to learn whether
+  another page exists; `countMyUnreadNotifications()` feeds the summary, so "N unread" and "Mark all
+  as read" cover the whole inbox, not just loaded rows.
+- `loadMoreNotificationsAction(cursor)` parses the cursor with Zod (`z.iso.datetime({ offset: true })`,
+  `lib/validation/notifications.ts`). The cursor grants nothing: the RPC filters on `auth.uid()` first.
+- `NotificationsList` keeps loaded rows in state. A mark-read revalidates the page; the new page one
+  is merged in by id (`mergeNotificationRows`), so older pages stay, and a row a newer notification
+  pushed off page one is not lost. Mark-read results also update rows on older pages, which the new
+  page one does not carry.
+- Each load is announced through a polite `role="status"` region ("Loaded 20 more notifications").
+  The button uses `aria-disabled` while loading so it keeps focus. When the last load removes it,
+  focus moves to the first new row's link. A failed load shows an alert and keeps the button.
+- i18n: `unreadCount`, `noneUnread`, `seeMore`, `loadingMore`, `loadedMore`, `loadMoreFailed` replace
+  `unreadOf` / `allRead` in `en.json` and `zh-CN.json`. The "Showing your 50 most recent" footer is gone.
+- The header bell keeps its own 20-row dropdown on the old function, unchanged.
+
+**Verified live.** Read-only checks after the push: both functions execute for `authenticated` only, the new index replaced the old one. In the iPhone 17 frame, a moderator inbox of 139 rows paged 20 at a time to the end (previously only the newest 50 were reachable). `npm run verify` passes.
+`/notifications` in the iPhone 17 frame.

@@ -134,3 +134,44 @@ export function formatUnreadBadge(count: number): string | null {
   if (count <= 0) return null;
   return count > 9 ? "9+" : String(count);
 }
+
+/**
+ * A position in the caller's inbox: the (created_at, id) of the last row
+ * already shown. list_my_notifications_page() returns the rows after it.
+ * `createdAt` is Postgres's own string ("...+00:00"), passed back verbatim.
+ */
+export type NotificationsCursor = { createdAt: string; id: string };
+
+export type NotificationsPage = {
+  rows: NotificationRow[];
+  /** null when this page reached the end of the inbox. */
+  nextCursor: NotificationsCursor | null;
+};
+
+/**
+ * The inbox order the RPC uses: created_at desc, then id desc. Postgres
+ * compares uuids bytewise, which is the same order as comparing their
+ * lowercase hex strings, so a string compare matches it exactly.
+ */
+function compareNewestFirst(a: NotificationRow, b: NotificationRow): number {
+  const byTime = Date.parse(b.created_at) - Date.parse(a.created_at);
+  if (byTime !== 0) return byTime;
+  return a.id < b.id ? 1 : a.id > b.id ? -1 : 0;
+}
+
+/**
+ * Union of two row lists by id, newest first. Where both have a row, the
+ * `fresh` copy wins (its read_at is the newer truth). Used when the page
+ * re-renders with a new first page while older pages are already loaded:
+ * a row pushed off page one by a newer notification is still kept from
+ * `kept`, so nothing between the pages goes missing.
+ */
+export function mergeNotificationRows(
+  fresh: NotificationRow[],
+  kept: NotificationRow[],
+): NotificationRow[] {
+  const byId = new Map<string, NotificationRow>();
+  for (const row of kept) byId.set(row.id, row);
+  for (const row of fresh) byId.set(row.id, row);
+  return [...byId.values()].sort(compareNewestFirst);
+}

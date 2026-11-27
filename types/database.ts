@@ -2831,6 +2831,24 @@ export type Database = {
           story_title: string;
         }[];
       };
+      list_my_notifications_page: {
+        Args: {
+          p_cursor_created_at?: string;
+          p_cursor_id?: string;
+          p_limit?: number;
+        };
+        Returns: {
+          created_at: string;
+          id: string;
+          kind: Database["public"]["Enums"]["notification_kind"];
+          read_at: string;
+          reason: string;
+          revision_id: string;
+          story_id: string;
+          story_slug: string;
+          story_title: string;
+        }[];
+      };
       list_my_photos: {
         Args: never;
         Returns: {

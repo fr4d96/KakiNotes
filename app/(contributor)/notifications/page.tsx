@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import {
-  listMyNotifications,
-  NOTIFICATIONS_PAGE_LIMIT,
+  countMyUnreadNotifications,
+  listMyNotificationsPage,
 } from "@/lib/notifications/queries";
 import { NotificationsList } from "./notifications-list";
 
@@ -12,8 +12,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function NotificationsPage() {
-  const [notifications, t] = await Promise.all([
-    listMyNotifications(),
+  const [initialPage, unreadCount, t] = await Promise.all([
+    listMyNotificationsPage(),
+    countMyUnreadNotifications(),
     getTranslations("notifications"),
   ]);
 
@@ -33,16 +34,11 @@ export default async function NotificationsPage() {
           boundary.
         */}
         <NotificationsList
-          notifications={notifications}
+          initialPage={initialPage}
+          unreadCount={unreadCount}
           now={new Date().toISOString()}
         />
       </div>
-
-      {notifications.length === NOTIFICATIONS_PAGE_LIMIT && (
-        <p className="mt-8 text-center text-xs text-muted-foreground">
-          Showing your {NOTIFICATIONS_PAGE_LIMIT} most recent notifications.
-        </p>
-      )}
     </div>
   );
 }
