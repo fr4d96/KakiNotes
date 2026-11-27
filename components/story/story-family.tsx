@@ -120,8 +120,12 @@ function SubStoryCard({
   const tImages = useTranslations("editor.images");
   return (
     // Boxless, like a story pin: the photo carries the shape and the title
-    // sits on the page ground underneath.
-    <article className="press press-hover-only group relative flex flex-col">
+    // sits on the page ground underneath. data-card-bounce: the same soft
+    // spring on tap as a story card (components/click-pulse.tsx).
+    <article
+      data-card-bounce
+      className="press press-hover-only group relative flex flex-col"
+    >
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-surface-muted shadow-sm transition-shadow group-hover:shadow-md">
         {coverUrl ? (
           <ResolvingImage

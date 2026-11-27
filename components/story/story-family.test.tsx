@@ -106,6 +106,15 @@ describe("SubStoryList", () => {
     expect(container.querySelectorAll("li")).toHaveLength(2);
   });
 
+  it("bounces on tap like a story card", () => {
+    const { container } = render(
+      <SubStoryList cards={[card]} subStories={[]} />,
+    );
+    expect(container.querySelector("article")).toHaveAttribute(
+      "data-card-bounce",
+    );
+  });
+
   it("renders titles as text, not markup", () => {
     render(<SubStoryList subStories={[{ slug: "x", title: "<b>bold</b>" }]} />);
     expect(
