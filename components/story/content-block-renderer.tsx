@@ -58,8 +58,8 @@ function MediaEmbed({
     ? { width: `${width}px`, maxWidth: "100%" }
     : undefined;
   const frameClassName = width
-    ? "my-4 inline-block h-auto rounded-md border border-border-subtle object-contain"
-    : "my-4 block max-h-[32rem] w-full rounded-md border border-border-subtle object-contain";
+    ? "my-4 inline-block h-auto rounded-xl border border-border-subtle object-contain"
+    : "my-4 block max-h-[32rem] w-full rounded-xl border border-border-subtle object-contain";
 
   if (resolved === "loading") {
     return (
@@ -97,12 +97,12 @@ function MediaEmbed({
         loading="lazy"
         alt={alt}
         loadingLabel={t("loading")}
-        wrapperClassName="relative block rounded-md"
+        wrapperClassName="relative block rounded-xl"
         reserveClassName="aspect-video"
         className={
           width
-            ? "h-auto w-full rounded-md border border-border-subtle object-contain"
-            : "block max-h-[32rem] w-full rounded-md border border-border-subtle object-contain"
+            ? "h-auto w-full rounded-xl border border-border-subtle object-contain"
+            : "block max-h-[32rem] w-full rounded-xl border border-border-subtle object-contain"
         }
       />
     </LightboxPhoto>

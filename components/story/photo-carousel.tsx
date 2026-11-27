@@ -119,10 +119,10 @@ export function PhotoCarousel({ photos }: { photos: CarouselPhoto[] }) {
     <section
       aria-roledescription="carousel"
       aria-label={t("carouselLabel")}
-      className="group -mx-4 sm:mx-0"
+      className="group"
     >
       <div
-        className="relative overflow-hidden bg-surface-muted sm:rounded-lg"
+        className="relative overflow-hidden rounded-2xl bg-surface-muted"
         style={{ aspectRatio: String(ratio) }}
       >
         {/* overflow-y-hidden is load-bearing: overflow-x:auto alone computes
@@ -238,7 +238,7 @@ export function PhotoCarousel({ photos }: { photos: CarouselPhoto[] }) {
       )}
 
       {anyCaption && (
-        <p className="mt-2 min-h-4 px-4 text-xs text-muted-foreground sm:px-0">
+        <p className="mt-2 min-h-4 px-1 text-xs text-muted-foreground">
           {caption}
         </p>
       )}
