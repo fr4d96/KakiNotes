@@ -3,6 +3,23 @@
 ## [4.10.1](https://github.com/fr4d96/KakiNotes/compare/v4.10.0...v4.10.1) (2026-11-28)
 
 
+### A shorter story page, and the total cost of a whole trip
+
+#### For readers
+
+- **See what a whole trip cost.** A main story with sub-stories now has a "This story | Total Trip Cost" switch above its cost breakdown. "This story" shows that story's own costs, as before. "Total Trip Cost" adds up the main story and all its published sub-stories, merges their categories, and lists which stories the total comes from. Costs in a different currency from the main story are left out of the total, and the page says how many were left out.
+- **Much less scrolling on a phone.** The story page has been reorganised so the photos come first. The writer's name and the Share button sit on one line. Below them, a short info strip shows the trip dates and number of days, reading time, and quick jumps to the costs, photos and sub-stories. Costs open with the total, a slim bar and the top three categories, with the full chart behind "See full breakdown". One long road-trip story went from about 3,660 to 2,650 pixels tall.
+- **A bar that follows you down the page.** A bar stays at the top as you scroll (Story, Costs, Sub stories, Related) and shows which part you're reading. Tap a part to jump to it.
+- **Nothing at the top of a story slides sideways any more.** Places and tags wrap onto new lines. If there are more than five, a "+N" button shows the rest.
+- **Taps feel like taps.** Story cards, and the sub-story tiles at the end of a main story, now do a small bounce when you tap them.
+- **Rounded story photos.** On phones, story photos used to run edge to edge with square corners. They now sit inside the page with rounded corners, and so do photos inside the story text.
+
+This applies to New Zealand, China and Malaysia stories, which share the same page.
+
+#### Behind the scenes
+
+- The job that made the small card copies of photos now renews its Google Drive access when it runs longer than an hour. All 858 existing photos have their copies.
+
 ### Features
 
 * **cards:** story cards bounce softly when tapped ([89f3e57](https://github.com/fr4d96/KakiNotes/commit/89f3e5726754374be3c925c2237f1bd82a225401))
