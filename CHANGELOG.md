@@ -3,6 +3,17 @@
 ## [4.10.2](https://github.com/fr4d96/KakiNotes/compare/v4.10.1...v4.10.2) (2026-11-28)
 
 
+### KakiNotes now runs from its own home server, with tighter sign-in protection
+
+#### For readers
+
+- **The site is back.** notes.kakihub.my went offline when its free hosting plan ran out of computing time. It now runs on a small server of its own, connected through Cloudflare, so it no longer has a monthly computing limit to hit. Nothing looks different.
+
+#### For contributors
+
+- **Sign-in protection works properly again.** Kakinotes limits how many times anyone can try to sign in from the same internet connection. On the new hosting, that limit could be dodged by someone faking where their requests came from. It now always uses the real address that Cloudflare reports. The limit per email address was never affected.
+
+
 ### Bug Fixes
 
 * **security:** read the reader's IP from cf-connecting-ip behind Cloudflare ([d1f37aa](https://github.com/fr4d96/KakiNotes/commit/d1f37aad1051ea06d84d73df83360c143996068b))
