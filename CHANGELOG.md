@@ -3,6 +3,21 @@
 ## [4.12.0](https://github.com/fr4d96/KakiNotes/compare/v4.11.1...v4.12.0) (2026-11-28)
 
 
+### Bug Lists: see every reported bug, and hand one to Claude to fix
+
+#### For the site owner
+
+- **A Bug Lists button.** It sits right under Report a bug, on your Profile page and on Settings. Tap it and enter the Bug Lists password to see every reported bug, newest first.
+- **Fixed or not, at a glance.** Each bug shows a Fixed or Not fixed badge, its exact status, when it was reported, the page it was on, and what the person wrote.
+- **Fix with Claude.** Every bug that isn't fixed has a Fix with Claude button. It opens Claude Code with the bug already written up as a task for the KakiNotes code. Nothing starts until you read it and press send.
+- **Just for looking.** The list can't change anything. To mark a bug as fixed, use the Bug reports page in the admin area.
+
+#### For everyone else
+
+- **Your reports stay anonymous here.** Bug Lists never shows who sent a report or what phone or browser they used, even to someone with the password. It shows only what was written, which page it was on, and when.
+- **Guessing is blocked.** After too many wrong passwords, from one connection or in total, Bug Lists stops answering for 15 minutes.
+
+
 ### Features
 
 * **bugs:** password-protected Bug Lists with a Fix with Claude link ([9df905d](https://github.com/fr4d96/KakiNotes/commit/9df905d29637f42c4122605fd0be8c96244a731f))
