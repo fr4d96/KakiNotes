@@ -3,6 +3,20 @@
 ## [4.11.0](https://github.com/fr4d96/KakiNotes/compare/v4.10.2...v4.11.0) (2026-11-28)
 
 
+### Tell us when something breaks: a new "Report a bug" button
+
+#### For readers and contributors
+
+- **Report a bug in a few taps.** Open Settings (the Profile tab on a phone) and tap **Report a bug** under Help. The home page footer has the same link. Describe what went wrong, and press Send report. You don't need an account.
+- **We know where it happened.** The report includes the page you were on and your browser type, so you don't have to explain them. Only the page address is kept, never the rest of the link, so private links and sign-in codes are never saved. Please don't type passwords or personal details into the report.
+- **Sensible limits.** A report needs at least 10 characters and can be up to 2,000. To keep out spam, one person can send up to 10 reports an hour if signed in, or 5 an hour from one internet connection if not.
+
+#### For the site admin
+
+- **A list of every report.** Admins have a new **Bug reports** page (Profile → Staff → Bug reports on a phone, or Bugs in the admin header). It lists reports newest first. You can filter by Open, Triaged, Fixed or Won't fix, and change a report's status. Changing the status is only a label: nothing gets fixed automatically.
+- **Private by design.** Only admins can read reports. Editors, moderators and readers can't, and nobody can change what a report says.
+
+
 ### Features
 
 * **bugs:** Report a bug dialog and admin-only bug list ([9d96d93](https://github.com/fr4d96/KakiNotes/commit/9d96d93ceebabc4c7006a6e408def5adb0bb9480))
