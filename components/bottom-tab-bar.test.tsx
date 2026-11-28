@@ -635,6 +635,43 @@ describe("BottomTabBar", () => {
       "page",
     );
   });
+
+  // Bug report ca5d596e (2026-11-28): Home -> Stories tab -> a story -> back,
+  // back to Home left Stories lit. The tap was remembered against "/", the
+  // page it was made on, so landing on "/" again by going back re-lit it.
+  it("lights Home, not a tab tapped earlier, after going back to Home", () => {
+    const { rerender } = render(<BottomTabBar />);
+    fireEvent.click(screen.getByRole("link", { name: "Stories" }));
+
+    for (const path of ["/stories", "/stories/some-story", "/stories", "/"]) {
+      usePathnameMock.mockReturnValue(path);
+      rerender(<BottomTabBar />);
+    }
+
+    const home = screen.getByRole("link", { name: "Home" });
+    const stories = screen.getByRole("link", { name: "Stories" });
+    expect(home).toHaveAttribute("aria-current", "page");
+    expect(home.className).toContain("text-accent");
+    expect(stories.className).not.toContain("text-accent");
+    expect(screen.getByTestId("tab-indicator").style.transform).toBe(
+      "translateX(0%)",
+    );
+  });
+
+  it("drops the tapped highlight even when going straight back", () => {
+    const { rerender } = render(<BottomTabBar />);
+    fireEvent.click(screen.getByRole("link", { name: "Stories" }));
+    for (const path of ["/stories/some-story", "/"]) {
+      usePathnameMock.mockReturnValue(path);
+      rerender(<BottomTabBar />);
+    }
+    expect(
+      screen.getByRole("link", { name: "Stories" }).className,
+    ).not.toContain("text-accent");
+    expect(screen.getByRole("link", { name: "Home" }).className).toContain(
+      "text-accent",
+    );
+  });
 });
 
 describe("a moderator's bar", () => {

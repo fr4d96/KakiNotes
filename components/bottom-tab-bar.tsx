@@ -127,11 +127,21 @@ function ReaderTabBar({
   );
   // The tab just tapped, lit at once (bubble and colour) while its page
   // loads, the way a native tab bar answers the touch before the screen
-  // changes. Remembered with the path it was tapped on, so it simply stops
-  // counting once the navigation lands (or is abandoned for another path).
+  // changes. Remembered with the path it was tapped on, and forgotten the
+  // moment the path changes -- the navigation landed (or was abandoned for
+  // another path). Comparing paths alone wasn't enough: going back to the
+  // page the tap was made on re-lit the old tab (bug report ca5d596e, Home ->
+  // Stories tab -> story -> back, back left Stories lit on Home).
   const [tapped, setTapped] = useState<{ root: string; from: string } | null>(
     null,
   );
+  const [tapPath, setTapPath] = useState(pathname);
+  if (tapPath !== pathname) {
+    // React's "adjust state when a prop changes" pattern: no effect, so the
+    // stale tab is never painted even for one frame.
+    setTapPath(pathname);
+    if (tapped) setTapped(null);
+  }
   const pendingRoot = tapped && tapped.from === pathname ? tapped.root : null;
   // Remembered location per tab root. Empty on the server and first client
   // render (so hydration matches), then read from sessionStorage.
