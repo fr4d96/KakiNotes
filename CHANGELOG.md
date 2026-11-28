@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.12.0](https://github.com/fr4d96/KakiNotes/compare/v4.11.1...v4.12.0) (2026-11-28)
+
+
+### Features
+
+* **bugs:** password-protected Bug Lists with a Fix with Claude link ([9df905d](https://github.com/fr4d96/KakiNotes/commit/9df905d29637f42c4122605fd0be8c96244a731f))
+
 ## [4.11.1](https://github.com/fr4d96/KakiNotes/compare/v4.11.0...v4.11.1) (2026-11-28)
 
 
