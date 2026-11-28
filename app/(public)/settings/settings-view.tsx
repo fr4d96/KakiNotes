@@ -8,6 +8,7 @@ import { setLocaleAction } from "@/lib/i18n/set-locale-action";
 import { AvatarSetting } from "./avatar-setting";
 import { CountrySetting } from "./country-setting";
 import { ProfileLinks, ProfileSignOut } from "@/components/profile-links";
+import { BugReportButton } from "@/components/bug-report/bug-report-dialog";
 import {
   ACCENT_PRESETS,
   DEFAULT_ACCENT_ID,
@@ -121,6 +122,19 @@ export function SettingsView({ locale }: { locale: Locale }) {
           labelledBy={languageId}
           className="mt-2 overflow-hidden rounded-2xl bg-surface shadow-sm"
         />
+      </section>
+
+      {/* ---- Help: report a bug (everyone, signed in or not) ---- */}
+      <section aria-labelledby="settings-help" className="mt-8">
+        <h2
+          id="settings-help"
+          className="px-1 text-sm font-bold text-muted-foreground"
+        >
+          {t("help")}
+        </h2>
+        <div className="mt-2 overflow-hidden rounded-2xl bg-surface shadow-sm">
+          <BugReportButton variant="row" />
+        </div>
       </section>
 
       <div className="mt-8">

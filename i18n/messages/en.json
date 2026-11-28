@@ -235,6 +235,11 @@
       "authorNameTooLong": "A name can be up to {max} characters.",
       "labelTooLong": "A link name can be up to {max} characters.",
       "tokenInvalid": "That link isn't valid."
+    },
+    "bugReport": {
+      "descriptionRequired": "Please describe the bug.",
+      "descriptionTooShort": "Please add a little more detail (at least {min} characters).",
+      "descriptionTooLong": "Please keep it to {max} characters or fewer."
     }
   },
   "stories": {
@@ -1840,6 +1845,26 @@
     "avatarChange": "Change",
     "avatarDone": "Done",
     "country": "Country",
-    "countryHelp": "Whose stories you read, and where new stories you start belong."
+    "countryHelp": "Whose stories you read, and where new stories you start belong.",
+    "help": "Help"
+  },
+  "bugReport": {
+    "trigger": "Report a bug",
+    "title": "Report a bug",
+    "intro": "Tell us what went wrong. We read every report, but can't reply to each one.",
+    "descriptionLabel": "What happened?",
+    "descriptionHint": "What you were doing, what you expected, and what happened instead.",
+    "characterCount": "{count} of {max} characters",
+    "contextNote": "We'll also attach the page you were on and your browser type. Please don't include passwords or personal details.",
+    "submit": "Send report",
+    "sending": "Sending…",
+    "cancel": "Cancel",
+    "close": "Close",
+    "thanksTitle": "Thanks, report sent",
+    "thanksBody": "We'll look into it.",
+    "errors": {
+      "sendFailed": "We couldn't send your report. Please try again in a little while.",
+      "rateLimited": "You've sent several reports recently. Try again in about {minutes, plural, one {# minute} other {# minutes}}."
+    }
   }
 }

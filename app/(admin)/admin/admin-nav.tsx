@@ -17,6 +17,9 @@ import {
 const adminNav: StaffNavLink[] = [
   { href: "/admin", label: "Overview", icon: "overview" },
   { href: "/admin/users", label: "Users", icon: "users" },
+  // Header only: the phone tab bar is full, and on a phone the list is
+  // reached from the Profile screen's staff links (lib/auth/staff-menu.ts).
+  { href: "/admin/bugs", label: "Bugs", icon: "reports", headerOnly: true },
   { href: "/moderation", label: "Moderation", icon: "stories" },
   { href: "/editorial", label: "Editorial", icon: "editorial" },
   { href: "/readiness", label: "Readiness", icon: "readiness" },

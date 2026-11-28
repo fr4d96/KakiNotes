@@ -18,6 +18,9 @@ import {
   AFFIRMATION_WINDOW_SECONDS,
   AFFIRMATION_IP_LIMIT,
   AFFIRMATION_TOKEN_LIMIT,
+  BUG_REPORT_WINDOW_SECONDS,
+  BUG_REPORT_IP_LIMIT,
+  BUG_REPORT_USER_LIMIT,
 } from "@/lib/rate-limit-config";
 
 // Re-exported so every existing `from "@/lib/rate-limit"` import keeps
@@ -39,6 +42,9 @@ export {
   AFFIRMATION_WINDOW_SECONDS,
   AFFIRMATION_IP_LIMIT,
   AFFIRMATION_TOKEN_LIMIT,
+  BUG_REPORT_WINDOW_SECONDS,
+  BUG_REPORT_IP_LIMIT,
+  BUG_REPORT_USER_LIMIT,
 };
 
 /**
@@ -141,7 +147,9 @@ type Bucket =
   | "pdf_preview_user"
   | "pdf_attach_user"
   | "affirmation_ip"
-  | "affirmation_token";
+  | "affirmation_token"
+  | "bug_report_ip"
+  | "bug_report_user";
 
 async function checkBucket(
   scope: Bucket,
@@ -535,6 +543,75 @@ export async function recordAffirmationAttempt(token: string): Promise<void> {
       ...(ip ? [record("affirmation_ip", hashKey("affirmation_ip", ip))] : []),
       record("affirmation_token", hashKey("affirmation_token", token)),
     ]);
+  } catch {
+    // Fail open, same as every other counter here.
+  }
+}
+
+/**
+ * Bug-report limits (the Report a bug dialog).
+ *
+ * ONE bucket per submission, chosen by who is asking:
+ *
+ * - signed in: keyed on the session user id (never a client value, Rule 2),
+ *   10 / hour -- unspoofable and free of the shared-NAT problem;
+ * - signed out: keyed on the IP, 5 / hour. With no known IP (local
+ *   development) there is no app-side bucket; submit_bug_report()'s overall
+ *   cap on signed-out reports still applies in the database.
+ *
+ * Counts every submission. Fails open like every other limiter here.
+ */
+function bugReportBucket(
+  userId: string | null,
+  ip: string | null,
+): { scope: Bucket; keyHash: string; limit: number } | null {
+  if (userId) {
+    return {
+      scope: "bug_report_user",
+      keyHash: hashKey("bug_report_user", userId),
+      limit: BUG_REPORT_USER_LIMIT,
+    };
+  }
+  if (ip) {
+    return {
+      scope: "bug_report_ip",
+      keyHash: hashKey("bug_report_ip", ip),
+      limit: BUG_REPORT_IP_LIMIT,
+    };
+  }
+  return null;
+}
+
+/** `userId` must come from the session, never the request. */
+export async function checkBugReportRateLimit(
+  userId: string | null,
+): Promise<RateLimitVerdict> {
+  try {
+    const bucket = bugReportBucket(userId, await clientIp());
+    if (!bucket) return ALLOWED;
+    return await checkBucket(
+      bucket.scope,
+      bucket.keyHash,
+      bucket.limit,
+      BUG_REPORT_WINDOW_SECONDS,
+    );
+  } catch {
+    return ALLOWED;
+  }
+}
+
+export async function recordBugReportAttempt(
+  userId: string | null,
+): Promise<void> {
+  try {
+    const bucket = bugReportBucket(userId, await clientIp());
+    if (!bucket) return;
+    const supabase = await createClient();
+    await supabase.rpc("record_rate_limit_attempt", {
+      p_scope: bucket.scope,
+      p_key_hash: bucket.keyHash,
+      p_window_seconds: BUG_REPORT_WINDOW_SECONDS,
+    });
   } catch {
     // Fail open, same as every other counter here.
   }

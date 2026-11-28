@@ -235,6 +235,11 @@
       "authorNameTooLong": "名字最多 {max} 个字符。",
       "labelTooLong": "链接名称最多 {max} 个字符。",
       "tokenInvalid": "这个链接无效。"
+    },
+    "bugReport": {
+      "descriptionRequired": "请描述遇到的问题。",
+      "descriptionTooShort": "请再多写一些细节（至少 {min} 个字符）。",
+      "descriptionTooLong": "请控制在 {max} 个字符以内。"
     }
   },
   "stories": {
@@ -1840,6 +1845,26 @@
     "avatarChange": "更换",
     "avatarDone": "完成",
     "country": "国家",
-    "countryHelp": "决定你阅读哪个国家的故事，以及新故事属于哪里。"
+    "countryHelp": "决定你阅读哪个国家的故事，以及新故事属于哪里。",
+    "help": "帮助"
+  },
+  "bugReport": {
+    "trigger": "报告问题",
+    "title": "报告问题",
+    "intro": "告诉我们哪里出了问题。我们会阅读每一份报告，但无法逐一回复。",
+    "descriptionLabel": "发生了什么？",
+    "descriptionHint": "你当时在做什么、预期是什么、实际发生了什么。",
+    "characterCount": "{count} / {max} 个字符",
+    "contextNote": "我们还会附上你所在的页面和浏览器类型。请勿填写密码或个人信息。",
+    "submit": "发送报告",
+    "sending": "正在发送…",
+    "cancel": "取消",
+    "close": "关闭",
+    "thanksTitle": "谢谢，报告已发送",
+    "thanksBody": "我们会尽快查看。",
+    "errors": {
+      "sendFailed": "报告发送失败，请稍后再试。",
+      "rateLimited": "你最近已发送多份报告。请在约 {minutes, plural, other {# 分钟}} 后再试。"
+    }
   }
 }

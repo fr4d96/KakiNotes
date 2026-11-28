@@ -50,3 +50,12 @@ export const PDF_ATTACH_LIMIT = 20;
 export const AFFIRMATION_WINDOW_SECONDS = 60 * 60;
 export const AFFIRMATION_IP_LIMIT = 10;
 export const AFFIRMATION_TOKEN_LIMIT = 30;
+
+/**
+ * Bug reports (the Report a bug dialog): counts every submission. Signed in,
+ * keyed on the session user id; signed out, on the IP. submit_bug_report()
+ * repeats a looser cap in the database for direct RPC calls.
+ */
+export const BUG_REPORT_WINDOW_SECONDS = 60 * 60;
+export const BUG_REPORT_IP_LIMIT = 5;
+export const BUG_REPORT_USER_LIMIT = 10;

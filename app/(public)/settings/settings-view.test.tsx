@@ -57,6 +57,12 @@ import {
 } from "@/lib/auth/viewer-identity";
 import { SettingsView } from "./settings-view";
 
+// The Report a bug dialog's Server Action pulls in server-only modules;
+// these tests only render its trigger.
+vi.mock("@/lib/bug-reports/submit-action", () => ({
+  submitBugReportAction: vi.fn(),
+}));
+
 const html = document.documentElement;
 
 // This test environment provides no localStorage, so stub a minimal

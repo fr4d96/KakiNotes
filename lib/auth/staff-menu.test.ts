@@ -48,6 +48,7 @@ describe("staffMenuItemsForRole", () => {
     expect(hrefs("admin")).toEqual([
       "/admin",
       "/admin/users",
+      "/admin/bugs",
       "/moderation",
       "/editorial",
       "/readiness",

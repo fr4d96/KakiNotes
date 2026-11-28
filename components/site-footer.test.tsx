@@ -2,6 +2,12 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SiteFooter } from "./site-footer";
 
+// The Report a bug dialog's Server Action pulls in server-only modules;
+// these tests only render its trigger.
+vi.mock("@/lib/bug-reports/submit-action", () => ({
+  submitBugReportAction: vi.fn(),
+}));
+
 const { usePathnameMock } = vi.hoisted(() => ({
   usePathnameMock: vi.fn(() => "/"),
 }));

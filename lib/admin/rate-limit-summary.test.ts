@@ -56,6 +56,8 @@ describe("rateLimitRows", () => {
     ).toEqual([
       "affirmation-ip",
       "affirmation-token",
+      "bug-report-ip",
+      "bug-report-user",
       "pdf-attach",
       "pdf-preview",
       "reset-email",
@@ -86,6 +88,8 @@ describe("rateLimitRows", () => {
       "pdf-attach",
       "affirmation-ip",
       "affirmation-token",
+      "bug-report-ip",
+      "bug-report-user",
     ]) {
       expect(byKey[key].counts).toBe("every request");
     }

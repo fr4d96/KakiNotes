@@ -34,6 +34,7 @@ const STAFF_MENUS: Record<AppRole, StaffMenuItem[]> = {
   admin: [
     { href: "/admin", label: "Admin overview" },
     { href: "/admin/users", label: "Users" },
+    { href: "/admin/bugs", label: "Bug reports" },
     { href: "/moderation", label: "Moderation" },
     { href: "/editorial", label: "Editorial" },
     READINESS,

@@ -2,7 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { noteInAppNavigation } from "@/lib/navigation/in-app-history";
+import {
+  noteInAppNavigation,
+  notePathname,
+} from "@/lib/navigation/in-app-history";
 
 /**
  * Counts in-app page changes for lib/navigation/in-app-history.ts. Lives in
@@ -13,7 +16,8 @@ export function InAppHistory() {
   const pathname = usePathname();
   const first = useRef(pathname);
   useEffect(() => {
-    if (pathname !== first.current) noteInAppNavigation();
+    if (pathname !== first.current) noteInAppNavigation(pathname);
+    else if (pathname) notePathname(pathname);
   }, [pathname]);
   return null;
 }

@@ -14,6 +14,9 @@ import {
   AFFIRMATION_IP_LIMIT,
   AFFIRMATION_TOKEN_LIMIT,
   AFFIRMATION_WINDOW_SECONDS,
+  BUG_REPORT_IP_LIMIT,
+  BUG_REPORT_USER_LIMIT,
+  BUG_REPORT_WINDOW_SECONDS,
 } from "@/lib/rate-limit-config";
 
 /**
@@ -137,6 +140,24 @@ export function rateLimitRows(): RateLimitRow[] {
       counts: "every request",
       limit: AFFIRMATION_TOKEN_LIMIT,
       windowMinutes: minutes(AFFIRMATION_WINDOW_SECONDS),
+      whenExceeded: TELLS_YOU,
+    },
+    {
+      key: "bug-report-ip",
+      surface: "Report a bug",
+      scope: "per IP address (signed out)",
+      counts: "every request",
+      limit: BUG_REPORT_IP_LIMIT,
+      windowMinutes: minutes(BUG_REPORT_WINDOW_SECONDS),
+      whenExceeded: TELLS_YOU,
+    },
+    {
+      key: "bug-report-user",
+      surface: "Report a bug",
+      scope: "per signed-in person",
+      counts: "every request",
+      limit: BUG_REPORT_USER_LIMIT,
+      windowMinutes: minutes(BUG_REPORT_WINDOW_SECONDS),
       whenExceeded: TELLS_YOU,
     },
   ];

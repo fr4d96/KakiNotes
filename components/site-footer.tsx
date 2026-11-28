@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { BrandLogo } from "@/components/brand-logo";
+import { BugReportButton } from "@/components/bug-report/bug-report-dialog";
 import {
   countryFromPathname,
   countryMessageSegment,
@@ -130,6 +131,7 @@ export function SiteFooter() {
                 <Link href="/copyright" className={footerLink}>
                   {t("copyrightRemoval")}
                 </Link>
+                <BugReportButton variant="link" />
               </div>
             </div>
           </div>
