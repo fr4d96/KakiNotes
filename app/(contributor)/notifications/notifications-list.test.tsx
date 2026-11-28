@@ -346,8 +346,10 @@ describe("NotificationsList", () => {
         "Couldn't load more notifications. Try again.",
       );
       expect(shownTitles()).toHaveLength(20);
+      // The alert can commit while the transition is still pending (the
+      // button still reads "Loading…"), so wait for the label to come back.
       expect(
-        screen.getByRole("button", { name: "See more" }),
+        await screen.findByRole("button", { name: "See more" }),
       ).toBeInTheDocument();
     });
 
