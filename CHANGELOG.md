@@ -3,6 +3,14 @@
 ## [4.11.1](https://github.com/fr4d96/KakiNotes/compare/v4.11.0...v4.11.1) (2026-11-28)
 
 
+### "Report a bug" is now easy to find when you're signed in
+
+#### For contributors
+
+- **The Report a bug button is now on your Profile page.** In 4.11.0 the button was only on the Settings page. When you're signed in, the Profile tab on a phone opens your own page instead, so contributors couldn't find it. It's now there too, under **Help**, just above Sign out. This applies to everyone with an account, including editors, moderators and admins.
+- **Reports still note the page you were on.** If you open Report a bug from your Profile page, the report records the page you came from, not the Profile page itself.
+
+
 ### Bug Fixes
 
 * **bugs:** show Report a bug on the signed-in You page ([363f8df](https://github.com/fr4d96/KakiNotes/commit/363f8df2137ff3acd6487393e1912d1d390fe866))
