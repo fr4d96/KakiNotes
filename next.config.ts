@@ -59,6 +59,34 @@ const nextConfig: NextConfig = {
       ];
     },
   }),
+  // The offline screen's service worker (public/sw.js) and its page must
+  // never be held in a cache -- not by the browser, not by Cloudflare (which
+  // caches .js by default) -- or a fix to either would take days to reach
+  // phones. no-cache still lets the browser revalidate cheaply.
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+      {
+        source: "/offline.html",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+          { key: "X-Robots-Tag", value: "noindex" },
+        ],
+      },
+    ];
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: SERVER_ACTION_BODY_SIZE_LIMIT,

@@ -3330,7 +3330,29 @@ App Store build, Capacitor or any native code. Files:
     once React has hydrated (at least 400ms after launch). CSS shows it only under
     `@media (display-mode: standalone)` — never in a browser tab — and a 10s CSS fail-safe hides it
     even if no script runs. The root layout never re-renders on navigation, so it shows on launch
-    only. No service worker, nothing cached.
+    only. Nothing cached (the offline screen below caches only its own page).
+- **Offline screen (2026-11-28).** When a page can't load — the phone has no internet, or the host
+  Mac / Cloudflare Tunnel is down (Cloudflare answers 502 or 530/1033) — the reader sees a "Kakinotes
+  is offline" screen with a **Refresh** button instead of the browser's or Cloudflare's error page.
+  This reverses the earlier "no service worker at all" decision, narrowly:
+  - `public/sw.js` — the only service worker. It stores **one** file, `public/offline.html`, in the
+    cache `kakinotes-offline-<VERSION>`, and answers only GET page loads (`mode: "navigate"`): on a
+    network error or a 502–504 / 520–530 it returns the stored page; everything else (200, 404, the
+    app's own 500, redirects) passes through untouched. Data requests, `/media`, images, uploads and
+    POSTs are never intercepted, and nothing is ever written to a cache after install — so no draft,
+    private or revoked content can linger on a device (Engineering Rules 12–14). Uses navigation
+    preload, so it adds no delay to page loads. **Bump `VERSION` when `sw.js` or `offline.html`
+    changes**; the new worker deletes older `kakinotes-*` caches.
+  - `public/offline.html` — fully self-contained (inline CSS, script, and the app icon as an inline
+    WebP — a separate icon request would fail offline). Follows the saved/system theme
+    (`journiq-theme`) and the `NEXT_LOCALE` cookie (English / Chinese). **Refresh** reloads the
+    address-bar URL, which is still the page the reader asked for; it also retries by itself on the
+    browser's `online` event.
+  - `components/service-worker-register.tsx` — in the root layout; registers `/sw.js` after `load`.
+  - `next.config.ts` `headers()` — `/sw.js` and `/offline.html` are `no-cache, no-store` so neither
+    the browser nor Cloudflare holds an old copy (Cloudflare caches `.js` by default).
+  - A phone only has the offline page after it has opened the site once with this version live.
+  - Tests: `lib/pwa/service-worker.test.ts` runs the real `sw.js` in a fake worker scope.
 - **Pull to refresh (2026-10-30).** `components/pull-to-refresh.tsx`, inside the root layout's
   `NextIntlClientProvider` (it has translated text — outside it the whole page crashes). Home-screen
   app only (`display-mode: standalone` / `navigator.standalone`; Safari tabs have their own). At

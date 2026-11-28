@@ -14,6 +14,7 @@ import { themeInitScript } from "@/lib/theme-init-script";
 import { InAppHistory } from "@/components/in-app-history";
 import { NoPinchZoom } from "@/components/no-pinch-zoom";
 import { PullToRefresh } from "@/components/pull-to-refresh";
+import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import "./globals.css";
 
 // The app's typeface is Figtree (2026-11-17 redesign): a warm, rounded,
@@ -47,7 +48,8 @@ export async function generateMetadata(): Promise<Metadata> {
     robots: { index: true, follow: true },
     // Home-screen launch on iOS: full-screen (no Safari chrome) and the
     // name shown under the icon. See "Installable web app (PWA)" in
-    // docs/architecture.md; there is deliberately no service worker.
+    // docs/architecture.md. The only service worker is the offline screen
+    // (public/sw.js), which caches no pages or content.
     appleWebApp: {
       capable: true,
       title: "Kakinotes",
@@ -125,6 +127,8 @@ export default async function RootLayout({
         <InAppHistory />
         {/* Home-screen app only: no pinch-zooming the whole page. */}
         <NoPinchZoom />
+        {/* Offline screen when the site can't be reached (public/sw.js). */}
+        <ServiceWorkerRegister />
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-black focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-blue-600"

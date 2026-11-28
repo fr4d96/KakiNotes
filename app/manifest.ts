@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
 
 // Installable web app (PWA) manifest -- see "Installable web app (PWA)" in
-// docs/architecture.md. Deliberately NO service worker anywhere in this app:
-// caching pages or images offline could keep serving draft/private/unapproved
-// content after access is revoked (Engineering Rules 12-13). iOS installs a
-// manifest-only site to the home screen without one.
+// docs/architecture.md. The one service worker (public/sw.js, 2026-11-28)
+// only shows an offline screen when the site can't be reached; it never
+// caches pages or images, because that could keep serving draft/private/
+// unapproved content after access is revoked (Engineering Rules 12-13).
 //
 // Colours are the light rendition's --background (app/globals.css, DESIGN.md
 // `light-background`); the dark rendition is covered by the `themeColor` media

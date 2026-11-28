@@ -1,0 +1,339 @@
+<!doctype html>
+<!--
+  The offline screen. public/sw.js keeps this one file on
+  the phone and shows it in place of a page that cannot load: no internet,
+  or the host Mac / Cloudflare Tunnel is down (Cloudflare's 502/530 pages).
+  It is fully self-contained -- inline CSS, script and icon, no fonts, no other
+  requests -- because nothing else is reachable when it is on screen.
+  It holds no story content, by design (Engineering Rules 12-14).
+  See "Offline screen" in docs/architecture.md.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#f2f0ec" />
+    <title>Kakinotes is offline</title>
+    <script>
+      // Same theme rule as lib/theme-init-script.ts: saved choice, else system.
+      (function () {
+        var theme = "light";
+        try {
+          var saved = localStorage.getItem("journiq-theme");
+          theme =
+            saved === "dark" || saved === "light"
+              ? saved
+              : matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+        } catch (e) {}
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+    <style>
+      :root {
+        --background: #f2f0ec;
+        --foreground: #24201c;
+        --muted: #675f57;
+        --card: #fbfaf8;
+        --accent: #0068a3;
+        --accent-foreground: #ffffff;
+        --badge: #fbfaf8;
+        --shadow: rgba(36, 32, 28, 0.13);
+        color-scheme: light;
+      }
+      [data-theme="dark"] {
+        --background: #1c1a18;
+        --foreground: #ece7e0;
+        --muted: #aaa297;
+        --card: #262320;
+        --accent: #3fb6f2;
+        --accent-foreground: #1c1a18;
+        --badge: #302d29;
+        --shadow: rgba(0, 0, 0, 0.35);
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        background: var(--background);
+        color: var(--foreground);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: max(24px, env(safe-area-inset-top))
+          max(24px, env(safe-area-inset-right))
+          max(24px, env(safe-area-inset-bottom))
+          max(24px, env(safe-area-inset-left));
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        width: 100%;
+        max-width: 360px;
+        text-align: center;
+      }
+      .art {
+        position: relative;
+        width: 168px;
+        height: 168px;
+        margin: 0 auto 28px;
+      }
+      .tile {
+        width: 132px;
+        height: 132px;
+        margin: 18px auto 0;
+        border-radius: 24px;
+        background: var(--card);
+        box-shadow: 0 12px 32px var(--shadow);
+        overflow: hidden;
+        animation: float 4s ease-in-out infinite;
+      }
+      .tile img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        opacity: 0.88;
+        filter: saturate(0.75);
+      }
+      .badge {
+        position: absolute;
+        right: 6px;
+        bottom: 2px;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: var(--badge);
+        color: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 14px var(--shadow);
+      }
+      .zzz {
+        position: absolute;
+        top: 0;
+        right: 0;
+        font-weight: 700;
+        color: var(--muted);
+        letter-spacing: 0.02em;
+      }
+      .zzz span {
+        position: absolute;
+        opacity: 0;
+        animation: drift 3.6s ease-in-out infinite;
+      }
+      .zzz span:nth-child(1) {
+        right: 18px;
+        top: 22px;
+        font-size: 0.75rem;
+      }
+      .zzz span:nth-child(2) {
+        right: 6px;
+        top: 6px;
+        font-size: 0.875rem;
+        animation-delay: 1.2s;
+      }
+      .zzz span:nth-child(3) {
+        right: -10px;
+        top: -12px;
+        font-size: 1.125rem;
+        animation-delay: 2.4s;
+      }
+      h1 {
+        font-size: 1.5rem;
+        line-height: 1.25;
+        margin: 0 0 10px;
+        font-weight: 700;
+      }
+      p {
+        font-size: 1rem;
+        line-height: 1.55;
+        color: var(--muted);
+        margin: 0 0 28px;
+      }
+      button {
+        appearance: none;
+        border: 0;
+        width: 100%;
+        min-height: 52px;
+        border-radius: 9999px;
+        background: var(--accent);
+        color: var(--accent-foreground);
+        font: inherit;
+        font-size: 1.125rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition:
+          transform 0.12s ease,
+          opacity 0.12s ease;
+      }
+      button:active {
+        transform: scale(0.97);
+      }
+      button:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 3px;
+      }
+      button[aria-busy="true"] {
+        opacity: 0.75;
+      }
+      button[aria-busy="true"] svg {
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0) rotate(-2deg);
+        }
+        50% {
+          transform: translateY(-6px) rotate(2deg);
+        }
+      }
+      @keyframes drift {
+        0% {
+          opacity: 0;
+          transform: translate(0, 6px);
+        }
+        30% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+          transform: translate(6px, -10px);
+        }
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .tile,
+        .zzz span,
+        button[aria-busy="true"] svg {
+          animation: none;
+        }
+        .zzz span {
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="art" aria-hidden="true">
+        <div class="zzz"><span>z</span><span>z</span><span>z</span></div>
+        <div class="tile">
+          <!-- public/icons/icon-192.png as an inline WebP: a separate request
+               would fail while offline (sw.js answers page loads only). -->
+          <img
+            src="data:image/webp;base64,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"
+            alt=""
+            width="132"
+            height="132"
+          />
+        </div>
+        <div class="badge">
+          <!-- "Wi-Fi off": three arcs and a slash. -->
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M2 2l20 20" />
+            <path d="M8.5 16.5a5 5 0 0 1 7 0" />
+            <path d="M5 12.86a10 10 0 0 1 5.17-2.69" />
+            <path d="M19 12.86a10 10 0 0 0-2.37-1.63" />
+            <path d="M2 8.82a15 15 0 0 1 4.18-2.65" />
+            <path d="M22 8.82a15 15 0 0 0-11.29-3.76" />
+            <path d="M12 20h.01" />
+          </svg>
+        </div>
+      </div>
+
+      <h1 id="title">Kakinotes is offline</h1>
+      <p id="body">
+        We can't reach Kakinotes right now. Check your internet connection, or
+        try again in a little while.
+      </p>
+      <button id="retry" type="button">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+          <path d="M21 3v6h-6" />
+        </svg>
+        <span id="retry-label">Refresh</span>
+      </button>
+    </main>
+
+    <script>
+      (function () {
+        // Language: the same NEXT_LOCALE cookie the app sets (i18n/locales.ts).
+        var copy = {
+          zh: {
+            lang: "zh-CN",
+            title: "Kakinotes 暂时连不上",
+            body: "现在无法连接到 Kakinotes。请检查网络连接，或稍后再试。",
+            retry: "刷新",
+          },
+        };
+        var match = /(?:^|;\s*)NEXT_LOCALE=([^;]*)/.exec(document.cookie);
+        var t = match && match[1].indexOf("zh") === 0 ? copy.zh : null;
+        if (t) {
+          document.documentElement.lang = t.lang;
+          document.title = t.title;
+          document.getElementById("title").textContent = t.title;
+          document.getElementById("body").textContent = t.body;
+          document.getElementById("retry-label").textContent = t.retry;
+        }
+
+        // The address bar still holds the page the reader asked for (the
+        // service worker answered that request with this file), so a plain
+        // reload asks for the real page again.
+        var button = document.getElementById("retry");
+        function retry() {
+          button.setAttribute("aria-busy", "true");
+          button.disabled = true;
+          setTimeout(function () {
+            location.reload();
+          }, 250);
+        }
+        button.addEventListener("click", retry);
+        // Coming back online (e.g. Wi-Fi reconnects) retries by itself.
+        window.addEventListener("online", retry);
+      })();
+    </script>
+  </body>
+</html>
