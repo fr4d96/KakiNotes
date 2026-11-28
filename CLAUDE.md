@@ -119,9 +119,14 @@ A task is not complete until all of the following hold:
   It needs two repository secrets pointing at the **development** Supabase project:
   `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Never add the
   service-role key to CI.
-- `release` is the production branch. Vercel deploys it; `.github/workflows/release.yml`
-  (release-please) turns Conventional Commits into a version bump, `CHANGELOG.md`, git tag and
-  GitHub Release. Details: [docs/architecture.md](docs/architecture.md#ci-and-releases).
+- `release` is the production branch. Since 2026-11-28 it is served from Fred's Mac (`next start`
+  on 127.0.0.1:3200, reached only through a Cloudflare Tunnel for notes.kakihub.my), not Vercel.
+  A push to `release` does not deploy by itself: Fred presses Update in the "KakiNotes Switch" app,
+  which builds the new version beside the live one and switches only if it starts. Production sets
+  `TRUSTED_CLIENT_IP_HEADER=cf-connecting-ip`. Never let Cloudflare cache `/media`.
+  `.github/workflows/release.yml` (release-please) turns Conventional Commits into a version bump,
+  `CHANGELOG.md`, git tag and GitHub Release. Details:
+  [docs/architecture.md](docs/architecture.md#ci-and-releases).
 
 <!-- BEGIN:nextjs-agent-rules -->
 

@@ -316,7 +316,10 @@ cheaper, not newly possible. Mitigated by short self-healing windows and by chec
 first, so one source burns its own allowance after 25 failures and cannot go on burning others'.
 (2) The IP is read from `x-real-ip` / `x-forwarded-for`, which are only as trustworthy as the proxy
 in front; an origin reachable directly would let a caller mint a fresh bucket per request. The
-per-identifier bucket does not depend on them.
+per-identifier bucket does not depend on them. Since 2026-11-28 production sits behind a Cloudflare
+Tunnel, whose `x-forwarded-for` can start with a caller-chosen value; `TRUSTED_CLIENT_IP_HEADER=
+cf-connecting-ip` makes the limits read Cloudflare's own `cf-connecting-ip` first. Set it only where
+Cloudflare is the sole way in (the origin listens on 127.0.0.1).
 
 ### Password reset (added same day)
 

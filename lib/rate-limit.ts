@@ -94,11 +94,18 @@ function normalizeIdentifier(raw: string): string {
 /**
  * The client address, as reported by whatever proxy sits in front.
  *
- * These headers are only as trustworthy as that proxy: on Vercel they are
- * set by the platform, but an origin reachable directly would let a caller
- * spoof them and mint a fresh IP bucket per request. The per-identifier
- * bucket does not depend on them and still applies, which is why an unknown
- * address skips the IP check rather than failing the sign-in.
+ * These headers are only as trustworthy as that proxy: an origin reachable
+ * directly would let a caller spoof them and mint a fresh IP bucket per
+ * request. The per-identifier bucket does not depend on them and still
+ * applies, which is why an unknown address skips the IP check rather than
+ * failing the sign-in.
+ *
+ * TRUSTED_CLIENT_IP_HEADER names a header to read first. Production is
+ * reached only through a Cloudflare Tunnel (docs/architecture.md), where
+ * Cloudflare sets "cf-connecting-ip" to the reader's own address and
+ * overwrites any value a caller sent, while x-forwarded-for can carry a
+ * caller-supplied first entry. Only set it when Cloudflare really is the sole
+ * way in, or the header is just another spoofable input.
  *
  * Returns null in local development, where neither header is set. Bucketing
  * every developer under a shared "unknown" key would throttle a machine
@@ -107,6 +114,11 @@ function normalizeIdentifier(raw: string): string {
 async function clientIp(): Promise<string | null> {
   try {
     const headerList = await headers();
+    const trustedHeader = process.env.TRUSTED_CLIENT_IP_HEADER?.trim();
+    if (trustedHeader) {
+      const trusted = headerList.get(trustedHeader.toLowerCase())?.trim();
+      if (trusted) return trusted;
+    }
     const realIp = headerList.get("x-real-ip")?.trim();
     if (realIp) return realIp;
 

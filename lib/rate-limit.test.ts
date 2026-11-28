@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // server-only's package code throws unconditionally outside Next's own
 // bundler, so it has to be stubbed to import the module here at all -- same
@@ -152,6 +152,51 @@ describe("checkSignInRateLimit", () => {
 
     await checkSignInRateLimit("a@b.com");
     expect(mockRpc.mock.calls[0][1]).toMatchObject({ p_scope: "ip" });
+  });
+
+  describe("TRUSTED_CLIENT_IP_HEADER", () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    async function ipKeyHashFor(entries: Record<string, string>) {
+      mockRpc.mockReset();
+      mockRpc.mockResolvedValue(allow);
+      mockHeaders.mockResolvedValue(headerMap(entries));
+      await checkSignInRateLimit("a@b.com");
+      const ipCall = mockRpc.mock.calls.find(
+        (call) => call[1].p_scope === "ip",
+      );
+      return ipCall?.[1].p_key_hash as string | undefined;
+    }
+
+    it("reads the named header before x-real-ip", async () => {
+      vi.stubEnv("TRUSTED_CLIENT_IP_HEADER", "CF-Connecting-IP");
+      const viaCloudflare = await ipKeyHashFor({
+        "cf-connecting-ip": "198.51.100.20",
+        "x-real-ip": "172.64.0.1",
+      });
+      const direct = await ipKeyHashFor({ "x-real-ip": "198.51.100.20" });
+      expect(viaCloudflare).toBeDefined();
+      expect(viaCloudflare).toBe(direct);
+    });
+
+    it("ignores that header when the variable is not set", async () => {
+      const spoofed = await ipKeyHashFor({
+        "cf-connecting-ip": "198.51.100.20",
+        "x-real-ip": "172.64.0.1",
+      });
+      const proxy = await ipKeyHashFor({ "x-real-ip": "172.64.0.1" });
+      expect(spoofed).toBe(proxy);
+    });
+
+    it("falls back to x-real-ip when the named header is missing", async () => {
+      vi.stubEnv("TRUSTED_CLIENT_IP_HEADER", "cf-connecting-ip");
+      const missing = await ipKeyHashFor({ "x-real-ip": "203.0.113.50" });
+      vi.unstubAllEnvs();
+      const plain = await ipKeyHashFor({ "x-real-ip": "203.0.113.50" });
+      expect(missing).toBe(plain);
+    });
   });
 
   it("fails OPEN when the call throws", async () => {
