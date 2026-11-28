@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.11.1](https://github.com/fr4d96/KakiNotes/compare/v4.11.0...v4.11.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* **bugs:** show Report a bug on the signed-in You page ([363f8df](https://github.com/fr4d96/KakiNotes/commit/363f8df2137ff3acd6487393e1912d1d390fe866))
+
 ## [4.11.0](https://github.com/fr4d96/KakiNotes/compare/v4.10.2...v4.11.0) (2026-11-28)
 
 
