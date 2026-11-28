@@ -852,6 +852,13 @@
     "clear": "CLEAR",
     "noMatchesBefore": "No stories match those filters.",
     "clearFilters": "Clear filters",
+    "search": {
+      "label": "Search your stories",
+      "placeholder": "Search by title, summary, place or tag",
+      "clear": "Clear search",
+      "clearAll": "Clear search and filters",
+      "noMatches": "No stories match “{query}”."
+    },
     "filters": {
       "region": "Region",
       "destination": "Destination",

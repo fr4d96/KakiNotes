@@ -1507,3 +1507,171 @@ describe("MyStoriesView", () => {
     expect(order()[0]).toBe("Zebra farm");
   });
 });
+
+describe("MyStoriesView keyword search", () => {
+  function published(id: string, overrides: StoryOverrides = {}) {
+    return makeStory({
+      id,
+      lifecycle_status: "published",
+      published_revision_id: "55555555-5555-4555-8555-555555555555",
+      current_draft_revision_id: null,
+      draftRevisionStatus: null,
+      coverMediaId: null,
+      mediaIds: [],
+      ...overrides,
+    });
+  }
+  const apples = published("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1", {
+    title: "Picking apples in Hawke's Bay",
+    excerpt: "Six weeks on an orchard.",
+    regions: [{ region_name: "Hawke's Bay", destination_name: "Hastings" }],
+  });
+  const bungy = published("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2", {
+    title: "Bungy day",
+    excerpt: "The Kawarau bridge, finally.",
+    regions: [{ region_name: "Otago", destination_name: "Queenstown" }],
+    tags: ["adrenaline"],
+  });
+  const draft = makeStory({
+    id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3",
+    title: "Fruit packing notes",
+    excerpt: "Still writing this one.",
+  });
+
+  const searchBox = () =>
+    screen.getByRole("searchbox", { name: "Search your stories" });
+
+  it("has a labelled search box inside a search landmark", () => {
+    render(<MyStoriesView stories={[apples, bungy]} />);
+    expect(searchBox()).toHaveAttribute("type", "search");
+    expect(screen.getByRole("search")).toContainElement(searchBox());
+  });
+
+  it("is not shown when the contributor has no stories yet", () => {
+    render(<MyStoriesView stories={[]} />);
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+  });
+
+  it("narrows the list by title, case-insensitively", async () => {
+    const user = userEvent.setup();
+    render(<MyStoriesView stories={[apples, bungy]} />);
+
+    await user.type(searchBox(), "BUNGY");
+
+    expect(screen.getByRole("link", { name: "Bungy day" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Picking apples in Hawke's Bay" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/1 STORY/)).toBeInTheDocument();
+  });
+
+  it("also matches the summary, place names and tags, every word anywhere", async () => {
+    const user = userEvent.setup();
+    render(<MyStoriesView stories={[apples, bungy]} />);
+
+    await user.type(searchBox(), "orchard");
+    expect(
+      screen.getByRole("link", { name: "Picking apples in Hawke's Bay" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Bungy day" }),
+    ).not.toBeInTheDocument();
+
+    await user.clear(searchBox());
+    await user.type(searchBox(), "queenstown adrenaline");
+    expect(screen.getByRole("link", { name: "Bungy day" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Picking apples in Hawke's Bay" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("works with the status tabs: the counts follow the search", async () => {
+    const user = userEvent.setup();
+    render(<MyStoriesView stories={[apples, bungy, draft]} />);
+    const tabs = screen.getByRole("group", { name: "Story status" });
+    expect(
+      within(tabs).getByRole("button", { name: /Published\s*2/ }),
+    ).toBeInTheDocument();
+
+    await user.click(within(tabs).getByRole("button", { name: /Published/ }));
+    await user.type(searchBox(), "apples");
+
+    expect(
+      screen.getByRole("link", { name: "Picking apples in Hawke's Bay" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Bungy day" }),
+    ).not.toBeInTheDocument();
+    // Only one section has a match, so the tab row (shown only for two or
+    // more non-empty sections) steps aside rather than offering empty tabs.
+    expect(
+      screen.queryByRole("group", { name: "Story status" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("works with the filter chips: both must match", async () => {
+    const user = userEvent.setup();
+    render(<MyStoriesView stories={[apples, bungy]} />);
+    const regionGroup = screen.getByRole("group", {
+      name: "Filter stories by region",
+    });
+    await user.click(
+      within(regionGroup).getByRole("button", { name: "Otago" }),
+    );
+    await user.type(searchBox(), "apples");
+
+    expect(
+      screen.getByText("No stories match “apples”.", { exact: false }),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Clear search and filters" }),
+    );
+
+    expect(searchBox()).toHaveValue("");
+    expect(screen.getByRole("link", { name: "Bungy day" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Picking apples in Hawke's Bay" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a no-match state with a way to clear the search", async () => {
+    const user = userEvent.setup();
+    render(<MyStoriesView stories={[apples, bungy]} />);
+
+    await user.type(searchBox(), "glacier");
+
+    expect(
+      screen.getByText("No stories match “glacier”.", { exact: false }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Bungy day" })).toBeNull();
+
+    // Two ways out: the box's own clear button and the empty state's link.
+    const clearButtons = screen.getAllByRole("button", {
+      name: "Clear search",
+    });
+    expect(clearButtons).toHaveLength(2);
+    await user.click(clearButtons[1]);
+
+    expect(searchBox()).toHaveValue("");
+    expect(screen.getByRole("link", { name: "Bungy day" })).toBeInTheDocument();
+  });
+
+  it("clears from the box's own button and with Escape, keeping focus in the box", async () => {
+    const user = userEvent.setup();
+    render(<MyStoriesView stories={[apples, bungy]} />);
+
+    await user.type(searchBox(), "bungy");
+    await user.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(searchBox()).toHaveValue("");
+    expect(searchBox()).toHaveFocus();
+    expect(
+      screen.queryByRole("button", { name: "Clear search" }),
+    ).not.toBeInTheDocument();
+
+    await user.type(searchBox(), "bungy{Escape}");
+    expect(searchBox()).toHaveValue("");
+    expect(
+      screen.getByRole("link", { name: "Picking apples in Hawke's Bay" }),
+    ).toBeInTheDocument();
+  });
+});

@@ -852,6 +852,13 @@
     "clear": "清除",
     "noMatchesBefore": "没有符合这些筛选条件的故事。",
     "clearFilters": "清除筛选",
+    "search": {
+      "label": "搜索你的故事",
+      "placeholder": "按标题、摘要、地点或标签搜索",
+      "clear": "清除搜索",
+      "clearAll": "清除搜索和筛选",
+      "noMatches": "没有符合“{query}”的故事。"
+    },
     "filters": {
       "region": "地区",
       "destination": "目的地",

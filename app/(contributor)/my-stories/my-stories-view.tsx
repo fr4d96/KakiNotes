@@ -47,6 +47,7 @@ import { formatDate } from "@/lib/i18n/format";
 import { isLocale, type Locale } from "@/i18n/locales";
 import {
   ChevronIcon,
+  CloseIcon,
   EditorialPencilIcon,
   EyeIcon,
   FilterIcon,
@@ -56,6 +57,7 @@ import {
   ImportIcon,
   PlusIcon,
   SortIcon,
+  StorySearchIcon,
   TrashIcon,
 } from "@/components/icons";
 import type { MyStoryWithCover } from "@/lib/story/contributor-queries";
@@ -70,6 +72,7 @@ import {
   type MyStoriesSortDirection,
   type MyStoriesSortKey,
 } from "@/lib/story/my-stories-sort";
+import { searchTerms, storyMatchesSearch } from "@/lib/story/my-stories-search";
 
 type ViewMode = "grid" | "list";
 
@@ -1169,15 +1172,27 @@ export function MyStoriesView({
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
     {},
   );
+  // Keyword search, on top of the chips and the status tabs (never instead
+  // of them). `searchText` is what the box shows; `query` is what filters,
+  // and it is held back while an IME (Chinese pinyin, say) is still
+  // composing, so half-typed "shan" doesn't flash "no stories match" before
+  // the word becomes 山. Client-side like everything else here: the page
+  // already holds all of the caller's own stories, so a server round trip
+  // could only return a subset of what is on screen.
+  const [searchText, setSearchText] = useState("");
+  const [query, setQuery] = useState("");
+  const terms = useMemo(() => searchTerms(query, locale), [query, locale]);
+  const isSearching = terms.length > 0;
   const filtered = useMemo(
     () =>
-      stories.filter((story) =>
-        axes.every((axis) => {
-          const value = activeFilters[axis.key];
-          return !value || value === ALL || axis.read(story).includes(value);
-        }),
+      stories.filter(
+        (story) =>
+          axes.every((axis) => {
+            const value = activeFilters[axis.key];
+            return !value || value === ALL || axis.read(story).includes(value);
+          }) && storyMatchesSearch(story, terms, locale),
       ),
-    [stories, axes, activeFilters],
+    [stories, axes, activeFilters, terms, locale],
   );
   const isFiltered = axes.some(
     (axis) => activeFilters[axis.key] && activeFilters[axis.key] !== ALL,
@@ -1311,6 +1326,26 @@ export function MyStoriesView({
   function clearFilters() {
     setActiveFilters({});
     setVisibleCount(PAGE_SIZE);
+  }
+
+  function changeSearch(next: string) {
+    setQuery(next);
+    setVisibleCount(PAGE_SIZE);
+  }
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  function clearSearch() {
+    setSearchText("");
+    changeSearch("");
+    searchInputRef.current?.focus();
+  }
+
+  // The empty state's one button undoes whatever narrowed the list to
+  // nothing: the search, the chips, or both.
+  function clearSearchAndFilters() {
+    setSearchText("");
+    setQuery("");
+    clearFilters();
   }
 
   function changeView(next: ViewMode) {
@@ -1550,6 +1585,58 @@ export function MyStoriesView({
         )}
       </div>
 
+      {stories.length > 0 && (
+        // Same shape as the folders picker's and the stories filter bar's
+        // search. The label is screen-reader text (the icon and placeholder
+        // say "search" to sighted readers); text-base (16px) stops iOS
+        // zooming the page on focus; the native cancel "x" is hidden so the
+        // one clear button below is the only one, in every browser.
+        <div role="search" className="mt-3 md:mt-6">
+          <label htmlFor="my-stories-search" className="sr-only">
+            {t("search.label")}
+          </label>
+          <div className="relative">
+            <StorySearchIcon className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-foreground/50" />
+            <input
+              ref={searchInputRef}
+              id="my-stories-search"
+              type="search"
+              value={searchText}
+              onChange={(event) => {
+                setSearchText(event.target.value);
+                if (!(event.nativeEvent as InputEvent).isComposing) {
+                  changeSearch(event.target.value);
+                }
+              }}
+              onCompositionEnd={(event) =>
+                changeSearch(event.currentTarget.value)
+              }
+              onKeyDown={(event) => {
+                if (event.key === "Escape" && searchText) {
+                  event.preventDefault();
+                  clearSearch();
+                }
+              }}
+              placeholder={t("search.placeholder")}
+              autoComplete="off"
+              enterKeyHint="search"
+              className="min-h-11 w-full rounded-full border border-border-subtle bg-surface py-2 pr-11 pl-9 text-base [&::-webkit-search-cancel-button]:appearance-none"
+            />
+            {searchText && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                aria-label={t("search.clear")}
+                title={t("search.clear")}
+                className="press absolute top-1/2 right-1 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-foreground/60 after:absolute after:-inset-1 after:content-[''] hover:bg-surface-muted hover:text-foreground"
+              >
+                <CloseIcon className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {stories.length === 0 ? (
         <p className="mt-8 text-foreground/65">
           {hasStoriesElsewhere
@@ -1702,7 +1789,7 @@ export function MyStoriesView({
             </div>
           )}
 
-          {axes.length > 0 && (
+          {(axes.length > 0 || isSearching) && (
             <p
               className="mt-5 font-mono text-xs tracking-wider text-foreground/50 tabular-nums"
               aria-live="polite"
@@ -1730,18 +1817,24 @@ export function MyStoriesView({
 
           {filtered.length === 0 ? (
             <p className="mt-8 text-foreground/65">
-              {t("noMatchesBefore")}{" "}
+              {isSearching
+                ? t("search.noMatches", { query: query.trim() })
+                : t("noMatchesBefore")}{" "}
               <button
                 type="button"
-                onClick={clearFilters}
+                onClick={clearSearchAndFilters}
                 className="text-accent underline underline-offset-2"
               >
-                {t("clearFilters")}
+                {isSearching && isFiltered
+                  ? t("search.clearAll")
+                  : isSearching
+                    ? t("search.clear")
+                    : t("clearFilters")}
               </button>
               .
             </p>
           ) : (
-            <div className={axes.length > 0 ? "mt-4" : "mt-8"}>
+            <div className={axes.length > 0 || isSearching ? "mt-4" : "mt-8"}>
               {SECTIONS.map(({ key }) => {
                 const label = t(`sections.${key}`);
                 const hint = t(`sections.${key}Hint`);
