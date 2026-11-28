@@ -78,6 +78,16 @@ describe("BugReportButton", () => {
     );
   });
 
+  it("reports the previous page when opened from the signed-in You page", () => {
+    notePathname("/stories/xyz");
+    notePathname("/account");
+    pathname.current = "/account";
+    const dialog = openDialog();
+    expect(dialog.querySelector('input[name="pagePath"]')).toHaveValue(
+      "/stories/xyz",
+    );
+  });
+
   it("hides the honeypot from people and assistive tech", () => {
     const dialog = openDialog();
     const honeypot = dialog.querySelector('input[name="website"]');

@@ -33,6 +33,7 @@ import {
   LanguageList,
 } from "@/app/(public)/settings/settings-view";
 import { CountryPicker } from "@/app/(public)/settings/country-setting";
+import { BugReportButton } from "@/components/bug-report/bug-report-dialog";
 import { setAvatarAction } from "@/app/(public)/settings/actions";
 import { AvatarPicker } from "@/components/account/avatar-picker";
 import {
@@ -322,6 +323,12 @@ export function YouView({
               </>
             )}
           </DisclosureRow>
+        </YouGroup>
+
+        <YouGroup heading={tS("help")}>
+          <li>
+            <BugReportButton variant="row" />
+          </li>
         </YouGroup>
 
         <form action={signOutAction}>

@@ -16,7 +16,8 @@ import {
 } from "@/lib/validation/bug-report";
 
 /** Pages where the bug is almost certainly about where the reader came from. */
-const OPENED_FROM = new Set(["/settings"]);
+// /settings for signed-out visitors, /account (the "You" page) when signed in.
+const OPENED_FROM = new Set(["/settings", "/account"]);
 
 /**
  * "Report a bug": a trigger plus a native <dialog>. Recording only -- the
