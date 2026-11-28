@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.13.0](https://github.com/fr4d96/KakiNotes/compare/v4.12.0...v4.13.0) (2026-11-28)
+
+
+### Features
+
+* **my-stories:** keyword search over your own stories ([02d764c](https://github.com/fr4d96/KakiNotes/commit/02d764cb2bddabe2452f4dccdb6d2afe8d3f1115))
+* **pwa:** show an offline screen when Kakinotes can't be reached ([8b89f87](https://github.com/fr4d96/KakiNotes/commit/8b89f87f9cb0de47b92fd902a68363b372915761))
+
 ## [4.12.0](https://github.com/fr4d96/KakiNotes/compare/v4.11.1...v4.12.0) (2026-11-28)
 
 
