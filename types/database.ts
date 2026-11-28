@@ -76,6 +76,27 @@ export type Database = {
           },
         ];
       };
+      bug_list_access: {
+        Row: {
+          created_at: string;
+          id: boolean;
+          passcode_hash: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: boolean;
+          passcode_hash: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: boolean;
+          passcode_hash?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       bug_reports: {
         Row: {
           created_at: string;
@@ -2859,6 +2880,10 @@ export type Database = {
           updated_at: string;
           version: number;
         }[];
+      };
+      list_bug_reports_with_passcode: {
+        Args: { p_passcode: string };
+        Returns: Json;
       };
       list_editorial_queue: {
         Args: {

@@ -34,6 +34,7 @@ import {
 } from "@/app/(public)/settings/settings-view";
 import { CountryPicker } from "@/app/(public)/settings/country-setting";
 import { BugReportButton } from "@/components/bug-report/bug-report-dialog";
+import { BugListButton } from "@/components/bug-report/bug-list-dialog";
 import { setAvatarAction } from "@/app/(public)/settings/actions";
 import { AvatarPicker } from "@/components/account/avatar-picker";
 import {
@@ -328,6 +329,9 @@ export function YouView({
         <YouGroup heading={tS("help")}>
           <li>
             <BugReportButton variant="row" />
+          </li>
+          <li>
+            <BugListButton />
           </li>
         </YouGroup>
 

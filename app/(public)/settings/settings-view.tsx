@@ -9,6 +9,7 @@ import { AvatarSetting } from "./avatar-setting";
 import { CountrySetting } from "./country-setting";
 import { ProfileLinks, ProfileSignOut } from "@/components/profile-links";
 import { BugReportButton } from "@/components/bug-report/bug-report-dialog";
+import { BugListButton } from "@/components/bug-report/bug-list-dialog";
 import {
   ACCENT_PRESETS,
   DEFAULT_ACCENT_ID,
@@ -132,8 +133,9 @@ export function SettingsView({ locale }: { locale: Locale }) {
         >
           {t("help")}
         </h2>
-        <div className="mt-2 overflow-hidden rounded-2xl bg-surface shadow-sm">
+        <div className="mt-2 divide-y divide-border-subtle overflow-hidden rounded-2xl bg-surface shadow-sm">
           <BugReportButton variant="row" />
+          <BugListButton />
         </div>
       </section>
 

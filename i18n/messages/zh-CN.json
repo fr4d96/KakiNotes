@@ -240,6 +240,10 @@
       "descriptionRequired": "请描述遇到的问题。",
       "descriptionTooShort": "请再多写一些细节（至少 {min} 个字符）。",
       "descriptionTooLong": "请控制在 {max} 个字符以内。"
+    },
+    "bugList": {
+      "passwordRequired": "请输入密码。",
+      "passwordWrong": "密码不正确。"
     }
   },
   "stories": {
@@ -1865,6 +1869,34 @@
     "errors": {
       "sendFailed": "报告发送失败，请稍后再试。",
       "rateLimited": "你最近已发送多份报告。请在约 {minutes, plural, other {# 分钟}} 后再试。"
+    }
+  },
+  "bugList": {
+    "trigger": "问题列表",
+    "title": "问题列表",
+    "passwordIntro": "输入密码以查看所有已报告的问题。",
+    "passwordLabel": "密码",
+    "unlock": "查看问题",
+    "checking": "正在验证…",
+    "cancel": "取消",
+    "close": "关闭",
+    "listIntro": "{count, plural, =0 {暂无已报告的问题。} other {共 # 个问题，最新的在前。}}",
+    "fixed": "已修复",
+    "notFixed": "未修复",
+    "status": {
+      "open": "待处理",
+      "triaged": "已分类",
+      "fixed": "已修复",
+      "wontfix": "不修复"
+    },
+    "page": "页面：{path}",
+    "fixWithClaude": "用 Claude 修复",
+    "fixHint": "会打开 Claude Code，并把这个问题写成任务。在你按下发送之前不会开始。",
+    "errors": {
+      "wrongPassword": "密码不正确。",
+      "rateLimited": "密码错误次数过多。请在约 {minutes, plural, other {# 分钟}} 后再试。",
+      "notConfigured": "问题列表尚未设置。",
+      "loadFailed": "无法加载问题列表，请重试。"
     }
   }
 }

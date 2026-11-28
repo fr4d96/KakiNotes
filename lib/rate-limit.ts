@@ -21,6 +21,8 @@ import {
   BUG_REPORT_WINDOW_SECONDS,
   BUG_REPORT_IP_LIMIT,
   BUG_REPORT_USER_LIMIT,
+  BUG_LIST_WINDOW_SECONDS,
+  BUG_LIST_IP_LIMIT,
 } from "@/lib/rate-limit-config";
 
 // Re-exported so every existing `from "@/lib/rate-limit"` import keeps
@@ -45,6 +47,8 @@ export {
   BUG_REPORT_WINDOW_SECONDS,
   BUG_REPORT_IP_LIMIT,
   BUG_REPORT_USER_LIMIT,
+  BUG_LIST_WINDOW_SECONDS,
+  BUG_LIST_IP_LIMIT,
 };
 
 /**
@@ -149,7 +153,8 @@ type Bucket =
   | "affirmation_ip"
   | "affirmation_token"
   | "bug_report_ip"
-  | "bug_report_user";
+  | "bug_report_user"
+  | "bug_list_ip";
 
 async function checkBucket(
   scope: Bucket,
@@ -611,6 +616,42 @@ export async function recordBugReportAttempt(
       p_scope: bucket.scope,
       p_key_hash: bucket.keyHash,
       p_window_seconds: BUG_REPORT_WINDOW_SECONDS,
+    });
+  } catch {
+    // Fail open, same as every other counter here.
+  }
+}
+
+/**
+ * Bug Lists password, per IP: counts WRONG passwords only (like sign-in), so
+ * the owner opening the list many times is never throttled. With no known
+ * IP (local development) there is no app-side bucket; the database's own
+ * overall lock in list_bug_reports_with_passcode() still applies.
+ */
+export async function checkBugListRateLimit(): Promise<RateLimitVerdict> {
+  try {
+    const ip = await clientIp();
+    if (!ip) return ALLOWED;
+    return await checkBucket(
+      "bug_list_ip",
+      hashKey("bug_list_ip", ip),
+      BUG_LIST_IP_LIMIT,
+      BUG_LIST_WINDOW_SECONDS,
+    );
+  } catch {
+    return ALLOWED;
+  }
+}
+
+export async function recordBugListFailure(): Promise<void> {
+  try {
+    const ip = await clientIp();
+    if (!ip) return;
+    const supabase = await createClient();
+    await supabase.rpc("record_rate_limit_attempt", {
+      p_scope: "bug_list_ip",
+      p_key_hash: hashKey("bug_list_ip", ip),
+      p_window_seconds: BUG_LIST_WINDOW_SECONDS,
     });
   } catch {
     // Fail open, same as every other counter here.

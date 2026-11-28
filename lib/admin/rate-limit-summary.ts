@@ -17,6 +17,8 @@ import {
   BUG_REPORT_IP_LIMIT,
   BUG_REPORT_USER_LIMIT,
   BUG_REPORT_WINDOW_SECONDS,
+  BUG_LIST_IP_LIMIT,
+  BUG_LIST_WINDOW_SECONDS,
 } from "@/lib/rate-limit-config";
 
 /**
@@ -158,6 +160,15 @@ export function rateLimitRows(): RateLimitRow[] {
       counts: "every request",
       limit: BUG_REPORT_USER_LIMIT,
       windowMinutes: minutes(BUG_REPORT_WINDOW_SECONDS),
+      whenExceeded: TELLS_YOU,
+    },
+    {
+      key: "bug-list-ip",
+      surface: "Bug Lists password",
+      scope: "per IP address",
+      counts: "failed attempts",
+      limit: BUG_LIST_IP_LIMIT,
+      windowMinutes: minutes(BUG_LIST_WINDOW_SECONDS),
       whenExceeded: TELLS_YOU,
     },
   ];

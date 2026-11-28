@@ -62,6 +62,9 @@ import { SettingsView } from "./settings-view";
 vi.mock("@/lib/bug-reports/submit-action", () => ({
   submitBugReportAction: vi.fn(),
 }));
+vi.mock("@/lib/bug-reports/list-action", () => ({
+  openBugListAction: vi.fn(),
+}));
 
 const html = document.documentElement;
 

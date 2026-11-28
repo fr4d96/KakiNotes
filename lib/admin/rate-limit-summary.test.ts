@@ -56,6 +56,7 @@ describe("rateLimitRows", () => {
     ).toEqual([
       "affirmation-ip",
       "affirmation-token",
+      "bug-list-ip",
       "bug-report-ip",
       "bug-report-user",
       "pdf-attach",
@@ -79,6 +80,7 @@ describe("rateLimitRows", () => {
 
     expect(byKey["sign-in-identifier"].counts).toBe("failed attempts");
     expect(byKey["sign-in-ip"].counts).toBe("failed attempts");
+    expect(byKey["bug-list-ip"].counts).toBe("failed attempts");
     for (const key of [
       "reset-email",
       "reset-ip",

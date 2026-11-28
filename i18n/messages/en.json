@@ -240,6 +240,10 @@
       "descriptionRequired": "Please describe the bug.",
       "descriptionTooShort": "Please add a little more detail (at least {min} characters).",
       "descriptionTooLong": "Please keep it to {max} characters or fewer."
+    },
+    "bugList": {
+      "passwordRequired": "Enter the password.",
+      "passwordWrong": "That password isn't right."
     }
   },
   "stories": {
@@ -1865,6 +1869,34 @@
     "errors": {
       "sendFailed": "We couldn't send your report. Please try again in a little while.",
       "rateLimited": "You've sent several reports recently. Try again in about {minutes, plural, one {# minute} other {# minutes}}."
+    }
+  },
+  "bugList": {
+    "trigger": "Bug Lists",
+    "title": "Bug Lists",
+    "passwordIntro": "Enter the password to see every bug that has been reported.",
+    "passwordLabel": "Password",
+    "unlock": "Show bugs",
+    "checking": "Checking…",
+    "cancel": "Cancel",
+    "close": "Close",
+    "listIntro": "{count, plural, =0 {No bugs reported yet.} one {# bug reported, newest first.} other {# bugs reported, newest first.}}",
+    "fixed": "Fixed",
+    "notFixed": "Not fixed",
+    "status": {
+      "open": "Open",
+      "triaged": "Triaged",
+      "fixed": "Fixed",
+      "wontfix": "Won't fix"
+    },
+    "page": "Page: {path}",
+    "fixWithClaude": "Fix with Claude",
+    "fixHint": "Opens Claude Code with this bug written as a task. Nothing starts until you press send.",
+    "errors": {
+      "wrongPassword": "That password isn't right.",
+      "rateLimited": "Too many wrong passwords. Try again in about {minutes, plural, one {# minute} other {# minutes}}.",
+      "notConfigured": "Bug Lists isn't set up yet.",
+      "loadFailed": "We couldn't load the bug list. Please try again."
     }
   }
 }

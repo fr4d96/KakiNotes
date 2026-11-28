@@ -59,3 +59,10 @@ export const AFFIRMATION_TOKEN_LIMIT = 30;
 export const BUG_REPORT_WINDOW_SECONDS = 60 * 60;
 export const BUG_REPORT_IP_LIMIT = 5;
 export const BUG_REPORT_USER_LIMIT = 10;
+
+/**
+ * Bug Lists password: counts WRONG passwords only, per IP. The database
+ * adds its own overall lock (30 wrong in 15 minutes, from anyone).
+ */
+export const BUG_LIST_WINDOW_SECONDS = 15 * 60;
+export const BUG_LIST_IP_LIMIT = 10;
