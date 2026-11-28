@@ -1,55 +1,49 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { BugReportStatus } from "@/lib/validation/bug-report";
+import type { Database } from "@/types/database";
+import {
+  BUG_REPORT_STATUSES,
+  type BugReportStatus,
+} from "@/lib/validation/bug-report";
 
 /**
- * The bug_reports table and submit_bug_report() RPC, in one place.
- *
- * TEMPORARY TYPING SHIM: 20261128090000_bug_reports.sql is written but not
- * yet applied to the hosted project, so types/database.ts (generated, never
- * hand-edited) does not know these names yet. The client is narrowed to the
- * exact shapes below instead. Once the migration is applied and
- * `npm run supabase:types:linked` regenerates the types, these helpers can
- * take the typed client directly and the casts go.
+ * The bug_reports table and submit_bug_report() RPC
+ * (supabase/migrations/20261128022130_bug_reports.sql), in one place.
  */
 
-export type BugReportRow = {
-  id: string;
-  reporter_id: string | null;
-  description: string;
-  page_path: string | null;
-  user_agent: string | null;
-  status: BugReportStatus;
-  created_at: string;
-  updated_at: string;
-};
+type Client = SupabaseClient<Database>;
 
-type SubmitArgs = {
-  p_description: string;
-  p_page_path?: string;
-  p_user_agent?: string;
-};
+export type BugReportRow = Omit<
+  Database["public"]["Tables"]["bug_reports"]["Row"],
+  "status"
+> & { status: BugReportStatus };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see header
-type Untyped = SupabaseClient<any, "public", "public", any, any>;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- any typed client
-type AnyClient = SupabaseClient<any, any, any, any, any>;
+export type SubmitBugReportArgs =
+  Database["public"]["Functions"]["submit_bug_report"]["Args"];
 
 export async function callSubmitBugReport(
-  client: AnyClient,
-  args: SubmitArgs,
+  client: Client,
+  args: SubmitBugReportArgs,
 ): Promise<{ error: unknown }> {
-  const { error } = await (client as Untyped).rpc("submit_bug_report", args);
+  const { error } = await client.rpc("submit_bug_report", args);
   return { error };
+}
+
+/**
+ * The generated type says `string` (a CHECK constraint is invisible to the
+ * generator); the constraint guarantees one of the four, and anything else
+ * is shown as "open" rather than crashing the list.
+ */
+function asStatus(value: string): BugReportStatus {
+  return BUG_REPORT_STATUSES.find((s) => s === value) ?? "open";
 }
 
 /** Newest first. RLS returns rows to admins only; anyone else gets []. */
 export async function listBugReports(
-  client: AnyClient,
+  client: Client,
   options: { status?: BugReportStatus; limit: number },
 ): Promise<BugReportRow[]> {
-  let query = (client as Untyped)
+  let query = client
     .from("bug_reports")
     .select(
       "id, reporter_id, description, page_path, user_agent, status, created_at, updated_at",
@@ -59,7 +53,7 @@ export async function listBugReports(
   if (options.status) query = query.eq("status", options.status);
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []) as BugReportRow[];
+  return (data ?? []).map((row) => ({ ...row, status: asStatus(row.status) }));
 }
 
 /**
@@ -68,11 +62,11 @@ export async function listBugReports(
  * row was updated (not an admin, or no such report).
  */
 export async function setBugReportStatus(
-  client: AnyClient,
+  client: Client,
   reportId: string,
   status: BugReportStatus,
 ): Promise<boolean> {
-  const { data, error } = await (client as Untyped)
+  const { data, error } = await client
     .from("bug_reports")
     .update({ status })
     .eq("id", reportId)

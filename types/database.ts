@@ -76,6 +76,39 @@ export type Database = {
           },
         ];
       };
+      bug_reports: {
+        Row: {
+          created_at: string;
+          description: string;
+          id: string;
+          page_path: string | null;
+          reporter_id: string | null;
+          status: string;
+          updated_at: string;
+          user_agent: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          description: string;
+          id?: string;
+          page_path?: string | null;
+          reporter_id?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_agent?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          description?: string;
+          id?: string;
+          page_path?: string | null;
+          reporter_id?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_agent?: string | null;
+        };
+        Relationships: [];
+      };
       contributor_drive_connections: {
         Row: {
           created_at: string;
@@ -3409,6 +3442,14 @@ export type Database = {
       };
       submit_affirmation_note: {
         Args: { p_author_name?: string; p_body: string; p_token: string };
+        Returns: undefined;
+      };
+      submit_bug_report: {
+        Args: {
+          p_description: string;
+          p_page_path?: string;
+          p_user_agent?: string;
+        };
         Returns: undefined;
       };
       submit_revision_with_consent: {

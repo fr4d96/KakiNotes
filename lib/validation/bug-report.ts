@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Bug reports (supabase/migrations/20261128090000_bug_reports.sql).
+ * Bug reports (supabase/migrations/20261128022130_bug_reports.sql).
  *
  * The limits mirror that migration's CHECK constraints: Zod gives a friendly
  * message, the constraint and submit_bug_report() are the non-bypassable
