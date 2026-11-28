@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.10.2](https://github.com/fr4d96/KakiNotes/compare/v4.10.1...v4.10.2) (2026-11-28)
+
+
+### Bug Fixes
+
+* **security:** read the reader's IP from cf-connecting-ip behind Cloudflare ([d1f37aa](https://github.com/fr4d96/KakiNotes/commit/d1f37aad1051ea06d84d73df83360c143996068b))
+
 ## [4.10.1](https://github.com/fr4d96/KakiNotes/compare/v4.10.0...v4.10.1) (2026-11-28)
 
 
