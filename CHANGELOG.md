@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.11.0](https://github.com/fr4d96/KakiNotes/compare/v4.10.2...v4.11.0) (2026-11-28)
+
+
+### Features
+
+* **bugs:** Report a bug dialog and admin-only bug list ([9d96d93](https://github.com/fr4d96/KakiNotes/commit/9d96d93ceebabc4c7006a6e408def5adb0bb9480))
+
 ## [4.10.2](https://github.com/fr4d96/KakiNotes/compare/v4.10.1...v4.10.2) (2026-11-28)
 
 
