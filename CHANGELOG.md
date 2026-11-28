@@ -3,6 +3,22 @@
 ## [4.13.0](https://github.com/fr4d96/KakiNotes/compare/v4.12.0...v4.13.0) (2026-11-28)
 
 
+### Search your own stories, and a friendly screen when KakiNotes is offline
+
+#### For contributors
+
+- **Search on My Stories.** There's now a search box at the top of My Stories. Start typing and your list narrows to the stories that match, as you type. It works together with the existing filters and tabs, so you can search only your drafts, for example. If nothing matches, you'll see a message and a quick way to clear the search.
+- **In English and Chinese.** The search box and its messages follow your language setting.
+- **Only your stories.** The search looks through the stories already on your My Stories page. It never shows anyone else's.
+
+#### For everyone
+
+- **A proper "offline" screen.** If KakiNotes can't be reached, because your phone has no internet or the site itself is down for a moment, you'll now see a "Kakinotes is offline" screen with a **Refresh** button instead of a grey error page. It follows your light or dark setting and your language.
+- **It tries again by itself.** When your connection comes back, the screen reloads the page you were trying to open.
+- **Nothing private is kept on your phone.** The only thing KakiNotes saves for this is the offline screen itself. Stories, photos and drafts are never stored on your device.
+- **One visit to switch it on.** Your phone gets the offline screen the first time you open KakiNotes after this update. Before that, you'd still see the old error page.
+
+
 ### Features
 
 * **my-stories:** keyword search over your own stories ([02d764c](https://github.com/fr4d96/KakiNotes/commit/02d764cb2bddabe2452f4dccdb6d2afe8d3f1115))
