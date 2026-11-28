@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.10.1](https://github.com/fr4d96/KakiNotes/compare/v4.10.0...v4.10.1) (2026-11-28)
+
+
+### Features
+
+* **cards:** story cards bounce softly when tapped ([89f3e57](https://github.com/fr4d96/KakiNotes/commit/89f3e5726754374be3c925c2237f1bd82a225401))
+* **cards:** sub story tiles bounce on tap like story cards ([edf77ad](https://github.com/fr4d96/KakiNotes/commit/edf77ad14f329968e45dde6dd5b1c501b3eff426))
+* **story:** story page header fits the screen, no sideways swiping ([296da47](https://github.com/fr4d96/KakiNotes/commit/296da47d67e922ff462e368fa9613e642341a97f))
+* **story:** story-first story page and a Total Trip Cost view ([a6fbd84](https://github.com/fr4d96/KakiNotes/commit/a6fbd84143742c2c910e32558b8529974f72eb74))
+
+
+### Bug Fixes
+
+* **scripts:** refresh the Drive token in the card-size backfill ([3a7412a](https://github.com/fr4d96/KakiNotes/commit/3a7412a858f0af88483306afe61e8acc43446202))
+
+
+### Miscellaneous Chores
+
+* release 4.10.1 ([ee147b4](https://github.com/fr4d96/KakiNotes/commit/ee147b4662e8b72743f66eb899f2c911be28dbd2))
+
 ## [4.10.0](https://github.com/fr4d96/KakiNotes/compare/v4.9.1...v4.10.0) (2026-11-27)
 
 
